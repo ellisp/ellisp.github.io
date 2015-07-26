@@ -1,2 +1,2 @@
 # ellisp.github.io
-Blog
+Source code and text for Peter Ellis' blog 'Stats in the wild'.
