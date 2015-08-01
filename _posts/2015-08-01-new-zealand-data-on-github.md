@@ -31,7 +31,7 @@ So, inspired by looking at these lists, I had a go at finding some data I could 
 
 First problem is to get the data out of Excel into R.  My preferred way of doing this is openxlsx package.  However, it only works with newer .xlsx files, which are based on XML.  For the older .xls files there are a range of options, including the useful XLConnect package which in this case preserves a fair bit (not all) of the formatting information (for example, recognising "143,022" as a number despite the comma in it; and keeping the dates).  Here's how I imported the data.
 
-{% highlight R %}
+{% highlight R linenos %}
 library(XLConnect)
 library(dplyr)
 library(tidyr)
@@ -61,7 +61,7 @@ A more significant problem is that the Excel table we're interested in, the "Mai
 
 The tricky issue is that the value cells for rows 5 and 6 have been merged together; also for 8 and 9, 14 and 15, etc.  Resolving this and "gathering" the data into [tidy format](http://vita.had.co.nz/papers/tidy-data.pdf) takes about 30 lines of code:
 
-{% highlight R %}
+{% highlight R linenos %}
 #-----------------tidy----------------
 #
 
@@ -103,7 +103,7 @@ So, now our data is tidy and looks like this:
 
 ![Table of tidy data](/img/0001-screenshot2.png)
 
-It's now straightforward to use the data for analysis.  I won't go into that now, but as a taster here is a simple web-app taking advantage of the tidy format of the data.  The code behind the web app is available on GitHub.
+It's now straightforward to use the data for analysis.  I won't go into that now, but as a taster here is a simple web-app taking advantage of the tidy format of the data.  The code behind the web app is available on GitHub.  We can do some simple exploring just with this visual tool.  For example, an overall downwards trend in number of beneficiaries in the last five years is obvious; as is a clear seasonal pattern with an increase in the numbers on benefits in the final quarter of each year.  Choosing the "Continuous Duration" classification (which splits beneficiaries into those who have been on benefits for less than or more than one year) shows - unsurprisingly that it is the short term beneficiaries that cause that pattern.
 
 <center>
 <iframe width="850" height="500" src="https://ellisp.shinyapps.io/0001-shiny-benefits" frameborder="0" seamless scrolling = "no"></iframe>
