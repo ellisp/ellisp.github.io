@@ -2,6 +2,12 @@
 layout: post
 title: New Zealand Data & APIs on GitHub
 date: 2015-08-01
+tag: 
+   - R
+   - NewZealand
+   - OpenData
+   - Shiny
+
 ---
 
 ## New data listing for New Zealand

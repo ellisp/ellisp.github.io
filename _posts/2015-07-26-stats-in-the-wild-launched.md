@@ -2,6 +2,7 @@
 layout: post
 title: Hello world!
 date: 2015-07-26
+tag: Admin
 ---
 
 ##Do we need another data blog?
