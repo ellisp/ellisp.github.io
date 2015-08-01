@@ -1,7 +1,7 @@
 library(XLConnect)
 library(dplyr)
 library(tidyr)
-
+library(shinyapps)
 
 #-----------------import data---------------
 # Original URL. Use of paste0 here is just to make readable in narrow screen:
@@ -51,10 +51,13 @@ benefits <- benefits %>%
    mutate(Date = as.character(Date),
           Date = gsub("X", "", Date),
           Date = gsub("Jun.15", "2015.06", Date, fixed = TRUE),
-          Date = gsub("Mar.15", "2015.06", Date, fixed = TRUE),
+          Date = gsub("Mar.15", "2015.03", Date, fixed = TRUE),
           CentreMonth = as.numeric(substring(Date, 6, 7)) - 1, # central month of each quarter
           Year = as.numeric(substring(Date, 1, 4)),
           Period = Year + (CentreMonth - 0.5) / 12)  %>%          # decimal representation of mid-quarter
-   select(-CentreMonth, Date, Year)
+   select(-CentreMonth, -Date, -Year)
 
 #---------------------analyse--------------------
+save(benefits, file = "_output/0001-shiny-benefits/benefits.rda")
+
+deployApp("_output/0001-shiny-benefits", appName = "0001-shiny-benefits", account = "ellisp")
