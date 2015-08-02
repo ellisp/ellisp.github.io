@@ -27,7 +27,7 @@ font-family: 'Poppins', 'Lucida Grande', Verdana, Lucida, Helvetica, Arial, Cali
          radioButtons("stack", "Type of chart", choices = c("Individual lines", "Stacked"),
                       selected = "Individual lines"),
          
-         HTML("<p>Dates refer to quarters commencing in the month on the horizontal axis (note that this differs from the original publication, which has the month the quarter <i>completes</i>).</p>"),
+         HTML("<p>Dates refer to quarters commencing in the month on the horizontal axis.</p>"),
          div(id="LegendDiv")
       ),
       
