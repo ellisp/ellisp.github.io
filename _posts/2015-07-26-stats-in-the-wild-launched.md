@@ -3,6 +3,8 @@ layout: post
 title: Hello world!
 date: 2015-07-26
 tag: Admin
+description: Initial post with some musings on what this blog will be for.
+image: /img/jumbo-back.JPG
 ---
 
 ##Do we need another data blog?
