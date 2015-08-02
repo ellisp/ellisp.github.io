@@ -29,7 +29,7 @@ shinyServer(function(input, output) {
       tmp <- dygraph(the_data_ts()) %>%
       dyOptions(labelsKMB = "K", animatedZooms = FALSE) %>%
       dyAxis("y", label = "Recipients of main benefits") %>%
-      dyLegend(labelsSeparateLines = TRUE) %>%
+      dyLegend(labelsSeparateLines = TRUE, labelsDiv = "LegendDiv") %>%
       dyRangeSelector(height = 20)       
       
       if(input$stack == "Stacked"){
