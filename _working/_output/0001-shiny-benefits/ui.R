@@ -4,10 +4,20 @@ library(dygraphs)
 load("benefits.rda")
 
 shinyUI(fluidPage(
-#    tags$head(tags$link(rel = "stylesheet", type = "text/css", href = "http://ellisp.github.io/css/bootstrap.min.css")),
-#    tags$head(tags$link(rel = "stylesheet", type = "text/css", href = "http://ellisp.github.io/css/bootstrap-theme.min.css")),
-#    tags$head(tags$link(rel = "stylesheet", type = "text/css", href = "http://ellisp.github.io/css/main.css")),
-      
+
+   
+   tags$style(HTML("
+@import url('https://fonts.googleapis.com/css?family=Poppins');
+                      
+body {
+         
+font-family: 'Poppins', 'Lucida Grande', Verdana, Lucida, Helvetica, Arial, Calibri, sans-serif;
+         color: rgb(0,0,0);
+         background-color: #d2d2d2;
+                      }
+")),
+   
+   
    titlePanel("Working-age recipients of main benefits - last 5 years"),
    
    sidebarLayout(

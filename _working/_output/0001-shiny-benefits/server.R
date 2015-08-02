@@ -27,14 +27,14 @@ shinyServer(function(input, output) {
    
    the_graph <- reactive({
       tmp <- dygraph(the_data_ts()) %>%
-      dyOptions(labelsKMB = "K", animatedZooms = TRUE) %>%
+      dyOptions(labelsKMB = "K", animatedZooms = FALSE) %>%
       dyAxis("y", label = "Recipients of main benefits") %>%
       dyLegend(labelsSeparateLines = TRUE) %>%
       dyRangeSelector(height = 20)       
       
       if(input$stack == "Stacked"){
          tmp <- tmp %>%
-            dyOptions(stackedGraph = TRUE, labelsKMB = "K", animatedZooms = TRUE)
+            dyOptions(stackedGraph = TRUE, labelsKMB = "K", animatedZooms = FALSE)
       }
       
       return(tmp)
