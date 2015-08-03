@@ -4,9 +4,10 @@ library(RColorBrewer)
 library(directlabels)
 library(ggplot2)
 library(scales)
-library(extrafont)
 
 
+font.add.google("Poppins", "myfont")
+showtext.auto()
 #==================helper functions=====================
 # in blog, move this script to bottom
 fibs_p <- function(a, b, ml){
@@ -68,23 +69,23 @@ df1 <- mat %>%
 df2 <- mat %>%
    mutate(probs = fibs_p(a = a, b = b, ml = 23))
 
-
+# TODO - change to animated Gif
 p1 <- ggplot(df1,  aes(x = a, y = b, z = probs)) +
    geom_tile(aes(fill = probs)) +
-   theme_minimal(base_family = "Calibri") +
+   theme_minimal(base_family = "myfont") +
    scale_fill_gradientn(colours = brewer.pal(10, "Spectral"), limits = c(0, 1)) +
    stat_contour(aes(colour = ..level..)) +
    labs(x = "Player A Elo rating", y = "Player B Elo rating") +
    theme(legend.position = "none") +
    ggtitle("Probability of Player A winning a 5 point match")
 
-p2 <- p1 %+% data.frame(df2)
-
-vp1 <- viewport(0.25, 0.5, width = 0.5)
-vp2 <- viewport(0.75, 0.5, width = 0.5)
+p2 <- p1 %+% data.frame(df2) + ggtitle("Probability of Player A winning a 23 point match")
 
 res <- 150
 png("../img/0002-ml5-23-elo.png", res * 10, res * 5, res = res, bg = "transparent")
+   grid.newpage()
+   vp1 <- viewport(0.25, 0.5, width = 0.5)
+   vp2 <- viewport(0.75, 0.5, width = 0.5)
    print(direct.label(p1), vp = vp1)
    print(direct.label(p2), vp = vp2)
 dev.off()
