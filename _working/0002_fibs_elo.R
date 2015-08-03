@@ -95,7 +95,29 @@ dev.off()
 # two people playing eachother 5 point games with 0.6 chance of winning
 
 
+A <- B <- data_frame(rating = 1500, exp = 0)
 
+timeseries <- data_frame(A = A$rating, B = B$rating)
+
+
+for (i in 1:10000){
+   result <- fibs_scores(a = A$rating, b = B$rating, 
+               winner = ifelse(runif(1) > 0.4, "a", "b"),
+               axp = A$exp, bxp = B$exp, ml = 5)
+   timeseries[i, "A"] <- A$rating <- result$a
+   timeseries[i, "B"] <-    B$rating <- result$b
+   A$exp <- result$axp
+   B$exp <- result$bxp
+   
+}
+
+timeseries$A <- ts(timeseries$A)
+timeseries$B <- ts(timeseries$B)
+plot(timeseries$A)
+plot(timeseries$B)
+
+acf(timeseries$B, type = "partial")
+acf(diff(timeseries$B))
 
 
 # six people - 3 good, 3 bad - 5 point games 0.6 chance of good people winning
