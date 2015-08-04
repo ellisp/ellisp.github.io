@@ -9,6 +9,7 @@ tag:
    - Shiny
 description: I discuss a new listing of datasets in New Zealand, and demonstrate tidying up a publicly available dataset on number of welfare beneficiaries for use in an interactive web application.
 image: /img/0001-finished-app.png
+category: R
 ---
 
 ## New data listing for New Zealand
