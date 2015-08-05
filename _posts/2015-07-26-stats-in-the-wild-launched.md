@@ -4,7 +4,7 @@ title: Hello world!
 date: 2015-07-26
 tag: Blogging
 description: Initial post with some musings on what this blog will be for.
-image: /img/jumbo-back.JPG
+image: /img/jumbo-back2.JPG
 ---
 
 ##Do we need another data blog?
