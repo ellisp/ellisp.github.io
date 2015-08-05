@@ -5,11 +5,10 @@ library(directlabels)
 library(ggplot2)
 library(scales)
 
-
 font.add.google("Poppins", "myfont")
 showtext.auto()
 #==================helper functions=====================
-# in blog, move this script to bottom
+
 fibs_p <- function(a, b, ml){
    # function to determine the expected probability of player a winning a bachgammon match
    # against player b of length ml, with a and b representing their FIBS Elo ratings
@@ -69,26 +68,41 @@ df1 <- mat %>%
 df2 <- mat %>%
    mutate(probs = fibs_p(a = a, b = b, ml = 23))
 
-# TODO - change to animated Gif
-p1 <- ggplot(df1,  aes(x = a, y = b, z = probs)) +
-   geom_tile(aes(fill = probs)) +
-   theme_minimal(base_family = "myfont") +
-   scale_fill_gradientn(colours = brewer.pal(10, "Spectral"), limits = c(0, 1)) +
-   stat_contour(aes(colour = ..level..)) +
-   labs(x = "Player A Elo rating", y = "Player B Elo rating") +
-   theme(legend.position = "none") +
-   ggtitle("Probability of Player A winning a 5 point match")
 
-p2 <- p1 %+% data.frame(df2) + ggtitle("Probability of Player A winning a 23 point match")
 
+dir.create("tmp0002")
+owd <- setwd("tmp0002")
+
+
+matchlengths <- seq(from = 1, to = 23, by = 1)
 res <- 150
-png("../img/0002-ml5-23-elo.png", res * 10, res * 5, res = res, bg = "transparent")
-   grid.newpage()
-   vp1 <- viewport(0.25, 0.5, width = 0.5)
-   vp2 <- viewport(0.75, 0.5, width = 0.5)
-   print(direct.label(p1), vp = vp1)
-   print(direct.label(p2), vp = vp2)
-dev.off()
+
+for(i in 1:length(matchlengths)){
+   df1 <- mat %>% mutate(probs = fibs_p(a = a, b = b, ml = matchlengths[i]))
+   
+   p1 <- ggplot(df1,  aes(x = a, y = b, z = probs)) +
+      geom_tile(aes(fill = probs)) +
+      theme_minimal(base_family = "myfont") +
+      scale_fill_gradientn(colours = brewer.pal(10, "Spectral"), limits = c(0, 1)) +
+      scale_colour_gradientn(colours = "black") +
+      stat_contour(aes(colour = ..level..), binwidth = .1) +
+      labs(x = "Player A Elo rating", y = "Player B Elo rating") +
+      theme(legend.position = "none") +
+      coord_equal() +
+      ggtitle(paste0("Probability of Player A winning a match to ", matchlengths[i]))
+   
+   png(paste0(letters[i], ".png"), res * 5, res * 5, res = res, bg = "grey70")
+      print(direct.label(p1))
+   
+   dev.off()
+}
+
+# doing this explicitly to avoid clashes with Windows' convert
+system('"C:\\Program Files\\ImageMagick-6.9.1-Q16\\convert" -loop 0 -delay 150 *.png "EloProbs.gif"')
+file.copy("EloProbs.gif", "../../img/0002-EloProbs.gif", overwrite = TRUE)
+
+setwd(owd)
+unlink("tmp0002")
 
 #================simulations of how long it takes for scores to stablise================
 
