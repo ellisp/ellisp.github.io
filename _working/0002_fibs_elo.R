@@ -4,6 +4,8 @@ library(RColorBrewer)
 library(directlabels)
 library(ggplot2)
 library(scales)
+library(dygraphs)
+library(zoo)
 
 font.add.google("Poppins", "myfont")
 showtext.auto()
@@ -114,7 +116,7 @@ A <- B <- data_frame(rating = 1500, exp = 0)
 
 timeseries <- data_frame(A = A$rating, B = B$rating)
 
-
+set.seed(123) # for reproducibility
 for (i in 1:10000){
    result <- fibs_scores(a = A$rating, b = B$rating, 
                winner = ifelse(runif(1) > 0.4, "a", "b"),
@@ -128,23 +130,26 @@ for (i in 1:10000){
 
 timeseries$A <- ts(timeseries$A)
 timeseries$B <- ts(timeseries$B)
-plot(timeseries$A)
+
+both <- cbind(timeseries$A, timeseries$B)
+plot(both)
+dygraph(timeseries$A) %>% dyRangeSelector()
 plot(timeseries$B)
 
 acf(timeseries$B, type = "partial")
 acf(diff(timeseries$B))
 
 
-# six people - 3 good, 3 bad - 5 point games 0.6 chance of good people winning
+# theoretical value:
+(log(1/ 0.6 - 1) / log(10)  * 2000 / sqrt(5) + 3000 ) / 2
+3000 - 1421.25
 
 
-
-
-
-
+fibs_p(1421.25, 3000 -1421.25, 5)
 # chance of winning changes according to an ARIMA process, on a logistic transformation dimension
 
 
+dygraph(rollapplyr(timeseries$A, 100, "sd")) %>% dyRangeSelector
 
 
 
