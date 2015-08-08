@@ -148,8 +148,9 @@ fibs_scores <- function(a, b, winner = "a", ml = 1, axp = 500, bxp = 500){
    return(list(a = a, b = b, axp = axp + ml, bxp = bxp + ml))
 }
 
-# test against "baptism by fire" example at http://www.fibs.com/ratings.html:
-round(fibs_scores(a = 1500, b = 1925, ml = 7, axp = 0, bxp = 10000, winner = "a")$a, 2) # should be 1540.95
+# test against "baptism by fire" example at http://www.fibs.com/ratings.html
+# should be 1540.95:
+round(fibs_scores(a = 1500, b = 1925, ml = 7, axp = 0, bxp = 10000, winner = "a")$a, 2)
 
 #================simulations of how long it takes for scores to stablise================
 # two people playing eachother 5 point games with 0.6 chance of winning
@@ -193,5 +194,5 @@ ggplot(timeseries, aes(x = time, y = A)) +
 dev.off()
 {% endhighlight %}
 
-In this situation, a player's Elo rating is quite well modelled by an autoregressive AR(1) time series model.  With an autoregression parameter of around 0.98, the rating at any point in time is obviously very closely related to the previous rating; almost but not quite a random walk. Showing how and why would make this post too long, but it's a useful factoid to note for future work when we come to more realistic and complex simulations of Elo ratings on FIBS.
+In this situation, the resulting player's Elo rating bouncing around at random is quite well modelled by an autoregressive AR(1) time series model with an intercept at the "true" level of the player's skill.  With an autoregression parameter of around 0.98, the rating at any point in time is obviously very closely related to the previous rating; almost but not quite a random walk. Showing how and why would make this post too long, but it's a useful factoid to note for future work when we come to more realistic and complex simulations of Elo ratings on FIBS.
 
