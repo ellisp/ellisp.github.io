@@ -24,7 +24,7 @@ When the two players have the same rating, they are expected to have a 50/50 cha
    
 Now, here's how I made that animation.  In the R code below, first, I load up some functionality and the Google font I use for this blog.  Then I define a function that estimates the probability of a player winning using the FIBS formula above.
 
-{% highlight R linenos %}
+{% highlight R lang lineanchors %}
 library(dplyr)
 library(showtext) # for fonts
 library(RColorBrewer)
@@ -52,7 +52,7 @@ The strategy to create the animation is simple:
 * Draw a still image heatmap for each of those 23 match lengths using {ggplot2}
 * Compile the images into a single animated Gif using [ImageMagick](http://studio.imagemagick.org/script/index.php).
 
-{% highlight R linenos %}
+{% highlight R lang lineanchors %}
 #================heat maps showing probability of winning
 
 # create a matrix of players A and B's possible Elo ratings
@@ -116,7 +116,7 @@ The results are shown in the chart below, and in this unrealistically simple sce
 
 Here's the code for that simulation, including my R function that provides FIBS-style Elo ratings, adjusted for experience as set out by FIBS.
 
-{% highlight R linenos %}
+{% highlight R lang lineanchors %}
 #=================determine change of Elo rating ================
 fibs_scores <- function(a, b, winner = "a", ml = 1, axp = 500, bxp = 500){
    # a is Elo rating of player A before match
@@ -193,5 +193,5 @@ ggplot(timeseries, aes(x = time, y = A)) +
 dev.off()
 {% endhighlight %}
 
-In this situation, a player's Elo rating is quite well modelled by an autoregressive AR(1) time series model.  With an autoregression parameter of around 0.98, the rating at any point in time is obviously very closely related to the previous rating; almost but not quite a random walk..Showing how and why would make this post too long, but it's a useful factoid to note for future work when we come to more realistic and complex simulations of Elo ratings on FIBS.
+In this situation, a player's Elo rating is quite well modelled by an autoregressive AR(1) time series model.  With an autoregression parameter of around 0.98, the rating at any point in time is obviously very closely related to the previous rating; almost but not quite a random walk. Showing how and why would make this post too long, but it's a useful factoid to note for future work when we come to more realistic and complex simulations of Elo ratings on FIBS.
 

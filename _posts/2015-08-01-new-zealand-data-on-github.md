@@ -49,7 +49,7 @@ The data have been published in aggregate form, which means in this case the fir
 
 First problem is to get the data out of Excel into R.  My preferred way of doing this is usually the openxlsx package.  However, it only works with newer .xlsx files, which are based on XML.  For the older .xls files there are a range of options, including the useful XLConnect package which in this case preserves a fair bit (not all) of the formatting information (for example, recognising "143,022" as a number despite the comma in it; and keeping the dates).  Here's how I imported the data.  The code below is all in R and should run smoothly end to end.
 
-{% highlight R linenos %}
+{% highlight R lang lineanchors %}
 library(XLConnect)
 library(dplyr)
 library(tidyr)
@@ -81,7 +81,7 @@ First challenge is that the time variable is spread across columns, rather than 
 
 A slightly trickier issue is that the value cells for rows 5 and 6 have been merged together; also for 8 and 9, 14 and 15, etc.  We can fix this by taking advantage of the still regular structure of the data, with an old-school for loop trundling through it one row at a time and looking to see if it's one of those rows where a classification heading and a first level of the classification have been merged together. Resolving this and "gathering" the data into tidy format takes about 30 lines of code:
 
-{% highlight R linenos %}
+{% highlight R lang lineanchors %}
 #-----------------tidy----------------
 #
 
