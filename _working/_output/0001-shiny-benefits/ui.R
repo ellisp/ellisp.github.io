@@ -36,7 +36,7 @@ font-family: 'Poppins', 'Lucida Grande', Verdana, Lucida, Helvetica, Arial, Cali
          dygraphOutput("TimeSeries"),
          HTML("<p>Source: 
    <i><a href = 'https://www.msd.govt.nz/about-msd-and-our-work/publications-resources/statistics/benefit/index.html#Datatables6).'>
-              Ministry of Social Development</a></i>.  Graphic by <a href = 'http://ellisp.github.io'><i>Stats in the Wild<i></a>.</p>")
+              Ministry of Social Development</a></i>.  Graphic by <a href = 'http://ellisp.github.io'><i>Peter Ellis<i></a>.</p>")
       )
    )
 ))

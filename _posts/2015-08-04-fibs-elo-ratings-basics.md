@@ -11,7 +11,7 @@ image: /img/0002-EloProbs.gif
 category: R
 ---
 
-##Probabilities of winning for players with a given rating
+##Probabilities of winning with a given rating
 Backgammon clubs and on-line forums use a modified form of the [Elo rating system](https://en.wikipedia.org/wiki/Elo_rating_system) to keep track of how well individuals have played and draw inferences about their underlying strength.  The higher the rating, the stronger the player.  Players with higher ratings are inferred to be stronger than those with lower ratings and hence are expected to win; and the longer the match, the more likely the greater skill level will overcome the random chance of the dice.  The animated plot below shows the expected probabilities of two players in the [FIBS (First Internet Backgammon Server)](http://www.fibs.com/) internet forum, where players start at 1500 and the very best reach over 2000.
 
 <img src = "/img/0002-EloProbs.gif" alt="Animated heatmap of player probabilities of winning" style ="width: 500px;"/>
@@ -101,7 +101,7 @@ setwd(owd)
 unlink("tmp0002", recursive = TRUE)
 {% endhighlight %}
 
-##Actual ratings varying while "true" rating is constant
+##Actual ratings varying, "true" rating constant
 The estimated probability of winning against a certain opponent at a given match length might be of interest to backgammon players (I'm surprised it's not referred to more often), but its most common use is embedded in the calculation of how much each player's Elo rating changes after a match is decided.  That formula is well explained by FIBS and a little involved so I won't spell it out here, but you can see it in action in the function I provide later in this post.  A key point for our purposes is that as the win/loss of a match is a random event, players' Elo ratings which are based on those events are random variables.  Even if we grant the existence of a "real" value for each player, it is unobservable, and can only be estimated by their actual Elo rating in a tournament or internet forum.
 
 In fact, my original motivation for this blog post was to see how much Elo ratings fluctuate due to randomness of individual games.  In a later post I'll have a more complex and realistic simulation, but the chart below shows what happens to a player's Elo ratings over time in the following situation:
