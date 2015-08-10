@@ -6,7 +6,7 @@ tag:
    - R
    - Backgammon
    - Animations
-description: I show how to convert from the Elo ratings of a backgammon player and their opponent and match length to the theoretical probability of winning.  I simulate a simple two player backgammon forum to show how Elo ratings vary at random around players "true" skill level.  Along the way, I demonstrate making animated graphics for a webpage.
+description: I show how to convert from the Elo ratings of a backgammon player and their opponent and match length to the theoretical probability of winning.  I simulate a simple two player backgammon forum to show how Elo ratings vary at random around players 'true' skill level.  Along the way, I demonstrate making animated graphics for a webpage.
 image: /img/0002-EloProbs.gif
 category: R
 ---

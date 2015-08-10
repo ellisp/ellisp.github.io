@@ -1,6 +1,7 @@
 ---
 layout: narrow
 title: Acknowledgements
+image: /img/general-image.png
 ---
 
 In building this site I had to learn about Jekyll and Ruby from scratch, and HTML, CSS, JavaScript from not much more than scratch.  I've drawn on all sorts of people's contributions on the web, but here are some of the more important:
