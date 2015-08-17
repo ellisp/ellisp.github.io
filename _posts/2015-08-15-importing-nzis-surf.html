@@ -7,6 +7,7 @@ tag:
    - NewZealand
 description: I tidy up the publicly available simulated unit record file (SURF) of the New Zealand Income Survey 2011, import into a database, and explore income distributions, visualising the lower distribution of weekly incomes New Zealanders of Maori and Pacific Islander ethnicity.  Along the way I create a function to identify modes in a multi-modal distribution.
 image: /img/0003-nzis-ethnicity-density.svg
+socialimage: /img/0003-nzis-ethnicity-density.png
 category: R
 edit-location: _knitr
 ---
@@ -20,9 +21,14 @@ edit-location: _knitr
  <ol>
  <li>The density curves of the different ethnic groups are very similar visually
  <li>People of Maori and Pacific Peoples ethnicity have proportionately more $300-$400 per week earners than Europeans and Asians, leading to an overall noticeable lean to the lower numbers
- <li>Weekly income is bimodal, bunching up at $345 per week and $820 per week
+ <li>Weekly income is bimodal, bunching up at $345 per week and $820 per week.  Actually, this image is misleading in that respect; in reality it is trimodal, with a huge bunch of people with zero income (and some negative), who aren't shown on this plot because of the logarithmic scale.  So you could say that, for New Zealanders getting any income at all, there is a bimodal distribution.
  </ol>
   </p>
+<p>
+Where's that bimodal distribution coming from?  The obvious candidate is part time workers, and this is seen when we plot income versus hours worked in the next image:
+</p>
+<div class ="img-container"><img src = "/img/0003-nzis-scatter.svg"></div>
+<p>(That interesting diagonal line below which there are very few points is the minimum wage per hour)</p>
   <p>
   Statistics New Zealand warn that while this simulated data is an accurate representation of the actual New Zealand population, it shouldn't be used for precise statistics, so for now I won't draw particularly strong conclusions on anything.  A simulated unit record file is a great way of solving confidentiality purposes, but in the end it has been created by a statistical model.  There's a risk that interesting inferences might be just picking up something implicit in the model that wasn't taken into account when it was first put together.  That's not likely to be the case for the basic distribution of the income values, but we'll note the exploratory finding for now and move on.</p>
   
@@ -174,7 +180,7 @@ sqlQuery(PlayPen, "ALTER TABLE d_region ADD PRIMARY KEY(region_id)")
 # the below is fast enough anyway:
 
 sql1 <-
-   "CREATE VIEW vw_mainheader AS SELECT sex, agegrp, occupation, qualification, region, income FROM
+   "CREATE VIEW vw_mainheader AS SELECT sex, agegrp, occupation, qualification, region, hours, income FROM
       f_mainheader a   JOIN
       d_sex b          on a.sex_id = b.sex_id JOIN
       d_agegrp c       on a.agegrp_id = c.agegrp_id JOIN
@@ -348,7 +354,7 @@ library(dplyr)
 font.add.google("Poppins", "myfont")
 showtext.auto()
 
-# download individual level data from database
+# download individual level data from database including ethnicity join
 dtf <- sqlQuery(PlayPen,
 "SELECT
                    ethnicity,
@@ -357,6 +363,7 @@ dtf <- sqlQuery(PlayPen,
                 JOIN f_ethnicity e ON m.survey_id = e.survey_id
                 JOIN d_ethnicity d ON e.ethnicity_id = d.ethnicity_id")
 
+# density plot of income by density                
 dtf %>%
    filter(ethnicity %in% c("Asian", "European", "Maori", "Pacific Peoples")) %>%
    ggplot(aes(x = income, colour = ethnicity)) +
@@ -366,7 +373,7 @@ dtf %>%
    theme(legend.position = "bottom") +
    scale_colour_brewer("", palette = "Set1")
 
-
+# boxplot of income by ethnicity
 dtf %>%
    ggplot(aes(y = income, x = ethnicity, colour = ethnicity)) +
    geom_boxplot() +
@@ -378,6 +385,15 @@ dtf %>%
    scale_colour_brewer(palette = "Set2") +
    theme(legend.position = "none")
 
+# scatter plot of joint density of hours and income
+dtf2 <- sqlQuery(PlayPen, "select hours, income from vw_mainheader")
+ggplot(dtf2, aes(x = hours, y = income)) +
+   geom_jitter(alpha = 0.05) +
+   scale_x_log10("Hours worked", breaks = c(1, 10, 20, 40, 80)) +
+   scale_y_log10("Weekly income from all sources", label = dollar, breaks = c(10, 100, 345, 825, 10000)) +
+   theme_minimal(base_family = "myfont")   
+   
+   
 # how did I choose to mark $345 and $825 on the scale?
 # ripped off (and improved) from http://stackoverflow.com/questions/27418461/calculate-the-modes-in-a-multimodal-distribution-in-r
 find_modes<- function(data, ...) {
@@ -402,3 +418,5 @@ x[x < 1] <- 1 # not interested in negative income just now
 exp(find_modes(log(x)))
 
 {% endhighlight %}
+
+<p>Edited 18 August 2015 to add the scatter plot of the joint density of hours and income.</p>
