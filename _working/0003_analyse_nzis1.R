@@ -164,7 +164,7 @@ p3 <- ggplot(dtf2, aes(x = hours, y = income)) +
    scale_x_log10("Hours worked", breaks = c(1, 10, 20, 40, 80)) +
    scale_y_log10("Weekly income from all sources", label = dollar, breaks = c(10, 100, 345, 825, 10000)) +
    theme_minimal(base_family = "myfont")
-svg("../img/0003-nzis-ethnicity-scatterplot.svg", 6, 6)
+svg("../img/0003-nzis-scatter.svg", 6, 6)
 print(p3)
 dev.off()
 
