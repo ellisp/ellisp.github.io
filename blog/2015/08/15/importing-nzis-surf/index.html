@@ -14,9 +14,11 @@
          
          <meta property="og:site_name" content="Peter's stats stuff" />
          <meta property="og:title" content="Importing the New Zealand Income Survey SURF" />
-         <meta property="og:image" content="/img/0003-nzis-ethnicity-density.svg" />
-         <meta property="og:url" content="http://ellisp.github.io/blog/2015/08/15/importing-nzis-surf" />
-         <meta property="og:author" content= "Peter Ellis" />
+         
+            <meta property="og:image" content="http://ellisp.github.io/img/0003-nzis-ethnicity-density.png" />
+         
+         <meta property="og:url" content="http://ellisp.github.io/blog/2015/08/15/importing-nzis-surf/" />
+         <meta property="og:author" content= "https://www.facebook.com/peter.ellis.353" />
          <meta property="og:type" content="article" />
            
           <link href="/css/bootstrap.min.css" rel ="stylesheet">
@@ -120,9 +122,14 @@
  <ol>
  <li>The density curves of the different ethnic groups are very similar visually
  <li>People of Maori and Pacific Peoples ethnicity have proportionately more $300-$400 per week earners than Europeans and Asians, leading to an overall noticeable lean to the lower numbers
- <li>Weekly income is bimodal, bunching up at $345 per week and $820 per week
+ <li>Weekly income is bimodal, bunching up at $345 per week and $820 per week.  Actually, this image is misleading in that respect; in reality it is trimodal, with a huge bunch of people with zero income (and some negative), who aren't shown on this plot because of the logarithmic scale.  So you could say that, for New Zealanders getting any income at all, there is a bimodal distribution.
  </ol>
   </p>
+<p>
+Where's that bimodal distribution coming from?  The obvious candidate is part time workers, and this is seen when we plot income versus hours worked in the next image:
+</p>
+<div class ="img-container"><img src = "/img/0003-nzis-scatter.svg"></div>
+<p>(That interesting diagonal line below which there are very few points is the minimum wage per hour)</p>
   <p>
   Statistics New Zealand warn that while this simulated data is an accurate representation of the actual New Zealand population, it shouldn't be used for precise statistics, so for now I won't draw particularly strong conclusions on anything.  A simulated unit record file is a great way of solving confidentiality purposes, but in the end it has been created by a statistical model.  There's a risk that interesting inferences might be just picking up something implicit in the model that wasn't taken into account when it was first put together.  That's not likely to be the case for the basic distribution of the income values, but we'll note the exploratory finding for now and move on.</p>
   
@@ -265,7 +272,7 @@ Here's how I drew the graphs, and estimated the two modes.  I think I'll want to
 <a name="True-37"></a><span class="c1"># the below is fast enough anyway:</span>
 <a name="True-38"></a>
 <a name="True-39"></a>sql1 <span class="o">&lt;-</span>
-<a name="True-40"></a>   <span class="s">&quot;CREATE VIEW vw_mainheader AS SELECT sex, agegrp, occupation, qualification, region, income FROM</span>
+<a name="True-40"></a>   <span class="s">&quot;CREATE VIEW vw_mainheader AS SELECT sex, agegrp, occupation, qualification, region, hours, income FROM</span>
 <a name="True-41"></a><span class="s">      f_mainheader a   JOIN</span>
 <a name="True-42"></a><span class="s">      d_sex b          on a.sex_id = b.sex_id JOIN</span>
 <a name="True-43"></a><span class="s">      d_agegrp c       on a.agegrp_id = c.agegrp_id JOIN</span>
@@ -424,7 +431,7 @@ Here's how I drew the graphs, and estimated the two modes.  I think I'll want to
 <a name="True-5"></a>font.add.google<span class="p">(</span><span class="s">&quot;Poppins&quot;</span><span class="p">,</span> <span class="s">&quot;myfont&quot;</span><span class="p">)</span>
 <a name="True-6"></a>showtext.auto<span class="p">()</span>
 <a name="True-7"></a>
-<a name="True-8"></a><span class="c1"># download individual level data from database</span>
+<a name="True-8"></a><span class="c1"># download individual level data from database including ethnicity join</span>
 <a name="True-9"></a>dtf <span class="o">&lt;-</span> sqlQuery<span class="p">(</span>PlayPen<span class="p">,</span>
 <a name="True-10"></a><span class="s">&quot;SELECT</span>
 <a name="True-11"></a><span class="s">                   ethnicity,</span>
@@ -433,50 +440,61 @@ Here's how I drew the graphs, and estimated the two modes.  I think I'll want to
 <a name="True-14"></a><span class="s">                JOIN f_ethnicity e ON m.survey_id = e.survey_id</span>
 <a name="True-15"></a><span class="s">                JOIN d_ethnicity d ON e.ethnicity_id = d.ethnicity_id&quot;</span><span class="p">)</span>
 <a name="True-16"></a>
-<a name="True-17"></a>dtf <span class="o">%&gt;%</span>
-<a name="True-18"></a>   filter<span class="p">(</span>ethnicity <span class="o">%in%</span> <span class="kt">c</span><span class="p">(</span><span class="s">&quot;Asian&quot;</span><span class="p">,</span> <span class="s">&quot;European&quot;</span><span class="p">,</span> <span class="s">&quot;Maori&quot;</span><span class="p">,</span> <span class="s">&quot;Pacific Peoples&quot;</span><span class="p">))</span> <span class="o">%&gt;%</span>
-<a name="True-19"></a>   ggplot<span class="p">(</span>aes<span class="p">(</span>x <span class="o">=</span> income<span class="p">,</span> colour <span class="o">=</span> ethnicity<span class="p">))</span> <span class="o">+</span>
-<a name="True-20"></a>   geom_density<span class="p">(</span>size <span class="o">=</span> <span class="m">1.1</span><span class="p">)</span> <span class="o">+</span>
-<a name="True-21"></a>   scale_x_log10<span class="p">(</span><span class="s">&quot;Weekly income from all sources&quot;</span><span class="p">,</span> label <span class="o">=</span> dollar<span class="p">,</span> breaks <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="m">10</span><span class="p">,</span> <span class="m">100</span><span class="p">,</span> <span class="m">345</span><span class="p">,</span> <span class="m">825</span><span class="p">,</span> <span class="m">10000</span><span class="p">))</span> <span class="o">+</span>
-<a name="True-22"></a>   theme_minimal<span class="p">(</span>base_family <span class="o">=</span> <span class="s">&quot;myfont&quot;</span><span class="p">)</span> <span class="o">+</span>
-<a name="True-23"></a>   theme<span class="p">(</span>legend.position <span class="o">=</span> <span class="s">&quot;bottom&quot;</span><span class="p">)</span> <span class="o">+</span>
-<a name="True-24"></a>   scale_colour_brewer<span class="p">(</span><span class="s">&quot;&quot;</span><span class="p">,</span> palette <span class="o">=</span> <span class="s">&quot;Set1&quot;</span><span class="p">)</span>
-<a name="True-25"></a>
+<a name="True-17"></a><span class="c1"># density plot of income by density                </span>
+<a name="True-18"></a>dtf <span class="o">%&gt;%</span>
+<a name="True-19"></a>   filter<span class="p">(</span>ethnicity <span class="o">%in%</span> <span class="kt">c</span><span class="p">(</span><span class="s">&quot;Asian&quot;</span><span class="p">,</span> <span class="s">&quot;European&quot;</span><span class="p">,</span> <span class="s">&quot;Maori&quot;</span><span class="p">,</span> <span class="s">&quot;Pacific Peoples&quot;</span><span class="p">))</span> <span class="o">%&gt;%</span>
+<a name="True-20"></a>   ggplot<span class="p">(</span>aes<span class="p">(</span>x <span class="o">=</span> income<span class="p">,</span> colour <span class="o">=</span> ethnicity<span class="p">))</span> <span class="o">+</span>
+<a name="True-21"></a>   geom_density<span class="p">(</span>size <span class="o">=</span> <span class="m">1.1</span><span class="p">)</span> <span class="o">+</span>
+<a name="True-22"></a>   scale_x_log10<span class="p">(</span><span class="s">&quot;Weekly income from all sources&quot;</span><span class="p">,</span> label <span class="o">=</span> dollar<span class="p">,</span> breaks <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="m">10</span><span class="p">,</span> <span class="m">100</span><span class="p">,</span> <span class="m">345</span><span class="p">,</span> <span class="m">825</span><span class="p">,</span> <span class="m">10000</span><span class="p">))</span> <span class="o">+</span>
+<a name="True-23"></a>   theme_minimal<span class="p">(</span>base_family <span class="o">=</span> <span class="s">&quot;myfont&quot;</span><span class="p">)</span> <span class="o">+</span>
+<a name="True-24"></a>   theme<span class="p">(</span>legend.position <span class="o">=</span> <span class="s">&quot;bottom&quot;</span><span class="p">)</span> <span class="o">+</span>
+<a name="True-25"></a>   scale_colour_brewer<span class="p">(</span><span class="s">&quot;&quot;</span><span class="p">,</span> palette <span class="o">=</span> <span class="s">&quot;Set1&quot;</span><span class="p">)</span>
 <a name="True-26"></a>
-<a name="True-27"></a>dtf <span class="o">%&gt;%</span>
-<a name="True-28"></a>   ggplot<span class="p">(</span>aes<span class="p">(</span>y <span class="o">=</span> income<span class="p">,</span> x <span class="o">=</span> ethnicity<span class="p">,</span> colour <span class="o">=</span> ethnicity<span class="p">))</span> <span class="o">+</span>
-<a name="True-29"></a>   geom_boxplot<span class="p">()</span> <span class="o">+</span>
-<a name="True-30"></a>   geom_rug<span class="p">()</span> <span class="o">+</span>
-<a name="True-31"></a>   scale_y_log10<span class="p">(</span><span class="s">&quot;Weekly income from all sources&quot;</span><span class="p">,</span> label <span class="o">=</span> dollar<span class="p">,</span> breaks <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="m">10</span><span class="p">,</span> <span class="m">100</span><span class="p">,</span> <span class="m">1000</span><span class="p">,</span> <span class="m">10000</span><span class="p">))</span> <span class="o">+</span>
-<a name="True-32"></a>   theme_minimal<span class="p">()</span> <span class="o">+</span>
-<a name="True-33"></a>   labs<span class="p">(</span>x <span class="o">=</span> <span class="s">&quot;&quot;</span><span class="p">)</span> <span class="o">+</span>
-<a name="True-34"></a>   coord_flip<span class="p">()</span> <span class="o">+</span>
-<a name="True-35"></a>   scale_colour_brewer<span class="p">(</span>palette <span class="o">=</span> <span class="s">&quot;Set2&quot;</span><span class="p">)</span> <span class="o">+</span>
-<a name="True-36"></a>   theme<span class="p">(</span>legend.position <span class="o">=</span> <span class="s">&quot;none&quot;</span><span class="p">)</span>
-<a name="True-37"></a>
-<a name="True-38"></a><span class="c1"># how did I choose to mark $345 and $825 on the scale?</span>
-<a name="True-39"></a><span class="c1"># ripped off (and improved) from http://stackoverflow.com/questions/27418461/calculate-the-modes-in-a-multimodal-distribution-in-r</span>
-<a name="True-40"></a>find_modes<span class="o">&lt;-</span> <span class="kr">function</span><span class="p">(</span>data<span class="p">,</span> <span class="kc">...</span><span class="p">)</span> <span class="p">{</span>
-<a name="True-41"></a>   dens <span class="o">&lt;-</span> density<span class="p">(</span>data<span class="p">,</span> <span class="kc">...</span><span class="p">)</span>
-<a name="True-42"></a>   y <span class="o">&lt;-</span> dens<span class="o">$</span>y
-<a name="True-43"></a>   modes <span class="o">&lt;-</span> <span class="kc">NULL</span>
-<a name="True-44"></a>   <span class="kr">for</span> <span class="p">(</span> i <span class="kr">in</span> <span class="m">2</span><span class="o">:</span><span class="p">(</span><span class="kp">length</span><span class="p">(</span>y<span class="p">)</span> <span class="o">-</span> <span class="m">1</span><span class="p">)</span> <span class="p">){</span>
-<a name="True-45"></a>      <span class="kr">if</span> <span class="p">(</span> <span class="p">(</span>y<span class="p">[</span>i<span class="p">]</span> <span class="o">&gt;</span> y<span class="p">[</span>i <span class="o">-</span> <span class="m">1</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span>y<span class="p">[</span>i<span class="p">]</span> <span class="o">&gt;</span> y<span class="p">[</span>i <span class="o">+</span> <span class="m">1</span><span class="p">])</span> <span class="p">)</span> <span class="p">{</span>
-<a name="True-46"></a>         modes <span class="o">&lt;-</span> <span class="kt">c</span><span class="p">(</span>modes<span class="p">,</span>i<span class="p">)</span>
-<a name="True-47"></a>      <span class="p">}</span>
-<a name="True-48"></a>   <span class="p">}</span>
-<a name="True-49"></a>   <span class="kr">if</span> <span class="p">(</span> <span class="kp">length</span><span class="p">(</span>modes<span class="p">)</span> <span class="o">==</span> <span class="m">0</span> <span class="p">)</span> <span class="p">{</span>
-<a name="True-50"></a>      modes <span class="o">=</span> <span class="s">&#39;This is a monotonic distribution&#39;</span>
-<a name="True-51"></a>   <span class="p">}</span>
-<a name="True-52"></a>   <span class="kr">return</span><span class="p">(</span>dens<span class="o">$</span>x<span class="p">[</span>modes<span class="p">])</span>
-<a name="True-53"></a><span class="p">}</span>
-<a name="True-54"></a>
-<a name="True-55"></a>x <span class="o">&lt;-</span> dtf<span class="o">$</span>income
-<a name="True-56"></a>x<span class="p">[</span>x <span class="o">&lt;</span> <span class="m">1</span><span class="p">]</span> <span class="o">&lt;-</span> <span class="m">1</span> <span class="c1"># not interested in negative income just now</span>
-<a name="True-57"></a>
-<a name="True-58"></a><span class="c1"># where are those modes?</span>
-<a name="True-59"></a><span class="kp">exp</span><span class="p">(</span>find_modes<span class="p">(</span><span class="kp">log</span><span class="p">(</span>x<span class="p">)))</span></code></pre></div>
+<a name="True-27"></a><span class="c1"># boxplot of income by ethnicity</span>
+<a name="True-28"></a>dtf <span class="o">%&gt;%</span>
+<a name="True-29"></a>   ggplot<span class="p">(</span>aes<span class="p">(</span>y <span class="o">=</span> income<span class="p">,</span> x <span class="o">=</span> ethnicity<span class="p">,</span> colour <span class="o">=</span> ethnicity<span class="p">))</span> <span class="o">+</span>
+<a name="True-30"></a>   geom_boxplot<span class="p">()</span> <span class="o">+</span>
+<a name="True-31"></a>   geom_rug<span class="p">()</span> <span class="o">+</span>
+<a name="True-32"></a>   scale_y_log10<span class="p">(</span><span class="s">&quot;Weekly income from all sources&quot;</span><span class="p">,</span> label <span class="o">=</span> dollar<span class="p">,</span> breaks <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="m">10</span><span class="p">,</span> <span class="m">100</span><span class="p">,</span> <span class="m">1000</span><span class="p">,</span> <span class="m">10000</span><span class="p">))</span> <span class="o">+</span>
+<a name="True-33"></a>   theme_minimal<span class="p">()</span> <span class="o">+</span>
+<a name="True-34"></a>   labs<span class="p">(</span>x <span class="o">=</span> <span class="s">&quot;&quot;</span><span class="p">)</span> <span class="o">+</span>
+<a name="True-35"></a>   coord_flip<span class="p">()</span> <span class="o">+</span>
+<a name="True-36"></a>   scale_colour_brewer<span class="p">(</span>palette <span class="o">=</span> <span class="s">&quot;Set2&quot;</span><span class="p">)</span> <span class="o">+</span>
+<a name="True-37"></a>   theme<span class="p">(</span>legend.position <span class="o">=</span> <span class="s">&quot;none&quot;</span><span class="p">)</span>
+<a name="True-38"></a>
+<a name="True-39"></a><span class="c1"># scatter plot of joint density of hours and income</span>
+<a name="True-40"></a>dtf2 <span class="o">&lt;-</span> sqlQuery<span class="p">(</span>PlayPen<span class="p">,</span> <span class="s">&quot;select hours, income from vw_mainheader&quot;</span><span class="p">)</span>
+<a name="True-41"></a>ggplot<span class="p">(</span>dtf2<span class="p">,</span> aes<span class="p">(</span>x <span class="o">=</span> hours<span class="p">,</span> y <span class="o">=</span> income<span class="p">))</span> <span class="o">+</span>
+<a name="True-42"></a>   geom_jitter<span class="p">(</span>alpha <span class="o">=</span> <span class="m">0.05</span><span class="p">)</span> <span class="o">+</span>
+<a name="True-43"></a>   scale_x_log10<span class="p">(</span><span class="s">&quot;Hours worked&quot;</span><span class="p">,</span> breaks <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span> <span class="m">10</span><span class="p">,</span> <span class="m">20</span><span class="p">,</span> <span class="m">40</span><span class="p">,</span> <span class="m">80</span><span class="p">))</span> <span class="o">+</span>
+<a name="True-44"></a>   scale_y_log10<span class="p">(</span><span class="s">&quot;Weekly income from all sources&quot;</span><span class="p">,</span> label <span class="o">=</span> dollar<span class="p">,</span> breaks <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="m">10</span><span class="p">,</span> <span class="m">100</span><span class="p">,</span> <span class="m">345</span><span class="p">,</span> <span class="m">825</span><span class="p">,</span> <span class="m">10000</span><span class="p">))</span> <span class="o">+</span>
+<a name="True-45"></a>   theme_minimal<span class="p">(</span>base_family <span class="o">=</span> <span class="s">&quot;myfont&quot;</span><span class="p">)</span>   
+<a name="True-46"></a>   
+<a name="True-47"></a>   
+<a name="True-48"></a><span class="c1"># how did I choose to mark $345 and $825 on the scale?</span>
+<a name="True-49"></a><span class="c1"># ripped off (and improved) from http://stackoverflow.com/questions/27418461/calculate-the-modes-in-a-multimodal-distribution-in-r</span>
+<a name="True-50"></a>find_modes<span class="o">&lt;-</span> <span class="kr">function</span><span class="p">(</span>data<span class="p">,</span> <span class="kc">...</span><span class="p">)</span> <span class="p">{</span>
+<a name="True-51"></a>   dens <span class="o">&lt;-</span> density<span class="p">(</span>data<span class="p">,</span> <span class="kc">...</span><span class="p">)</span>
+<a name="True-52"></a>   y <span class="o">&lt;-</span> dens<span class="o">$</span>y
+<a name="True-53"></a>   modes <span class="o">&lt;-</span> <span class="kc">NULL</span>
+<a name="True-54"></a>   <span class="kr">for</span> <span class="p">(</span> i <span class="kr">in</span> <span class="m">2</span><span class="o">:</span><span class="p">(</span><span class="kp">length</span><span class="p">(</span>y<span class="p">)</span> <span class="o">-</span> <span class="m">1</span><span class="p">)</span> <span class="p">){</span>
+<a name="True-55"></a>      <span class="kr">if</span> <span class="p">(</span> <span class="p">(</span>y<span class="p">[</span>i<span class="p">]</span> <span class="o">&gt;</span> y<span class="p">[</span>i <span class="o">-</span> <span class="m">1</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span>y<span class="p">[</span>i<span class="p">]</span> <span class="o">&gt;</span> y<span class="p">[</span>i <span class="o">+</span> <span class="m">1</span><span class="p">])</span> <span class="p">)</span> <span class="p">{</span>
+<a name="True-56"></a>         modes <span class="o">&lt;-</span> <span class="kt">c</span><span class="p">(</span>modes<span class="p">,</span>i<span class="p">)</span>
+<a name="True-57"></a>      <span class="p">}</span>
+<a name="True-58"></a>   <span class="p">}</span>
+<a name="True-59"></a>   <span class="kr">if</span> <span class="p">(</span> <span class="kp">length</span><span class="p">(</span>modes<span class="p">)</span> <span class="o">==</span> <span class="m">0</span> <span class="p">)</span> <span class="p">{</span>
+<a name="True-60"></a>      modes <span class="o">=</span> <span class="s">&#39;This is a monotonic distribution&#39;</span>
+<a name="True-61"></a>   <span class="p">}</span>
+<a name="True-62"></a>   <span class="kr">return</span><span class="p">(</span>dens<span class="o">$</span>x<span class="p">[</span>modes<span class="p">])</span>
+<a name="True-63"></a><span class="p">}</span>
+<a name="True-64"></a>
+<a name="True-65"></a>x <span class="o">&lt;-</span> dtf<span class="o">$</span>income
+<a name="True-66"></a>x<span class="p">[</span>x <span class="o">&lt;</span> <span class="m">1</span><span class="p">]</span> <span class="o">&lt;-</span> <span class="m">1</span> <span class="c1"># not interested in negative income just now</span>
+<a name="True-67"></a>
+<a name="True-68"></a><span class="c1"># where are those modes?</span>
+<a name="True-69"></a><span class="kp">exp</span><span class="p">(</span>find_modes<span class="p">(</span><span class="kp">log</span><span class="p">(</span>x<span class="p">)))</span></code></pre></div>
 
+<p>Edited 18 August 2015 to add the scatter plot of the joint density of hours and income.</p>
 
 </div>
 
