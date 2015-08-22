@@ -71,11 +71,11 @@ grid.text("Data science /\napplied\nstatistics", 0.5, 0.55,
                     fontface = "bold"))
 }
 
-svg("../img/0004_venndiagram.svg", 6, 6)
+svg("../img/0005_venndiagram.svg", 6, 6)
    draw_diagram()
 dev.off()
 
-png("../img/0004_venndiagram.png", 6 * 100, 6 * 100, res = 100)
+png("../img/0005_venndiagram.png", 6 * 100, 6 * 100, res = 100)
    draw_diagram()
 dev.off()
 
