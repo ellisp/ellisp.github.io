@@ -14,7 +14,7 @@ When it comes to content, there are (literally) uncountable numbers of blogs cov
 
 However, I don't see a technically oriented blog that covers the complete range of issues of interest to me - advances in statistical techniques; the links between reproducible computing analysis and high quality scientific research; visualisation of data for non-specialist audiences; and applying high quality, recently developed methods to new and old data to answer old and new questions, with a particular focus on New Zealand
 
-This blog will be an experiment, and whether I continue will depend in equal amounts on whether anyone gets interesting in reading it; and how much I enjoy writing it.
+This blog will be an experiment, and whether I continue will depend in equal amounts on whether anyone gets interested in reading it; and how much I enjoy writing it.
 
 ##What next
 My aims are to use this blog:
