@@ -1,22 +1,95 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
 	<channel>
-<<<<<<< HEAD
-		<title>Peter Ellis, Stats in the Wild - R</title>
-=======
 		<title>Peter&#39;s stats stuff - R</title>
->>>>>>> 5c3cf5ae9c3a60705d3dfc94c8f378c4945a94e0
 		<description>Posts categorised as 'R'</description>
 		<link>http://ellisp.github.io</link>
 		<atom:link href="http://ellisp.github.io/feed.R.xml" rel="self" type="application/rss+xml" />
 		
 			<item>
-<<<<<<< HEAD
-				<title>Simulating backgammon players&#39; Elo ratings</title>
-				
-					<description>I show how to convert from the Elo ratings of a backgammon player and their opponent and match length to the theorertical probability of winning.  I simulate a simple two player backgammon forum to show how Elo ratings vary at random around players &quot;true&quot; skill level.</description>
-				
-=======
+				<title>A better way of visualising income distributions with zeroes and negatives</title>
+					<description>&lt;p&gt;I wasn’t happy with &lt;a href=&quot;/blog/2015/08/15/importing-nzis-surf/&quot;&gt;my visualisation of individual incomes from the New Zealand income survey&lt;/a&gt;.  Because it used a logarithmic scale to improve readability, in effect all zero and negative values are excluded from the data.  Whenever I throw out data, my tail goes bushy… there has to be a better way.  Those zero and negative values are an important part of the story, and it’s too easy to forget them.  If you don’t include them in your standard graphic for exploring the distribution of the data, the next thing is you’re excluding them from your model in serious analysis.&lt;/p&gt;
+
+&lt;p&gt;It turns out this is a very common problem, and the routine solutions (at least according to this &lt;a href=&quot;http://blogs.sas.com/content/iml/2011/04/27/log-transformations-how-to-handle-negative-data-values.html&quot;&gt;SAS blog&lt;/a&gt;, and this &lt;a href=&quot;http://andrewgelman.com/2005/11/10/transforming_va/&quot;&gt;Q&amp;amp;A on another blog&lt;/a&gt;) seem to be either adding an arbitrary constant before taking logarithms, excluding those data points and treating them as missing values, or discretizing the data altogether.  If my tail was bushy before, now I’m really nervous - those sound like really dangerous things to do (and yes, I freely admit having done all three myself plenty of times).&lt;/p&gt;
+
+&lt;p&gt;A bit of reflection shows that what’s going on here is a mixture of distributions - one of the most dangerous things for statistics based on traditional assumptions:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;A large bunch of the population, which we sometimes mistake for the whole population, who earn positive incomes that are roughly log-normally distributed, with mean and variance depending on structural variables like education, location, etc.&lt;/li&gt;
+  &lt;li&gt;A small subset, probably of enterpreneurs, who are making losses.  The losses have their own distribution of interest.&lt;/li&gt;
+  &lt;li&gt;A medium sized subset who are not in work or owning businesses and have zero income&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;It’s folly to think that these three groups in the data-generating process will result in a single smooth distribution, as is implied by adding a constant to the income and taking logarithms.  It’s worse to chuck out the inconvenient second and third groups altogether.&lt;/p&gt;
+
+&lt;p&gt;My solution is to use a modified power transform - one that transforms the absolute value of the original data, then restores the sign (negative or positive) to the result.  I started by thinking of square roots, and I needed to handle the fact that the square root of a negative number is imaginary.  By applying the square root to the absolute value and then restoring the sign you get a transformation like this:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://ellisp.github.io/img/0004_transformation.svg&quot; alt=&quot;plot&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Produced by (in R):&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-r&quot; data-lang=&quot;r&quot;&gt;&lt;a name=&quot;True-1&quot;&gt;&lt;/a&gt;power_trans &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;x&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; k &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0.5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;
+&lt;a name=&quot;True-2&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;kp&quot;&gt;sign&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;x&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;abs&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;x&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;^&lt;/span&gt; k
+&lt;a name=&quot;True-3&quot;&gt;&lt;/a&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;a name=&quot;True-4&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-5&quot;&gt;&lt;/a&gt;sim &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;-5000&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;5000&lt;/span&gt;
+&lt;a name=&quot;True-6&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-7&quot;&gt;&lt;/a&gt;plot&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;sim&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; power_trans&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;sim&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; type &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;l&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; bty &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;l&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+&lt;a name=&quot;True-8&quot;&gt;&lt;/a&gt;     xlab &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;Original value&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; ylab &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;Transformed value&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-9&quot;&gt;&lt;/a&gt;grid&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;I’ve given myself flexibility to use powers other than 0.5 (square root).  When I apply this approach to the New Zealand Income Survey 2011 simulated unit record file provided by Statistics New Zealand, I get a much more satisfactory representation of the full range of incomes there.  Not only are the two modes at $825 and $325 per week visible that I discussed in my last post, but we can compare them to the spike at $0 per week, and observe a little bump at the mode negative income level of -$200.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://ellisp.github.io/img/0004_better_density_plot.svg&quot; alt=&quot;plot&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;I haven’t heard of this approach being used before and would welcome comment on it.  As taking logarithms of income data is extremely common - pretty much the standard approach in fact - I would suggest that analysts are routinely losing sight of some important complexity in their data.&lt;/p&gt;
+
+&lt;p&gt;Here’s the final code producing that plot.  It depends on the data being present in a database, as I described in the previous post.&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-r&quot; data-lang=&quot;r&quot;&gt;&lt;a name=&quot;True-1&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kn&quot;&gt;library&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;RODBC&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-2&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kn&quot;&gt;library&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;ggplot2&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-3&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kn&quot;&gt;library&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;scales&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-4&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kn&quot;&gt;library&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;showtext&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-5&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kn&quot;&gt;library&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;dplyr&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-6&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-7&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;# comnect to database&lt;/span&gt;
+&lt;a name=&quot;True-8&quot;&gt;&lt;/a&gt;PlayPen &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; odbcConnect&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;PlayPen_prod&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-9&quot;&gt;&lt;/a&gt;sqlQuery&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;PlayPen&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;use nzis11&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-10&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-11&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;# load fonts&lt;/span&gt;
+&lt;a name=&quot;True-12&quot;&gt;&lt;/a&gt;font.add.google&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;Poppins&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;myfont&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-13&quot;&gt;&lt;/a&gt;showtext.auto&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+&lt;a name=&quot;True-14&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-15&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-16&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-17&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-18&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;# define the power to use in the transformation&lt;/span&gt;
+&lt;a name=&quot;True-19&quot;&gt;&lt;/a&gt;k &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0.2&lt;/span&gt;
+&lt;a name=&quot;True-20&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-21&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;# download the data from the database&lt;/span&gt;
+&lt;a name=&quot;True-22&quot;&gt;&lt;/a&gt;inc &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; sqlQuery&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;PlayPen&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;select income from f_mainheader&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
+&lt;a name=&quot;True-23&quot;&gt;&lt;/a&gt;   mutate&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;inc_trans &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; power_trans&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;income&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; k&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+&lt;a name=&quot;True-24&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-25&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;# define where to put the gridlines and labels on the x axis&lt;/span&gt;
+&lt;a name=&quot;True-26&quot;&gt;&lt;/a&gt;breaks &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;data.frame&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;labels &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;-5000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;-1500&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;-200&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;-10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;345&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;825&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;5000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
+&lt;a name=&quot;True-27&quot;&gt;&lt;/a&gt;   mutate&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;points &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; power_trans&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;labels&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; k&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+&lt;a name=&quot;True-28&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-29&quot;&gt;&lt;/a&gt;inc &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
+&lt;a name=&quot;True-30&quot;&gt;&lt;/a&gt;   ggplot&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;aes&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;x &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; inc_trans&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-31&quot;&gt;&lt;/a&gt;   geom_density&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-32&quot;&gt;&lt;/a&gt;   scale_x_continuous&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;breaks &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; breaks&lt;span class=&quot;o&quot;&gt;$&lt;/span&gt;points&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; labels &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; breaks&lt;span class=&quot;o&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;labels&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-33&quot;&gt;&lt;/a&gt;   theme_minimal&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;base_family &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;myfont&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-34&quot;&gt;&lt;/a&gt;   labs&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;x&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;\nWeekly income (transformed scale, $)&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+&lt;a name=&quot;True-35&quot;&gt;&lt;/a&gt;        y &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;Density\n&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+&lt;a name=&quot;True-36&quot;&gt;&lt;/a&gt;        title &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;Distribution of individual income in New Zealand 2011&lt;/span&gt;
+&lt;a name=&quot;True-37&quot;&gt;&lt;/a&gt;&lt;span class=&quot;s&quot;&gt;showing the full range including zero and negative&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+</description>
+				<pubDate>Fri, 21 Aug 2015 00:00:00 +1200</pubDate>
+				<link>http://ellisp.github.io/blog/2015/08/21/visualising-distributions</link>
+				<guid isPermaLink="true">http://ellisp.github.io/blog/2015/08/21/visualising-distributions</guid>
+			</item>
+		
+			<item>
 				<title>Importing the New Zealand Income Survey SURF</title>
 					<description>&lt;h2&gt;The quest for income microdata&lt;/h2&gt;
 &lt;p&gt;For a separate project, I&#39;ve been looking for source data on income and wealth inequality.  Not aggregate data like Gini coefficients or the percentage of income earned by the bottom 20% or top 1%, but the sources used to calculate those things.  Because it&#39;s sensitve personal financial data either from surveys or tax data, it&#39;s not easy to get hold of, particularly if you want to do it in the comfort of your own home and don&#39;t have time / motivation to fill in application forms.  So far, what I&#39;ve got is a &lt;a href = &quot;http://www.stats.govt.nz/tools_and_services/microdata-access/nzis-2011-cart-surf.aspx&quot;&gt;simulated unit record file (SURF) from the New Zealand Income Survey,&lt;/a&gt; published by Statistics New Zealand for educational and instructional purposes. It&#39;s a simplified, simulated version of the original survey and it lets me make graphics like this one:&lt;/p&gt;
@@ -591,7 +664,6 @@ Here&#39;s how I drew the graphs, and estimated the two modes.  I think I&#39;ll
 &lt;p&gt;In this situation, the resulting player’s Elo rating bouncing around at random is quite well modelled by an autoregressive AR(1) time series model with an intercept at the “true” level of the player’s skill.  With an autoregression parameter of around 0.98, the rating at any point in time is obviously very closely related to the previous rating; almost but not quite a random walk. Showing how and why would make this post too long, but it’s a useful factoid to note for future work when we come to more realistic and complex simulations of Elo ratings on FIBS.&lt;/p&gt;
 
 </description>
->>>>>>> 5c3cf5ae9c3a60705d3dfc94c8f378c4945a94e0
 				<pubDate>Fri, 07 Aug 2015 00:00:00 +1200</pubDate>
 				<link>http://ellisp.github.io/blog/2015/08/07/fibs-elo-ratings-basics</link>
 				<guid isPermaLink="true">http://ellisp.github.io/blog/2015/08/07/fibs-elo-ratings-basics</guid>
@@ -599,11 +671,6 @@ Here&#39;s how I drew the graphs, and estimated the two modes.  I think I&#39;ll
 		
 			<item>
 				<title>New Zealand Data &amp; APIs on GitHub</title>
-<<<<<<< HEAD
-				
-					<description>I discuss a new listing of datasets in New Zealand, and demonstrate tidying up a publicly available dataset on number of welfare beneficiaries for use in an interactive web application.</description>
-				
-=======
 					<description>&lt;h2 id=&quot;new-data-listing-for-new-zealand&quot;&gt;New data listing for New Zealand&lt;/h2&gt;
 &lt;p&gt;Wellington’s &lt;a href=&quot;https://github.com/PrototypeAlex&quot;&gt;PrototypeAlex&lt;/a&gt; has created a new &lt;a href=&quot;https://github.com/PrototypeAlex/new-zealand-data&quot;&gt;GitHub repository aiming to list data about New Zealand&lt;/a&gt;.&lt;/p&gt;
 
@@ -724,7 +791,6 @@ Here&#39;s how I drew the graphs, and estimated the two modes.  I think I&#39;ll
 &lt;iframe width=&quot;850&quot; height=&quot;500&quot; src=&quot;https://ellisp.shinyapps.io/0001-shiny-benefits&quot; frameborder=&quot;0&quot; scrolling=&quot;no&quot;&gt;&lt;/iframe&gt;
 
 </description>
->>>>>>> 5c3cf5ae9c3a60705d3dfc94c8f378c4945a94e0
 				<pubDate>Sat, 01 Aug 2015 00:00:00 +1200</pubDate>
 				<link>http://ellisp.github.io/blog/2015/08/01/new-zealand-data-on-github</link>
 				<guid isPermaLink="true">http://ellisp.github.io/blog/2015/08/01/new-zealand-data-on-github</guid>
