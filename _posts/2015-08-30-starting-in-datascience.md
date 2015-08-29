@@ -7,6 +7,7 @@ tag:
    - R
 description: If you want to be a data scientist or applied statistician, you need to study statistics, learn to write code, and learn *how* to learn (as lots of stuff seems to me to get out of date on a six month cycle).   This post doesn't have any short cuts, but as consolation I do show how to draw with R a variant of Drew Conway's famous Data Science Venn Diagram.
 image: /img/0005_venndiagram.svg
+socialimage: http://ellisp.github.io/img/0005_venndiagram.png
 category: R
 ---
 
