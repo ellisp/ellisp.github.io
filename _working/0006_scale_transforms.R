@@ -66,10 +66,10 @@ p1 <- ggplot(inc, aes(x = hours, y = income)) +
    scale_y_continuous(trans = modulus_trans(k = 0.25), label = dollar) +
    theme_light(base_family = "myfont")
 
-svg("../img/0006_income_by_region.svg", 10, 8)
+svg("../img/0006_income_by_region.svg", 12, 8)
    print(p1)
 dev.off()
 
-png("../img/0006_income_by_region.png", 10 * 70, 8 * 70, res = 70)
+png("../img/0006_income_by_region.png", 12 * 70, 8 * 70, res = 70)
    print(p1)
 dev.off()
