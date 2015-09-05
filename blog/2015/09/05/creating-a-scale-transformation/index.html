@@ -1,0 +1,276 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Creating a scale transformation</title>
+      	
+         
+         
+            <meta name ="description" content ="It's easy to define a new transformation with Hadley Wickham's {scales} package, and I do this for John and Draper's modulus transform proposed in 1980 as a way of dealing with data with zero and negative values where logarithmic of Box-Cox transformations fail.  This makes it easy to integrate this useful transformation, which works for negative numbers and is continuous through zero, into graphical data analysis.">
+            <meta property="og:description" content ="It's easy to define a new transformation with Hadley Wickham's {scales} package, and I do this for John and Draper's modulus transform proposed in 1980 as a way of dealing with data with zero and negative values where logarithmic of Box-Cox transformations fail.  This makes it easy to integrate this useful transformation, which works for negative numbers and is continuous through zero, into graphical data analysis.">
+         
+         <meta property="og:site_name" content="Peter's stats stuff" />
+         <meta property="og:title" content="Creating a scale transformation" />
+         
+            <meta property="og:image" content="http://ellisp.github.io/img/0006_income_by_region.png" />
+         
+         <meta property="og:url" content="http://ellisp.github.io/blog/2015/09/05/creating-a-scale-transformation/" />
+         <meta property="og:author" content= "https://www.facebook.com/peter.ellis.353" />
+         <meta property="og:type" content="article" />
+           
+          <link href="/css/bootstrap.min.css" rel ="stylesheet">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet">
+            <link href="/css/custom.css" rel ="stylesheet">       
+     <link rel="stylesheet" href="/css/Pygments/autumn.css">      
+     <link rel="stylesheet" href="/css/Pygments/custom.css">      
+            
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="Peter's stats stuff by Peter Ellis"
+      href="/feed.xml">
+
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+         <script src="/js/bootstrap.min.js"></script>
+         
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Peter's stats stuff</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">All blog posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">Ordered by date</a></li>
+                  <li><a href="/blog/index_by_tag.html">Grouped by subject matter</a></li>
+                  <li><a href = /blog/2015/09/05/creating-a-scale-transformation>Most recent post</a></li>
+                 </ul>
+            </li>
+              <li><a href="/blog/showcase.html">Showcase</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			    <div class="jumbotron">
+      <div class="container">
+        <h1>Creating a scale transformation</h1>
+         <p class="meta">05 Sep 2015</p>
+        
+      </div>
+    </div>
+
+
+
+
+<div class = "post-summary">
+<h2>TL;DR Summary:</h2>
+   It's easy to define a new transformation with Hadley Wickham's {scales} package, and I do this for John and Draper's modulus transform proposed in 1980 as a way of dealing with data with zero and negative values where logarithmic of Box-Cox transformations fail.  This makes it easy to integrate this useful transformation, which works for negative numbers and is continuous through zero, into graphical data analysis.
+   <hr></hr>
+</div>
+
+<div class="post">
+<div class="col-md-2">
+
+</div>
+  <div class="col-md-8">
+
+  <h2 id="a-better-transformation-than-my-better-transformation">A better transformation than my better transformation</h2>
+<p>In <a href="http://ellisp.github.io/blog/2015/08/21/visualising-distributions/">an earlier post</a> I put forward the idea of a modulus power transform - basically the square root (or other similar power transformation) of the absolute value of a variable like income, followed by restoring the sign to it.  The idea is to avoid throwing away values of zero or less, which happens with the logarithm transform that is most commonly used for this sort of data.  In a tweet, Hadley Wickham pointed out the 1980 article in the Journal of the Royal Statistical Society <a href="http://t.co/vC5b8d4OUh">An Alternative Family of Transformations by J. A. John and N. R. Draper</a> (behind the paywall but a guest logon is available) in which they proposed a very similar idea:</p>
+
+<p><img src="/img/0006-john-draper-snip.PNG" alt="journal-excerpt" /></p>
+
+<p>I hope I’m not breaching copyright by posting that snippet; I’ll certainly take it down if anyone complains.  I agree with Wickham that this useful piece of work should be much more widely known (and am sheepish myself for not knowing it) so hats off to the JSTOR for having it available at all.</p>
+
+<p>John and Draper also show that the methods Box and Cox use to determine parameters of the boxcox transformation can be used to get an optimal value of their tuning parameter lambda.  I’m not too worried about that just yet as I’m only using this for visualising the distribution; it might be something I want to investigate though when I move to modelling the data.</p>
+
+<h2 id="implementing-a-transformation-for-easy-re-use">Implementing a transformation for easy re-use</h2>
+<p>John and Draper’s transformation is slightly different from mine, has some nice properties and is definitely much more thoroughly thought through.    It’s more complex though, and deserves a proper defined implementation for re-use.  There’s no better way of doing this than creating a new transformation using the platform provided by Wickham’s {scales} package, very appropriate given where tip came from.  Here’s how I try that:</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a><span class="kn">library</span><span class="p">(</span>scales<span class="p">)</span> 
+<a name="True-2"></a>
+<a name="True-3"></a><span class="c1"># John and Draper&#39;s modulus transformation</span>
+<a name="True-4"></a>modulus_trans <span class="o">&lt;-</span> <span class="kr">function</span><span class="p">(</span>lambda<span class="p">){</span>
+<a name="True-5"></a>   trans_new<span class="p">(</span><span class="s">&quot;modulus&quot;</span><span class="p">,</span>
+<a name="True-6"></a>             transform <span class="o">=</span> <span class="kr">function</span><span class="p">(</span>y<span class="p">){</span>
+<a name="True-7"></a>                <span class="kr">if</span><span class="p">(</span>lambda <span class="o">!=</span> <span class="m">0</span><span class="p">){</span>
+<a name="True-8"></a>                   yt <span class="o">&lt;-</span> <span class="kp">sign</span><span class="p">(</span>y<span class="p">)</span> <span class="o">*</span> <span class="p">(((</span><span class="kp">abs</span><span class="p">(</span>y<span class="p">)</span> <span class="o">+</span> <span class="m">1</span><span class="p">)</span> <span class="o">^</span> lambda <span class="o">-</span> <span class="m">1</span><span class="p">)</span> <span class="o">/</span> lambda<span class="p">)</span>
+<a name="True-9"></a>                <span class="p">}</span> <span class="kr">else</span> <span class="p">{</span>
+<a name="True-10"></a>                   yt <span class="o">=</span> <span class="kp">sign</span><span class="p">(</span>y<span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="kp">log</span><span class="p">(</span><span class="kp">abs</span><span class="p">(</span>y<span class="p">)</span> <span class="o">+</span> <span class="m">1</span><span class="p">))</span>
+<a name="True-11"></a>                <span class="p">}</span>
+<a name="True-12"></a>                <span class="kr">return</span><span class="p">(</span>yt<span class="p">)</span>
+<a name="True-13"></a>             <span class="p">},</span>
+<a name="True-14"></a>             inverse <span class="o">=</span> <span class="kr">function</span><span class="p">(</span>yt<span class="p">){</span>
+<a name="True-15"></a>                <span class="kr">if</span><span class="p">(</span>lambda <span class="o">!=</span> <span class="m">0</span><span class="p">){</span>
+<a name="True-16"></a>                   y <span class="o">&lt;-</span> <span class="p">((</span><span class="kp">abs</span><span class="p">(</span>yt<span class="p">)</span> <span class="o">*</span> lambda <span class="o">+</span> <span class="m">1</span><span class="p">)</span>  <span class="o">^</span> <span class="p">(</span><span class="m">1</span> <span class="o">/</span> lambda<span class="p">)</span> <span class="o">-</span> <span class="m">1</span><span class="p">)</span> <span class="o">*</span> <span class="kp">sign</span><span class="p">(</span>yt<span class="p">)</span>
+<a name="True-17"></a>                <span class="p">}</span> <span class="kr">else</span> <span class="p">{</span>
+<a name="True-18"></a>                   y <span class="o">&lt;-</span> <span class="p">(</span><span class="kp">exp</span><span class="p">(</span><span class="kp">abs</span><span class="p">(</span>yt<span class="p">))</span> <span class="o">-</span> <span class="m">1</span><span class="p">)</span> <span class="o">*</span> <span class="kp">sign</span><span class="p">(</span>yt<span class="p">)</span>
+<a name="True-19"></a>                   
+<a name="True-20"></a>                <span class="p">}</span>
+<a name="True-21"></a>                <span class="kr">return</span><span class="p">(</span>y<span class="p">)</span>
+<a name="True-22"></a>             <span class="p">}</span>
+<a name="True-23"></a>             <span class="p">)</span>
+<a name="True-24"></a><span class="p">}</span></code></pre></div>
+
+<p>It hasn’t been peer reviewed or anything so use at your own risk.  Please let me know if you find anything wrong with it.</p>
+
+<p>Here’s that function in use, re-creating the density plot of income from my previous post, with the zero and negative values showing up nicely but without the crampedness of showing the income on an unadjusted scale.  I haven’t done polishing necessary to have axis labels at the various modal points, which is what I would do for a serious use.  This code assumes the existence of a database called nzis11, created as described in <a href="http://ellisp.github.io/blog/2015/08/15/importing-nzis-surf/">this post</a>.
+<img src="/img/0006_better_density_plot.svg" alt="density-plot" /></p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a><span class="kn">library</span><span class="p">(</span>RODBC<span class="p">)</span>
+<a name="True-2"></a><span class="kn">library</span><span class="p">(</span>showtext<span class="p">)</span>
+<a name="True-3"></a><span class="kn">library</span><span class="p">(</span>dplyr<span class="p">)</span>
+<a name="True-4"></a><span class="kn">library</span><span class="p">(</span>ggplot2<span class="p">)</span>
+<a name="True-5"></a>
+<a name="True-6"></a><span class="c1"># comnect to database</span>
+<a name="True-7"></a>PlayPen <span class="o">&lt;-</span> odbcConnect<span class="p">(</span><span class="s">&quot;PlayPen_prod&quot;</span><span class="p">)</span>
+<a name="True-8"></a>sqlQuery<span class="p">(</span>PlayPen<span class="p">,</span> <span class="s">&quot;use nzis11&quot;</span><span class="p">)</span>
+<a name="True-9"></a>
+<a name="True-10"></a><span class="c1"># load fonts</span>
+<a name="True-11"></a>font.add.google<span class="p">(</span><span class="s">&quot;Poppins&quot;</span><span class="p">,</span> <span class="s">&quot;myfont&quot;</span><span class="p">)</span>
+<a name="True-12"></a>showtext.auto<span class="p">()</span>
+<a name="True-13"></a>
+<a name="True-14"></a>inc <span class="o">&lt;-</span> sqlQuery<span class="p">(</span>PlayPen<span class="p">,</span> <span class="s">&quot;select * from vw_mainheader&quot;</span><span class="p">)</span> 
+<a name="True-15"></a>
+<a name="True-16"></a>ggplot<span class="p">(</span>inc<span class="p">,</span> aes<span class="p">(</span>x <span class="o">=</span> income<span class="p">))</span> <span class="o">+</span>
+<a name="True-17"></a>   geom_density<span class="p">()</span> <span class="o">+</span>
+<a name="True-18"></a>   geom_rug<span class="p">()</span> <span class="o">+</span>
+<a name="True-19"></a>   scale_x_continuous<span class="p">(</span>trans <span class="o">=</span> modulus_trans<span class="p">(</span>lambda <span class="o">=</span> <span class="m">0.25</span><span class="p">),</span> label <span class="o">=</span> dollar<span class="p">)</span> <span class="o">+</span>
+<a name="True-20"></a>   theme_minimal<span class="p">(</span>base_family <span class="o">=</span> <span class="s">&quot;myfont&quot;</span><span class="p">)</span></code></pre></div>
+
+<h2 id="income-including-negatives-and-hours-worked">Income (including negatives) and hours worked</h2>
+<p>So the great advantage of a statistical transformation within the {scales} paradigm is that you never need to worry again about the transformation, you just make it an argument to scale_x_continuous (or any continuous scale, including colour and size, if you want).  I’ll finish this latest step in the journey with New Zealand’s Income Survey simulated unit record file from Statistics New Zealand by showing the new transformation in action on two axes at once, with a plot showing the relationship between hours worked and income earned by region, this time with the negative incomes left in.</p>
+
+<p><img src="/img/0006_income_by_region.png" alt="regions-plot" /></p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a>ggplot<span class="p">(</span>inc<span class="p">,</span> aes<span class="p">(</span>x <span class="o">=</span> hours<span class="p">,</span> y <span class="o">=</span> income<span class="p">))</span> <span class="o">+</span>
+<a name="True-2"></a>   facet_wrap<span class="p">(</span><span class="o">~</span>region<span class="p">)</span> <span class="o">+</span>
+<a name="True-3"></a>   geom_point<span class="p">(</span>alpha <span class="o">=</span> <span class="m">0.2</span><span class="p">)</span> <span class="o">+</span>
+<a name="True-4"></a>   scale_x_continuous<span class="p">(</span>trans <span class="o">=</span> modulus_trans<span class="p">(</span>k <span class="o">=</span> <span class="m">0.25</span><span class="p">))</span> <span class="o">+</span>
+<a name="True-5"></a>   scale_y_continuous<span class="p">(</span>trans <span class="o">=</span> modulus_trans<span class="p">(</span>k <span class="o">=</span> <span class="m">0.25</span><span class="p">),</span> label <span class="o">=</span> dollar<span class="p">)</span> <span class="o">+</span>
+<a name="True-6"></a>   theme_light<span class="p">(</span>base_family <span class="o">=</span> <span class="s">&quot;myfont&quot;</span><span class="p">)</span></code></pre></div>
+
+
+</div>
+
+<div class = "container">
+   <div class="col-md-4">
+    
+        <a rel="prev" href="/blog/2015/08/30/starting-in-datascience">
+        <p>&larr; Older</p>
+        <p>Getting started in applied statistics / datascience</p>
+        
+        </a>
+    
+    </div>
+    <div class="col-md-4">
+    </div>
+    <div class="col-md-4" style="text-align: right;">
+    
+      </div>
+      </div>
+      
+      
+      
+</div>
+
+
+   
+    <div id="disqus_thread"></div>
+
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+    
+    
+   
+			
+			</div><!-- /.container -->
+
+         
+
+   <div class = "container footer">
+			<footer>
+	    		
+            <p>Follow <a href = "feed.xml">this blog with RSS</a>.  Or follow <a href = "feed.r.xml">posts in this blog featuring R with RSS</a>.</p>
+	
+            <p>This blog is built with <a href = "http://jekyllrb.com/">Jekyll</a>, <a href = "http://getbootstrap.com/">Bootstrap</a>, <a href = "https://www.ruby-lang.org/en/">Ruby</a> and <a href = "https://cran.r-project.org/">R</a>.  Read my <a href="/about/acknowledgements.html">acknowledgements</a> for a little more on how.  I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Peter's stats stuff</span> by <a xmlns:cc="http://creativecommons.org/ns#" href="/" property="cc:attributionName" rel="cc:attributionURL">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+
+
+			</footer>
+    </div>
+
+
+
+  
+</body>
+</html>
+   
+
+
+
+
+         
