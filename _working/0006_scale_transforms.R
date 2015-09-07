@@ -62,8 +62,8 @@ ggplot(inc, aes(x = hours, y = income)) +
 p1 <- ggplot(inc, aes(x = hours, y = income)) +
    facet_wrap(~region) +
    geom_point(alpha = 0.2) +
-   scale_x_continuous(trans = modulus_trans(k = 0.25)) +
-   scale_y_continuous(trans = modulus_trans(k = 0.25), label = dollar) +
+   scale_x_continuous(trans = modulus_trans(0.25)) +
+   scale_y_continuous(trans = modulus_trans(0.25), label = dollar) +
    theme_light(base_family = "myfont")
 
 svg("../img/0006_income_by_region.svg", 12, 8)
@@ -72,4 +72,15 @@ dev.off()
 
 png("../img/0006_income_by_region.png", 12 * 70, 8 * 70, res = 70)
    print(p1)
+dev.off()
+
+#-----------------add on as requested-----------
+p1 <- ggplot(inc, aes(x = hours, y = income)) +
+   facet_wrap(~region) +
+   geom_point(alpha = 0.2) +
+   scale_y_continuous(label = dollar) +
+   theme_light(base_family = "myfont")
+
+svg("../img/0006_income_by_region_no_transform.svg", 10, 6)
+print(p1)
 dev.off()

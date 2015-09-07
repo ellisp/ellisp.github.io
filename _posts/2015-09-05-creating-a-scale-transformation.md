@@ -86,7 +86,21 @@ So the great advantage of a statistical transformation within the {scales} parad
 ggplot(inc, aes(x = hours, y = income)) +
    facet_wrap(~region) +
    geom_point(alpha = 0.2) +
-   scale_x_continuous(trans = modulus_trans(k = 0.25)) +
-   scale_y_continuous(trans = modulus_trans(k = 0.25), label = dollar) +
+   scale_x_continuous(trans = modulus_trans(0.25)) +
+   scale_y_continuous(trans = modulus_trans(0.25), label = dollar) +
+   theme_light(base_family = "myfont")
+{% endhighlight %}
+
+### Late addition - comparison to the untransformed version
+
+As requested in the comments, here's the untransformed version
+
+![untransformed-plot](/img/0006_income_by_region_no_transform.svg)
+
+{% highlight R lineanchors %}
+ggplot(inc, aes(x = hours, y = income)) +
+   facet_wrap(~region) +
+   geom_point(alpha = 0.2) +
+   scale_y_continuous(label = dollar) +
    theme_light(base_family = "myfont")
 {% endhighlight %}
