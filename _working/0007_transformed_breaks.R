@@ -55,35 +55,13 @@ dev.off()
 
 
 prettify <- function(breaks){
-   # round to the nearest value that is 0, 1, 2 or 5 times 10 (similar to what base::pretty does)
-   # expected use is in determining where to put the breaks in a transformed axis
-   Working <- data.frame(One = breaks, Two = breaks / 2, Five = breaks / 5) %>%
-      mutate(ID = 1:length(breaks)) 
-   
-   Working <- Working %>%
-      gather(multiplier, value, -ID) %>%
-      mutate(multiplier = ifelse(multiplier == "One", 1, 
-                                 ifelse(multiplier == "Two", 2, 5))) %>%
-      filter(value != 0) %>%
-      mutate(NearestBase = round(log10(abs(value))),
-             Distance = abs((10 ^ NearestBase - value) / value)) %>%
-      group_by(ID) %>%
-      # sometimes there are two matches so only pick one, hence the [1] below:
-      summarise(multiplier = multiplier[Distance == min(Distance)][1],      
-                NearestBase = NearestBase[Distance == min(Distance)][1]) %>%
-      left_join(Working[ , c("ID", "One")], by = "ID") %>%
-      rename(orig = One) %>%
-      mutate(prettified = 10 ^ NearestBase * multiplier * sign(orig))
-   
-   final_breaks <- unique(Working$prettified)
-   
-   if(min(final_breaks) < 0 & max(final_breaks) > 0){
-      final_breaks <- sort(c(final_breaks, 0))
-   }
-   return(final_breaks)
+   # round numbers, more aggressively the larger they are
+   digits <- -floor(log10(abs(breaks))) + 1
+   digits[breaks == 0] <- 0
+   return(round(breaks, digits = digits))
 }
 
-mod_breaks <- function(lambda, n = 10, prettify = FALSE, digits = 0){
+mod_breaks <- function(lambda, n = 8, prettify = TRUE){
    function(x){
       breaks <- .mod_transform(x, lambda) %>%
          pretty(n = n) %>%
@@ -91,7 +69,7 @@ mod_breaks <- function(lambda, n = 10, prettify = FALSE, digits = 0){
       if(prettify){
          breaks <- prettify(breaks)
       }
-      return(round(breaks, digits = digits))
+      return(breaks)
    }
 }
    
@@ -103,26 +81,20 @@ p1 <- p +
    theme(panel.grid.minor = element_blank()) +
    ggtitle("Regular breaks")
 
-p2 <- p + 
-   scale_x_continuous(trans = modulus_trans(0.2), label = comma, 
-                      breaks = mod_breaks(lambda = 0.2, prettify = FALSE, digits = -1)) +
-   theme(panel.grid.minor = element_blank()) +
-   ggtitle("Regular breaks, aggressive rounding")
 
-p3 <- p + 
+p2 <- p + 
    scale_x_continuous(trans = modulus_trans(0.2), label = comma, 
                       breaks = mod_breaks(lambda = 0.2, prettify = TRUE)) +
    theme(panel.grid.minor = element_blank()) +
-   ggtitle("Pretty breaks")
+   ggtitle("Rounded breaks")
 
 
 
-svg("../img/0007_density_plots_breaks.svg", 5, 7)
+svg("../img/0007_density_plots_breaks.svg", 5, 5)
    grid.newpage()
-   pushViewport(viewport(layout = grid.layout(3, 1)))
+   pushViewport(viewport(layout = grid.layout(2, 1)))
    print(p1, vp = vplayout(1,1))
    print(p2, vp = vplayout(2,1))
-   print(p3, vp = vplayout(3,1))
 dev.off()
 
 png("../img/0007_density_plots_breaks.png", 5 * 100, 5 * 100, res = 100)
@@ -137,7 +109,7 @@ dev.off()
 library(RODBC)
 
 
-# comnect to database
+# connect to database
 PlayPen <- odbcConnect("PlayPen_prod")
 sqlQuery(PlayPen, "use nzis11")
 
@@ -156,7 +128,7 @@ dev.off()
 p1 <- ggplot(inc, aes(x = hours, y = income)) +
    facet_wrap(~occupation, ncol =2) +
    geom_point(alpha = 0.2) +
-   scale_x_continuous(trans = modulus_trans(0.25), breaks = mod_breaks(0.25, n = 8, prettify = FALSE, digits = 1)) +
+   scale_x_continuous(trans = modulus_trans(0.25), breaks = mod_breaks(0.25)) +
    scale_y_continuous(trans = modulus_trans(0.25), label = dollar, breaks = mod_breaks(0.25)) +
    theme_light(base_family = "myfont")
 
