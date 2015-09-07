@@ -5,6 +5,8 @@ date: 2015-09-05
 tag: 
    - Transformations
    - R
+   - NewZealand
+   - NZIS2011
 description: It's easy to define a new transformation with Hadley Wickham's {scales} package, and I do this for John and Draper's modulus transform proposed in 1980 as a way of dealing with data with zero and negative values where logarithmic or Box-Cox transformations fail.  This makes it easy to integrate this useful transformation, which works for negative numbers and is continuous through zero, into graphical data analysis.
 image: /img/0006_income_by_region.svg
 socialimage: http://ellisp.github.io/img/0006_income_by_region.png

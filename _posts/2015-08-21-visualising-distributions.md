@@ -6,6 +6,7 @@ tag:
    - R
    - NewZealand
    - Transformations
+   - NZIS2011
 description: I demonstrate a better way of visualising income distributions when they include zero and negative values rather than just putting them on a logarithmic scale and dropping the inconvenient values.  I use a modified power transformation, which applies a transformation like square root to the absolute value of the original variable and then restores the sign.  I apply the method to the New Zealand Income Survey 2011 data.
 image: /img/0004_better_density_plot.svg
 category: R
