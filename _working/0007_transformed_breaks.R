@@ -3,38 +3,10 @@ library(scales)
 library(tidyr)
 library(dplyr)
 library(showtext)
-# load fonts
 font.add.google("Poppins", "myfont")
 showtext.auto()
 
-
-#----------------transformation example----------------
-# John and Draper's modulus transformation
-modulus_trans <- function(lambda){
-   trans_new("modulus",
-             transform = function(y){
-                if(lambda != 0){
-                   yt <- sign(y) * (((abs(y) + 1) ^ lambda - 1) / lambda)
-                } else {
-                   yt = sign(y) * (log(abs(y) + 1))
-                }
-                return(yt)
-             },
-             inverse = function(yt){
-                if(lambda != 0){
-                   y <- ((abs(yt) * lambda + 1)  ^ (1 / lambda) - 1) * sign(yt)
-                } else {
-                   y <- (exp(abs(yt)) - 1) * sign(yt)
-                   
-                }
-                return(y)
-             }
-   )
-}
-
-
 eg <- data.frame(x = c(exp(rnorm(100, 6, 1)), rnorm(50, -50, 60)))
-
 
 
 p <- ggplot(eg, aes(x = x)) +
@@ -111,7 +83,7 @@ prettify <- function(breaks){
    return(final_breaks)
 }
 
-mod_breaks <- function(lambda, n = 10, prettify = TRUE, digits = 0){
+mod_breaks <- function(lambda, n = 10, prettify = FALSE, digits = 0){
    function(x){
       breaks <- .mod_transform(x, lambda) %>%
          pretty(n = n) %>%
@@ -133,19 +105,32 @@ p1 <- p +
 
 p2 <- p + 
    scale_x_continuous(trans = modulus_trans(0.2), label = comma, 
+                      breaks = mod_breaks(lambda = 0.2, prettify = FALSE, digits = -1)) +
+   theme(panel.grid.minor = element_blank()) +
+   ggtitle("Regular breaks, aggressive rounding")
+
+p3 <- p + 
+   scale_x_continuous(trans = modulus_trans(0.2), label = comma, 
                       breaks = mod_breaks(lambda = 0.2, prettify = TRUE)) +
    theme(panel.grid.minor = element_blank()) +
    ggtitle("Pretty breaks")
 
 
 
-svg("../img/0007_density_plots_breaks.svg", 5, 5)
+svg("../img/0007_density_plots_breaks.svg", 5, 7)
    grid.newpage()
-   pushViewport(viewport(layout = grid.layout(2, 1)))
+   pushViewport(viewport(layout = grid.layout(3, 1)))
    print(p1, vp = vplayout(1,1))
    print(p2, vp = vplayout(2,1))
+   print(p3, vp = vplayout(3,1))
 dev.off()
 
+png("../img/0007_density_plots_breaks.png", 5 * 100, 5 * 100, res = 100)
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(2, 1)))
+print(p1, vp = vplayout(1,1))
+print(p2, vp = vplayout(2,1))
+dev.off()
 
 #---------------apply to the NZIS--------------
 
