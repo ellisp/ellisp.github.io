@@ -1,7 +1,7 @@
 ---
 layout: post
 title: Sampling distribution of Gini coefficient
-date: 2015-09-13
+date: 2015-09-12
 tag: 
    - Inequality
    - Distributions
