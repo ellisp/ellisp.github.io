@@ -3,6 +3,7 @@ library(scales)
 library(tidyr)
 library(dplyr)
 library(showtext)
+library(grid)
 font.add.google("Poppins", "myfont")
 showtext.auto()
 
@@ -133,5 +134,9 @@ p1 <- ggplot(inc, aes(x = hours, y = income)) +
    theme_light(base_family = "myfont")
 
 svg("../img/0007_income_by_occupation.svg", 7, 12)
+   print(p1)
+dev.off()
+
+png("../img/0007_income_by_occupation.png", 7 * 100, 12 * 100, res = 100)
    print(p1)
 dev.off()
