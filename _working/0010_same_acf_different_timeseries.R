@@ -20,6 +20,16 @@ acf(series1, type = "partial", main = "Partial autocorrelation function")
 acf(series2, type = "partial", main = "Partial autocorrelation function")
 dev.off()
 
+png("../img/0010-ts-acf-1.png", 6 * 100, 7 * 100, res = 100)
+par(mfrow = c(3, 2), family = "myfont", bty = "l")
+plot(series1, main = "Original series")
+plot(series2, main = "Original * 3 + 2")
+acf(series1, main = "Autocorrelation function")
+acf(series2, main = "Autocorrelation function")
+acf(series1, type = "partial", main = "Partial autocorrelation function")
+acf(series2, type = "partial", main = "Partial autocorrelation function")
+dev.off()
+
 #-------different instances of the same non-stationary time series----------------
 # will have similar ACFs, as will the differenced versions, but can go in wildly different
 # directions
@@ -43,6 +53,16 @@ acf(series4, type = "partial", main = "Partial autocorrelation function")
 dev.off()
 
 svg("../img/0010-ts-acf-3.svg", 6, 7)
+par(mfrow = c(3, 2), family = "myfont", bty = "l")
+plot(series3, main = "First instance of ARIMA(2, 2, 1)")
+plot(series4, main = "Second instance of same ARIMA(2, 2, 1)")
+acf(diff(diff(series3)), main = "Autocorrelation of second differences")
+acf(diff(diff(series4)), main = "Autocorrelation of second differences")
+acf(diff(diff(series3)), type = "partial", main = "Partial autocorrelation\nof second differences")
+acf(diff(diff(series4)), type = "partial", main = "Partial autocorrelation\nof second differences")
+dev.off()
+
+png("../img/0010-ts-acf-3.png", 6 * 100, 7 * 100, res = 100)
 par(mfrow = c(3, 2), family = "myfont", bty = "l")
 plot(series3, main = "First instance of ARIMA(2, 2, 1)")
 plot(series4, main = "Second instance of same ARIMA(2, 2, 1)")
