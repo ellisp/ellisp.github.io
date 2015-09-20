@@ -43,16 +43,21 @@ the_data_m <- the_data %>%
 
 # show the data from the two black boxes:
 
-svg("../img/0011-hundred-reps.svg", 6, 6)
-print(
-   the_data_m %>%
+p1 <-    the_data_m %>%
    ggplot(aes(x = time, y = value, colour = as.character(trial))) +
-      facet_wrap(~source) +
-      geom_line(alpha = 0.3) +
-      geom_smooth(se = FALSE, method = "loess") +
-      theme(legend.position = "none")
-)
+   facet_wrap(~source) +
+   geom_line(alpha = 0.3) +
+   geom_smooth(se = FALSE, method = "loess") +
+   theme(legend.position = "none")
+
+svg("../img/0011-hundred-reps.svg", 6, 6)
+print(p1)
 dev.off()
+
+png("../img/0011-hundred-reps.png", 600, 600, res = 100)
+print(p1)
+dev.off()
+
 
 #-----------------------comparison-----------
 
