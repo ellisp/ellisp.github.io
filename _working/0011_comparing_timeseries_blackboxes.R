@@ -1,9 +1,6 @@
 library(dplyr)
 library(tidyr)
 library(ggplot2)
-library(nlme)
-library(forecast)
-library(mgcv)
 library(showtext) # for fonts
 
 font.add.google("Poppins", "myfont")
@@ -22,9 +19,9 @@ bb2 <- function(n = 1000){
 
 set.seed(134)
 svg("../img/0011-one-instance-each.svg", 5, 5)
-par(mfrow = c(2, 1), family = "myfont", mar = c(4, 5, 1, 1))
-plot.ts(bb1(), bty = "l")
-plot.ts(bb2(), bty = "l")
+par(mfrow = c(2, 1), family = "myfont", mar = c(4, 5, 3, 3))
+plot.ts(bb1(), bty = "l", main = "One instance from blackbox 1")
+plot.ts(bb2(), bty = "l", main = "One instance from blackbox 2")
 dev.off()
 
 #--------begin simulation---------
@@ -74,8 +71,6 @@ difference <- the_data_m %>%
    group_by(trial, source)%>%
    summarise(
       meandiff = mean(abs(value - centre_1) / sd_1 * correction))
-
-summary(difference)
 
 svg("../img/0011-density-differences.svg", 6, 3)
 print(
