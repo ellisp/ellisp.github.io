@@ -20,12 +20,15 @@ bb2 <- function(n = 1000){
    cumsum(arima.sim(model = list(ar = c(0.5), ma = c(0.3, -0.1)), n = n) + 0.04)
 }
 
-plot(bb1())
-plot(bb2())
-
+set.seed(134)
+svg("../img/0011-one-instance-each.svg", 5, 5)
+par(mfrow = c(2, 1), family = "myfont", mar = c(4, 5, 1, 1))
+plot.ts(bb1(), bty = "l")
+plot.ts(bb2(), bty = "l")
+dev.off()
 
 #--------begin simulation---------
-
+# ok, those look obviously different but they're only one instance each.  What if we do a hundred?
 # turn this into a function that takes two data generating functions, reps and n and compares them
 
 the_data <- data_frame(blackbox1 = numeric(), blackbox2 = numeric(), trial = numeric(), time = numeric())
@@ -39,15 +42,20 @@ for(i in 1:reps){
 }
 
 the_data_m <- the_data %>%
-   gather(source, value, -trial, -time) %>%
-   mutate(trial = as.character(trial),
-          sourcetrial = paste(source, trial))
+   gather(source, value, -trial, -time)
 
-the_data_m %>%
-   ggplot(aes(x = time, y = value, colour = trial)) +
+# show the data from the two black boxes:
+
+svg("../img/0011-hundred-reps.svg", 6, 6)
+print(
+   the_data_m %>%
+   ggplot(aes(x = time, y = value, colour = as.character(trial))) +
       facet_wrap(~source) +
       geom_line(alpha = 0.3) +
-   geom_smooth(se = FALSE)
+      geom_smooth(se = FALSE, method = "loess") +
+      theme(legend.position = "none")
+)
+dev.off()
 
 #-----------------------comparison-----------
 
@@ -60,17 +68,41 @@ difference <- the_data_m %>%
                    sd_1 = sd(blackbox1)),
       by = "time"
       ) %>%
+   # bias correction because the centres are defined from blackbox1's data,
+   # hence on average they will always be a little closer to them
+   mutate(correction = ifelse(source == "blackbox1", max(trial) / (max(trial) - 1), 1)) %>%
    group_by(trial, source)%>%
    summarise(
-      meandiff = mean(abs(value - centre_1) / sd_1)) # this biases down those from blackbox1.  How to correct?
+      meandiff = mean(abs(value - centre_1) / sd_1 * correction))
 
 summary(difference)
-ggplot(difference, aes(x=meandiff)) +geom_density()
-model <- lm(meandiff ~ source, data = difference)
-par(mfrow=c(2, 2))
-plot(model)
-anova(model)
-summary(model)
 
+svg("../img/0011-density-differences.svg", 6, 3)
+print(
+   ggplot(difference, aes(x=meandiff, colour = source)) +
+      geom_density() +
+      ggtitle("Mean absolute standardise difference\nat each time point from the average of\nblackbox1 at that point")
+)
+dev.off()
 
+model1 <- lm(meandiff ~ source, data = difference)
+
+svg("../img/0011-regression-diagnostics.svg", 6, 6)
+par(mfrow=c(2, 2), family = "myfont")
+plot(model1) # definitely normality assumption violated, so let's try something a bit more robust
+dev.off()
+
+library(MASS)
+library(boot)
+
+R <- 2000
+booted_robust <- boot(difference, 
+                      statistic = function(data, w){
+                         model <- rlm(meandiff ~ source, data = data[w, ])   
+                         return(model$coefficients["sourceblackbox2"])
+   }, R = R)
+
+# p-value for one sided test of H-null no difference v. H-alt blackbox2 
+# is more different from blackbox1 centresthan blackbox1:
+1 - sum(booted_robust$t > 0) / R
 
