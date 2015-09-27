@@ -12,7 +12,7 @@ theme_set(theme_light(base_family = "myfont"))
 #-------------------how good is auto.arima at picking order of the ARMA process------------
 arima_fit_sim <- function(model, 
                           correct_params, 
-                          n = 2 ^ (1:13) * 10, 
+                          n = 2 ^ (1:10) * 10, 
                           reps = 10,
                           stepwise = FALSE,
                           verbose = TRUE){
@@ -54,26 +54,27 @@ arima_fit_sim <- function(model,
    }
 
 
-our_reps <- 5
+our_reps <- 500
 
 results_ar1 <- arima_fit_sim(model = list(ar = c(0.5)),
                              correct_params = c("ar1"), 
-                             reps = our_reps,
-                             n = 2 ^ (1:8) * 10)
+                             reps = our_reps)
 
 results_ma1 <- arima_fit_sim(model = list(ma = c(0.5)),
                              correct_params = c("ma1"), 
                              reps = our_reps)
 
 
-results_arma22 <- arima_fit_sim(model = list(ar = c(0.5, -0.1), ma = c(-0.3, 0.2)),
+results_arma22 <- arima_fit_sim(model = list(ar = c(0.5, -0.2), ma = c(-0.3, 0.2)),
                                 correct_params = c("ar1", "ar2", "ma1", "ma2"), 
                                 reps = our_reps)
 
-results_arma33 <- arima_fit_sim(model = list(ar = c(0.5, -0.1, 0.3), ma = c(-0.3, 0.2, 0.4)),
+results_arma33 <- arima_fit_sim(model = list(ar = c(0.5, -0.2, 0.3), ma = c(-0.3, 0.2, 0.4)),
                                 correct_params = c("ar1", "ar2", "ar3", "ma1", "ma2", "ma3"), 
                                 reps = our_reps)
 
+
+save(results_ar1, results_ma1, results_arma22, results_arma33, file = "_output/0012_sim_results.rda")
 
 
 results_ar1 %>%
