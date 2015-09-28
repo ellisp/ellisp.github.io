@@ -3,7 +3,6 @@ library(tidyr)
 library(ggplot2)
 library(showtext) # for fonts
 library(forecast)
-library(tseries)
 
 font.add.google("Poppins", "myfont")
 showtext.auto()
@@ -82,3 +81,28 @@ results_ar1 %>%
    summarise(correct = sum(correct) / length(correct) * 100)
 
 
+#=======================exporting tables to the actual post========
+library(xtable)
+options(xtable.type = "html")
+options(xtable.include.rownames = FALSE)
+
+print(xtable(tab1), file = "../_tables/0012-tab1.html")
+print(xtable(tab2), file = "../_tables/0012-tab2.html")
+print(xtable(tab3), file = "../_tables/0003-tab3.html")
+print(xtable(tab4), file = "../_tables/0003-tab4.html")
+print(xtable(tab5), file = "../_tables/0003-tab5.html")
+print(xtable(tab6), file = "../_tables/0003-tab6.html")
+
+alltables <- paste0("../_tables/0003-tab", 1:6, ".html")
+
+thispost <- "2015-08-15-importing-nzis-surf.html"
+
+# read in the human-edited post from the _knitr directory
+tmp0 <- readLines(paste0("../_knitr/", thispost))
+
+for(i in 1:6){
+   thistable <- alltables[i]
+   tmp1 <- paste(readLines(thistable), collapse ="\n")
+   tmp0 <- gsub(thistable, tmp1, tmp0, fixed = TRUE)
+}
+writeLines(tmp0, con =(paste0("../_posts/", thispost)))
