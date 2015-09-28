@@ -1,6 +1,7 @@
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+library(scales)
 library(showtext) # for fonts
 library(forecast)
 
@@ -82,6 +83,44 @@ results_arma33 <- arima_fit_sim(model = list(ar = c(0.5, -0.2, 0.3), ma = c(-0.3
 save(results_ar1, results_ma1, results_arma22, results_arma33, file = "_output/0012_sim_results.rda")
 
 
+#================summary plot====================
+
+r1 <- results_ar1 %>%
+   mutate(model = "AR(1)")
+
+r2 <- results_ma1 %>%
+   mutate(model = "MA(1)")
+
+r3 <- results_arma22 %>%
+   mutate(model = "ARMA(2, 2)")
+
+r4 <- results_arma33 %>%
+   mutate(model = "ARMA(3, 3)")
+
+r_all <- rbind(r1, r2, r3, r4) %>%
+   mutate(model = factor(model, 
+                         levels = c("AR(1)", "MA(1)", "ARMA(2, 2)", "ARMA(3, 3)")))
+
+p1 <- r_all %>%
+   group_by(model, n) %>%
+   summarise(correct = sum(correct) / length(correct)) %>%
+   ggplot(aes(x = n, y = correct, colour = model)) +
+   geom_point() +
+   geom_line() +
+   scale_y_continuous("Percent of models correctly identified", label = percent) +
+   scale_x_log10("Length of time series", 
+                # label = comma, 
+                breaks = 2 ^ (1:10) * 10) 
+
+svg("../img/0012-results.svg", 7, 4)
+   print(p1)
+dev.off()
+
+svg("../img/0012-results-faceted.svg", 8, 7)
+   print(p1 + 
+            facet_wrap(~model, scales = "free_y") +
+            theme(legend.position = "none"))
+dev.off()
 #=======================exporting tables to the actual post========
 library(xtable)
 options(xtable.type = "html")
@@ -101,7 +140,11 @@ results_ar1 %>%
    xtable() %>%
    print(file = "../_tables/0012-tab2.html")
 
-
+results_ma1 %>%
+   group_by(n) %>%
+   summarise(correct = sum(correct) / length(correct) * 100) %>%
+   xtable() %>%
+   print(file = "../_tables/0012-tab4.html")
 
 results_arma33 %>%
    group_by(fitted) %>%

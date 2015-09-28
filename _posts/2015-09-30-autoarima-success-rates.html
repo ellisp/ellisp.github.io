@@ -5,16 +5,118 @@ date: 2015-09-30
 tag: 
    - R
    - TimeSeries
-description: Using an automated process to select the order of an ARIMA time series model returns the true data generating process less often than I thought; and with more complex models the chance of success comes down nearly to zero
+description: Using an automated process to select the order of an ARMA time series model returns the true data generating process less often than I thought; and with more complex models the chance of success comes down nearly to zero
 image: /img/0003-nzis-ethnicity-density.svg
 category: R
 edit-location: _knitr
 ---
 
-<h2>auto.arima()</h2>
-Hello
+<h2>A function for testing auto.arima()</h2>
 
 
+
+
+
+
+
+
+ 
+ 
+{% highlight R lineanchors %}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(showtext) # for fonts
+library(forecast)
+
+font.add.google("Poppins", "myfont")
+showtext.auto()
+theme_set(theme_light(base_family = "myfont"))
+
+arima_fit_sim <- function(model, 
+                          correct_params, 
+                          n = 2 ^ (1:10) * 10, 
+                          reps = 10,
+                          stepwise = FALSE,
+                          verbose = TRUE){
+   
+   # function that creates @reps number of simulated ARIMA models of type @model and 
+   # length @n.  @correct_params should be a vector of the correct parameters eg
+   # c("ar1", "ma1", "ma2") for ARMA(1,2)
+   # peter.ellis2013nz at gmail com 25 September 2015
+   
+   require(forecast)
+   if(verbose){require(dplyr)}
+   
+   results <- data.frame(n = rep(n, each = reps),
+                      correct = FALSE,
+                      fitted = "",
+                      stringsAsFactors = FALSE)
+   counter <- 0
+
+   for(j in 1:length(n)){
+      if(verbose){message(n[j])}
+      for(i in 1:reps){
+         counter <- counter + 1
+         true_series <- arima.sim(model, n = n[j])
+         fit <- auto.arima(true_series, stepwise = stepwise)
+         results[counter, "fitted"] <- paste(names(fit$coef), collapse = " ")
+         if(length(coef(fit)) == length(correct_params) && sum(names(fit$coef) %in% correct_params) == length(correct_params) ){
+            results[counter, "correct"] <- TRUE
+            
+         }   else {
+            results[counter, "correct"] <- FALSE
+         }
+         
+      }
+   }
+   
+   if(verbose){
+      print(
+         results %>%
+            group_by(n) %>%
+            summarise(correct = sum(correct) / length(correct) * 100)
+         )
+   }
+
+   return(results)
+   }
+{% endhighlight %}
+
+
+<h2>The test</h2>
+
+
+
+
+{% highlight R lineanchors %}
+our_reps <- 500
+
+results_ar1 <- arima_fit_sim(model = list(ar = c(0.5)),
+                             correct_params = c("ar1"), 
+                             reps = our_reps)
+
+results_ma1 <- arima_fit_sim(model = list(ma = c(0.5)),
+                             correct_params = c("ma1"), 
+                             reps = our_reps)
+
+
+results_arma22 <- arima_fit_sim(model = list(ar = c(0.5, -0.2), ma = c(-0.3, 0.2)),
+                                correct_params = c("ar1", "ar2", "ma1", "ma2"), 
+                                reps = our_reps)
+
+results_arma33 <- arima_fit_sim(model = list(ar = c(0.5, -0.2, 0.3), ma = c(-0.3, 0.2, 0.4)),
+                                correct_params = c("ar1", "ar2", "ar3", "ma1", "ma2", "ma3"), 
+                                reps = our_reps)
+
+
+save(results_ar1, results_ma1, results_arma22, results_arma33, file = "_output/0012_sim_results.rda")
+{% endhighlight %}
+
+
+
+<h2>Results</h2>
+<p>Here are the ten most common models that were selected in the case of the AR(1) model</p>
 <!-- html table generated in R 3.2.1 by xtable 1.7-4 package -->
 <!-- Tue Sep 29 07:22:07 2015 -->
 <table border=1>
@@ -31,12 +133,116 @@ Hello
   <tr> <td> ma1 ma2 ma3 </td> <td align="right"> 116 </td> </tr>
    </table>
 
-<div class ="img-container"><img src = "/img/0003-nzis-ethnicity-density.svg"></div>
- <p>
+<p>As a percentage, here's how they end up</p>
+<!-- html table generated in R 3.2.1 by xtable 1.7-4 package -->
+<!-- Tue Sep 29 07:22:07 2015 -->
+<table border=1>
+<tr> <th> n </th> <th> correct </th>  </tr>
+  <tr> <td align="right"> 20.00 </td> <td align="right"> 29.00 </td> </tr>
+  <tr> <td align="right"> 40.00 </td> <td align="right"> 35.00 </td> </tr>
+  <tr> <td align="right"> 80.00 </td> <td align="right"> 38.60 </td> </tr>
+  <tr> <td align="right"> 160.00 </td> <td align="right"> 31.20 </td> </tr>
+  <tr> <td align="right"> 320.00 </td> <td align="right"> 29.80 </td> </tr>
+  <tr> <td align="right"> 640.00 </td> <td align="right"> 35.40 </td> </tr>
+  <tr> <td align="right"> 1280.00 </td> <td align="right"> 37.20 </td> </tr>
+  <tr> <td align="right"> 2560.00 </td> <td align="right"> 37.40 </td> </tr>
+  <tr> <td align="right"> 5120.00 </td> <td align="right"> 36.00 </td> </tr>
+  <tr> <td align="right"> 10240.00 </td> <td align="right"> 40.80 </td> </tr>
+   </table>
 
- 
- 
+
+<p>Here's a plot summarising the overall results</p>
+<div class ="img-container"><img src = "/img/0012-results.svg"></div>
+
+<p>Here it is separated out by facets so we can see that pattern closer.</p>
+<div class ="img-container"><img src = "/img/0012-results-faceted.svg"></div>
+
+<p>I was a bit astonished at the poor success rate of picking up the ARMA(3, 3) process so I tabulate here the counts of every final model that actually was selected.</p>
+<!-- html table generated in R 3.2.1 by xtable 1.7-4 package -->
+<!-- Tue Sep 29 07:22:07 2015 -->
+<table border=1>
+<tr> <th> fitted </th> <th> count </th>  </tr>
+  <tr> <td> ar1 ma1 ma2 ma3 ma4 </td> <td align="right"> 1446 </td> </tr>
+  <tr> <td> ma1 ma2 ma3 ma4 ma5 </td> <td align="right"> 500 </td> </tr>
+  <tr> <td> ma1 ma2 ma3 ma4 </td> <td align="right"> 444 </td> </tr>
+  <tr> <td> ar1 ma1 ma2 ma3 </td> <td align="right"> 339 </td> </tr>
+  <tr> <td> ar1 ma1 ma2 ma3 ma4 intercept </td> <td align="right"> 276 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 ma1 ma2 </td> <td align="right"> 248 </td> </tr>
+  <tr> <td> ar1 ar2 drift </td> <td align="right"> 229 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 </td> <td align="right"> 168 </td> </tr>
+  <tr> <td> ar1 ar2 ma1 ma2 ma3 </td> <td align="right"> 157 </td> </tr>
+  <tr> <td> ma1 ma2 ma3 ma4 intercept </td> <td align="right"> 151 </td> </tr>
+  <tr> <td> intercept </td> <td align="right"> 115 </td> </tr>
+  <tr> <td> ar1 ma1 ma2 ma3 intercept </td> <td align="right"> 103 </td> </tr>
+  <tr> <td>  </td> <td align="right">  88 </td> </tr>
+  <tr> <td> ma1 ma2 ma3 </td> <td align="right">  61 </td> </tr>
+  <tr> <td> ma1 </td> <td align="right">  54 </td> </tr>
+  <tr> <td> ar1 ar2 ma1 ma2 drift </td> <td align="right">  50 </td> </tr>
+  <tr> <td> ar1 ar2 ma1 ma2 ma3 intercept </td> <td align="right">  43 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 ar4 ar5 </td> <td align="right">  42 </td> </tr>
+  <tr> <td> ma1 ma2 ma3 intercept </td> <td align="right">  41 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 ar4 </td> <td align="right">  32 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 ar4 ma1 </td> <td align="right">  31 </td> </tr>
+  <tr> <td> ar1 ar2 ma1 ma2 </td> <td align="right">  29 </td> </tr>
+  <tr> <td> ma1 ma2 ma3 ma4 drift </td> <td align="right">  28 </td> </tr>
+  <tr> <td> ma1 drift </td> <td align="right">  27 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 drift </td> <td align="right">  25 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 ma1 ma2 intercept </td> <td align="right">  24 </td> </tr>
+  <tr> <td> ar1 ar2 intercept </td> <td align="right">  24 </td> </tr>
+  <tr> <td> ar1 </td> <td align="right">  21 </td> </tr>
+  <tr> <td> ar1 ar2 </td> <td align="right">  19 </td> </tr>
+  <tr> <td> ma1 intercept </td> <td align="right">  16 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 ar4 drift </td> <td align="right">  14 </td> </tr>
+  <tr> <td> drift </td> <td align="right">  13 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 ma1 </td> <td align="right">  12 </td> </tr>
+  <tr> <td> ar1 ar2 ma1 drift </td> <td align="right">  12 </td> </tr>
+  <tr> <td> ma1 ma2 ma3 ma4 ma5 drift </td> <td align="right">  12 </td> </tr>
+  <tr> <td> ma1 ma2 ma3 ma4 ma5 intercept </td> <td align="right">  12 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 intercept </td> <td align="right">  11 </td> </tr>
+  <tr> <td> ar1 ma1 ma2 </td> <td align="right">  11 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 ar4 ar5 intercept </td> <td align="right">   8 </td> </tr>
+  <tr> <td> ma1 ma2 ma3 drift </td> <td align="right">   8 </td> </tr>
+  <tr> <td> ma1 ma2 drift </td> <td align="right">   7 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 ar4 ar5 drift </td> <td align="right">   5 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 ar4 ma1 intercept </td> <td align="right">   5 </td> </tr>
+  <tr> <td> ar1 ar2 ma1 ma2 ma3 drift </td> <td align="right">   5 </td> </tr>
+  <tr> <td> ar1 intercept </td> <td align="right">   5 </td> </tr>
+  <tr> <td> ma1 ma2 </td> <td align="right">   5 </td> </tr>
+  <tr> <td> ma1 ma2 intercept </td> <td align="right">   5 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 ma1 ma2 drift </td> <td align="right">   4 </td> </tr>
+  <tr> <td> ar1 ar2 ma1 intercept </td> <td align="right">   4 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 ar4 intercept </td> <td align="right">   3 </td> </tr>
+  <tr> <td> ar1 drift </td> <td align="right">   2 </td> </tr>
+  <tr> <td> ar1 ma1 </td> <td align="right">   2 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 ar4 ma1 drift </td> <td align="right">   1 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 ma1 intercept </td> <td align="right">   1 </td> </tr>
+  <tr> <td> ar1 ar2 ma1 </td> <td align="right">   1 </td> </tr>
+  <tr> <td> ar1 ma1 intercept </td> <td align="right">   1 </td> </tr>
+   </table>
+
+
+<h3>Code that produced the summary tables</h3>
 {% highlight R lineanchors %}
-# code here
+results_ar1 %>%
+   group_by(fitted) %>%
+   summarise(count = length(fitted)) %>%
+   arrange(-count) %>%
+   head(10) 
+
+results_ar1 %>%
+   group_by(n) %>%
+   summarise(correct = sum(correct) / length(correct) * 100)
+
+
+
+results_arma33 %>%
+   group_by(fitted) %>%
+   summarise(count = length(fitted)) %>%
+   arrange(-count) 
+{% endhighlight %}
+
+<h3>Code that produced the summary plot</h3>
+{% highlight R lineanchors %}
+# code creating plot goes here
 
 {% endhighlight %}

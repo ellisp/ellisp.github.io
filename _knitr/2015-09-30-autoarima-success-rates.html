@@ -5,20 +5,20 @@ date: 2015-09-30
 tag: 
    - R
    - TimeSeries
-description: Using an automated process to select the order of an ARIMA time series model returns the true data generating process less often than I thought; and with more complex models the chance of success comes down nearly to zero
+description: Using an automated process to select the order of an ARMA time series model returns the true data generating process less often than I thought; and with more complex models the chance of success comes down nearly to zero
 image: /img/0003-nzis-ethnicity-density.svg
 category: R
 edit-location: _knitr
 ---
 
-<h2>auto.arima()</h2>
-Hello
+<h2>A function for testing auto.arima()</h2>
 
 
-../_tables/0012-tab1.html
 
-<div class ="img-container"><img src = "/img/0003-nzis-ethnicity-density.svg"></div>
- <p>
+
+
+
+
 
  
  
@@ -39,10 +39,12 @@ arima_fit_sim <- function(model,
                           reps = 10,
                           stepwise = FALSE,
                           verbose = TRUE){
-						     # function that creates @reps number of simulated ARIMA models of type @model and 
+   
+   # function that creates @reps number of simulated ARIMA models of type @model and 
    # length @n.  @correct_params should be a vector of the correct parameters eg
    # c("ar1", "ma1", "ma2") for ARMA(1,2)
    # peter.ellis2013nz at gmail com 25 September 2015
+   
    require(forecast)
    if(verbose){require(dplyr)}
    
@@ -81,13 +83,78 @@ arima_fit_sim <- function(model,
    }
 {% endhighlight %}
 
+
+<h2>The test</h2>
+
+
+
+
 {% highlight R lineanchors %}
+our_reps <- 500
+
+results_ar1 <- arima_fit_sim(model = list(ar = c(0.5)),
+                             correct_params = c("ar1"), 
+                             reps = our_reps)
+
+results_ma1 <- arima_fit_sim(model = list(ma = c(0.5)),
+                             correct_params = c("ma1"), 
+                             reps = our_reps)
 
 
+results_arma22 <- arima_fit_sim(model = list(ar = c(0.5, -0.2), ma = c(-0.3, 0.2)),
+                                correct_params = c("ar1", "ar2", "ma1", "ma2"), 
+                                reps = our_reps)
+
+results_arma33 <- arima_fit_sim(model = list(ar = c(0.5, -0.2, 0.3), ma = c(-0.3, 0.2, 0.4)),
+                                correct_params = c("ar1", "ar2", "ar3", "ma1", "ma2", "ma3"), 
+                                reps = our_reps)
+
+
+save(results_ar1, results_ma1, results_arma22, results_arma33, file = "_output/0012_sim_results.rda")
 {% endhighlight %}
 
 
-{% highlight R lineanchors %}
 
+<h2>Results</h2>
+<p>Here are the ten most common models that were selected in the case of the AR(1) model</p>
+../_tables/0012-tab1.html
+
+<p>As a percentage, here's how they end up</p>
+../_tables/0012-tab2.html
+
+
+<p>Here's a plot summarising the overall results</p>
+<div class ="img-container"><img src = "/img/0012-results.svg"></div>
+
+<p>Here it is separated out by facets so we can see that pattern closer.</p>
+<div class ="img-container"><img src = "/img/0012-results-faceted.svg"></div>
+
+<p>I was a bit astonished at the poor success rate of picking up the ARMA(3, 3) process so I tabulate here the counts of every final model that actually was selected.</p>
+../_tables/0012-tab3.html
+
+
+<h3>Code that produced the summary tables</h3>
+{% highlight R lineanchors %}
+results_ar1 %>%
+   group_by(fitted) %>%
+   summarise(count = length(fitted)) %>%
+   arrange(-count) %>%
+   head(10) 
+
+results_ar1 %>%
+   group_by(n) %>%
+   summarise(correct = sum(correct) / length(correct) * 100)
+
+
+
+results_arma33 %>%
+   group_by(fitted) %>%
+   summarise(count = length(fitted)) %>%
+   arrange(-count) 
+{% endhighlight %}
+
+<h3>Code that produced the summary plot</h3>
+{% highlight R lineanchors %}
+# code creating plot goes here
 
 {% endhighlight %}
