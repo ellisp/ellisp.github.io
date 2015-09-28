@@ -15,6 +15,12 @@ arima_fit_sim <- function(model,
                           reps = 10,
                           stepwise = FALSE,
                           verbose = TRUE){
+   
+   # function that creates @reps number of simulated ARIMA models of type @model and 
+   # length @n.  @correct_params should be a vector of the correct parameters eg
+   # c("ar1", "ma1", "ma2") for ARMA(1,2)
+   # peter.ellis2013nz at gmail com 25 September 2015
+   
    require(forecast)
    if(verbose){require(dplyr)}
    
@@ -76,31 +82,44 @@ results_arma33 <- arima_fit_sim(model = list(ar = c(0.5, -0.2, 0.3), ma = c(-0.3
 save(results_ar1, results_ma1, results_arma22, results_arma33, file = "_output/0012_sim_results.rda")
 
 
-results_ar1 %>%
-   group_by(n) %>%
-   summarise(correct = sum(correct) / length(correct) * 100)
-
-
 #=======================exporting tables to the actual post========
 library(xtable)
 options(xtable.type = "html")
 options(xtable.include.rownames = FALSE)
 
-print(xtable(tab1), file = "../_tables/0012-tab1.html")
-print(xtable(tab2), file = "../_tables/0012-tab2.html")
-print(xtable(tab3), file = "../_tables/0003-tab3.html")
-print(xtable(tab4), file = "../_tables/0003-tab4.html")
-print(xtable(tab5), file = "../_tables/0003-tab5.html")
-print(xtable(tab6), file = "../_tables/0003-tab6.html")
+results_ar1 %>%
+   group_by(fitted) %>%
+   summarise(count = length(fitted)) %>%
+   arrange(-count) %>%
+   head(10) %>%
+   xtable() %>%
+   print(file = "../_tables/0012-tab1.html")
 
-alltables <- paste0("../_tables/0003-tab", 1:6, ".html")
+results_ar1 %>%
+   group_by(n) %>%
+   summarise(correct = sum(correct) / length(correct) * 100) %>%
+   xtable() %>%
+   print(file = "../_tables/0012-tab2.html")
 
-thispost <- "2015-08-15-importing-nzis-surf.html"
+
+
+results_arma33 %>%
+   group_by(fitted) %>%
+   summarise(count = length(fitted)) %>%
+   arrange(-count) %>%
+   xtable() %>%
+   print(file = "../_tables/0012-tab3.html")
+
+
+ntables <- 3
+alltables <- paste0("../_tables/0012-tab", 1:ntables, ".html")
+
+thispost <- "2015-09-30-autoarima-success-rates.html"
 
 # read in the human-edited post from the _knitr directory
 tmp0 <- readLines(paste0("../_knitr/", thispost))
 
-for(i in 1:6){
+for(i in 1:ntables){
    thistable <- alltables[i]
    tmp1 <- paste(readLines(thistable), collapse ="\n")
    tmp0 <- gsub(thistable, tmp1, tmp0, fixed = TRUE)
