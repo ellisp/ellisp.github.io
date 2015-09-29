@@ -116,6 +116,10 @@ svg("../img/0012-results.svg", 7, 4)
    print(p1)
 dev.off()
 
+png("../img/0012-results.svg", 700, 400, res = 100)
+   print(p1)
+dev.off()
+
 svg("../img/0012-results-faceted.svg", 8, 7)
    print(p1 + 
             facet_wrap(~model, scales = "free_y") +
@@ -137,13 +141,13 @@ results_ar1 %>%
 results_ar1 %>%
    group_by(n) %>%
    summarise(correct = sum(correct) / length(correct) * 100) %>%
-   xtable() %>%
+   xtable(digits = c(0, 0, 1)) %>%
    print(file = "../_tables/0012-tab2.html")
 
 results_ma1 %>%
    group_by(n) %>%
    summarise(correct = sum(correct) / length(correct) * 100) %>%
-   xtable() %>%
+   xtable(digits = c(0, 0, 1)) %>%
    print(file = "../_tables/0012-tab4.html")
 
 results_arma33 %>%

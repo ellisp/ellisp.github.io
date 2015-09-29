@@ -16,8 +16,6 @@ PlayPen <- odbcConnect("PlayPen_Prod")
 inc <- sqlQuery(PlayPen, "select income from vw_mainheader") 
 # inc <- f_mainheader$income
 
-?ineq
-
 lorenz <- Lc(inc)
 lorenz_df <- data.frame(prop_pop = lorenz$p, income = lorenz$L) %>%
    mutate(prop_equality = prop_pop)
