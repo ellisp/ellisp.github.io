@@ -118,12 +118,12 @@ sqlQuery(PlayPen, "use nzis11")
 inc <- sqlQuery(PlayPen, "select * from vw_mainheader") 
 
 svg("../img/0007_better_nzis_breaks.svg", 8, 5)
-ggplot(inc, aes(x = income)) +
+print(ggplot(inc, aes(x = income)) +
    geom_density() +
    geom_rug() +
    scale_x_continuous(trans = modulus_trans(0.25), label = dollar,
                       breaks = mod_breaks(0.25)) +
-   theme_minimal(base_family = "myfont")
+   theme_minimal(base_family = "myfont"))
 dev.off()
 
 p1 <- ggplot(inc, aes(x = hours, y = income)) +

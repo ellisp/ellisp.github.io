@@ -110,13 +110,14 @@ p1 <- r_all %>%
    scale_y_continuous("Percent of models correctly identified", label = percent) +
    scale_x_log10("Length of time series", 
                 # label = comma, 
-                breaks = 2 ^ (1:10) * 10) 
+                breaks = 2 ^ (1:10) * 10) +
+   ggtitle("Success rate of automated ARIMA model selection\nfitting to a known data generating process")
 
 svg("../img/0012-results.svg", 7, 4)
    print(p1)
 dev.off()
 
-png("../img/0012-results.svg", 700, 400, res = 100)
+png("../img/0012-results.png", 700, 400, res = 100)
    print(p1)
 dev.off()
 

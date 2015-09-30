@@ -42,8 +42,9 @@ font.add.google("Poppins", "myfont")
 showtext.auto()
 
 PlayPen <- odbcConnect("PlayPen_Prod")
+sqlQuery(PlayPen, "use nzis11")
 
-inc <- sqlQuery(PlayPen, "select income from vw_mainheader") 
+inc <- sqlQuery(PlayPen, "select income from vw_mainheader")$income
 
 lorenz <- Lc(inc)
 lorenz_df <- data.frame(prop_pop = lorenz$p, income = lorenz$L) %>%
@@ -122,6 +123,7 @@ I'm interested in both the shape of the distribution of estimates of these figur
 ![n30](/img/0008-density-gini-n30.svg)
 ![n1000](/img/0008-density-gini-n1000.svg)
 ![n30000](/img/0008-density-gini-n30000.svg)
+
 This estimator behaves better than I thought it would with real data that has all the weird and wonderful extremes we get with individual economic variables.  Certainly by the time the sample size gets up to 1,000 or so there are no outrageous values and the range of estimated values is reasonably narrow, although wide enough to beware of comparisons of small differences at that sample size.  This is in contrast to the sample size of 30, where clearly in one instance we got a sample with one high earner and many zeros or negatives, resulting in a Gini coefficient of more than 1!  Make a note not to estimate a population's inequality from such a small sample.  For the actual sample size of the New Zealand Income Survey of nearly 30,000, sampling error is negligible.  Now, if only we could say the same for the non-sampling error - so much harder to quantify, so much harder to control for.  But subject for reflections at a later date.
 
 The above analysis was done by creating a function to conduct the simulation and draw the plot for a given sample size n:

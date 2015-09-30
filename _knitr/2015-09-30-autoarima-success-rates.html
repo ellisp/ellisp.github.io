@@ -5,7 +5,7 @@ date: 2015-09-30
 tag: 
    - R
    - Timeseries
-description: Using an automated process to select the order of an ARMA time series model returns the true data generating process less often than I thought; and with more complex models the chance of success comes down nearly to zero
+description: Using an automated process to select the order of an ARMA time series model returns the true data generating process less often than I thought; and with more complex models the chance of success comes down nearly to zero even with long sample sizes.
 image: /img/0012-results.svg
 socialimage: /img/0012-results.png
 category: R
@@ -13,14 +13,21 @@ edit-location: _knitr
 ---
 
 <h2>A function for testing auto.arima()</h2>
+<P>This is the third, and the last from me on this particular topic for a while, in a series of posts on fitting time series models and comparing time series to eachother, originally inspired by a question on the Cross-Validated Q&A site.  In this week's post I'm exploring and testing an almost throw-away comment in my original answer - that looking at the parameterisation of an automatically chosen ARIMA (autoregressive integrated moving average) time series model is a bad idea because very similar data generating models may quite legitimately be fit by different-looking ARIMA models. I want to look at a corollory to that:</p>
 
+<blockquote>
+  <p>"How successful will an automated ARIMA selection be at returning the order of the original data generating process for a simulated time series?"</p>
+</blockquote>
 
+<P>I wanted to explore Rob Hyndman's excellent auto.arima() function, which uses small-sample corrected Akaike Information Criterion (<a href = "https://en.wikipedia.org/wiki/Akaike_information_criterion#AICc">AICc</a>) for model selection, in particular.  We use it a lot at my work and I wanted to see how it performs when fitting a known dataset.  To explore this, I created a function that:<P>
+<ol>
+<LI>takes as an argument a model specification (eg AR(1) for autoregression of order 1 ie a time series created by a constant times its lagged value plus white noise)
+<LI>simulates a large number (user controlled) of replications of that series, of a variety of different sample lengths (defaulting to 20, 40, 80, ..., 10240)
+<LI>Uses the auto.arima() model to identify the best ARIMA model for each replication of the series
+<LI>Stores the order of the final model and compares it against the correct order
+</ol>
 
-
-
-
-
-
+<p>Here's the code for that function:</P>
  
  
 {% highlight R lineanchors %}
@@ -86,9 +93,9 @@ arima_fit_sim <- function(model,
 
 
 <h2>The test</h2>
+<P>For my actual test, I chose to try out two simple simulations - AR(1) and MA(1) processes - and two more complex ones - ARMA(2,2) and ARMA(3,3).  There's a sticking point which is the actual  autoreggressive and moving average parameters.  An AR(1) process autoregression coefficient of 0.05 for example will be almost indistinguishable from white noise, whereas as it gets closer to 1 it would be much easier for the model selection algorithm to notice.  To do a comprehensive test, I should actually compare models across the whole parameter space.  As this is just a blog post, I arbitrarily chose some values.</P>
 
-
-
+<P>Here's the code performing the actual tests on those four processes, using my new arima_fit_sim() function with 500 repetitions of each combination of model and sample length.  This took about eight hours to run on my (nothing special) laptop:</P>
 
 {% highlight R lineanchors %}
 our_reps <- 500
@@ -117,11 +124,14 @@ save(results_ar1, results_ma1, results_arma22, results_arma33, file = "_output/0
 
 
 <h2>Results</h2>
-<p>Here are the ten most common models that were selected in the case of the AR(1) model</p>
-../_tables/0012-tab1.html
+<p>My function stores the order of the 5000 models it has fit for each simulation.  Here are the ten most common models that were selected in the case of the AR(1) model:
+../_tables/0012-tab1.html</p>
 
-<p>As a percentage, here's how they end up</p>
-../_tables/0012-tab2.html
+<p>As a percentage correct for different sample lengths, here's how they end up:
+../_tables/0012-tab2.html</p>
+
+
+<p>In this simple case, auto.arima() is moderately successful.  It correctly picked an AR(1) model as the best 1752 times out of 5000, much more than the second most popular model which was a very complex ARMA(3,2).  Even when the time series is only 20 observations long it gets it right 29 percent of the time, and this goes up to 41 percent by the time there are 10,000 observations.  I suspect it gets better as the time series gets longer, but I'd (naively) expected better than this.  I was surprised that even for a longish time series only 41 percent of the time is the true model being recovered. </P>
 
 
 <p>Here's a plot summarising the overall results</p>
@@ -130,9 +140,13 @@ save(results_ar1, results_ma1, results_arma22, results_arma33, file = "_output/0
 <p>Here it is separated out by facets so we can see that pattern closer.</p>
 <div class ="img-container"><img src = "/img/0012-results-faceted.svg"></div>
 
-<p>I was a bit astonished at the poor success rate of picking up the ARMA(3, 3) process so I tabulate here the counts of every final model that actually was selected.</p>
-../_tables/0012-tab3.html
+<p>I was a bit astonished at the poor success rate of picking up the ARMA(3, 3) process so I tabulate here the counts of every final model that actually was selected.
+../_tables/0012-tab3.html</p>
+<p>Yes, that's right, many many models are picked but not a single instance matches the "ar1 ar2 ar3 ma1 ma2 ma3" that was the original data generating process.  So the take home message is even stronger than I thought - don't pay much attention to the order of your fitted ARIMA models!  This doesn't mean there's a problem with using them - they give good fits and work well in many forecasting situations.  But we shouldn't confuse them with some essential reality of an underlying process.  It's a striking example of the famous (well in some quarters) quote by ??</p>
 
+<blockquote>
+  <p><a href = "https://en.wikiquote.org/wiki/George_E._P._Box">"All models are wrong, but some are useful" (Box)</a></p>
+</blockquote>
 
 <h3>Code that produced the summary tables</h3>
 {% highlight R lineanchors %}

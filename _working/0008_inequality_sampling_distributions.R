@@ -12,9 +12,9 @@ font.add.google("Poppins", "myfont")
 showtext.auto()
 
 PlayPen <- odbcConnect("PlayPen_Prod")
+sqlQuery(PlayPen, "use nzis11")
 
-inc <- sqlQuery(PlayPen, "select income from vw_mainheader") 
-# inc <- f_mainheader$income
+inc <- sqlQuery(PlayPen, "select income from vw_mainheader")$income
 
 lorenz <- Lc(inc)
 lorenz_df <- data.frame(prop_pop = lorenz$p, income = lorenz$L) %>%
