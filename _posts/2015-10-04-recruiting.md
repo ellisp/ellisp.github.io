@@ -52,5 +52,5 @@ These positions are in Wellington, and you need to be able to work in New Zealan
 --------------
 
 ### Different data types and users
-![szeto](/img/0013-data-types.png)
+![data-types](/img/0013-data-types.png)
 
