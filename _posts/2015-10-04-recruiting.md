@@ -6,8 +6,8 @@ tag:
    - WorkRelated
    - R
 description: In my day job I'm running a recruitment process for two Principal Analysts, a Senior Analyst and an Analyst.  This is a great opportunity to get into one of the most interesting analytics teams in New Zealand. Applications close 14 October 2015.
-image: /img/0013-data-types.png
-socialimage: http://ellisp.github.io/img/0013-data-types.png
+image: /img/0013-data-types-1.png
+socialimage: http://ellisp.github.io/img/0013-data-types-1.png
 category: R
 ---
 ## The jobs
@@ -52,5 +52,5 @@ These positions are in Wellington, and you need to be able to work in New Zealan
 --------------
 
 ### Different data types and users
-![data-types](/img/0013-data-types.png)
+![data-types](/img/0013-data-types-1.png)
 
