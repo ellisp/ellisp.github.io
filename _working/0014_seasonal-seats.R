@@ -1,14 +1,13 @@
 # load and prepare data
 library(mbieDBmisc)
 TRED <- odbcConnect("TRED_Prod")
-dataset <- sqlFetch(TRED, "timeseries.dataset")
-dataset[grep("arrival", dataset$dataset), "dataset"] %>% View
 
-itm <-ImportTS2(TRED, "Visitor arrivals by country of residence, purpose and NZ port (Monthly)") %>%
-   rename(country = CV1, purpose = CV2, airport = CV3) %>%
-   select(-Obs_Status,-CountryGrouped, -Magnitude)
+ect <-ImportTS2(TRED, "Values - Electronic card transactions A/S/T by industry group (Monthly)") %>%
+   filter(CV1 == "Actual" & !is.na(Value)) %>%
+   rename(group = CV2) %>%
+   select(-Obs_Status, -CV1)
 
-save(itm, file= "../data/arrivals-country-purpose-airport-20151010.rda")
+save(ect, file= "../data/Electronic card transactions by industry group Monthly.rda")
 
 
 
@@ -30,38 +29,35 @@ theme_set(theme_light(base_family = "myfont"))
 Sys.setenv(X13_PATH = "c:/winx13/x13as")
 checkX13()
 
-# download file from Statistics New Zealand's International Travel and Migration,
-# prepared by me earlier.  Ultimately, this was from Infoshare as the series
-# "Visitor arrivals by country of residence, purpose and NZ port (Monthly)"
-download.file("https://github.com/ellisp/ellisp.github.io/blob/master/data/arrivals-country-purpose-airport-20151010.rda?raw=true",
+# download file with data ultimately from Statistics New Zealand's Infoshare, prepared 
+# earlier: "Values - Electronic card transactions A/S/T by industry group (Monthly)"
+#
+download.file("https://github.com/ellisp/ellisp.github.io/blob/master/data/Electronic card transactions by industry group Monthly.rda?raw=true",
               mode = "wb",
               destfile = "tmp.rda")
 load("tmp.rda")
-head(itm)
+head(ect)
 
-uk_all <- itm %>%
-   filter(country == "United Kingdom" & 
-             purpose == "TOTAL ALL TRAVEL PURPOSES" &
-             airport == "TOTAL NEW ZEALAND PORTS"
-             )
+apparel <- ect %>%
+   filter(group == "Apparel")
 
-uk_ts <- ts(uk_all$Value, start = c(1978, 4), frequency = 12)
+apparel_ts <- ts(apparel$Value, start = c(2002, 10), frequency = 12)
 
-svg("../img/0014-uk-ts-basics.svg", 7, 7)
+svg("../img/0014-apparel-ts-basics.svg", 7, 7)
 par(mfrow = c(2, 2), family = "myfont")
-plot(uk_ts, xlab = "")
-acf(uk_ts, main = "")
-pacf(uk_ts, main = "")
-spectrum(uk_ts, main = "")
+plot(apparel_ts, xlab = "")
+acf(apparel_ts, main = "")
+pacf(apparel_ts, main = "")
+spectrum(apparel_ts, main = "")
 dev.off()
 
-svg("../img/0014-uk-decompose.svg", 7, 7)
-plot(decompose(uk_ts, type = "multiplicative"))
+svg("../img/0014-apparel-decompose.svg", 7, 7)
+plot(decompose(apparel_ts, type = "multiplicative"))
 dev.off()
 
-mod <- seas(uk_ts)
+mod <- seas(apparel_ts)
 
-svg("../img/0014-uk-ts-seats.svg", 7, 7)
+svg("../img/0014-apparel-ts-seats.svg", 7, 7)
 par(mfrow = c(2, 2), family = "myfont")
 plot(mod)
 plot(resid(mod), main = "Residuals")
@@ -73,34 +69,34 @@ summary(mod)
 
 inspect(mod)
 
-uk_sa <- data_frame(
-   Time = time(uk_ts),
-   Original = uk_ts,
+apparel_sa <- data_frame(
+   Time = time(apparel_ts),
+   Original = apparel_ts,
    SA = final(mod))
 
-svg("../img/0014-uk-compare.svg", 7, 7)
+svg("../img/0014-apparel-compare.svg", 7, 7)
 print(
-ggplot(uk_sa, aes(x = Original, y = SA, colour = Time)) +
+ggplot(apparel_sa, aes(x = Original, y = SA, colour = Time)) +
    geom_abline(intercept = 0, slope = 1, colour = "grey50") +
    geom_path() +
    geom_point() +
    coord_equal() +
    scale_x_continuous(label = comma) +
    scale_y_continuous("Seasonally adjusted", label = comma) +
-   ggtitle("Comparison of original and seasonally adjusted\n arrivals from the UK to New Zealand")
+   ggtitle("Comparison of original and seasonally adjusted\n electronic card transactions on apparel in New Zealand")
 )
 dev.off()
 
-svg("../img/0014-uk-adjusted-ggplot.svg", 7, 5)
+svg("../img/0014-apparel-adjusted-ggplot.svg", 7, 5)
 print(
-uk_sa %>%
-   gather("variable", "arrivals", -Time) %>% 
+apparel_sa %>%
+   gather("variable", "value", -Time) %>% 
    mutate(variable = gsub("SA", "Seasonally adjusted by SEATS", variable)) %>%
-   ggplot(aes(x = Time, y = arrivals, colour = variable)) +
+   ggplot(aes(x = Time, y = value, colour = variable)) +
    geom_line() +
    labs(colour = "", x = "") +
-   scale_y_continuous("Number of arrivals", label = comma) +
-   ggtitle("Visitor arrivals from the UK to New Zealand") +
+   scale_y_continuous("Value of transactions ($m)", label = dollar) +
+   ggtitle("Electronic card transactions on apparel in New Zealand") +
    theme(legend.position = "bottom")
 )
 dev.off()
@@ -125,29 +121,27 @@ StatSeas <- proto(ggplot2:::Stat, {
 }) 
 stat_seas <- StatSeas$new 
 
-svg("../img/0014-uk-ts-new-stat.svg", 7, 5)
+svg("../img/0014-apparel-ts-new-stat.svg", 7, 5)
 print(
-ggplot(uk_all, aes(x = TimePeriod, y = Value)) +
+ggplot(apparel, aes(x = TimePeriod, y = Value)) +
    # original:
    geom_line(colour = "red") +
    # seasonally adjusted:
-   stat_seas(frequency = 12, start = c(1978, 4))
+   stat_seas(frequency = 12, start = c(2002, 10))
 )
 dev.off()
 
 # the beauty is we can now use with facets and other groupings:
-
-p1 <- itm %>%
-   filter(country %in% c("United Kingdom", "Australia", "Japan") &
-             airport %in% c("Auckland airport", "Christchurch airport", "Wellington airport") &
-             purpose %in% c("Holiday/Vacation", "Business", "Visit Friends/Relatives")) %>%
-   ggplot(aes(x = TimePeriod, y = Value, colour = airport)) +
+p1 <- ect %>%
+   ggplot(aes(x = TimePeriod, y = Value, colour = group)) +
+   geom_line(alpha = 0.3) +
    stat_seas(frequency = 12, start = c(1978, 4)) +
-   facet_grid(country ~ purpose, scales = "free_y") +
-   labs(x = "", y = "Seasonally adjusted arrivals",
-        title = "Visitor arrivals to New Zealand, selected origins and ports")
+   facet_wrap( ~ group, scales = "free_y", ncol = 2) +
+   labs(x = "", y = "Seasonally adjusted monthly transaction value ($m)",
+        title = "Electronic card transactions in New Zealand") +
+   theme(legend.position = "none")
 
 
-svg("../img/0014-faceted.svg", 10, 7)
+svg("../img/0014-faceted.svg", 7, 8)
    print(p1)
 dev.off()
