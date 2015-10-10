@@ -136,9 +136,8 @@ ggplot(uk_all, aes(x = TimePeriod, y = Value)) +
 dev.off()
 
 # the beauty is we can now use with facets and other groupings:
-svg("../img/0014-faceted.svg", 7, 7)
-print(
-itm %>%
+
+p1 <- itm %>%
    filter(country %in% c("United Kingdom", "Australia", "Japan") &
              airport %in% c("Auckland airport", "Christchurch airport", "Wellington airport") &
              purpose %in% c("Holiday/Vacation", "Business", "Visit Friends/Relatives")) %>%
@@ -147,5 +146,8 @@ itm %>%
    facet_grid(country ~ purpose, scales = "free_y") +
    labs(x = "", y = "Seasonally adjusted arrivals",
         title = "Visitor arrivals to New Zealand, selected origins and ports")
-)
+
+
+svg("../img/0014-faceted.svg", 10, 7)
+   print(p1)
 dev.off()
