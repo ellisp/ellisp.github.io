@@ -1,16 +1,16 @@
-# load and prepare data
-library(mbieDBmisc)
-TRED <- odbcConnect("TRED_Prod")
-
-ect <-ImportTS2(TRED, "Values - Electronic card transactions A/S/T by industry group (Monthly)") %>%
-   filter(CV1 == "Actual" & !is.na(Value)) %>%
-   rename(group = CV2) %>%
-   select(-Obs_Status, -CV1)
-
-save(ect, file= "../data/Electronic card transactions by industry group Monthly.rda")
-
-
-
+# # load and prepare data
+# library(mbieDBmisc)
+# TRED <- odbcConnect("TRED_Prod")
+# 
+# ect <-ImportTS2(TRED, "Values - Electronic card transactions A/S/T by industry group (Monthly)") %>%
+#    filter(CV1 == "Actual" & !is.na(Value)) %>%
+#    rename(group = CV2) %>%
+#    select(-Obs_Status, -CV1)
+# 
+# save(ect, file= "../data/Electronic card transactions by industry group Monthly.rda")
+# 
+# 
+# 
 
 #=============to be used in blog==================
 library(seasonal)
@@ -67,22 +67,22 @@ dev.off()
 
 summary(mod)
 
-inspect(mod)
+# inspect(mod)
 
 apparel_sa <- data_frame(
    Time = time(apparel_ts),
    Original = apparel_ts,
    SA = final(mod))
 
-svg("../img/0014-apparel-compare.svg", 7, 7)
+svg("../img/0014-apparel-compare.svg", 7, 4.5)
 print(
 ggplot(apparel_sa, aes(x = Original, y = SA, colour = Time)) +
    geom_abline(intercept = 0, slope = 1, colour = "grey50") +
    geom_path() +
    geom_point() +
    coord_equal() +
-   scale_x_continuous(label = comma) +
-   scale_y_continuous("Seasonally adjusted", label = comma) +
+   scale_x_continuous("Original ($m)", label = dollar) +
+   scale_y_continuous("Seasonally adjusted ($m)", label = dollar) +
    ggtitle("Comparison of original and seasonally adjusted\n electronic card transactions on apparel in New Zealand")
 )
 dev.off()
@@ -137,11 +137,15 @@ p1 <- ect %>%
    geom_line(alpha = 0.3) +
    stat_seas(frequency = 12, start = c(1978, 4)) +
    facet_wrap( ~ group, scales = "free_y", ncol = 2) +
-   labs(x = "", y = "Seasonally adjusted monthly transaction value ($m)",
+   labs(x = "", y = "SEATS-seasonally adjusted monthly transaction value ($m)",
         title = "Electronic card transactions in New Zealand") +
    theme(legend.position = "none")
 
 
 svg("../img/0014-faceted.svg", 7, 8)
    print(p1)
+dev.off()
+
+png("../img/0014-faceted.png", 700, 800, res = 100)
+print(p1)
 dev.off()
