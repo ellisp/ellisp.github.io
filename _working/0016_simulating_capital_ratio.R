@@ -26,13 +26,15 @@ draw_plots <- function(economy){
    p3 <- ggplot(economy, aes(x = year, y = (growth - 1))) +
       geom_line() +
       scale_y_continuous("Growth in production", label = percent)
+
    
+
    grid.newpage()
    pushViewport(viewport(layout = grid.layout(2, 2)))
    print(p1, vp = vplayout(1:2, 1))
    print(p3, vp = vplayout(1, 2))
    print(p2, vp = vplayout(2, 2))
-}
+   }
 
 
 
@@ -55,6 +57,7 @@ for(i in 2:duration){
    
 }
 
+draw_plots(economy)
 
 
 #===================more complex endogenous model================
@@ -67,9 +70,11 @@ economy <- data.frame(
    saving_rate = 0.12,
    growth = 1.02,
    labour_growth = 1.01 + arima.sim(model = list(ar = 0.9), n = duration) / 200,
-   randomness1 = 1 + arima.sim(model = list(ar = 0.9), n = duration) / 300,
-   randomness2 = arima.sim(model = list(ar = 0.9), n = duration) / 100
-)
+   randomness1 = 1 + arima.sim(model = list(ar = 0.9), n = duration) / 300, # productivity
+   randomness2 = arima.sim(model = list(ar = 0.9), n = duration) / 100,     # savings
+   war = arima.sim(model = list(ar = 0.93), n = duration)            
+   )
+war_threshhold <- quantile(economy$war, 0.03)
 
 for(i in 2:duration){
    economy[i, "saving_rate"] <- economy[1, "saving_rate"] +
@@ -80,6 +85,11 @@ for(i in 2:duration){
       economy[i, "saving_rate"] * economy[i - 1, "production"]
    economy[i, "labour"] <- economy[i - 1, "labour"] * 
       economy[i, "labour_growth"]
+   
+   if(economy[i, "war"] < war_threshhold){
+      economy[i, "capital"] <- economy[i, "capital"] * runif(1, 0.75, 0.95)
+      economy[i, "labour"] <- economy[i, "labour"] * runif(1, 0.90, 0.95)
+   }
    
    K <- economy[i, "capital"] # for ease of use
    L <- economy[i, "labour"]
@@ -96,3 +106,4 @@ economy %>%
    mutate(lag_growth = c(NA, growth[-duration])) %>%
    filter(!is.na(lag_growth)) %>%
    ggplot(aes(x = lag_growth, y = saving_rate)) + geom_path() + geom_smooth(method = "lm")
+
