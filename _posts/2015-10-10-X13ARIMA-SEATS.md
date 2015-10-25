@@ -3,7 +3,7 @@ layout: post
 title: Seasonal adjusment on the fly with X-13ARIMA-SEATS, seasonal and ggplot2
 date: 2015-10-10
 tag: 
-   - TimeSeries
+   - Timeseries
    - NewZealand
    - Shiny
    - R

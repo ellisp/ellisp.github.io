@@ -24,9 +24,11 @@ silver <- function(node_values, edge_values, title,
    # @title title for plot
    # @pal vector of colours for producers, consumers, and travel routes respectively
    # @family font family to use
-   # @cal_width width of an invisible white ribbon to draw, implicitly the maximum, so scale is constant for multiple plots
+   # @cal_width width of an invisible white ribbon to draw, implicitly the maximum, 
+   #    so scale is constant for multiple plots
    
-   # edge_values comes in as just a single number and we need two edges for each (eg America to Pacific to SE Asia is two edges)
+   # edge_values comes in as just a single number and we need two edges for 
+   # each (eg America to Pacific to SE Asia is two edges)
    edge_values <- rep(edge_values, each = 2)
    
    # we don't know how much of the silver that goes via the Baltic and the Levant
@@ -65,36 +67,37 @@ silver <- function(node_values, edge_values, title,
    plot(p, default_style = my_style, plot_area = 0.9)
    grid.text(x = 0.5, y = 0.94, title,
              gp = gpar(fontfamily = family, cex = 1.5))
-   grid.text(x = 0.15, y = 0.15, 
-             str_wrap("Source: de Vries (2003), reproduced in Findlay and O'Rourke (2007) 'Power and Plenty'", 30),
+   grid.text(x = 0.13, y = 0.12, 
+             str_wrap("Source: DeVries (2003), reproduced in Findlay and O'Rourke (2007) 'Power and Plenty'", 34),
              gp = gpar(fontfamily = family, fontface = "italic", cex = 0.7))
    legend(7, 1, legend = c("Producer", "Trade route", "Consumer"), 
           bty = "n", fill = pal[c(1, 3, 2)], border = FALSE, cex=0.8)
 }
 
 # draw the two images
-png("_output/0015-silver-sankey/01.png", 800, 500, res = 100)
+png("01.png", 800, 500, res = 100)
    silver(
-      node_values = c(368, 158.5, 38, 56, 15.5, "?", "91-126", 268, "17-51", "59.3"), 
+      node_values = c(368, 158, 38, 56, 16, "?", "91-126", 268, "17-51", "59"), 
       edge_values = c(34,  268,  56,  38, 15.5, 59.3), 
       title = "Intercontinental flows of silver, tonnes per year, 1600 to 1650")
 dev.off()
 
-png("_output/0015-silver-sankey/02.png", 800, 500, res = 100)
+png("02.png", 800, 500, res = 100)
 silver(
-   node_values = c(650, 230, 60, 50, 160, "?", "175-211.2", 500, "15-51.2", "0"), 
-   edge_values = c(33.2,  500,  50,  60, 160, 0.00), 
+   node_values = c(650, 230, 60, 50, 160, "?", "175-211", 500, "15-51", "0"), 
+   edge_values = c(33.1,  500,  50,  60, 160, 0.00), 
    title = "Intercontinental flows of silver, tonnes per year, 1725 to 1750")
 dev.off()
 
 # combine them into an animated GIF
-wd <- setwd("_output/0015-silver-sankey/")
 system('"C:\\Program Files\\ImageMagick-6.9.1-Q16\\convert" -loop 0 -delay 250 *.png "silver.gif"')
 
 # move the asset over to where needed for the blog
-file.copy("silver.gif", "../../../img/0015-silver.gif", overwrite = TRUE)
+file.copy("silver.gif", "../img/0015-silver.gif", overwrite = TRUE)
 
-# back to working drive
-setwd(wd)
+# cleanup
+unlink(c("0?.png", "silver.gif"))
+
+
 
 
