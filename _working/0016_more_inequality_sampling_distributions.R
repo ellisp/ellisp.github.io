@@ -8,6 +8,7 @@ library(scales)
 library(showtext) # for fonts
 library(stringr)  # for str_wrap
 library(tidyr)
+library(RSvgDevice)
 
 font.add.google("Poppins", "myfont")
 showtext.auto()
