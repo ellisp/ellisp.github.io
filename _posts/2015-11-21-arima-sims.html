@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Create an ARIMA time series from bottom up
+title: Create ARIMA time series from bottom up
 date: 2015-11-21
 tag: 
    - Timeseries
@@ -15,6 +15,92 @@ category: R
 ---
 
 <h2>Simulating ARIMA models</h2>
-<p>Generating an arbitrary [Auto-Regressive Integrated Moving Average (ARIMA)](https://en.wikipedia.org/wiki/Autoregressive_integrated_moving_average) model is easy in R with the [arima.sim()](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/arima.sim.html) function that is part of the built-in {stats} package.  In fact I've done it extensively in this blog for various illustrative purposes.  But one cost of doing this for educational purposes is that the mechanics of generating them are hidden from the user (of course, that's the point!).  As was the case in last week's post, I'm motivated by teaching purposes.  I wanted to show people how an ARIMA model can be created, with high school maths and no special lag notation, from white noise.</p>
+<p>
+Generating an arbitrary <a href = "https://en.wikipedia.org/wiki/Autoregressive_integrated_moving_average">Auto-Regressive Integrated Moving Average (ARIMA)</a> model is easy in R with the <a href = "https://stat.ethz.ch/R-manual/R-devel/library/stats/html/arima.sim.html">arima.sim()</a> function that is part of the built-in {stats} package.  In fact I've done it extensively in previous blog posts for various illustrative purposes.  But one cost of doing this for educational purposes is that the mechanics of generating them are hidden from the user (of course, that's the point!).  As was the case in last week's post, I'm motivated by teaching purposes.  I wanted to show people how an ARIMA model can be created, with high school maths and no special notation, from white noise.
+</p>
 
+<iframe width="700" height="700"
+src="http://www.youtube.com/embed/CiGM-NOV7Ms?autoplay=1&loop=1&playlist=CiGM-NOV7Ms" frameborder="0" allowfullscreen="allowfullscreen">
+</iframe>
 
+<p>
+The movie that is (hopefully) playing above shows this.  It takes a single series of independent and identical standard normally distributed variables (top left).  It shows how this can be turned into (from left to right one row at a time, starting at the top right):
+<ul>
+<li>an autoregressive model of order 1, where each value of x equals the previous value times 0.8, plus the white noise;
+<li>a moving average of order 1, where each value of x equals the latest bit of white noise plus 0.8 times the previous value of white noise;
+<li>an autoregressive moving average model of order (1, 1), combining the two;
+<li>an ARIMA(1, 1, 1) model that is the cumulative sum of the ARMA(1, 1); and
+<li>an ARIMA(2, 2, 2) model that is like all the above but with extra parameters and an extra cumulative sum stage
+</ul>
+</p>
+<p>
+One interesting thing is how the AR(1) and ARMA(1, 1) models look almost identical, except for the larger variance of the ARMA(1, 1) model which comes from throwing into the mix 80% of the last period's randomness.  This similarity is just a result of the the particular parameters chosen - the 0.8 times the previous value of x quickly dominates the moving average part.
+</p>
+<p>
+Here's the code that simulates the actual data.  It's simple enough that it can be easily explained and related to the equations on the images in the movie.  Note that I've avoided using the usual lag operator, or putting all the autoregression parts of the equation on the left as is normally done.  That's all so it is easy to explain exactly where the latest value is coming from.  Also note that I've done this in what might seem a very un-R-like fashion - creating a vector with a for() loop!  This is purely for to make it really obvious what is going on.  There's no issues with performance to worry about, and in this situation transparency and ease of reading is always paramount.
+</p>
+{% highlight R lineanchors %}
+#-------------generate data-------------
+set.seed(123)
+n <- 1000
+
+# white noise:
+wn <- ts(rnorm(n))
+
+# initialise the first two values:
+ar1 <- ma1 <- arma11 <- arma22 <- wn[1:2]
+
+# loop through and create the 3:1000th values:
+for(i in 3:n){
+   ar1[i]      <- ar1[i - 1] * 0.8 + wn[i]
+   ma1[i]      <- wn[i - 1]  * 0.8 + wn[i]
+   arma11[i]   <- arma11[i - 1] * 0.8 + wn[i - 1] * 0.8 + wn[i] 
+   arma22[i]   <- arma22[i - 1] * 0.8 + arma22[i - 2]  * (-0.3) + 0.8 * wn[i-1] - 0.3 * wn[i-2] + wn[i]
+}
+
+# turn them into time series, and for the last two, "integrate" them via cumulative sum
+ar1 <- ts(ar1)
+ma1 <- ts(ma1)
+arma11 <- ts(arma11)
+arima111 <- ts(cumsum(arma11))
+arima222 <- ts(cumsum(cumsum(arma22)))
+{% endhighlight %}
+
+<p>
+The animation is created one frame at a time with basic R plots.  For the equations I used Stefano Meschiari's useful <a href = "https://cran.r-project.org/web/packages/latex2exp/index.html">{latex2exp}</a> package.  I don't really understand R's plotmath expressions that let you add equations to plots, and I don't really want to understand them if I can avoid it.  {latex2exp} let's me avoid it by using the much more commonly known LaTeX syntax and translating it for me into plotmath.
+</p>
+{% highlight R lineanchors %}
+library(latex2exp)
+library(extrafont)
+
+for(i in 3:n){
+   png(paste0(i + 1000, ".png"), 800, 800, res = 100)
+      par(mfrow = c(3, 2), cex.main = 1.5, cex = 0.8, family = "Calibri")
+      plot(wn[1:i], main = latex2exp("$\\epsilon ~ N(0, \\sigma)"), 
+           bty = "l", type = "l", ylab = "x = white noise", xlab = "")
+      
+      plot(ar1[1:i], main = latex2exp("$x_t = 0.8x_{t-1} + \\epsilon_t$"), 
+           bty = "l", type = "l", ylab = "x =AR (1)", xlab = "")
+      
+      plot(ma1[1:i], main = latex2exp("$x_t = 0.8\\epsilon_{t-1} + \\epsilon_t$"), 
+           bty = "l", type = "l", ylab = "x = MA(1)", xlab = "")
+      
+      plot(arma11[1:i], main = latex2exp("$x_t = 0.8x_{t-1} + 0.8\\epsilon_{t-1} + \\epsilon_t$"),
+           bty = "l", type = "l", ylab = "x = ARMA(1, 1)", xlab = "")
+      
+      plot(arima111[1:i], main = latex2exp("$x_t = 0.8x_{t-1} + 0.8\\epsilon_{t-1} + \\epsilon_t$"), 
+           bty = "l", type = "l", ylab = "y = ARIMA(1, 1, 1)", xlab = "")
+      mtext(latex2exp("$y_t = x_t + x_{t-1} + ... + x_0$"), cex = 1.3, line = -0.5)
+      
+      plot(arima222[1:i], main =  latex2exp(
+         "$x_t = 0.8x_{t-1} - 0.3x_{t-2} - 0.3\\epsilon_{t-2} + 0.8\\epsilon_{t-1} + \\epsilon_t$"), 
+         bty = "l", type = "l", ylab = "z = ARIMA(2, 2, 2)", xlab = "")
+      mtext(latex2exp("$y_t = x_t + x_{t-1} + ... + x_0$"), cex = 1.3, line = -0.5)
+      mtext(latex2exp("$z_t = y_t + y_{t-1} + ... + y_0$"), cex = 1.3, line = -2.0)
+   dev.off()
+}
+{% endhighlight %}
+
+<p>
+The result has 998 frames and is probably too big for the sort of animated GIF I usually make.  When a web browser comes across an animated GIF it has to load the whole thing in - in this case, around 28MB worth - before it starts playing and I'd probably lose some audiences while that happened.  So I used Microsoft MovieMaker to turn the stills into an mp4 and uploaded it to YouTube, which is basically the standard and easiest way to stream video over the web.
+</p>
