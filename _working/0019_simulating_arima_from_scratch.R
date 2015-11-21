@@ -55,15 +55,12 @@ for(i in 3:n){
    dev.off()
    
 }
+# create the actual movie with MovieMaker
 
-
-# combine them into an animated GIF
-system('"C:\\Program Files\\ImageMagick-6.9.1-Q16\\convert" -loop 0 -delay 10 *.png "arima-sims.gif"')
-
-
-
-# move the asset over to where needed for the blog
-file.copy("arima-sims.gif", "../../../img/0019-arima-sims.gif", overwrite = TRUE)
-file.copy("1900.png", "../../../img/0019-snapshot.gif", overwrite = TRUE)
+file.copy("1900.png", "../../../img/0019-snapshot.png", overwrite = TRUE)
 
 setwd(old_dir)
+
+library(forecast)
+auto.arima(arima111)
+auto.arima(arima222)
