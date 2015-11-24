@@ -1,143 +1,160 @@
 ---
 layout: post
-title: Linear model with time series random component
-date: 2015-11-15
+title: Violent deaths over time in 40 countries
+date: 2015-11-22
 tag: 
-   - Timeseries
-   - StatsEducation
-   - Animations
+   - OpenData
+   - Crime
    - R
-   
-description: Creating an animation to show why you can't ignore the time series element of data even when it's been created by a simple linear model
-image: /img/0017-original.svg
-socialimage: http://ellisp.github.io/img/0017-original.png
+description: Simple but powerful graphics showing relative country standings with regard to violent deaths, and trends over time.  Most countries are seeing a decline in violent deaths from peaks in the 1970s, '80s or '90s.  Data downloaded from OECD.Stat via their API and SDMX.
+image: /img/0020-assault-average.svg
+socialimage: http://ellisp.github.io/img/0020-assault-average.png
 category: R
 ---
-## What do auto-correlated residuals do to your linear model?
-For training purposes I wanted to illustrate the dangers of ignoring time series characteristics of the random part of a classical linear regression, and I came up with this animation to do it:
+## Violent deaths
+A friend was looking at comparative data on violent deaths in a range of countries and I couldn't resist the chance to turn out some graphics.  The data come from the [OECD](http://stats.oecd.org/), who compiles them from contributions by member and associated country governments.  I ended up with some graphics that I think tell a powerful story.
 
-![animated-regression](/img/0017-timeseries.gif)
+###Compare across countries and sex
+Looking at snapshot cross-sectional average data since 1990 (for which there is more comparable data across countries, with a number of countries such as Germany and Czech Republic only coming into existence at or around that period) we see two things that met Tukey's "intra-ocular impact test" ie they hit you between the eyes:
 
-I like this, because it shows how easy it is to fit something that looks to be a good fit but actually misses important parts of reality.  The red lines show where the fitted model is, based on a small window of the data - from 5 to 200 points.  The black line shows the true data generating process.  From very early on the model fit to the simple cross-sectional has converged to pretty close to the black line. However, the model fit to the data with time series errors spends a long time greatly overestimating the value of one of the parameters in the model, and not until there are 120 observations has it converged to anywhere near the true process.   
+* Nearly everywhere, males are much more likely to killed in a violent assault than are females
+* The Americas and the former Soviet Socialist Republics (Russia, Estonia, Latvia, Lithuania) dominate the list of most violent places to live (or rather, to die).  Other than countries of this type, only South Africa makes the top 11 countries.  In case you're wondering if this is selection bias (the OECD and its non-member associates who provide it data comprise the wealthier countries of the world), [World Health Organisation reports](link) suggest that this is not just a result of missing out the rest of Africa.
 
-At the very least, it shows that you need many more - four times as many in this case, but unfortunately that's not a magic number that will always work - observations from a time series to reliably estimate the structural part of a model.  Even if we'd explicitly modelled the time series part of the data on the right of the animation, we'd still have that problem.
+In the chart below, the label for each country is centred at the overall population rate of violent deaths and the red and blue vertical strokes mark the female and male rates respectively.  Beware that the scale is logarithmic - this was necessary to stop everywhere except Colombia being squashed into the left of the chart.
+![snapshot](/img/0020-assault-average.svg)
 
-By including the residual plots below the scatter plots we get a nice picture of a warning sign in this basic (and should be fundamental and universal) diagnostic plot.  In this particular case the pattern is obvious; when working with real data you should check with partial autocorrelation function plots too.
+Looking into the imbalance between the sexes, we see that the countries with consistently high male to female ratios of rates of violent death are Colombia, Brazil, Mexico, Chile, Costa Rica and South Africa, in all of which males are at least 5 times more likely to be killed violently than are females.  There looks to be a possible correlation between being predominantly Catholic and a high ratio of male to female violent death rates (Italy and Ireland also fairly high up on the list), but Catholicism as a variable is so confounded with the phenomenon of violence in the Americas south of Canada that establishing a link at a country level is fraught with statistical dangers.
 
-## Simulating data
+![gender-plot](/img/0020-gender-ratios.svg)
 
-The animation illustrates the results of simulating and contrasting two fairly extreme cases:
+###Compare across time
+Looking at trends across time we see an encouraging sign.  Most countries' violent death rates peaked in the 1980s or 90s and have been declining, in some cases dramatically, in recent years.
 
-* cross section data, generated exactly from a model of y = a + b.x + e, e ~ N(0, 1).  This is the textbook case introduced in any basic statistics course;
-* time series data, generated with exactly the same model except the error term, in addition to be normally distributed with mean of zero and standard deviation of 1, has a high autocorrelation.
+In the chart below the vertical axis for each country has been set to make most use of the plot area and draw attention to trends rather than absolute levels, so you can't compare the absolute levels of violence across countries.  That's what the first chart was for, so the two charts complement eachother.  The facets in the trend chart below *have* been ordered from lowest to highest rates (1990 onwards), so there is still some visual indicator of absolute size of the problem.
 
-I chose to make the intercept of my model (a in the above formulation) 1, and the slope (b) equal to 0.3.  Here's what the first 200 observations of the response variable looks like:
-![lorenz-plot](/img/0017-original.svg)
+The recent declines are particularly strong in the  Eastern Europe and USSR region - Russia, Estonia, Latvia, Lithuania, Poland, Slovak Republic, Slovenia, Czech Republic, and Germany have all seen dramatic drops in rates of violent death after rapid growth in the early 1990s associated with the magnitude of the transition in economic and political systems that took place at that time.  There's also the possibility of changing official statistical practice, but that's pure speculation on my part.
+![over-time](/img/0020-deaths-trends.svg)
 
-In fact, I've over-simplified things by leaving x in both datasets as independent and identically distributed white noise.  In reality, if y has a time series random component, x probably will have too.  But I wanted to illustrate how a single violation of our assumptions can lead to problems, rather than create a fully realistic case (which obviously would show up even more problems).
-
-The data were generated as follows.  To illustrate a point and make it a realistic test, I generate a much larger "population" time series, and the mean of zero and standard deviation of 1 applies only to that larger population.  The first 200 points is all we see.
+## Arranging the data
+Here's how I import the data into R.  
 {% highlight R lineanchors %}
+library(ggplot2)
+library(scales)
+library(grid)
 library(dplyr)
 library(tidyr)
-library(ggplot2)
-library(gridExtra)
-library(showtext)
+library(showtext) # for fonts
+library(rsdmx)
+library(ISOcodes)
 
-#-------------set up-------------
-# Fonts and themes:
 font.add.google("Poppins", "myfont")
 showtext.auto()
-theme_set(theme_light(base_family = "myfont"))
-
-# sample and population size:
-n <- 200
-popn <- n * 10
+theme_set(theme_grey(base_family = "myfont"))
 
 
-#----------simulate data---------
-set.seed(123)
 
-# Linear model with a time series random element, n * 10 in length:
-df1 <- data.frame(x = rnorm(popn)) %>%
-   mutate(y = 1 + 0.3 * x + scale(arima.sim(list(ar = 0.99), popn)),
-          ind = 1:popn,
-          type = "TimeSeries")
-# cut back to just the first n points:
-df1 <- df1[1:n, ]
-
-
-# Same linear model, with i.i.d. white noise random element:
-df2 <- data.frame(x = rnorm(n)) %>%
-   mutate(y = 1 + 0.3 * x + rnorm(n),
-          ind = 1:n,
-          type = "CrossSection")
-
-# draw the time series response:
-p0 <- df1 %>%
-   ggplot(aes(x = ind, y = y)) +
-   geom_line() +
-   labs(x = "Time") +
-   ggtitle("Simulated response variable from linear model\nwith time series random element")
-   
+#----------Import and mung data---------------
+# load deaths by assault from OECD.Stat
+if(!exists("viol_sdmx")){
+   myUrl <- "http://stats.oecd.org/restsdmx/sdmx.ashx/GetData/HEALTH_STAT/CICDHOCD.TXCMFETF+TXCMHOTH+TXCMILTX.AUS+AUT+BEL+CAN+CHL+CZE+DNK+EST+FIN+FRA+DEU+GRC+HUN+ISL+IRL+ISR+ITA+JPN+KOR+LUX+MEX+NLD+NZL+NOR+POL+PRT+SVK+SVN+ESP+SWE+CHE+TUR+GBR+USA+NMEC+BRA+CHN+COL+CRI+IND+IDN+LVA+LTU+RUS+ZAF/all?startTime=1960&endTime=2014"
+   dataset <- readSDMX(myUrl) # takes about 30 seconds on a slow hotel internet connection
+   viol_sdmx <- as.data.frame(dataset) # takes about 10 seconds on an i5
+}
 {% endhighlight %}
-
-Creating the animation is straightforward graphics.  I make use of [ggplot2's](http://ggplot2.org/) faceting feature to cut down on some code, drawing the top two connected scatterplot images with one chunk and the bottom two residuals with another.  Each frame is saved as an individual PNG image, and [ImageMagick](http://www.imagemagick.org/script/index.php) ties it all together into an animated GIF as easily as usual.
 
 {% highlight R lineanchors %}
-df_both <- rbind(df1, df2)
+# load Country codes from ISOcodes R package
+data("ISO_3166_1")
 
+# mung:
+viol <- viol_sdmx %>%
+   # match country codes to country names:
+   left_join(ISO_3166_1[ , c("Alpha_3", "Name")], by = c("COU" = "Alpha_3")) %>%
+   # more friendly names:
+   rename(Country = Name,
+          Year = obsTime,
+          Value = obsValue) %>%
+   # limit to columns we want:
+   select(UNIT, Country, Year, Value) %>%
+   # make graphics-friendly versions of Unit and Year variables:
+   mutate(Unit = ifelse(UNIT == "TXCMILTX", 
+                        "Deaths per 100 000 population", "Deaths per 100 000 males"),
+          Unit = ifelse(UNIT == "TXCMFETF", "Deaths per 100 000 females", Unit),
+          Unit = factor(Unit, levels = unique(Unit)[c(2, 3, 1)]),
+          Year = as.numeric(Year)) %>%
+   # not enough data for Turkey to be useful so we knock it out:
+   filter(Country != "Turkey")
+{% endhighlight %}
 
-for(i in 5:n){
+Having created the original object "viol" I make a few summary and total objects to help with structuring my graphics.  In particular, I need a data frame that provides average rates since 1990 for the first chart, and a data frame of totals so I can arrange the plots in order of increasing rates of violent death.
 
-   # I name the images i + 1000 so alphabetical order is also numeric
-   png(paste0(i + 1000, ".png"), 700, 600, res = 100)
-   
-   df1_tmp <- df1[1:i, ]
-   df2_tmp <- df2[1:i, ]
-   
-   residuals1 <- data.frame(res = residuals(lm(y ~ x, data = df1_tmp)), 
-                            ind = 1:i, 
-                            type = "TimeSeries")
-   residuals2 <- data.frame(res = residuals(lm(y ~ x, data = df2_tmp)), 
-                            ind = 1:i, 
-                            type = "CrossSection")
-   
-   # connected scatter plots:
-   p1 <- ggplot(df_both[c(1:i, (n + 1) : (n + i)), ], aes(x, y, colour = ind)) +
-      facet_wrap(~type, ncol = 2) +
-      geom_path() +
-      geom_point() +
-      geom_abline(intercept = 1, slope = 0.3) +
-      geom_smooth(method = "lm", se = FALSE, size = 2, colour = "red") +
-      theme(legend.position = "none") +
-      xlim(range(df_both$x)) +
-      ylim(range(df_both$y)) +
-      ggtitle(paste("Connected scatterplot showing regression on first", i, "points"))
-      
-   
-   # Residuals plots    
-   p2 <- residuals1 %>%
-      rbind(residuals2) %>%
-      mutate(type = factor(type, levels = c("CrossSection", "TimeSeries"))) %>%
-      ggplot(aes(x = ind, y = res)) +
-      scale_x_continuous(limits = c(0, n)) +
-      facet_wrap(~type) +
-      geom_line() +
-      geom_point() +
-      ggtitle("Residuals from regression so far") +
-      labs(x = "Time", y = "Residuals")
-   
-   grid.arrange(p1, p2)
-   
-   dev.off()
-   
-}
+{% highlight R lineanchors %}
+viol_sum <- viol %>%
+   filter(Year > 1990) %>%
+   group_by(Country, Unit) %>%
+   summarise(Value = mean(Value)) %>%
+   ungroup()
 
-# combine them into an animated GIF
-system('"C:\\Program Files\\ImageMagick-6.9.1-Q16\\convert" -loop 0 -delay 10 *.png "timeseries.gif"')
+totals <- viol_sum %>%
+   group_by(Country) %>%
+   summarise(Value = mean(Value)) %>%
+   arrange(Value)
 
+viol_spread <- viol_sum %>%
+   mutate(Unit = as.character(Unit),
+          Unit = ifelse(grepl("female", Unit), "Female", Unit),
+          Unit = ifelse(grepl(" males", Unit), "Male", Unit),
+          Unit = ifelse(grepl("population", Unit), "Population", Unit)) %>%
+   spread(Unit, Value) %>%
+   mutate(Country = factor(Country, levels = totals$Country))
 {% endhighlight %}
 
 
+## The actual plots
+Now we're ready to draw some plots.  Here's the code that makes the first two:
 
+{% highlight R lineanchors %}
+viol_sum %>%
+   mutate(Country = factor(Country, levels = totals$Country)) %>%
+   mutate(Label = ifelse(grepl("population", Unit), as.character(Country), "|")) %>%
+   ggplot(aes(x = Value, y = Country)) +
+   geom_segment(data = viol_spread, aes(y = Country, yend = Country, x = Male, xend = Female),
+                colour = "white", size = 3) +
+   geom_text(size = 4, aes(label = Label, colour = Unit), alpha = 0.8,
+             gp = gpar(fontfamily = "myfont")) +
+   labs(y = "") +
+   scale_x_log10(("Deaths per 100,000 (logarithmic scale)")) +
+   theme(legend.position = "bottom") +
+   scale_colour_manual("", values = c("red", "grey10", "blue")) +
+   labs(colour = "") +
+   ggtitle("Mean annual deaths from violent assault 1990 to 2013") 
+   
+viol %>%
+   filter(!grepl("population", Unit)) %>%
+   select(UNIT, Value, Year, Country) %>%
+   spread(UNIT, Value) %>% 
+   mutate(ratio = TXCMHOTH / TXCMFETF)  %>%
+   group_by(Country) %>%
+   summarise(ratio = mean(ratio, tr = 0.2)) %>%
+   arrange(ratio) %>%
+   # knock out Luxembourg and Iceland, too many NAs:
+   filter(!is.na(ratio)) %>%
+   mutate(Country = factor(Country, levels = Country)) %>%
+   ggplot(aes(x = ratio, y = Country)) +
+   geom_point() +
+   labs(x = "Trimmed mean annual ratio of male to female rates\nof violent death over whole period", y = "")
+{% endhighlight %}
+
+And here's the plot that draws the smoothed trend lines:
+{% highlight R lineanchors %}
+viol %>%
+   mutate(Country = factor(Country, levels = totals$Country)) %>%
+   ggplot(aes(x = Year, y = Value, colour = Unit)) +
+   facet_wrap(~Country, scales = "free_y", ncol = 5) +
+   geom_smooth(se = FALSE, method = "loess") +
+   geom_point(alpha = 0.8, size = 1) +
+   scale_colour_manual("", values = c("red", "grey10", "blue")) +
+   theme(legend.position = "bottom") +
+   labs(y = "Deaths per 100,000 per year - note changing vertical scale", 
+        title = "Deaths from violent assault", x = "")
+{% endhighlight %}
