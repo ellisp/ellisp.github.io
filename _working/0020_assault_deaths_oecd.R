@@ -4,8 +4,10 @@ library(grid)
 library(dplyr)
 library(tidyr)
 library(showtext) # for fonts
-library(rsdmx)
-library(ISOcodes)
+library(rsdmx)    # for importing OECD data
+library(ISOcodes) # for merging country codes with names
+library(rvest)    # for screen scraping from the Vatican
+library(gridExtra)
 
 font.add.google("Poppins", "myfont")
 showtext.auto()
@@ -68,6 +70,34 @@ viol_spread <- viol_sum %>%
    mutate(Country = factor(Country, levels = totals$Country))
 
 #------------------Graphics---------------------
+
+
+p1 <- viol_sum %>%
+   mutate(Country = factor(Country, levels = totals$Country)) %>%
+   mutate(Label = ifelse(grepl("population", Unit), as.character(Country), "|")) %>%
+   ggplot(aes(x = Value, y = Country)) +
+   geom_segment(data = viol_spread, aes(y = Country, yend = Country, x = Male, xend = Female),
+                colour = "white", size = 3) +
+   geom_text(size = 4, aes(label = Label, colour = Unit), alpha = 0.8,
+             family = "myfont") +
+   labs(y = "") +
+   scale_x_log10(("Deaths per 100,000 (logarithmic scale)")) +
+   theme(legend.position = "bottom") +
+   scale_colour_manual("", values = c("red", "grey10", "blue")) +
+   labs(colour = "") +
+   ggtitle("Mean annual deaths from violent assault 1990 to 2013") 
+
+
+svg("../img/0020-assault-average.svg", 10, 10)
+print(p1)
+dev.off()
+
+png("../img/0020-assault-average.png", 1000, 1000, res = 100)
+print(p1)
+dev.off()
+
+
+
 svg("../img/0020-deaths-trends.svg", 10, 10)
 print(
    viol %>%
@@ -86,33 +116,8 @@ print(
 dev.off()
 
 
-
-p1 <- viol_sum %>%
-   mutate(Country = factor(Country, levels = totals$Country)) %>%
-   mutate(Label = ifelse(grepl("population", Unit), as.character(Country), "|")) %>%
-   ggplot(aes(x = Value, y = Country)) +
-   geom_segment(data = viol_spread, aes(y = Country, yend = Country, x = Male, xend = Female),
-                colour = "white", size = 3) +
-   geom_text(size = 4, aes(label = Label, colour = Unit), alpha = 0.8,
-             gp = gpar(fontfamily = "myfont")) +
-   labs(y = "") +
-   scale_x_log10(("Deaths per 100,000 (logarithmic scale)")) +
-   theme(legend.position = "bottom") +
-   scale_colour_manual("", values = c("red", "grey10", "blue")) +
-   labs(colour = "") +
-   ggtitle("Mean annual deaths from violent assault 1990 to 2013") 
-      
-
-svg("../img/0020-assault-average.svg", 10, 10)
-   print(p1)
-dev.off()
-
-png("../img/0020-assault-average.png", 1000, 1000, res = 100)
-   print(p1)
-dev.off()
-
-svg("../img/0020-gender-ratios.svg", 6, 10)
-print(viol %>%
+#--------------gender digression------------
+viol_gender <- viol %>%
    filter(!grepl("population", Unit)) %>%
    select(UNIT, Value, Year, Country) %>%
    spread(UNIT, Value) %>% 
@@ -122,9 +127,59 @@ print(viol %>%
    arrange(ratio) %>%
    # knock out Luxembourg and Iceland, too many NAs:
    filter(!is.na(ratio)) %>%
-   mutate(Country = factor(Country, levels = Country)) %>%
+   mutate(Country = factor(Country, levels = Country))
+
+svg("../img/0020-gender-ratios.svg", 6, 10)
+print(
+   viol_gender %>%
    ggplot(aes(x = ratio, y = Country)) +
    geom_point() +
-   labs(x = "Trimmed mean annual ratio of male to female rates\nof violent death over whole period", y = ""))
+   labs(x = "Trimmed mean annual ratio of male to female rates\nof violent death over whole period", y = "")
+   )
 dev.off()
 
+# download catholic proportion data
+cath_page <- read_html("http://www.catholic-hierarchy.org/country/sc1.html")
+cath_data <- html_table(cath_page)[[1]] 
+
+names(cath_data) <- gsub(" ", "_", names(cath_data))
+
+lat_american <- c("Colombia", "Brazil", "Mexico", "Chile", "Costa Rica")
+american <- c(lat_american, c("Canada", "United States"))
+
+
+cath_data <- cath_data %>%
+   mutate(Country = gsub("M.+xico", "Mexico", Country),
+          Country = ifelse(Country == "USA", "United States", Country),
+          Country = ifelse(Country == "Great Britain", "United Kingdom", Country),
+          Country = ifelse(Country == "Korea (South)" , "Korea, Republic of", Country)) %>%
+   select(Country, Percent_Catholic) %>%
+   mutate(Percent_Catholic = as.numeric(gsub("%", "", Percent_Catholic)),
+          Continent1 = ifelse(Country %in% american, "Americas", "Other"),
+          Continent2 = ifelse(Country %in% lat_american, "Latin American", "Other"))
+
+viol_gender_cath <- viol_gender %>%
+   left_join(cath_data, by = "Country")
+
+cath1 <-    viol_gender_cath %>%
+   ggplot(aes(x = Percent_Catholic, y = ratio, label = Country))  +
+   geom_smooth(method = "lm") +
+   geom_text(family = "myfont", size = 3, alpha = 0.8) +
+   labs(x = "Percentage of country reported to be Catholic", 
+        y = "Ratio of female to male\nassault death rates") +
+      xlim(-5, 110)
+
+cath2 <- cath1 + aes(colour = Continent1)
+cath3 <- cath1 + aes(colour = Continent2)
+
+svg("../img/0020-gender-catholic.svg", 8, 8)
+grid.arrange(cath1, cath2, cath3)
+dev.off()
+
+mod1 <- lm(ratio ~ Percent_Catholic, data = viol_gender_cath)
+mod2 <- lm(ratio ~ Percent_Catholic * Continent1, data = viol_gender_cath)
+mod3 <- lm(ratio ~ Percent_Catholic * Continent2, data = viol_gender_cath)
+
+summary(mod1)
+summary(mod2)
+summary(mod3)
