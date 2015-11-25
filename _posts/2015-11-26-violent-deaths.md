@@ -1,7 +1,7 @@
 ---
 layout: post
 title: Deaths from assault over time in 40 relatively rich countries
-date: 2015-11-25
+date: 2015-11-26
 tag: 
    - OpenData
    - Crime
@@ -18,10 +18,12 @@ A friend was looking at comparative data on violent deaths in a range of countri
 The data in this post are age-standardised deaths per 100,000 for whole population, male population, and female population; the OECD variables coded as TXCMILTX, TXCMHOTH and TXCMFETF.  I'm not an expert in this area - if they mean something else (I'm a little unsure on the age-standardisation) don't just curse me, let me know.
 
 ###Compare across countries and sex
-Looking at snapshot cross-sectional average data since 1990 (for which there is more comparable data across countries, with a number of countries such as Germany and Czech Republic only coming into existence at or around that period) we see two things that met Tukey's "intra-ocular impact test" ie they hit you between the eyes:
+Looking at snapshot cross-sectional average data since 1990 (for which there is more comparable data across countries, with a number of countries such as Germany and Czech Republic only coming into existence at or around that period) we see two things that met the "intra-ocular impact test" ie they hit you between the eyes:
 
-* Nearly everywhere, males are much more likely to killed in a violent assault than are females
-* The Americas and the former Soviet Socialist Republics (Russia, Estonia, Latvia, Lithuania) dominate the list of most violent places to live (or rather, to die).  Other than countries of these two types, only South Africa makes the top 11 countries.  Remember that this only shows relatively weathly countries - for a more complete list (but less complete data) check out [this site](http://www.worldlifeexpectancy.com/cause-of-death/violence/by-country/) (I'm not endorsing it in any way, and in fact have not tried to work out its agenda which looks a little... je ne sais quoi...  but it gets credit for winning the "quickest, readiest access to the secondary international data I wanted to refer to but not spend any time on and is surprisingly difficult to find from official sources" competition).
+* For nearly all the listed countries, males are much more likely to killed in a violent assault than are females
+* The Americas and the former Soviet Socialist Republics (Russia, Estonia, Latvia, Lithuania) dominate the list of most violent places to live (or rather, to die).  Other than countries of these two types, only South Africa makes the top 11 countries.  The safer countries include those in eastern Europe (other than former USSR, but including countries that were in its political orbit), Asia, Australasia and western Europe.
+
+Remember that this only shows relatively weathly countries - for a more complete list (but less complete data) check out this [Wikipedia list of countries that can be ranked by intentional homicide rates](https://en.wikipedia.org/wiki/List_of_countries_by_intentional_homicide_rate) (not quite the same as our data, which includes all deaths from assault, intentional or otherwise) or this [report from the UN Office on Drugs and Crime](https://www.unodc.org/documents/data-and-analysis/Crime-statistics/International_Statistics_on_Crime_and_Justice.pdf).
 
 In the chart below, the label for each country is centred at the overall population rate of violent deaths and the red and blue vertical strokes mark the female and male rates respectively.  Beware that the scale is logarithmic - this was necessary to stop everywhere except Colombia being squashed into the left of the chart.
 ![snapshot](/img/0020-assault-average.svg)
@@ -55,7 +57,7 @@ The nub of the issue is that the apparent relationship with Catholicism might be
 * The second plot controls for this by adding a dummy variable for "Americas".  The result is still statistically significant evidence of a Catholic effect, but interacting with the continent effect ie only in the Americas does it seem to matter being an increasingly Catholic country when wondering if males are more likely to be violently killed than females.
 * The third plot (which I think is my preferred) adds a dummy variable for "Latin American" and finds no statistically significant relationship between Catholicism and male-female death ratios after that effect is accounted for.
 
-There's no simple way to solve the correlation of our two explnatory variables - Americanism and Catholicism - and picking which of the second or third model above is best, and the essentially arbitrary nature of our continent-classification variable.  There's no possibility of creating a test-set of data, for example.  So until more data comes out (and I'm not claiming to have looked for it, either way) I prefer to stick to the third plot, and say (which is probably obvious to anyone) that male/female assault death ratios are much higher in Latin American countries, and after we've taken that into account there's no real further evidence in this particular dataset of an additional Catholic effect.
+There's no simple way to solve the correlation of our two explnatory variables - Americanism and Catholicism - and picking which of the second or third model above is best, and the essentially arbitrary nature of our continent-classification variable.  There's no possibility of creating a test-set of data, for example.  Even if we brought in what data are available on poorer countries and used them as a test set, the confounding relationship between Latin America and Catholicism would pertain to that dataset too.  So until more data or ideas come out (and I'm not claiming to have looked for them, either way) I prefer to stick to the third plot, and say only that male/female assault death ratios are much higher in Latin American countries, we don't know why from just this dataset, and after we've taken that into account there's no real further evidence in this particular dataset of an additional Catholic effect.
 
 ## Arranging the data
 Here's how I import the data into R.  If you know exactly what you're looking for, you can import data directly from OECD.Stat with the [{rsdmx}](https://cran.r-project.org/web/packages/rsdmx/index.html) package by sending an appropriately structured URL (line 18 below) to their website.  However, to work out that URL you'll probably need to navigate [their site](http://stats.oecd.org/) by hand and choose your particular 'customising', then choose the "export" and "SDMX" options, then copy the URL it generates for you.  It's useful for reproducibility purposes (for example, it meant I didn't need to save a copy of the data anywhere to make the code below reproducible for others).
