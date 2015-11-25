@@ -7,7 +7,7 @@ tag:
    - Crime
    - DataFromTheWeb
    - R
-description: Simple but effective graphics showing relative country standings with regard to violent deaths, and trends over time.  Most countries in this group are seeing a decline in violent deaths from peaks in the 1970s, '80s or '90s.  Data are downloaded from OECD.Stat via their API and SDMX and this post shows how to do this, and also demos screen scraping with {rvest} - not that it needs any demo-ing, it's so user-friendly.
+description: Simple but effective graphics showing relative country standings with regard to deaths from assault, and trends over time.  Most countries in this group are seeing a decline in deaths from assault, from peaks in the 1970s, '80s or '90s.  Data are downloaded from OECD.Stat via their API and SDMX and this post shows how to do this, and also demos screen scraping with {rvest} - not that it needs any demo-ing, it's so user-friendly.
 image: /img/0020-assault-average.svg
 socialimage: http://ellisp.github.io/img/0020-assault-average.png
 category: R
@@ -20,12 +20,12 @@ The data in this post are age-standardised deaths per 100,000 for whole populati
 ###Compare across countries and sex
 Looking at snapshot cross-sectional average data since 1990 (for which there is more comparable data across countries, with a number of countries such as Germany and Czech Republic only coming into existence at or around that period) we see two things that met the "intra-ocular impact test" ie they hit you between the eyes:
 
-* For nearly all the listed countries, males are much more likely to killed in a violent assault than are females
+* For nearly all the listed countries, males are much more likely to killed in a assault than are females
 * The Americas and the former Soviet Socialist Republics (Russia, Estonia, Latvia, Lithuania) dominate the list of most violent places to live (or rather, to die).  Other than countries of these two types, only South Africa makes the top 11 countries.  The safer countries include those in eastern Europe (other than former USSR, but including countries that were in its political orbit), Asia, Australasia and western Europe.
 
 Remember that this only shows relatively weathly countries - for a more complete list (but less complete data) check out this [Wikipedia list of countries that can be ranked by intentional homicide rates](https://en.wikipedia.org/wiki/List_of_countries_by_intentional_homicide_rate) (not quite the same as our data, which includes all deaths from assault, intentional or otherwise) or this [report from the UN Office on Drugs and Crime](https://www.unodc.org/documents/data-and-analysis/Crime-statistics/International_Statistics_on_Crime_and_Justice.pdf).
 
-In the chart below, the label for each country is centred at the overall population rate of violent deaths and the red and blue vertical strokes mark the female and male rates respectively.  Beware that the scale is logarithmic - this was necessary to stop everywhere except Colombia being squashed into the left of the chart.
+In the chart below, the label for each country is centred at the overall population rate of deaths from assault and the red and blue vertical strokes mark the female and male rates respectively.  Beware that the scale is logarithmic - this was necessary to stop everywhere except Colombia being squashed into the left of the chart.
 ![snapshot](/img/0020-assault-average.svg)
 
 ###Compare across time
@@ -33,7 +33,7 @@ Looking at trends across time we see an encouraging sign.  Most countries' viole
 
 In the chart below the vertical axis for each country has been set to make most use of the plot area and draw attention to trends rather than absolute levels, so you can't compare the absolute levels of violence across countries.  That's what the first chart was for, so the two charts complement eachother.  The facets in the trend chart below have been *ordered* from lowest to highest rates (1990+ averages), so there is still some visual indicator of absolute size of the problem.
 
-The recent declines are particularly strong in the  Eastern Europe and USSR region - Russia, Estonia, Latvia, Lithuania, Poland, Slovak Republic, Slovenia, Czech Republic, and Germany have all seen dramatic drops in rates of violent death after rapid growth in the early 1990s, associated with the magnitude of the transition in economic and political systems that took place at that time.  There's also the possibility of changing official statistical practice with the changing political system, but there's no particular reason I know of (I'm not an expert in former and post Soviet statistics systems, either...) to think of that, and the general curve looks plausible given an outsider's view of the recent history there.
+The recent declines are particularly strong in the  Eastern Europe and USSR region - Russia, Estonia, Latvia, Lithuania, Poland, Slovak Republic, Slovenia, Czech Republic, and Germany have all seen dramatic drops in rates of death from assault after rapid growth in the early 1990s, associated with the magnitude of the transition in economic and political systems that took place at that time.  There's also the possibility of changing official statistical practice with the changing political system, but there's no particular reason I know of (I'm not an expert in former and post Soviet statistics systems, either...) to think of that, and the general curve looks plausible given an outsider's view of the recent history there.
 ![over-time](/img/0020-deaths-trends.svg)
 
 Tragically, Norway's [spike in 2011](https://en.wikipedia.org/wiki/2011_Norway_attacks) is really noticeable to a close viewer, even in a chart like this with 40 countries covering 50 years.
@@ -54,7 +54,7 @@ The nub of the issue is that the apparent relationship with Catholicism might be
 ![catholics-gender](/img/0020-gender-catholic.svg)
 
 * The top plot ignores the Latin Americanism of those five countries and fits a simple linear regression, which finds (illusory) statistically significant evidence of a link between Catholicism and a higher ratio of male to female death-from-assault rates.  As mentioned above, this approach is unsound because it ignores the grouping of the five prominent countries that drag up the slope of the line.
-* The second plot controls for this by adding a dummy variable for "Americas".  The result is still statistically significant evidence of a Catholic effect, but interacting with the continent effect ie only in the Americas does it seem to matter being an increasingly Catholic country when wondering if males are more likely to be violently killed than females.
+* The second plot controls for this by adding a dummy variable for "Americas".  The result is still statistically significant evidence of a Catholic effect, but interacting with the continent effect ie only in the Americas does it seem to matter being an increasingly Catholic country when wondering if males are more likely to be killed in an assault than females.
 * The third plot (which I think is my preferred) adds a dummy variable for "Latin American" and finds no statistically significant relationship between Catholicism and male-female death ratios after that effect is accounted for.
 
 There's no simple way to solve the correlation of our two explnatory variables - Americanism and Catholicism - and picking which of the second or third model above is best, and the essentially arbitrary nature of our continent-classification variable.  There's no possibility of creating a test-set of data, for example.  Even if we brought in what data are available on poorer countries and used them as a test set, the confounding relationship between Latin America and Catholicism would pertain to that dataset too.  So until more data or ideas come out (and I'm not claiming to have looked for them, either way) I prefer to stick to the third plot, and say only that male/female assault death ratios are much higher in Latin American countries, we don't know why from just this dataset, and after we've taken that into account there's no real further evidence in this particular dataset of an additional Catholic effect.
@@ -111,7 +111,7 @@ viol <- viol_sdmx %>%
    filter(Country != "Turkey")
 {% endhighlight %}
 
-Having created the original object "viol" I make a few summary and total objects to help with structuring my graphics.  In particular, I need a data frame that provides average rates since 1990 for the first chart, and a data frame of totals so I can arrange the plots in order of increasing rates of violent death.
+Having created the original object "viol" I make a few summary and total objects to help with structuring my graphics.  In particular, I need a data frame that provides average rates since 1990 for the first chart, and a data frame of totals so I can arrange the plots in order of increasing rates of death from assault.
 
 {% highlight R lineanchors %}
 # create country x Unit summaries   
@@ -155,7 +155,7 @@ viol_sum %>%
    theme(legend.position = "bottom") +
    scale_colour_manual("", values = c("red", "grey10", "blue")) +
    labs(colour = "") +
-   ggtitle("Mean annual deaths from violent assault 1990 to 2013") 
+   ggtitle("Mean annual deaths from assault 1990 to 2013") 
 
 viol %>%
    mutate(Country = factor(Country, levels = totals$Country)) %>%
@@ -166,7 +166,7 @@ viol %>%
    scale_colour_manual("", values = c("red", "grey10", "blue")) +
    theme(legend.position = "bottom") +
    labs(y = "Deaths per 100,000 per year - note changing vertical scale", 
-        title = "Deaths from violent assault", x = "")
+        title = "Deaths from assault", x = "")
 {% endhighlight %}
 
 To investigate the Catholicism and gender ratio issues in the second set of plots, I had to pull down some data from the web using [Hadley Wickham's amazing {rvest} package](https://cran.r-project.org/web/packages/rvest/index.html).  It's inspired by Python's wonderful [Beautiful Soup](http://www.crummy.com/software/BeautifulSoup/) but I have to say is *astonishingly* user friendly.
@@ -190,7 +190,7 @@ viol_gender <- viol %>%
 viol_gender %>%
    ggplot(aes(x = ratio, y = Country)) +
    geom_point() +
-   labs(x = "Trimmed mean annual ratio of male to female rates\nof violent death over whole period", y = "")
+   labs(x = "Trimmed mean annual ratio of male to female rates\nof deaths from assault over whole period", y = "")
 
 # download catholic proportion data
 cath_page <- read_html("http://www.catholic-hierarchy.org/country/sc1.html")

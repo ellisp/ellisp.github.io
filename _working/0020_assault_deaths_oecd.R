@@ -85,7 +85,7 @@ p1 <- viol_sum %>%
    theme(legend.position = "bottom") +
    scale_colour_manual("", values = c("red", "grey10", "blue")) +
    labs(colour = "") +
-   ggtitle("Mean annual deaths from violent assault 1990 to 2013") 
+   ggtitle("Mean annual deaths from assault 1990 to 2013") 
 
 
 svg("../img/0020-assault-average.svg", 10, 10)
@@ -111,7 +111,7 @@ print(
       scale_colour_manual("", values = c("red", "grey10", "blue")) +
       theme(legend.position = "bottom") +
       labs(y = "Deaths per 100,000 per year - note changing vertical scale", 
-           title = "Deaths from violent assault", x = "")
+           title = "Deaths from assault", x = "")
 )
 dev.off()
 
@@ -134,7 +134,7 @@ print(
    viol_gender %>%
    ggplot(aes(x = ratio, y = Country)) +
    geom_point() +
-   labs(x = "Trimmed mean annual ratio of male to female rates\nof violent death over whole period", y = "")
+   labs(x = "Trimmed mean annual ratio of male to female rates\nof death from assault over whole period", y = "")
    )
 dev.off()
 
