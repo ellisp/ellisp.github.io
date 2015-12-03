@@ -65,6 +65,7 @@ Here's how I import the data into R.  If you know exactly what you're looking fo
 library(ggplot2)
 library(scales)
 library(grid)
+library(gridExtra) # added 27/11/2015, for grid.arrange() to work!
 library(dplyr)
 library(tidyr)
 library(showtext) # for fonts
