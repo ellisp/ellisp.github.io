@@ -98,21 +98,26 @@ dev.off()
 
 
 
+
+p2 <-  viol %>%
+   #filter(!Country %in% c("Colombia", "Russia", "Mexico", "Estonia", "Brazil", "Lithuania", "Latvia", "South Africa", "Chile", "Costa Rica", "United States")) %>%
+   mutate(Country = factor(Country, levels = totals$Country)) %>%
+   ggplot(aes(x = Year, y = Value, colour = Unit)) +
+   facet_wrap(~Country, scales = "free_y", ncol = 5) +
+   #facet_wrap(~Country) +
+   geom_smooth(se = FALSE, method = "loess") +
+   geom_point(alpha = 0.8, size = 1) +
+   scale_colour_manual("", values = c("red", "grey10", "blue")) +
+   theme(legend.position = "bottom") +
+   labs(y = "Deaths per 100,000 per year - note changing vertical scale", 
+        title = "Deaths from assault", x = "")
+
 svg("../img/0020-deaths-trends.svg", 10, 10)
-print(
-   viol %>%
-      #filter(!Country %in% c("Colombia", "Russia", "Mexico", "Estonia", "Brazil", "Lithuania", "Latvia", "South Africa", "Chile", "Costa Rica", "United States")) %>%
-      mutate(Country = factor(Country, levels = totals$Country)) %>%
-      ggplot(aes(x = Year, y = Value, colour = Unit)) +
-      facet_wrap(~Country, scales = "free_y", ncol = 5) +
-      #facet_wrap(~Country) +
-      geom_smooth(se = FALSE, method = "loess") +
-      geom_point(alpha = 0.8, size = 1) +
-      scale_colour_manual("", values = c("red", "grey10", "blue")) +
-      theme(legend.position = "bottom") +
-      labs(y = "Deaths per 100,000 per year - note changing vertical scale", 
-           title = "Deaths from assault", x = "")
-)
+   print(p2)
+dev.off()
+
+png("../img/0020-deaths-trends.png", 1000, 1000, res = 100)
+   print(p2)
 dev.off()
 
 
