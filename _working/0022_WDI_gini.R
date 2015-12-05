@@ -10,7 +10,7 @@ good_series <- search_results[0, ]
 # in the wdi[[]] list.
 wdi <- list()
 
-# this takes 600+ minutes to run as you're downloading *every* dataset in the WDI
+# this takes 10 hours to run as you're downloading *every* dataset in the WDI
 for(i in 1:nrow(search_results)){
    tmp <- WDI(indicator = search_results[i, 1], end = 2015, start = 1960)
    if(!is.null(tmp) && nrow(tmp) > 0){
@@ -26,7 +26,8 @@ for(i in 1:nrow(search_results)){
 # as well give them just in case.
 names(wdi) <- good_series[ , 1]
 
-
+save(wdi, file = "../data/wdi.rda")
+save(good_series, file = "../data/good_series.rda")
 
 
 
