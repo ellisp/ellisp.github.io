@@ -2,6 +2,12 @@ library(WDI)
 library(ggplot2)
 library(scales)
 library(dplyr)
+library(showtext) # for fonts
+library(stringr)
+
+
+font.add.google("Poppins", "myfont")
+showtext.auto()
 
 search_results <- WDIsearch("")
 good_series <- search_results[0, ]
@@ -26,8 +32,15 @@ for(i in 1:nrow(search_results)){
 # as well give them just in case.
 names(wdi) <- good_series[ , 1]
 
+
+good_series <- as.data.frame(good_series)
+good_series$indicator <- str_trim(good_series$indicator)
+
+head(good_series)
 save(wdi, file = "../data/wdi.rda")
 save(good_series, file = "../data/good_series.rda")
+
+
 
 
 
