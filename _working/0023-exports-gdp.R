@@ -3,7 +3,6 @@ library(ggplot2)
 library(scales)
 library(dplyr)
 library(tidyr)
-library(GGally)   # for ggplot pairs plot
 library(showtext) # for fonts
 library(nlme)
 
@@ -16,9 +15,9 @@ theme_set(theme_light(10, base_family = "myfont"))
 #-------------------data imports, first explore, and clean-----------------
 if(!exists("exports")){
    # Exports of goods and services (% of GDP)
-   exports <- WDI(indicator = "NE.EXP.GNFS.ZS", end = 2015, start = 1960)
+   exports <- WDI(indicator = "NE.EXP.GNFS.ZS", end = 2015, start = 1950)
    # GDP per capita (constant 2000 US$)
-   gdp <- WDI(indicator = "NY.GDP.PCAP.KD", end = 2015, start = 1960)
+   gdp <- WDI(indicator = "NY.GDP.PCAP.KD", end = 2015, start = 1950)
 }
 
 both <- merge(exports, gdp) %>%
@@ -28,7 +27,8 @@ both <- merge(exports, gdp) %>%
    filter(!(is.na(exports) | is.na(gdp))) %>%
    arrange(country, year)
 
-# let's look at 16 countries at a time
+set.seed(234)
+# let's look at 12 countries at a time
 all_countries <- unique(both$country)
 sampled <- both    %>%
    filter(country %in% sample(all_countries, 12))
@@ -37,7 +37,10 @@ sampled <- both    %>%
 p1 <- sampled %>%
    ggplot(aes(y = gdp, x = exports, colour = year)) +
    facet_wrap(~country, scales = "free") +
-   geom_path()
+   geom_path() +
+   labs(x = "Exports as a percentage of GDP") +
+   scale_y_continuous("GDP per capita, constant 2000 US dollars", label = dollar) +
+   ggtitle("Exports and GDP over time, selected countries")
 
 # univariate time series plots
 p2 <- sampled %>%
@@ -47,7 +50,7 @@ p2 <- sampled %>%
    facet_wrap(~ country + variable, scales = "free_y")
 
 
-# how to get rid of the groups?
+# how to get rid of the country groups?
 unique(both[ , c("iso2c", "country")]) %>% arrange(iso2c)
 # they have a number as first or second digit, or X or Z as first digit (but ZW ZA ZM legit)
 
@@ -55,22 +58,21 @@ both2 <- both %>%
    filter(!grepl("X.", iso2c) & !grepl("[0-9]", iso2c)) %>%
    filter(!grepl("Z.", iso2c) | iso2c %in% c("ZW", "ZA", "ZM")) %>%
    filter(!iso2c %in% c("OE", "EU"))
-dim(both2)
-dim(both)
-
 
 #------------------------simple cross section-------------------
 country_sum <- both2 %>%
    group_by(country) %>%
-   summarise(gdp = mean(gdp),
-             exports = mean(exports))
+   filter(year == max(year))
 
 p3 <- country_sum %>%
-   ggplot(aes(x = exports, y = gdp, label = country)) +
+   ggplot(aes(x = exports / 100, y = gdp, label = country)) +
    geom_text(size = 3) +
    geom_smooth(method = "lm") +
-   scale_x_log10() +
-   scale_y_log10()
+   scale_y_log10(label = dollar) +
+   scale_x_log10(label = percent) +
+   labs(x = "Exports as a percentage of GDP",
+        y = "GDP per capita, constant 2000 US dollars",
+        title = "Cross section of exports and GDP, latest years when data are present")
 
 
 
@@ -87,7 +89,7 @@ first_values <- both2 %>%
           first_year = year) %>%
    select(iso2c, exports_starter, first_year)
 
-p4 <- ggplot(both3, aes(x = exports_starter)) + geom_density()
+p4 <- ggplot(first_values, aes(x = exports_starter)) + geom_density()
 
 # all those individual time series have problem of non-stationarity and of course autocorrelation
 # so when we merge with the starting values of exports we also calculate first
@@ -102,8 +104,6 @@ both3 <- both2 %>%
    ungroup() %>%
    filter(!is.na(gdp_g)) %>%
    filter(!is.na(exports_lag))
-
-head(both3)
 
 all_countries2 <- unique(both3$country)
 
@@ -133,47 +133,43 @@ p6 <- sampled %>%
 
 # we start with some exploratory fixed effects models
 # fixed effects model
-model0 <- lm(gdp_g ~ country +  exports_g, data = both3)
+model0 <- lm(gdp_g ~ country + exports_g, data = both3)
+model1 <- lm(gdp_g ~ country * exports_g, data = both3)
+model2 <- lm(gdp_g ~ country * (exports_g + exports_lag), data = both3)
 summary(model0)
-anova(model0)
-AIC(model0)
-
-# alternative spec of fixed effects model
-model1 <- lm(gdp_g ~ ordered(first_year) + exports_g + exports_starter, data = both3)
 summary(model1)
+anova(model0)
 anova(model1)
-AIC(model1)
-
-model2 <- lme(fixed = gdp_g ~ ordered(first_year) + exports_g + exports_starter,
-              random = ~ 1 | country, 
-              data = both3)
-
-summary(model2)$tTable
 anova(model2)
-ACF(model2) # special ACF function for objects of class lme
-AIC(model2)
 
-model3 <- lme(fixed = gdp_g ~ ordered(first_year) + exports_g + exports_starter,
-              random = ~ 1 | country, 
-              correlation = corAR1(),
+# then a more appropriate model that allows country-level variation to be a
+# random effect, and auto-correlation of the 
+model4 <- lme(fixed = gdp_g ~ ordered(first_year) + exports_g + exports_lag + exports_starter + year,
+              random = ~ exports_g + exports_lag + year | country, 
+              correlation = corAR1(form = ~ year | country),
               data = both3)
-anova(model3)
-AIC(model3)
+round(tail(summary(model4)$tTable, 4), 3)
 
-# now that we have an appropriate error structure, the p values are further from zero
-# ie less significant.  We look at our four models, each one closer to what we 
-# really believe is a good fit, just focusing on the parameters of interest
-round(tail(summary(model0)$coefficients, 1), 3)
-round(tail(summary(model1)$coefficients, 2), 3)
-round(tail(summary(model2)$tTable, 2), 3)
-round(tail(summary(model3)$tTable, 2), 3)
+# p values are less "significant" than in the fixed effects models:
+anova(model4)
 
-model4 <- lme(fixed = gdp_g ~ ordered(first_year) + exports_g + exports_lag + exports_starter,
-              random = ~ 1 | country, 
-              correlation = corAR1(),
-              data = both3)
+cf <- coef(model4)
 
-tail(round(summary(model4)$tTable, 3), 3)
+# let's look at just the last four coefficients ie exclude the nuisance of first_year
+cf_df <- cf[, (ncol(cf) - 3):ncol(cf)] %>%
+   as.data.frame() %>%
+   mutate(country = rownames(cf),
+          combined = exports_lag + exports_g) %>%
+   arrange(combined)
+
+
+p7 <- cf_df %>%
+   gather(variable, value, -country, -exports_starter) %>%
+   mutate(variable = gsub("combined", "exports_g + exports_lag", variable, fixed = TRUE)) %>%
+   ggplot(aes(x = value)) +
+   facet_wrap(~variable, scales = "free") +
+   geom_density() +
+   geom_rug()
 
 #----------------------save charts--------------
 
@@ -189,7 +185,12 @@ svg("../img/0023-p3.svg", 8, 7)
 print(p3)
 dev.off()
 
-svg("../img/0023-p4.svg", 8, 7)
+png("../img/0023-p3.png", 800, 700, res = 100)
+print(p3)
+dev.off()
+
+
+svg("../img/0023-p4.svg", 5, 4)
 print(p4)
 dev.off()
 
@@ -201,3 +202,6 @@ svg("../img/0023-p6.svg", 9, 7)
 print(p6)
 dev.off()
 
+svg("../img/0023-p7.svg", 7, 6)
+print(p7)
+dev.off()

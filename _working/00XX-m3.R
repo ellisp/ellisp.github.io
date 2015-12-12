@@ -1,5 +1,10 @@
+library(devtools)
+#devtools::install_github("christophsax/seasonal", ref = "error-parsing-fixes") 
+
+
 library(Mcomp)
 library(dplyr)
+library(tidyr)
 library(seasonal)
 
 # set path to X13-SEATS and check it's working
@@ -8,10 +13,10 @@ checkX13()
 
 nseries <- length(M3)
 
-nseries <- 50
+# nseries <- 500 # for development
 
 # define number of new methods
-number_methods <- 7 + 3 # 7 original, 3 new
+number_methods <- 7 + 4 # 7 original, 3 from Hyndman, plus X13
 
 theta <- as.matrix(M3Forecast$THETA)[1:nseries, ]
 fpro <- as.matrix(M3Forecast$ForecastPro)[1:nseries, ]
@@ -23,25 +28,31 @@ ab3 <- as.matrix(M3Forecast$AutoBox3)[1:nseries, ]
 
 ets1 <- aarima <- hybrid <- seats <- x11 <- matrix(NA, nrow = nseries, ncol = 18)
 
-for(i in 1:nseries)
-{
+for(i in 1:nseries){
    print(i)
+   SkipIt <- FALSE
    ets1[i, ] <- forecast(ets(M3[[i]]$x), h = 18, PI = FALSE)$mean
    aarima[i, ] <- forecast(auto.arima(M3[[i]]$x), h = 18)$mean
    hybrid[i, ] <- 0.5 * (aarima[i, ] + ets1[i, ])
    
    if(M3[[i]]$period != "YEARLY"){
-      m <- seas(M3[[i]]$x, forecast.maxlead = 18)
+      try(m <- seas(M3[[i]]$x, forecast.maxlead = 18)) # 801 fails to converge ; 807 runs but produces no data; 
+      # 1154  and a bunch aferhas singular x matrix problem because of trading days 
+      #1405 fails for 'unknown reason'
    } else {
-      m <- seas(M3[[i]]$x, regression.aictest = NULL, forecast.maxlead = 18)
-      m <- seas(M3[[i]]$x, regression.aictest = NULL)
+      try(m <- seas(M3[[i]]$x, regression.aictest = NULL, forecast.maxlead = 18)) # about 25% of annual series fail to start
    }
-   seats[i, ] <- series(m, "forecast.forecasts")[ , 1]      
-   
+   try(seats[i, ] <- series(m, "forecast.forecasts")[1:18 , 1]      ) # sometimes generates 36 or more... forecast.maxlead obviously means something i don't understand
 }
 
+
+# 92 failures in first 500 series; 413 in total, various reasons
+message(sum(is.na(seats[ , 1])), " series failed for SEATS, replacing them with auto.arima's results")
+bad <- is.na(seats)
+seats[bad] <- aarima[bad]
+
 # Compute accuracy
-mase <- mape <- smape <- matrix(NA, nrow = 10, ncol = nseries)
+mase <- mape <- smape <- matrix(NA, nrow = number_methods, ncol = nseries)
 f <- matrix(NA, nrow = number_methods, ncol = 18)
 for(i in 1:nseries)
 {
@@ -57,6 +68,7 @@ for(i in 1:nseries)
    f[8, 1:n] <- ets1[i, 1:n]
    f[9, 1:n] <- aarima[i, 1:n]
    f[10, 1:n] <- hybrid[i, 1:n]
+   f[11, 1:n] <- seats[i, 1:n]
    scale <- mean(abs(diff(M3[[i]]$x, lag = frequency(x))))
    for(j in 1:number_methods)
    {
@@ -77,7 +89,7 @@ names(m3table) <- c("MAPE", "sMAPE", "MASE")
 
 m3table$method <- c("Theta", "ForecastPro", "ForecastX", "BJauto",
                        "Autobox1", "Autobox2", "Autobox3",
-                       "ETS", "AutoARIMA", "Hybrid")
+                       "ETS", "AutoARIMA", "Hybrid", "X13-SEATS")
 
 m3table %>%
    arrange(MASE)
