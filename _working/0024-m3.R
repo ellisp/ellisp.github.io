@@ -58,9 +58,15 @@ for(i in 1:nseries){
 # 92 failures in first 500 series; 413 in total, various reasons
 message(sum(is.na(seats[ , 1])), " series failed for SEATS, replacing them with auto.arima's results")
 bad <- is.na(seats)
+bad[ ,1]
 save(bad, seats, file = "tmp_bad_and_seats.rda")
-seats[bad] <- aarima[bad]
-which(is.na(bad[ , 1]))
+
+# create a copy of seats that uses auto arima when it's bad
+seats2 <- seats
+seats2[bad] <- aarima[bad]
+
+# which series are the bad ones?
+bad_series <- which(bad[, 1])
 
 
 # Compute accuracy
@@ -85,7 +91,7 @@ for(i in 1:nseries)
    f[12, 1:n] <- hybrid2b[i, 1:n]
    f[13, 1:n] <- hybrid2c[i, 1:n]
    f[14, 1:n] <- hybrid3[i, 1:n]
-   f[15, 1:n] <- seats[i, 1:n]
+   f[15, 1:n] <- seats2[i, 1:n]
    scale <- mean(abs(diff(M3[[i]]$x, lag = frequency(x))))
    for(j in 1:number_methods)
    {
@@ -121,6 +127,44 @@ p1 <- m3table %>%
    geom_point() +
    geom_segment(aes(yend = method), xend = 1)
 
-save(m3table, file = "tmp_m3table.rda")
+
+#=================further investigation===============
+
+#-------------example series with unit root--------------
+# Series Y434, Marital status (numbers in thousands), 1974 to 1988
+plot(M3[[434]]$x)
 
 
+# this works and decides it's ARIMA(0,1,0) with drift:
+auto.arima(M3[[434]]$x)
+
+# this fails
+seas(M3[[434]]$x, regression.aictest = NULL)
+
+# but if we manually specify the model
+m <- seas(M3[[434]]$x, 
+          regression.aictest = NULL, 
+          regression.variables = c("const"),
+          arima.model = c(0,1,0), 
+          forecast.maxlead = 18)
+series(m, "forecast.forecasts")[1:18 , 1]    
+
+# which is the same as auto.arima's original forecast:
+aarima[434, ]
+
+#-----------trading day problem--------------
+# Denmark GDP by expenditure
+plot(M3[[1154]]$x)
+
+# fails because of singularity to do with number of Saturdays:
+seas(M3[[1154]]$x)
+
+
+# if we specify manually which regression variables to choose 
+# and we drop trading days, we get a result:
+m <- seas(M3[[1154]]$x, 
+          regression.variables = c("const", "easter[14]", "seasonal"), 
+          forecast.maxlead = 18)
+series(m, "forecast.forecasts")[1:18 , 1]    
+
+aarima[1154, ]
