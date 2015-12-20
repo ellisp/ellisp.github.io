@@ -177,6 +177,11 @@ svg("../img/0023-p1.svg", 9, 7)
 print(p1)
 dev.off()
 
+png("../img/0023-p1.png", 900, 700, res = 100)
+print(p1)
+dev.off()
+
+
 svg("../img/0023-p2.svg", 9, 7)
 print(p2)
 dev.off()
