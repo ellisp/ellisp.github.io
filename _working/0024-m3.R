@@ -159,6 +159,7 @@ auto.arima(M3[[434]]$x)
 
 # this fails
 seas(M3[[434]]$x, regression.aictest = NULL)
+seas(M3[[434]]$x, regression.aictest = NULL, x11 = "")
 
 # but if we manually specify the model
 m <- seas(M3[[434]]$x, 
@@ -369,4 +370,26 @@ summary(m) # ARIMA(1,1,0)(1,1,0), log transform
 # auto.arima gives ARIMA(1,1,0)(0,1,0) on original
 auto.arima(M3[[1388]]$x)
 
+
+#=========================theta method==================
+# http://stats.stackexchange.com/questions/67036/does-thetaf-in-the-forecast-package-in-r-detect-seasonality
+# Hyndman says it does not handle seasonality.  Then why did it score so well in M3?
+
+
+thetas <- function(s){
+   forecast_theta <- ts(c(M3[[s]]$x, theta_fc[s, ]))
+   original_theta <- ts(c(M3[[s]]$x, theta[s, ]))
+   plot(cbind(forecast_theta, original_theta), main = M3[[s]]$description, plot.type = "single", col = 1:2)
+}
+
+thetas(1388)
+
+
+
+for(i in 1:3003){
+   png(paste0("_output/0024-thetas/", i, ".png"), 600, 400, res = 100)
+   thetas(i)
+   cat(i, " ")
+   dev.off()
+}
 
