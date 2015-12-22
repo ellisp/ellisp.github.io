@@ -7,6 +7,146 @@
 		<atom:link href="http://ellisp.github.io/feed.R.xml" rel="self" type="application/rss+xml" />
 		
 			<item>
+				<title>X13-SEATS-ARIMA as an automated forecasting tool</title>
+					<description>&lt;h2 id=&quot;the-m3-forecasting-competition&quot;&gt;The M3 forecasting competition&lt;/h2&gt;
+&lt;p&gt;The M3 forecasting competition in 2000, organized by Spyros Makridakis and Michele Hibon, tested a variety of methods against 3,003 time series, with forecasts compared to held out test sets.  The data are conveniently available for R users in the &lt;a href=&quot;https://cran.r-project.org/web/packages/Mcomp/index.html&quot;&gt;Mcomp package&lt;/a&gt; and &lt;a href=&quot;http://robjhyndman.com/hyndsight/show-me-the-evidence/&quot;&gt;Rob Hyndman has published example code&lt;/a&gt; benchmarking the ets() and auto.arima() functions from his &lt;a href=&quot;https://cran.r-project.org/web/packages/forecast/&quot;&gt;forecast package&lt;/a&gt; against the results in 2000.&lt;/p&gt;
+
+&lt;p&gt;Hyndman has &lt;a href=&quot;http://www.robjhyndman.com/papers/forecast-accuracy.pdf&quot;&gt;a good outline of the various various measures of forecast accuracy&lt;/a&gt;.  I buy the argument that Mean Absolute Scaled Error (MASE) - not one used in the original M3 competition - is a better general indicator of forecast accuracy than any of the variants on percentage error, which fall apart when the series has negative values or values that go near to zero.&lt;/p&gt;
+
+&lt;h2 id=&quot;objectives&quot;&gt;Objectives&lt;/h2&gt;
+&lt;p&gt;I wanted to:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;confirm Hyndman’s results in his &lt;a href=&quot;http://robjhyndman.com/hyndsight/show-me-the-evidence/&quot;&gt;“show me the evidence”&lt;/a&gt; blog post, showing that a combination of auto.arima() and ets() gives very good out-of-the-box forecasting results&lt;/li&gt;
+  &lt;li&gt;see how X13-SEATS-ARIMA, when run with its default values, compares to the methods benchmarked by Hyndman&lt;/li&gt;
+  &lt;li&gt;confirm that hybrid forecasts (average of two or more methods) perform better than their constituent forecasts&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;To do this I modified &lt;a href=&quot;http://robjhyndman.com/m3comparisons.R&quot;&gt;Hyndman’s benchmarking code&lt;/a&gt; to add two additional forecasting methods:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;X13-SEATS-ARIMA&lt;/li&gt;
+  &lt;li&gt;hybrid of X13 and auto.arima()&lt;/li&gt;
+  &lt;li&gt;hybrid of X13, auto.arima(), and ets()&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;This exercise ended up more complex than I’d envisaged, and there’s too much code to integrate into the text, so the full set of code can be found in the &lt;a href=&quot;https://github.com/ellisp/ellisp.github.io/blob/source/_working/0024-m3.R&quot;&gt;&amp;lt;source&amp;gt; branch of my blog repository&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h3 id=&quot;x13-seats-arima&quot;&gt;X13-SEATS-ARIMA&lt;/h3&gt;
+&lt;p&gt;&lt;a href=&quot;https://www.census.gov/srd/www/x13as/&quot;&gt;X13-SEATS-ARIMA&lt;/a&gt; is the industry standard tool for seasonal adjustment, particularly for official statistics published by national statistics offices.  It gives a choice of the SEATS algorithm (Bank of Spain) and X11 (Statistics Canada and US Census Bureau).  X13-SEATS-ARIMA combines these into a single application, available for download from the US Census Bureau.  Christoph Sax’s excellent &lt;a href=&quot;https://cran.r-project.org/web/packages/seasonal/index.html&quot;&gt;{seasonal} R package&lt;/a&gt; gives easy access from R.&lt;/p&gt;
+
+&lt;p&gt;To seasonally adjust historical data, X13 can automatically select a seasonal ARIMA model, and it can forecast future values.  This made me wonder how it goes as a automated forecasting tool.  I couldn’t find (on an admittedly very cursory look) anyone who had benchmarked it against a large number of time series, so I thought I’d try it against the M3 competiton set.  I thought it might do well because of its default settings to automatically handle outliers, level shifts, transformations, and moving holidays like Easter.&lt;/p&gt;
+
+&lt;p&gt;In testing X13 on the M3 data, I had to give it different settings for annual data from seasonal, as otherwise it trips over in trying to find effects from Easter, number of trading days, etc.&lt;/p&gt;
+
+&lt;h2 id=&quot;results&quot;&gt;Results&lt;/h2&gt;
+&lt;p&gt;I was surprised to find that X13-SEATS-ARIMA, run with the defaults, doesn’t do particularly well.&lt;/p&gt;
+
+&lt;p&gt;The main obstacle is that for 412 series X13-SEATS-ARIMA cannot choose a model to fit without human intervention.  In the remaining cases it is mediocre on average, coming out a bit worse than auto.arima on the Mean Absolute Scaled Measure rating (but a bit better on the various percentage error measures).  The clever model selection in auto.arima - which is successful in fitting all 3,003 series - clearly more than compensates for not considering transforms, outliers and moving holidays.&lt;/p&gt;
+
+&lt;p&gt;To get some kind of overall result at all for X13 I replaced all the cases where it couldn’t fit a model with the forecasts from auto.arima().  This is obviously unfair as a statement of the overall strength of X13 (fairer might have been to replace with a naive model - final value in the test set repeats itself over the forecast period), but it does mean that I can at least make crude comparisons.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://ellisp.github.io/img/0024-dots.svg&quot; alt=&quot;dots&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Hybrid methods perform well, as is well known in the forecasting community.  Taking an average of X13-SEATS-ARIMA and auto.arima() does better on all measures than either of them by themselves; and an average of X13, auto.arima() and ets() has a case to make to be the best method easily available to the regular R user.&lt;/p&gt;
+
+&lt;h3 id=&quot;why-does-x13-sometimes-fail&quot;&gt;Why does X13 sometimes fail?&lt;/h3&gt;
+
+&lt;p&gt;There are five types of error that lead to X13 failing to fit a model on this collection of data series.  Each error message is shown below with a minimal example to produce it.&lt;/p&gt;
+
+&lt;h4 id=&quot;struggles-to-handle-high-degree-of-integration&quot;&gt;Struggles to handle high degree of integration&lt;/h4&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-r&quot; data-lang=&quot;r&quot;&gt;&lt;a name=&quot;True-1&quot;&gt;&lt;/a&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;library&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;seasonal&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-2&quot;&gt;&lt;/a&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;library&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;Mcomp&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-3&quot;&gt;&lt;/a&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; seas&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;M3&lt;span class=&quot;p&quot;&gt;[[&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;434&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;$&lt;/span&gt;x&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; regression.aictest &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-4&quot;&gt;&lt;/a&gt;Error&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; X&lt;span class=&quot;m&quot;&gt;-13&lt;/span&gt; run failed
+&lt;a name=&quot;True-5&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-6&quot;&gt;&lt;/a&gt;Errors&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;
+&lt;a name=&quot;True-7&quot;&gt;&lt;/a&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; Nonseasonal AR polynomial with initial parameters is nonstationary 
+&lt;a name=&quot;True-8&quot;&gt;&lt;/a&gt;with root&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;s&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; on or inside the unit circle. RESPECIFY the model with 
+&lt;a name=&quot;True-9&quot;&gt;&lt;/a&gt;different initial parameters.&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Basically, this is a failure of the model selection process in X13-SEATS-ARIMA to correctly identify the degree of integration - ie how many times the series must be “differenced” to turn it into a stationary series.  auto.arima() uses an &lt;a href=&quot;http://www.jstatsoft.org/article/view/v027i03/v27i03.pdf&quot;&gt;apparently superior method&lt;/a&gt; that gives more robust results.  The problem could be resolved by using auto.arima() to determine the order of a model and then fitting it with X13-SEATS-ARIMA - in the case of annual data without outliers like series 434, X13 and auto.arima then give identical results because there is no Easter or similar impacts that are handled differently by the two.&lt;/p&gt;
+
+&lt;p&gt;Note - actually, if you use the version of {seasonal} on CRAN you won’t get even this error message, but another one that is caused by problems parsing the X13 error message into R.  Christoph Sax kindly patched {seasonal} with a hack around this which will make it onto CRAN eventually.&lt;/p&gt;
+
+&lt;h4 id=&quot;matrix-singularity-because-of-trading-days&quot;&gt;Matrix singularity because of trading days&lt;/h4&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-r&quot; data-lang=&quot;r&quot;&gt;&lt;a name=&quot;True-1&quot;&gt;&lt;/a&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; seas&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;M3&lt;span class=&quot;p&quot;&gt;[[&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;1154&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;$&lt;/span&gt;x&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-2&quot;&gt;&lt;/a&gt;Error&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; X&lt;span class=&quot;m&quot;&gt;-13&lt;/span&gt; run failed
+&lt;a name=&quot;True-3&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-4&quot;&gt;&lt;/a&gt;Errors&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;
+&lt;a name=&quot;True-5&quot;&gt;&lt;/a&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; A model estimation error has occurred during AIC testing within the automatic model
+&lt;a name=&quot;True-6&quot;&gt;&lt;/a&gt;  identification procedure. The error message appears below.
+&lt;a name=&quot;True-7&quot;&gt;&lt;/a&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; Regression &lt;span class=&quot;kt&quot;&gt;matrix&lt;/span&gt; singular because of Sat.  Check regression model or change automatic 
+&lt;a name=&quot;True-8&quot;&gt;&lt;/a&gt;outlier options i.e. method to addone or types to identify AO only.&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;This problem was relatively rare and happened with some short seasonal series.  It’s easy to deal with by specifying that number of trading days should not be included as a regression variable.&lt;/p&gt;
+
+&lt;h4 id=&quot;runs-but-produces-no-data&quot;&gt;Runs but produces no data&lt;/h4&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-r&quot; data-lang=&quot;r&quot;&gt;&lt;a name=&quot;True-1&quot;&gt;&lt;/a&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; seas&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;M3&lt;span class=&quot;p&quot;&gt;[[&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;807&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;$&lt;/span&gt;x&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-2&quot;&gt;&lt;/a&gt;Error&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; X&lt;span class=&quot;m&quot;&gt;-13&lt;/span&gt; has run but produced no data&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;This is a mysterious error that I haven’t been able to get to the bottom of.  It might be something to do with the R - X13 interface, or something purely with X13.&lt;/p&gt;
+
+&lt;h4 id=&quot;cannot-process-spec-file-for-an-unknown-reason&quot;&gt;Cannot process spec file for an unknown reason&lt;/h4&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-r&quot; data-lang=&quot;r&quot;&gt;&lt;a name=&quot;True-1&quot;&gt;&lt;/a&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; seas&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;M3&lt;span class=&quot;p&quot;&gt;[[&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;1485&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;$&lt;/span&gt;x&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-2&quot;&gt;&lt;/a&gt;Error&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; X&lt;span class=&quot;m&quot;&gt;-13&lt;/span&gt; has returned a non&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;zero exist status&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; which means that 
+&lt;a name=&quot;True-3&quot;&gt;&lt;/a&gt;the current spec file cannot be processed &lt;span class=&quot;kr&quot;&gt;for&lt;/span&gt; an unknown reason.&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Again, I couldn’t work out what is ultimately causing this error.&lt;/p&gt;
+
+&lt;p&gt;Trouble-shooting these last two types of problematic series would mean taking them out of R and creating input files for X13 by hand, not something I’ve got time and inclination to do.&lt;/p&gt;
+
+&lt;h4 id=&quot;cant-handle-phony-datetimes&quot;&gt;Can’t handle phony date/times&lt;/h4&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-r&quot; data-lang=&quot;r&quot;&gt;&lt;a name=&quot;True-1&quot;&gt;&lt;/a&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; seas&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;M3&lt;span class=&quot;p&quot;&gt;[[&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;3000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;$&lt;/span&gt;x&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-2&quot;&gt;&lt;/a&gt;Error &lt;span class=&quot;kr&quot;&gt;in&lt;/span&gt; seas&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;M3&lt;span class=&quot;p&quot;&gt;[[&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;3000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;$&lt;/span&gt;x&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; 
+&lt;a name=&quot;True-3&quot;&gt;&lt;/a&gt;  start year of &lt;span class=&quot;s&quot;&gt;&amp;#39;x&amp;#39;&lt;/span&gt; must be &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;999.&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;A number of the series in the Mcomp package do not have actual times and dates specified in their R format, most frequently because they are daily financial series that are not regularly spaced time series if their date information is included.  Because of the way it treats Easter and trading day variables, X13-SEATS-ARIMA needs data that is from the year 1000 or later.  There’s no obvious solution for this; I don’t think X13-SEATS-ARIMA can handle irregular daily time series itself (let me know in the comments if I’m wrong).&lt;/p&gt;
+
+&lt;h3 id=&quot;when-it-succeeds-where-is-x13-slightly-worse-than-autoarima&quot;&gt;When it succeeds, where is X13 slightly worse than auto.arima?&lt;/h3&gt;
+
+&lt;h4 id=&quot;examples-of-autoarima-out-performing-x13-seats-arima&quot;&gt;Examples of auto.arima() out-performing X13-SEATS-ARIMA&lt;/h4&gt;
+&lt;p&gt;Looking at individual forecasts is a mug’s way of assessing the overall strength of forecasting methods, but it at least gets the brain moving.  Here are some examples of where the model selection of X13 wasn’t as good as that of auto.arima.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://ellisp.github.io/img/0024-x13-comp-73.svg&quot; alt=&quot;aa1&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://ellisp.github.io/img/0024-x13-comp-64.svg&quot; alt=&quot;aa2&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://ellisp.github.io/img/0024-x13-comp-1388.svg&quot; alt=&quot;aa3&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://ellisp.github.io/img/0024-x13-comp-120.svg&quot; alt=&quot;aa4&quot; /&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;examples-of-x13-seats-arima-out-performing-autoarima&quot;&gt;Examples of X13-SEATS-ARIMA out-performing auto.arima()&lt;/h4&gt;
+&lt;p&gt;…and to be fair, here are some examples in the other direction.  X13 has an almost spooky ability to pick the history of unpredictability in the US stock exchange and effectively predicted the big stock market crash when it is fed data up to 1987.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://ellisp.github.io/img/0024-x13-comp-335.svg&quot; alt=&quot;aa1&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://ellisp.github.io/img/0024-x13-comp-334.svg&quot; alt=&quot;aa2&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://ellisp.github.io/img/0024-x13-comp-49.svg&quot; alt=&quot;aa3&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://ellisp.github.io/img/0024-x13-comp-171.svg&quot; alt=&quot;aa4&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h2&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Because of the fragility of its model selection when faced with a large number of diverse time series, X13-SEATS-ARIMA is not a particularly good tool for automated, no-hands forecasting.  This isn’t particularly surprising as I don’t think it’s ever been spruiked as such.   It’s a tool for careful specialists who correctly check diagnostic plots and tests, and who can handle a potentially 15% failure rate of its automated model selection when used outside its native territory.&lt;/li&gt;
+  &lt;li&gt;As expected, hybrid forecasts - averaging several methods - work well.  There may be a place for X13-SEATS-ARIMA as part of a hybrid automated forecaster.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Just to be clear - X13-SEATS-ARIMA is a fantastic tool, and I think it is the best out there in its role as a tool for careful analysis of quarterly and monthly seasonal time series, using real calendar dates, as part of an official statistics process.  In a big majority of cases, particularly with seasonal data, its defaults and its automatic model selection give you good results, and will deliver very good seasonal adjustment.  However, its automatic modelling under default conditions isn’t as robust (ie guaranteed to get a working model) as other methods, and the resulting models don’t always give optimal results for forecasting.&lt;/p&gt;
+</description>
+				<pubDate>Mon, 21 Dec 2015 00:00:00 +1300</pubDate>
+				<link>http://ellisp.github.io/blog/2015/12/21/m3-and-x13</link>
+				<guid isPermaLink="true">http://ellisp.github.io/blog/2015/12/21/m3-and-x13</guid>
+			</item>
+		
+			<item>
 				<title>Importance of exports and economic growth, cross-country time series</title>
 					<description>&lt;h2 id=&quot;exports-and-economic-growth&quot;&gt;Exports and economic growth&lt;/h2&gt;
 &lt;p&gt;I was looking to show a more substantive piece of analysis using the World Development Indicators data, and at the same time show how to get started on fitting a mixed effects model with grouped time series data.  The relationship between exports’ importance in an economy and economic growth forms a good start as it is of considerable theoretical and practical policy interest and has fairly reliable time series data for many countries.  At the most basic level, there is a well known positive relationship between these two variables:
@@ -1326,289 +1466,6 @@ The result has 998 frames and is probably too big for the sort of animated GIF I
 				<pubDate>Sun, 04 Oct 2015 00:00:00 +1300</pubDate>
 				<link>http://ellisp.github.io/blog/2015/10/04/recruiting</link>
 				<guid isPermaLink="true">http://ellisp.github.io/blog/2015/10/04/recruiting</guid>
-			</item>
-		
-			<item>
-				<title>Success rates of automated ARIMA fitting</title>
-					<description>&lt;h2&gt;A function for testing auto.arima()&lt;/h2&gt;
-&lt;P&gt;This is the third, and the last from me on this particular topic for a while, in a series of posts on fitting time series models and comparing time series to eachother, originally inspired by a question on the Cross-Validated Q&amp;A site.  In this week&#39;s post I&#39;m exploring and testing an almost throw-away comment in my original answer - that looking at the parameterisation of an automatically chosen &lt;a href = &quot;https://en.wikipedia.org/wiki/Autoregressive_integrated_moving_average&quot;&gt;ARIMA (autoregressive integrated moving average) time series model&lt;/a&gt; is a bad idea because very similar data generating models may quite legitimately be fit by different-looking ARIMA models. I want to look at a corollory to that:&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;&quot;How successful will an automated ARIMA selection be at returning the order of the original data generating process for a simulated time series?&quot;&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;An ARMA process consists of an &quot;autoregressive&quot; AR part (basically, a linear combination of the lagged values of the series) plus a &quot;moving average&quot; MA (a linear combination of a white noise series).  By &quot;order&quot;, I mean the number of lags in the AR part plus the number of lagged white noise values in the MA part.  An AR(1) model is just a coefficient times the lagged value, plus white noise; an MA(1) model is just a coefficient times the lagged value of the white noise, plus white noise; an ARMA(1,1) is a combination of the two.&lt;/p&gt;
-
-&lt;P&gt;In particular, I wanted to explore Rob Hyndman&#39;s excellent auto.arima() function from his &lt;a href = &quot;https://cran.r-project.org/web/packages/forecast/index.html&quot;&gt;{forecast} package&lt;/a&gt;, which uses small-sample corrected Akaike Information Criterion (&lt;a href = &quot;https://en.wikipedia.org/wiki/Akaike_information_criterion#AICc&quot;&gt;AICc&lt;/a&gt;) for model selection.  We use it a lot at my work and I wanted to see how it performs when fitting a dataset that is known to have been created (because we did it ourselves) by an ARMA process of a particular order.  To explore this, I created a function that:&lt;P&gt;
-&lt;ol&gt;
-&lt;LI&gt;takes as an argument a model specification (eg AR(1) for autoregression of order 1 ie a time series created by a coefficient times its lagged value plus white noise)
-&lt;LI&gt;simulates a large number (user controlled) of replications of that series, of a variety of different sample lengths (defaulting to 20, 40, 80, ..., 10240)
-&lt;LI&gt;Uses the auto.arima() model to identify the best ARIMA model for each replication of the series
-&lt;LI&gt;Stores the order of the final model and compares it against the correct order
-&lt;/ol&gt;
-
-&lt;p&gt;Here&#39;s the code for that function:&lt;/P&gt;
- 
- 
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-r&quot; data-lang=&quot;r&quot;&gt;&lt;a name=&quot;True-1&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kn&quot;&gt;library&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;dplyr&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;a name=&quot;True-2&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kn&quot;&gt;library&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;tidyr&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;a name=&quot;True-3&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kn&quot;&gt;library&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;ggplot2&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;a name=&quot;True-4&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kn&quot;&gt;library&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;showtext&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# for fonts&lt;/span&gt;
-&lt;a name=&quot;True-5&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kn&quot;&gt;library&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;forecast&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;a name=&quot;True-6&quot;&gt;&lt;/a&gt;
-&lt;a name=&quot;True-7&quot;&gt;&lt;/a&gt;font.add.google&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;Poppins&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;myfont&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;a name=&quot;True-8&quot;&gt;&lt;/a&gt;showtext.auto&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-&lt;a name=&quot;True-9&quot;&gt;&lt;/a&gt;theme_set&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;theme_light&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;base_family &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;myfont&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
-&lt;a name=&quot;True-10&quot;&gt;&lt;/a&gt;
-&lt;a name=&quot;True-11&quot;&gt;&lt;/a&gt;arima_fit_sim &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;model&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
-&lt;a name=&quot;True-12&quot;&gt;&lt;/a&gt;                          correct_params&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
-&lt;a name=&quot;True-13&quot;&gt;&lt;/a&gt;                          n &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;^&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
-&lt;a name=&quot;True-14&quot;&gt;&lt;/a&gt;                          reps &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-&lt;a name=&quot;True-15&quot;&gt;&lt;/a&gt;                          stepwise &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;FALSE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-&lt;a name=&quot;True-16&quot;&gt;&lt;/a&gt;                          verbose &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;TRUE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;
-&lt;a name=&quot;True-17&quot;&gt;&lt;/a&gt;   
-&lt;a name=&quot;True-18&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;c1&quot;&gt;# function that creates @reps number of simulated ARIMA models of type @model and &lt;/span&gt;
-&lt;a name=&quot;True-19&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;c1&quot;&gt;# length @n.  @correct_params should be a vector of the correct parameters eg&lt;/span&gt;
-&lt;a name=&quot;True-20&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;c1&quot;&gt;# c(&amp;quot;ar1&amp;quot;, &amp;quot;ma1&amp;quot;, &amp;quot;ma2&amp;quot;) for ARMA(1,2)&lt;/span&gt;
-&lt;a name=&quot;True-21&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;c1&quot;&gt;# peter.ellis2013nz at gmail com 25 September 2015&lt;/span&gt;
-&lt;a name=&quot;True-22&quot;&gt;&lt;/a&gt;   
-&lt;a name=&quot;True-23&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;kn&quot;&gt;require&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;forecast&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;a name=&quot;True-24&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;kr&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;verbose&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;&lt;span class=&quot;kn&quot;&gt;require&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;dplyr&lt;span class=&quot;p&quot;&gt;)}&lt;/span&gt;
-&lt;a name=&quot;True-25&quot;&gt;&lt;/a&gt;   
-&lt;a name=&quot;True-26&quot;&gt;&lt;/a&gt;   results &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;data.frame&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;n &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;rep&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;n&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; each &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; reps&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
-&lt;a name=&quot;True-27&quot;&gt;&lt;/a&gt;                      correct &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;FALSE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-&lt;a name=&quot;True-28&quot;&gt;&lt;/a&gt;                      fitted &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-&lt;a name=&quot;True-29&quot;&gt;&lt;/a&gt;                      stringsAsFactors &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;FALSE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;a name=&quot;True-30&quot;&gt;&lt;/a&gt;   counter &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0&lt;/span&gt;
-&lt;a name=&quot;True-31&quot;&gt;&lt;/a&gt;
-&lt;a name=&quot;True-32&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;kr&quot;&gt;for&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;j &lt;span class=&quot;kr&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;n&lt;span class=&quot;p&quot;&gt;)){&lt;/span&gt;
-&lt;a name=&quot;True-33&quot;&gt;&lt;/a&gt;      &lt;span class=&quot;kr&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;verbose&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;message&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;n&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;j&lt;span class=&quot;p&quot;&gt;])}&lt;/span&gt;
-&lt;a name=&quot;True-34&quot;&gt;&lt;/a&gt;      &lt;span class=&quot;kr&quot;&gt;for&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;i &lt;span class=&quot;kr&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;reps&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;
-&lt;a name=&quot;True-35&quot;&gt;&lt;/a&gt;         counter &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; counter &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;
-&lt;a name=&quot;True-36&quot;&gt;&lt;/a&gt;         true_series &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; arima.sim&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;model&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; n &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; n&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;j&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt;
-&lt;a name=&quot;True-37&quot;&gt;&lt;/a&gt;         fit &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; auto.arima&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;true_series&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; stepwise &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; stepwise&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;a name=&quot;True-38&quot;&gt;&lt;/a&gt;         results&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;counter&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;fitted&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;paste&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;names&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;fit&lt;span class=&quot;o&quot;&gt;$&lt;/span&gt;coef&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; collapse &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot; &amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;a name=&quot;True-39&quot;&gt;&lt;/a&gt;         &lt;span class=&quot;kr&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;coef&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;fit&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;correct_params&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;sum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;names&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;fit&lt;span class=&quot;o&quot;&gt;$&lt;/span&gt;coef&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%in%&lt;/span&gt; correct_params&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;correct_params&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;
-&lt;a name=&quot;True-40&quot;&gt;&lt;/a&gt;            results&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;counter&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;correct&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;TRUE&lt;/span&gt;
-&lt;a name=&quot;True-41&quot;&gt;&lt;/a&gt;            
-&lt;a name=&quot;True-42&quot;&gt;&lt;/a&gt;         &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;   &lt;span class=&quot;kr&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-&lt;a name=&quot;True-43&quot;&gt;&lt;/a&gt;            results&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;counter&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;correct&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;FALSE&lt;/span&gt;
-&lt;a name=&quot;True-44&quot;&gt;&lt;/a&gt;         &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;a name=&quot;True-45&quot;&gt;&lt;/a&gt;         
-&lt;a name=&quot;True-46&quot;&gt;&lt;/a&gt;      &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;a name=&quot;True-47&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;a name=&quot;True-48&quot;&gt;&lt;/a&gt;   
-&lt;a name=&quot;True-49&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;kr&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;verbose&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;
-&lt;a name=&quot;True-50&quot;&gt;&lt;/a&gt;      &lt;span class=&quot;kp&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-&lt;a name=&quot;True-51&quot;&gt;&lt;/a&gt;         results &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
-&lt;a name=&quot;True-52&quot;&gt;&lt;/a&gt;            group_by&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;n&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
-&lt;a name=&quot;True-53&quot;&gt;&lt;/a&gt;            summarise&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;correct &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;sum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;correct&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;correct&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;100&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;a name=&quot;True-54&quot;&gt;&lt;/a&gt;         &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;a name=&quot;True-55&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;a name=&quot;True-56&quot;&gt;&lt;/a&gt;
-&lt;a name=&quot;True-57&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;kr&quot;&gt;return&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;results&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;a name=&quot;True-58&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;There&#39;s flaws with this function I didn&#39;t have time to fix.  Most notably, there&#39;s a big risk in that the call to the function needs to specify a vector of parameters eg c(&quot;ar1&quot;, &quot;ma1&quot;) for ARMA(1,1) that has to match the model provided.  A better function would deduce the vector of parameter names from the model structure; if someone knows how to do this simply, let me know.&lt;/P&gt;
-
-&lt;h2&gt;The test&lt;/h2&gt;
-&lt;P&gt;For my actual test, I chose to try out two simple simulations - AR(1) and MA(1) processes - and two more complex ones - ARMA(2,2) and ARMA(3,3).  There&#39;s a sticking point which is the actual  autoreggressive and moving average parameters.  An AR(1) process autoregression coefficient of 0.05 for example will be almost indistinguishable from white noise, whereas as it gets closer to 1 it would be much easier for the model selection algorithm to notice.  To do a comprehensive test, I should actually compare models across the whole parameter space.  As this is just a blog post, I arbitrarily chose some values.&lt;/P&gt;
-
-&lt;P&gt;Here&#39;s the code performing the actual tests on those four processes, using my new arima_fit_sim() function with 500 repetitions of each combination of model and sample length.  This took about eight hours to run on my (nothing special) laptop:&lt;/P&gt;
-
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-r&quot; data-lang=&quot;r&quot;&gt;&lt;a name=&quot;True-1&quot;&gt;&lt;/a&gt;our_reps &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;500&lt;/span&gt;
-&lt;a name=&quot;True-2&quot;&gt;&lt;/a&gt;
-&lt;a name=&quot;True-3&quot;&gt;&lt;/a&gt;results_ar1 &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; arima_fit_sim&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;model &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;ar &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;0.5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)),&lt;/span&gt;
-&lt;a name=&quot;True-4&quot;&gt;&lt;/a&gt;                             correct_params &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;ar1&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; 
-&lt;a name=&quot;True-5&quot;&gt;&lt;/a&gt;                             reps &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; our_reps&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;a name=&quot;True-6&quot;&gt;&lt;/a&gt;
-&lt;a name=&quot;True-7&quot;&gt;&lt;/a&gt;results_ma1 &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; arima_fit_sim&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;model &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;ma &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;0.5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)),&lt;/span&gt;
-&lt;a name=&quot;True-8&quot;&gt;&lt;/a&gt;                             correct_params &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;ma1&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; 
-&lt;a name=&quot;True-9&quot;&gt;&lt;/a&gt;                             reps &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; our_reps&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;a name=&quot;True-10&quot;&gt;&lt;/a&gt;
-&lt;a name=&quot;True-11&quot;&gt;&lt;/a&gt;
-&lt;a name=&quot;True-12&quot;&gt;&lt;/a&gt;results_arma22 &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; arima_fit_sim&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;model &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;ar &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;0.5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;-0.2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; ma &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;-0.3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0.2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)),&lt;/span&gt;
-&lt;a name=&quot;True-13&quot;&gt;&lt;/a&gt;                                correct_params &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;ar1&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;ar2&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;ma1&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;ma2&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; 
-&lt;a name=&quot;True-14&quot;&gt;&lt;/a&gt;                                reps &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; our_reps&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;a name=&quot;True-15&quot;&gt;&lt;/a&gt;
-&lt;a name=&quot;True-16&quot;&gt;&lt;/a&gt;results_arma33 &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; arima_fit_sim&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;model &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;ar &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;0.5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;-0.2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0.3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; ma &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;-0.3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0.2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0.4&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)),&lt;/span&gt;
-&lt;a name=&quot;True-17&quot;&gt;&lt;/a&gt;                                correct_params &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;ar1&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;ar2&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;ar3&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;ma1&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;ma2&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;ma3&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; 
-&lt;a name=&quot;True-18&quot;&gt;&lt;/a&gt;                                reps &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; our_reps&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;a name=&quot;True-19&quot;&gt;&lt;/a&gt;
-&lt;a name=&quot;True-20&quot;&gt;&lt;/a&gt;
-&lt;a name=&quot;True-21&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kp&quot;&gt;save&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;results_ar1&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; results_ma1&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; results_arma22&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; results_arma33&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; file &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;_output/0012_sim_results.rda&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-
-
-&lt;h2&gt;Results&lt;/h2&gt;
-&lt;p&gt;My function stores the order (ie how many autoregressive and how many moving average parameters)of the 5000 models it has fit for each simulation.  Here are the ten most common models that were selected in the case of the AR(1) model:
-&lt;!-- html table generated in R 3.2.1 by xtable 1.7-4 package --&gt;
-&lt;!-- Tue Sep 29 07:22:07 2015 --&gt;
-&lt;table border=1&gt;
-&lt;tr&gt; &lt;th&gt; fitted &lt;/th&gt; &lt;th&gt; count &lt;/th&gt;  &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt; 1752 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ar2 ar3 ma1 ma2 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt; 316 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 intercept &lt;/td&gt; &lt;td align=&quot;right&quot;&gt; 278 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ma1 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt; 238 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ar2 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt; 224 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ma1 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt; 210 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ar2 ma1 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt; 185 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ma1 ma2 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt; 140 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ar2 ar3 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt; 124 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ma1 ma2 ma3 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt; 116 &lt;/td&gt; &lt;/tr&gt;
-   &lt;/table&gt;&lt;/p&gt;
-
-&lt;p&gt;As a percentage correct for different sample lengths, here&#39;s how they end up:
-&lt;!-- html table generated in R 3.2.1 by xtable 1.7-4 package --&gt;
-&lt;!-- Wed Sep 30 07:31:01 2015 --&gt;
-&lt;table border=1&gt;
-&lt;tr&gt; &lt;th&gt; n &lt;/th&gt; &lt;th&gt; correct &lt;/th&gt;  &lt;/tr&gt;
-  &lt;tr&gt; &lt;td align=&quot;right&quot;&gt; 20 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt; 29.0 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td align=&quot;right&quot;&gt; 40 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt; 35.0 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td align=&quot;right&quot;&gt; 80 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt; 38.6 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td align=&quot;right&quot;&gt; 160 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt; 31.2 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td align=&quot;right&quot;&gt; 320 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt; 29.8 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td align=&quot;right&quot;&gt; 640 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt; 35.4 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td align=&quot;right&quot;&gt; 1280 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt; 37.2 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td align=&quot;right&quot;&gt; 2560 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt; 37.4 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td align=&quot;right&quot;&gt; 5120 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt; 36.0 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td align=&quot;right&quot;&gt; 10240 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt; 40.8 &lt;/td&gt; &lt;/tr&gt;
-   &lt;/table&gt;&lt;/p&gt;
-
-
-&lt;p&gt;In this simple case, auto.arima() is moderately successful.  It correctly picked an AR(1) model as the best 1752 times out of 5000, much more than the second most popular model which was a very complex ARMA(3,2).  Even when the time series is only 20 observations long it gets it right 29 percent of the time, and this goes up to 41 percent by the time there are 10,000 observations.  I suspect it gets better as the time series gets longer, but I&#39;d (naively) expected better than this.  It certainly means, for example, that when your automated model selection tells you you have an ARMA(3,2) model you should not dismiss the possibility that an AR(1) model might be the true generating process (other information might help you dismiss that of course, including the actual parameters).  I was surprised that even for a longish time series only 41 percent of the time is the true model being recovered. &lt;/P&gt;
-
-
-&lt;p&gt;Here&#39;s a plot summarising the overall results&lt;/p&gt;
-&lt;div class =&quot;img-container&quot;&gt;&lt;img src = &quot;http://ellisp.github.io/img/0012-results.svg&quot;&gt;&lt;/div&gt;
-
-&lt;p&gt;Here it is separated out by facets so we can see that pattern closer.&lt;/p&gt;
-&lt;div class =&quot;img-container&quot;&gt;&lt;img src = &quot;http://ellisp.github.io/img/0012-results-faceted.svg&quot;&gt;&lt;/div&gt;
-
-&lt;p&gt;I was a bit astonished at the poor success rate of picking up the ARMA(3, 3) process so I tabulate here the counts of every final model that actually was selected.
-&lt;!-- html table generated in R 3.2.1 by xtable 1.7-4 package --&gt;
-&lt;!-- Tue Sep 29 07:22:07 2015 --&gt;
-&lt;table border=1&gt;
-&lt;tr&gt; &lt;th&gt; fitted &lt;/th&gt; &lt;th&gt; count &lt;/th&gt;  &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ma1 ma2 ma3 ma4 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt; 1446 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ma1 ma2 ma3 ma4 ma5 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt; 500 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ma1 ma2 ma3 ma4 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt; 444 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ma1 ma2 ma3 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt; 339 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ma1 ma2 ma3 ma4 intercept &lt;/td&gt; &lt;td align=&quot;right&quot;&gt; 276 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ar2 ar3 ma1 ma2 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt; 248 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ar2 drift &lt;/td&gt; &lt;td align=&quot;right&quot;&gt; 229 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ar2 ar3 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt; 168 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ar2 ma1 ma2 ma3 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt; 157 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ma1 ma2 ma3 ma4 intercept &lt;/td&gt; &lt;td align=&quot;right&quot;&gt; 151 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; intercept &lt;/td&gt; &lt;td align=&quot;right&quot;&gt; 115 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ma1 ma2 ma3 intercept &lt;/td&gt; &lt;td align=&quot;right&quot;&gt; 103 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt;  &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;  88 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ma1 ma2 ma3 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;  61 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ma1 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;  54 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ar2 ma1 ma2 drift &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;  50 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ar2 ma1 ma2 ma3 intercept &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;  43 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ar2 ar3 ar4 ar5 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;  42 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ma1 ma2 ma3 intercept &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;  41 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ar2 ar3 ar4 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;  32 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ar2 ar3 ar4 ma1 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;  31 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ar2 ma1 ma2 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;  29 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ma1 ma2 ma3 ma4 drift &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;  28 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ma1 drift &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;  27 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ar2 ar3 drift &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;  25 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ar2 ar3 ma1 ma2 intercept &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;  24 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ar2 intercept &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;  24 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;  21 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ar2 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;  19 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ma1 intercept &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;  16 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ar2 ar3 ar4 drift &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;  14 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; drift &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;  13 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ar2 ar3 ma1 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;  12 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ar2 ma1 drift &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;  12 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ma1 ma2 ma3 ma4 ma5 drift &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;  12 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ma1 ma2 ma3 ma4 ma5 intercept &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;  12 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ar2 ar3 intercept &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;  11 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ma1 ma2 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;  11 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ar2 ar3 ar4 ar5 intercept &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;   8 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ma1 ma2 ma3 drift &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;   8 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ma1 ma2 drift &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;   7 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ar2 ar3 ar4 ar5 drift &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;   5 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ar2 ar3 ar4 ma1 intercept &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;   5 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ar2 ma1 ma2 ma3 drift &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;   5 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 intercept &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;   5 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ma1 ma2 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;   5 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ma1 ma2 intercept &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;   5 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ar2 ar3 ma1 ma2 drift &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;   4 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ar2 ma1 intercept &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;   4 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ar2 ar3 ar4 intercept &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;   3 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 drift &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;   2 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ma1 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;   2 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ar2 ar3 ar4 ma1 drift &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;   1 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ar2 ar3 ma1 intercept &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;   1 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ar2 ma1 &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;   1 &lt;/td&gt; &lt;/tr&gt;
-  &lt;tr&gt; &lt;td&gt; ar1 ma1 intercept &lt;/td&gt; &lt;td align=&quot;right&quot;&gt;   1 &lt;/td&gt; &lt;/tr&gt;
-   &lt;/table&gt;&lt;/p&gt;
-&lt;p&gt;Yes, that&#39;s right, many many models are picked but not a single instance matches the &quot;ar1 ar2 ar3 ma1 ma2 ma3&quot; that was the original data generating process.  So the take home message is even stronger than I thought - don&#39;t pay much attention to the order of your fitted ARIMA models!  This doesn&#39;t mean there&#39;s a problem with using them - they give good fits and work well in many forecasting situations.  But we shouldn&#39;t confuse them with some essential reality of an underlying process.  It&#39;s a striking example of the famous (well in some quarters) quote by George E. P. Box:&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;&lt;a href = &quot;https://en.wikiquote.org/wiki/George_E._P._Box&quot;&gt;&quot;All models are wrong, but some are useful&quot; (Box)&lt;/a&gt;&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;I found all this a bit surprising.  I&#39;d expected a material amount of variation in what models were returned, but not this much.  And I&#39;d expected the model selection process to be more consistent (to use a term loosely) ie converge to the true model more noticeably as sample length got bigger. I presume there&#39;s a literature on all this but didn&#39;t have time to research it, so any pointers are welcomed in the comments or by Twitter.&lt;/p&gt;
-
-&lt;h3&gt;Code that produced the summary tables&lt;/h3&gt;
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-r&quot; data-lang=&quot;r&quot;&gt;&lt;a name=&quot;True-1&quot;&gt;&lt;/a&gt;results_ar1 &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
-&lt;a name=&quot;True-2&quot;&gt;&lt;/a&gt;   group_by&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;fitted&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
-&lt;a name=&quot;True-3&quot;&gt;&lt;/a&gt;   summarise&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;count &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;fitted&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
-&lt;a name=&quot;True-4&quot;&gt;&lt;/a&gt;   arrange&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;count&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
-&lt;a name=&quot;True-5&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;kp&quot;&gt;head&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; 
-&lt;a name=&quot;True-6&quot;&gt;&lt;/a&gt;
-&lt;a name=&quot;True-7&quot;&gt;&lt;/a&gt;results_ar1 &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
-&lt;a name=&quot;True-8&quot;&gt;&lt;/a&gt;   group_by&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;n&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
-&lt;a name=&quot;True-9&quot;&gt;&lt;/a&gt;   summarise&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;correct &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;sum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;correct&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;correct&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;100&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;a name=&quot;True-10&quot;&gt;&lt;/a&gt;
-&lt;a name=&quot;True-11&quot;&gt;&lt;/a&gt;results_arma33 &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
-&lt;a name=&quot;True-12&quot;&gt;&lt;/a&gt;   group_by&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;fitted&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
-&lt;a name=&quot;True-13&quot;&gt;&lt;/a&gt;   summarise&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;count &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;fitted&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
-&lt;a name=&quot;True-14&quot;&gt;&lt;/a&gt;   arrange&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;count&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;h3&gt;Code that produced the summary plot&lt;/h3&gt;
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-r&quot; data-lang=&quot;r&quot;&gt;&lt;a name=&quot;True-1&quot;&gt;&lt;/a&gt;r1 &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; results_ar1 &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
-&lt;a name=&quot;True-2&quot;&gt;&lt;/a&gt;   mutate&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;model &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;AR(1)&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;a name=&quot;True-3&quot;&gt;&lt;/a&gt;
-&lt;a name=&quot;True-4&quot;&gt;&lt;/a&gt;r2 &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; results_ma1 &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
-&lt;a name=&quot;True-5&quot;&gt;&lt;/a&gt;   mutate&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;model &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;MA(1)&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;a name=&quot;True-6&quot;&gt;&lt;/a&gt;
-&lt;a name=&quot;True-7&quot;&gt;&lt;/a&gt;r3 &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; results_arma22 &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
-&lt;a name=&quot;True-8&quot;&gt;&lt;/a&gt;   mutate&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;model &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;ARMA(2, 2)&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;a name=&quot;True-9&quot;&gt;&lt;/a&gt;
-&lt;a name=&quot;True-10&quot;&gt;&lt;/a&gt;r4 &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; results_arma33 &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
-&lt;a name=&quot;True-11&quot;&gt;&lt;/a&gt;   mutate&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;model &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;ARMA(3, 3)&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;a name=&quot;True-12&quot;&gt;&lt;/a&gt;
-&lt;a name=&quot;True-13&quot;&gt;&lt;/a&gt;r_all &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;rbind&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;r1&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; r2&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; r3&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; r4&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
-&lt;a name=&quot;True-14&quot;&gt;&lt;/a&gt;   mutate&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;model &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;factor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;model&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
-&lt;a name=&quot;True-15&quot;&gt;&lt;/a&gt;                         levels &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;AR(1)&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;MA(1)&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;ARMA(2, 2)&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;ARMA(3, 3)&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)))&lt;/span&gt;
-&lt;a name=&quot;True-16&quot;&gt;&lt;/a&gt;						 
-&lt;a name=&quot;True-17&quot;&gt;&lt;/a&gt;p1 &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; r_all &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
-&lt;a name=&quot;True-18&quot;&gt;&lt;/a&gt;   group_by&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;model&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; n&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
-&lt;a name=&quot;True-19&quot;&gt;&lt;/a&gt;   summarise&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;correct &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;sum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;correct&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;correct&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
-&lt;a name=&quot;True-20&quot;&gt;&lt;/a&gt;   ggplot&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;aes&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;x &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; n&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; y &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; correct&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; colour &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; model&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
-&lt;a name=&quot;True-21&quot;&gt;&lt;/a&gt;   geom_point&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
-&lt;a name=&quot;True-22&quot;&gt;&lt;/a&gt;   geom_line&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
-&lt;a name=&quot;True-23&quot;&gt;&lt;/a&gt;   scale_y_continuous&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;Percent of models correctly identified&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; label &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; percent&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
-&lt;a name=&quot;True-24&quot;&gt;&lt;/a&gt;   scale_x_log10&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;Length of time series&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
-&lt;a name=&quot;True-25&quot;&gt;&lt;/a&gt;                &lt;span class=&quot;c1&quot;&gt;# label = comma, &lt;/span&gt;
-&lt;a name=&quot;True-26&quot;&gt;&lt;/a&gt;                breaks &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;^&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
-&lt;a name=&quot;True-27&quot;&gt;&lt;/a&gt;   ggtitle&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;Success rate of automated ARIMA model selection\nfitting to a known data generating process&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;a name=&quot;True-28&quot;&gt;&lt;/a&gt;
-&lt;a name=&quot;True-29&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kp&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;p1&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;a name=&quot;True-30&quot;&gt;&lt;/a&gt;
-&lt;a name=&quot;True-31&quot;&gt;&lt;/a&gt;
-&lt;a name=&quot;True-32&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kp&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;p1 &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; 
-&lt;a name=&quot;True-33&quot;&gt;&lt;/a&gt;		facet_wrap&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;~&lt;/span&gt;model&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; scales &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;free_y&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
-&lt;a name=&quot;True-34&quot;&gt;&lt;/a&gt;		theme&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;legend.position &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;none&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-</description>
-				<pubDate>Wed, 30 Sep 2015 00:00:00 +1300</pubDate>
-				<link>http://ellisp.github.io/blog/2015/09/30/autoarima-success-rates</link>
-				<guid isPermaLink="true">http://ellisp.github.io/blog/2015/09/30/autoarima-success-rates</guid>
 			</item>
 		
 	</channel>
