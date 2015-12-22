@@ -1,5 +1,5 @@
-library(devtools)
-#devtools::install_github("christophsax/seasonal", ref = "error-parsing-fixes") 
+# library(devtools)
+# devtools::install_github("christophsax/seasonal", ref = "error-parsing-fixes") 
 
 
 library(Mcomp)
@@ -35,51 +35,50 @@ ab2 <- as.matrix(M3Forecast$AutoBox2)[1:nseries, ]
 ab3 <- as.matrix(M3Forecast$AutoBox3)[1:nseries, ]
 
 # set up matrices to hold the forecasts from new methods
-ets1 <- aarima <- theta_fc <- hybrid2a <- hybrid2b <- 
-   hybrid2c <- hybrid3 <- seats <- 
-   matrix(NA, nrow = nseries, ncol = 18)
+ets1 <- aarima <- hybrid2 <- x13 <- hybrid_x13 <- hybrid3 <- matrix(NA, nrow = nseries, ncol = 18)
 
 # produce new forecasts
 for(i in 1:nseries){
    print(i)
    ets1[i, ] <- forecast(ets(M3[[i]]$x), h = 18, PI = FALSE)$mean
    aarima[i, ] <- forecast(auto.arima(M3[[i]]$x), h = 18)$mean
-   theta_fc[i, ] <- thetaf(M3[[i]]$x, h = 18)$mean
-   hybrid2a[i, ] <- 0.5 * (aarima[i, ] + ets1[i, ])
-   hybrid2b[i, ] <- 0.5 * (aarima[i, ] + theta_fc[i, ]) 
-   hybrid2c[i, ] <- 0.5 * (theta_fc[i, ] + ets1[i, ])
-   hybrid3[i, ]  <- (aarima[i, ] + ets1[i, ] + theta_fc[i, 1]) / 3
-   
+         
    if(M3[[i]]$period != "YEARLY"){
-      try(m <- seas(M3[[i]]$x, forecast.maxlead = 18)) # 801 fails to converge ; 807 runs but produces no data; 
-      # 1154  and a bunch aferhas singular x matrix problem because of trading days 
-      #1405 fails for 'unknown reason'
+      try(m <- seas(M3[[i]]$x, forecast.maxlead = 18)) 
    } else {
       try(m <- seas(M3[[i]]$x, 
                     regression.aictest = NULL, 
                     regression.variables = c("const"), 
                     forecast.maxlead = 18)) 
    }
-   try(seats[i, ] <- series(m, "forecast.forecasts")[1:18 , 1]) 
+   try(x13[i, ] <- series(m, "forecast.forecasts")[1:18 , 1]) 
+   
+   
 }
 
 
-# 92 failures in first 500 series; 413 in total, various reasons
-message(sum(is.na(seats[ , 1])), " series failed for SEATS, replacing them with auto.arima's results")
-bad <- is.na(seats)
+# 92 failures in first 500 series; 412 in total, various reasons
+message(sum(is.na(x13[ , 1])), " series failed for X13, replacing them with auto.arima's results")
+bad <- is.na(x13)
 bad[ ,1]
-save(bad, seats, file = "tmp_bad_and_seats.rda")
+save(bad, x13, file = "tmp_bad_and_x13.rda")
 
-# create a copy of seats that uses auto arima when it's bad
-seats2 <- seats
-seats2[bad] <- aarima[bad]
+# create a copy of x13 that uses auto arima when it's bad
+x13_2 <- x13
+x13_2[bad] <- aarima[bad]
 
-# which series are the bad ones?
+for(i in 1:nseries){
+   hybrid2[i, ] <- (aarima[i, ] + ets1[i, ]) / 2
+   hybrid_x13[i, ] <- (aarima[i, ] + x13_2[i, ]) / 2
+   hybrid3[i, ] <- (aarima[i, ] + ets1[i, ] + x13_2[i, ]) / 3
+}
+   
+# for future reference, which series are the bad ones?
 bad_series <- which(bad[, 1])
 
 
 # Compute accuracy
-number_methods <- 15
+number_methods <- 13
 mase <- mape <- smape <- matrix(NA, nrow = number_methods, ncol = nseries)
 f <- matrix(NA, nrow = number_methods, ncol = 18)
 for(i in 1:nseries)
@@ -95,12 +94,10 @@ for(i in 1:nseries)
    f[7, 1:n] <- ab3[i, 1:n]
    f[8, 1:n] <- ets1[i, 1:n]
    f[9, 1:n] <- aarima[i, 1:n]
-   f[10, 1:n] <- theta_fc[i, 1:n]
-   f[11, 1:n] <- hybrid2a[i, 1:n]
-   f[12, 1:n] <- hybrid2b[i, 1:n]
-   f[13, 1:n] <- hybrid2c[i, 1:n]
-   f[14, 1:n] <- hybrid3[i, 1:n]
-   f[15, 1:n] <- seats2[i, 1:n]
+   f[10, 1:n] <- hybrid2[i, 1:n]
+   f[11, 1:n] <- x13_2[i, 1:n]
+   f[12, 1:n] <- hybrid_x13[i, 1:n]
+   f[13, 1:n] <- hybrid3[i, 1:n]
    scale <- mean(abs(diff(M3[[i]]$x, lag = frequency(x))))
    for(j in 1:number_methods)
    {
@@ -121,9 +118,8 @@ names(m3table) <- c("MAPE", "sMAPE", "MASE")
 
 m3table$method <- c("Theta", "ForecastPro", "ForecastX", "BJauto",
                        "Autobox1", "Autobox2", "Autobox3",
-                       "ETS", "AutoARIMA", "Theta_fc", "Hybrid AutoARIMA ETS", 
-                       "Hybrid AutoARIMA Theta_fc", "Hybrid Theta_fc-ETS",
-                       "Hybrid 3", "X13-SEATS")
+                       "ETS", "AutoARIMA", "Hybrid AutoARIMA ETS", 
+                       "X13-SEATS-ARIMA", "Hybrid AutoARIMA X13", "Hybrid AA-X13-ETS")
 
 m3table %>%
    arrange(MASE)
@@ -270,7 +266,7 @@ m <- seas(M3[[335]]$x, regression.aictest = NULL, regression.variables = "const"
 summary(m) # ARIMA(1,0,0)
 auto.arima(M3[[335]]$x) # ARIMA(0,2,0)
 
-comp_x13_seats <- function(s){
+comp_x13_aa <- function(s){
             
    orig <- M3[[s]]$x
    act  <- M3[[s]]$xx
@@ -289,7 +285,7 @@ comp_x13_seats <- function(s){
    )
    
    tmp2 <- data_frame(
-      x13 = seats[s, 1:length(act)],
+      x13 = x13[s, 1:length(act)],
       aa  = aarima[s, 1:length(act)],
       time = time(act)
    ) %>%
@@ -322,19 +318,19 @@ comp_x13_seats <- function(s){
    dev.off()
 }
 
-comp_x13_seats(335)
-comp_x13_seats(334)
-comp_x13_seats(332)
-comp_x13_seats(49)
-comp_x13_seats(171)
+comp_x13_aa(335)
+comp_x13_aa(334)
+comp_x13_aa(332)
+comp_x13_aa(49)
+comp_x13_aa(171)
 
 
 #-----------X13 much worse eg 1------------
 mases %>% arrange(-diff)
-comp_x13_seats(73)
-comp_x13_seats(64)
-comp_x13_seats(1388)
-comp_x13_seats(120)
+comp_x13_aa(73)
+comp_x13_aa(64)
+comp_x13_aa(1388)
+comp_x13_aa(120)
 
 
 
@@ -361,7 +357,7 @@ mases %>% arrange(-diff)
 plot(M3[[1388]]$x)
 
 aarima[1388, ]
-seats[1388, ] # again, completely explosive
+x13[1388, ] # again, completely explosive
 
 m <- seas(M3[[1388]]$x, forecast.maxlead = 18)
 summary(m) # ARIMA(1,1,0)(1,1,0), log transform
@@ -370,26 +366,4 @@ summary(m) # ARIMA(1,1,0)(1,1,0), log transform
 # auto.arima gives ARIMA(1,1,0)(0,1,0) on original
 auto.arima(M3[[1388]]$x)
 
-
-#=========================theta method==================
-# http://stats.stackexchange.com/questions/67036/does-thetaf-in-the-forecast-package-in-r-detect-seasonality
-# Hyndman says it does not handle seasonality.  Then why did it score so well in M3?
-
-
-thetas <- function(s){
-   forecast_theta <- ts(c(M3[[s]]$x, theta_fc[s, ]))
-   original_theta <- ts(c(M3[[s]]$x, theta[s, ]))
-   plot(cbind(forecast_theta, original_theta), main = M3[[s]]$description, plot.type = "single", col = 1:2)
-}
-
-thetas(1388)
-
-
-
-for(i in 1:3003){
-   png(paste0("_output/0024-thetas/", i, ".png"), 600, 400, res = 100)
-   thetas(i)
-   cat(i, " ")
-   dev.off()
-}
 
