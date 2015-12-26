@@ -143,7 +143,7 @@
 <a name="True-18"></a>
 <a name="True-19"></a><span class="c1"># Tidy into long form, remove clutter, make names consistent, </span>
 <a name="True-20"></a><span class="c1"># drop uninteresting data:</span>
-<a name="True-21"></a>Travel <span class="o">&lt;-</span> X<span class="p">[</span><span class="m">1</span><span class="o">:</span><span class="m">67</span><span class="p">,</span> <span class="p">]</span> <span class="o">%&gt;%</span> 
+<a name="True-21"></a>TravelAll <span class="o">&lt;-</span> X<span class="p">[</span><span class="m">1</span><span class="o">:</span><span class="m">67</span><span class="p">,</span> <span class="p">]</span> <span class="o">%&gt;%</span> 
 <a name="True-22"></a>  rename<span class="p">(</span>from <span class="o">=</span> Usual.residence<span class="p">)</span> <span class="o">%&gt;%</span>
 <a name="True-23"></a>  gather<span class="p">(</span>to<span class="p">,</span> value<span class="p">,</span> <span class="o">-</span>from<span class="p">)</span> <span class="o">%&gt;%</span>
 <a name="True-24"></a>  mutate<span class="p">(</span>from <span class="o">=</span> <span class="kp">gsub</span><span class="p">(</span><span class="s">&quot; District&quot;</span><span class="p">,</span> <span class="s">&quot;&quot;</span><span class="p">,</span> from<span class="p">),</span>
@@ -162,8 +162,12 @@
 <a name="True-37"></a>           to <span class="o">!=</span> <span class="s">&quot;No Fixed Workplace Address&quot;</span> <span class="o">&amp;</span>
 <a name="True-38"></a>           to <span class="o">!=</span> <span class="s">&quot;Area Outside Territorial Authority&quot;</span><span class="p">)</span> <span class="o">%&gt;%</span>
 <a name="True-39"></a>  filter<span class="p">(</span><span class="o">!</span><span class="kp">grepl</span><span class="p">(</span><span class="s">&quot;Not Further Defined&quot;</span><span class="p">,</span> to<span class="p">))</span> <span class="o">%&gt;%</span>
-<a name="True-40"></a>  mutate<span class="p">(</span>value <span class="o">=</span> <span class="kp">as.numeric</span><span class="p">(</span>value<span class="p">))</span> <span class="o">%&gt;%</span>
-<a name="True-41"></a>  filter<span class="p">(</span>value <span class="o">&gt;</span> <span class="m">100</span><span class="p">)</span></code></pre></div>
+<a name="True-40"></a>  mutate<span class="p">(</span>value <span class="o">=</span> <span class="kp">as.numeric</span><span class="p">(</span>value<span class="p">),</span>
+<a name="True-41"></a>         value <span class="o">=</span> <span class="kp">ifelse</span><span class="p">(</span><span class="kp">is.na</span><span class="p">(</span>value<span class="p">),</span> <span class="m">0</span><span class="p">,</span> value<span class="p">))</span> 
+<a name="True-42"></a>
+<a name="True-43"></a><span class="c1"># subset dropping the small values:  </span>
+<a name="True-44"></a>Travel <span class="o">&lt;-</span> TravelAll <span class="o">%&gt;%</span> 
+<a name="True-45"></a>  filter<span class="p">(</span>value <span class="o">&gt;</span> <span class="m">100</span><span class="p">)</span></code></pre></div>
 
 <h2 id="drawing-a-static-plot">Drawing a static plot</h2>
 <p><img src="/img/0025-commuting.svg" alt="static" />
@@ -219,13 +223,13 @@ The static plot I used in my presentation is made with the excellent <a href="ht
 <a name="True-23"></a>   mutate<span class="p">(</span>value <span class="o">=</span> value <span class="o">/</span> <span class="m">200</span><span class="p">)</span>
 <a name="True-24"></a>   
 <a name="True-25"></a><span class="c1"># create some totals for more informative tooltips:</span>
-<a name="True-26"></a>froms <span class="o">&lt;-</span> Travel <span class="o">%&gt;%</span>
+<a name="True-26"></a>froms <span class="o">&lt;-</span> TravelAll <span class="o">%&gt;%</span>
 <a name="True-27"></a>   group_by<span class="p">(</span>from<span class="p">)</span> <span class="o">%&gt;%</span>
 <a name="True-28"></a>   summarise<span class="p">(</span>From <span class="o">=</span> <span class="kp">sum</span><span class="p">(</span>value<span class="p">))</span> <span class="o">%&gt;%</span>
 <a name="True-29"></a>   ungroup<span class="p">()</span> <span class="o">%&gt;%</span>
 <a name="True-30"></a>   rename<span class="p">(</span>TA <span class="o">=</span> from<span class="p">)</span>
 <a name="True-31"></a>
-<a name="True-32"></a>tos <span class="o">&lt;-</span> Travel <span class="o">%&gt;%</span>
+<a name="True-32"></a>tos <span class="o">&lt;-</span> TravelAll <span class="o">%&gt;%</span>
 <a name="True-33"></a>   group_by<span class="p">(</span>to<span class="p">)</span> <span class="o">%&gt;%</span>
 <a name="True-34"></a>   summarise<span class="p">(</span>To <span class="o">=</span> <span class="kp">sum</span><span class="p">(</span>value<span class="p">))</span> <span class="o">%&gt;%</span>
 <a name="True-35"></a>   ungroup<span class="p">()</span> <span class="o">%&gt;%</span>
@@ -272,6 +276,9 @@ The static plot I used in my presentation is made with the excellent <a href="ht
 <p>If anyone’s wondering why Wellington has so many inbound commuters compared to Auckland, which is much larger, it’s just an artefact of boundaries.  Wellington Region is divided into a number of smaller cities and regions which show up in this sort of data, whereas the Auckland region is a single territorial authority.</p>
 
 <p>C’est tout.</p>
+
+<h3 id="edits">Edits</h3>
+<p>Edited 27/12/2015 so the numbers in the tooltip labels include the sums of commuters even when less than 100 - incorrectly omitted in the first version.  I now use the pre-filtered “TravelAll” object for creating the labels.  This doesn’t make any visual difference, but the numbers were understated before.</p>
 
 
 </div>
