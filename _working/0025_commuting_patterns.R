@@ -18,7 +18,7 @@ X <- read.csv("http://www.stats.govt.nz/~/media/Statistics/Census/2013%20Census/
 
 # Tidy into long form, remove clutter, make names consistent, 
 # drop uninteresting data:
-Travel <- X[1:67, ] %>% 
+TravelAll <- X[1:67, ] %>% 
   rename(from = Usual.residence) %>%
   gather(to, value, -from) %>%
   mutate(from = gsub(" District", "", from),
@@ -37,7 +37,11 @@ Travel <- X[1:67, ] %>%
            to != "No Fixed Workplace Address" &
            to != "Area Outside Territorial Authority") %>%
   filter(!grepl("Not Further Defined", to)) %>%
-  mutate(value = as.numeric(value)) %>%
+  mutate(value = as.numeric(value),
+         value = ifelse(is.na(value), 0, value)) 
+
+# subset dropping the small values:
+Travel <- TravelAll %>% 
   filter(value > 100)
 
 
@@ -73,8 +77,8 @@ southisland <- c("Dunedin", "Tasman", "Nelson", "Marlborough", "Christchurch",
                  "Ashburton", "Timaru", "Mackenzie", "Waimate", "Central Otago",
                  "Waitaki", "Clutha", "Gore", "Southland", "Buller")
 
+# create a look up table of TA names and ID 0:(n-1)
 TAs <- data_frame(TA = unique(c(Travel$from, Travel$to))) 
-
 TAs <- TAs %>%
    mutate(ID = 0:(nrow(TAs) - 1),
           size = 1,
@@ -92,13 +96,13 @@ Links <- Travel %>%
    mutate(value = value / 200)
 
 # create some totals for more informative tooltips:
-froms <- Travel %>%
+froms <- TravelAll %>%
    group_by(from) %>%
    summarise(From = sum(value)) %>%
    ungroup() %>%
    rename(TA = from)
 
-tos <- Travel %>%
+tos <- TravelAll %>%
    group_by(to) %>%
    summarise(To = sum(value)) %>%
    ungroup() %>%

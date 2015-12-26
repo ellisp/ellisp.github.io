@@ -15,7 +15,7 @@ category: R
 ## Commuting between districts and cities in New Zealand
 <iframe src="/img/0025-networkD3.html" style = "overflow-y: hidden;" width = "100%" height = "430px"></iframe>
 
-At this year's New Zealand Statisticians Association conference I gave a talk on [Modelled Territorial Authority Gross Domestic Product](http://www.mbie.govt.nz/info-services/sectors-industries/regions-cities/research/modelled-territorial-authority-gross-domestic-product).  One thing I'd talked about was the impact on the estimates of people residing in one Territorial Authority (district or city) but working in another one.  This was important because data on earnings  by place of residence formed a crucial step in the estimation of GDP, which needs to be based on place of production.  I had a slide to visualise the "commuting patterns", which I'd prepared for that talk but isn't used elsewhere, and thought I'd share it and a web version here on this blog.
+At this year's New Zealand Statisticians Association conference I gave a talk on [Modelled Territorial Authority Gross Domestic Product](http://www.mbie.govt.nz/info-services/sectors-industries/regions-cities/research/modelled-territorial-authority-gross-domestic-product).  One thing I'd talked about was the impact on the estimates of people residing in one Territorial Authority (district or city) but working in another one.  This was important because data on earnings  by place of residence formed a crucial step in those particular estimates of modelled GDP, which needs to be based on place of production.  I had a slide to visualise the "commuting patterns", which I'd prepared for that talk but isn't used elsewhere, and thought I'd share it and a web version here on this blog.
 
 The web version is the one in the frame above this text.  It's designed to be interacted with - try hovering over circles, or picking them up and dragging them around.
 
@@ -43,7 +43,7 @@ X <- read.csv("http://www.stats.govt.nz/~/media/Statistics/Census/2013%20Census/
 
 # Tidy into long form, remove clutter, make names consistent, 
 # drop uninteresting data:
-Travel <- X[1:67, ] %>% 
+TravelAll <- X[1:67, ] %>% 
   rename(from = Usual.residence) %>%
   gather(to, value, -from) %>%
   mutate(from = gsub(" District", "", from),
@@ -62,7 +62,11 @@ Travel <- X[1:67, ] %>%
            to != "No Fixed Workplace Address" &
            to != "Area Outside Territorial Authority") %>%
   filter(!grepl("Not Further Defined", to)) %>%
-  mutate(value = as.numeric(value)) %>%
+  mutate(value = as.numeric(value),
+         value = ifelse(is.na(value), 0, value)) 
+
+# subset dropping the small values:  
+Travel <- TravelAll %>% 
   filter(value > 100)
 {% endhighlight %}
 
@@ -122,13 +126,13 @@ Links <- Travel %>%
    mutate(value = value / 200)
    
 # create some totals for more informative tooltips:
-froms <- Travel %>%
+froms <- TravelAll %>%
    group_by(from) %>%
    summarise(From = sum(value)) %>%
    ungroup() %>%
    rename(TA = from)
 
-tos <- Travel %>%
+tos <- TravelAll %>%
    group_by(to) %>%
    summarise(To = sum(value)) %>%
    ungroup() %>%
@@ -179,3 +183,6 @@ writeLines(tmp, "../img/0025-networkD3.html")
 If anyone's wondering why Wellington has so many inbound commuters compared to Auckland, which is much larger, it's just an artefact of boundaries.  Wellington Region is divided into a number of smaller cities and regions which show up in this sort of data, whereas the Auckland region is a single territorial authority.
 
 C'est tout.
+
+### Edits
+Edited 27/12/2015 so the numbers in the tooltip labels include the sums of commuters even when less than 100 - incorrectly omitted in the first version.  I now use the pre-filtered "TravelAll" object for creating the labels.  This doesn't make any visual difference, but the numbers were understated before.  
