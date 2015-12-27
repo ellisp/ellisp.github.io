@@ -132,6 +132,8 @@ for(i in 1:reps){
 resampled observations from New Zealand Income Survey 2011", 0.5, 0.95,
                 gp = gpar(fontfamily = "myfont", cex = 1))
       
+      grid.text(i, 0.05, 0.05, gp = gpar(fontfamily = "myfont", cex = 1))
+      
    dev.off()
 
 }   
