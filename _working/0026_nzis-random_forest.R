@@ -1,3 +1,4 @@
+#------------------setup------------------------
 library(showtext)
 library(RODBC)
 library(ggplot2)
@@ -6,9 +7,11 @@ library(dplyr)
 library(tidyr)
 
 library(rpart)
-library(rpart.plot)
-library(caret)
+library(rpart.plot)   # for prp()
+library(caret)        # for train()
 library(randomForest)
+library(partykit)     # for plot(as.party())
+library(quantregForest) # for prediction intervals
 
 PlayPen <- odbcConnect("PlayPen_prod")
 font.add.google("Poppins", "myfont")
@@ -16,6 +19,33 @@ showtext.auto()
 sqlQuery(PlayPen, "use nzis11")
 
 
+#------------------transformation functions------------
+# helper functions for transformations of skewed data that crosses zero.  See 
+# http://ellisp.github.io/blog/2015/09/07/transforming-breaks-in-a-scale/
+.mod_transform <- function(y, lambda){
+   if(lambda != 0){
+      yt <- sign(y) * (((abs(y) + 1) ^ lambda - 1) / lambda)
+   } else {
+      yt = sign(y) * (log(abs(y) + 1))
+   }
+   return(yt)
+}
+
+
+.mod_inverse <- function(yt, lambda){
+   if(lambda != 0){
+      y <- ((abs(yt) * lambda + 1)  ^ (1 / lambda) - 1) * sign(yt)
+   } else {
+      y <- (exp(abs(yt)) - 1) * sign(yt)
+      
+   }
+   return(y)
+}
+
+# parameter for reshaping - equivalent to sqrt:
+lambda <- 0.5
+
+#---------------------------download and transform data--------------------------
 # This query will include double counting of people with multiple ethnicities
 sql <-
 "SELECT sex, agegrp, occupation, qualification, region, hours, income, 
@@ -35,56 +65,76 @@ orig <- sqlQuery(PlayPen, sql, stringsAsFactors = TRUE)
 nzis <- orig %>%
    mutate(ind = TRUE) %>%
    spread(ethnicity, ind, fill = FALSE) %>%
-   select(-survey_id)
+   select(-survey_id) %>%
+   mutate(income = .mod_transform(income, lambda = lambda))
 
 for(col in unique(orig$ethnicity)){
    nzis[ , col] <- factor(ifelse(nzis[ , col], "Yes", "No"))
 }
-
-# names(nzis) <- make.names(names(nzis))
 
 set.seed(123)
 nzis$use <- ifelse(runif(nrow(nzis)) > 0.8, "Test", "Train")
 trainData <- nzis %>% filter(use == "Train") %>% select(-use)
 testData <- nzis %>% filter(use == "Test") %>% select(-use)
 
+# traditional R modelling formula versions:
+trainX <- trainData %>% select(-income) %>% data.frame()
+trainY <- trainData$income
 testX <- testData %>% select(-income) %>% data.frame()
 testY <- testData$income
 
-#---------------------modelling---------------
+# sparse versions with a column for each factor-level combination:
+trainX2 <- model.matrix(income ~ ., trainData)[ , -1]
+testX2 <- model.matrix(income ~ ., testData)[ , -1]
+
+#---------------------modelling with a single tree---------------
 # single tree, with factors all grouped together
 set.seed(234)
-rpartTune <- train(testX, testY,
+rpartTune <- train(trainX, trainY,
                      method = "rpart",
                      tuneLength = 10,
                      trControl = trainControl(method = "cv"))
 
 
-rpartTree <- rpart(income ~ ., data = testData, 
-                   control = rpart.control(cp = 0.00616),
+rpartTree <- rpart(income ~ ., data = trainData, 
+                   control = rpart.control(cp = rpartTune$bestTune),
                    method = "anova")
 
 
+node.fun1 <- function(x, labs, digits, varlen){
+   paste0("$", round(.mod_inverse(x$frame$yval, lambda = lambda), 0))
+}
 
-svg("_output/tree.svg", 12, 10)
+# exploratory plot only - not for dissemination:
+plot(as.party(rpartTree))
+
+
+svg("../img/0026-polished-tree.svg", 12, 10)
 par(fg = "blue", family = "myfont")
 
 prp(rpartTree, varlen = 5, faclen = 7, type = 4, extra = 1, 
     under = TRUE, tweak = 0.9, box.col = "grey95", border.col = "grey92",
     split.font = 1, split.cex = 0.8, eq = ": ", facsep = " ",
     branch.col = "grey85", under.col = "lightblue",
-    prefix = "$")
+    node.fun = node.fun1)
 
 grid.text("New Zealanders' income in one week in 2011", 0.5, 0.89,
           gp = gpar(fontfamily = "myfont", fontface = "bold"))  
 
-grid.text("Other factors considered: sex, qualification.",
-          0.2, 0.2, 
+grid.text("Other factors considered: qualification, region, ethnicity.",
+          0.8, 0.2, 
           gp = gpar(fontfamily = "myfont", cex = 0.8))
+
+grid.text("$ numbers in blue are 'average' weekly income:\nsquared(mean(sign(sqrt(abs(x)))))\nwhich is a little less than the median.",
+          0.8, 0.1, 
+          gp = gpar(fontfamily = "myfont", cex = 0.8, col = "blue"))
 
 dev.off()
 
 #----------home made random forest--------------
+# resample both rows and columns, as in a random forest,
+# and draw a picture for each fitted tree.  Knit these
+# into an animation.
 
 variables <- c("sex", "agegrp", "occupation", "qualification",
                "region", "hours", "Maori")
@@ -115,13 +165,13 @@ for(i in 1:reps){
                       control = rpart.control(cp = this_rpartTune$bestTune),
                       method = "anova")
  
-   png(paste0("_output/0025_random_forest/", 1000 + i, ".png"), 1200, 1000)  
+   png(paste0("_output/0026_random_forest/", 1000 + i, ".png"), 1200, 1000, res = 100)  
       par(fg = "blue", family = "myfont")
       prp(home_made_rf[[i]], varlen = 5, faclen = 7, type = 4, extra = 1, 
           under = TRUE, tweak = 0.9, box.col = "grey95", border.col = "grey92",
           split.font = 1, split.cex = 0.8, eq = ": ", facsep = " ",
           branch.col = "grey85", under.col = "lightblue",
-          prefix = "$", mar = c(2, 1, 6, 1))
+          node.fun = node.fun1, mar = c(3, 1, 5, 1))
       
       grid.text(paste0("Variables available to this tree: ", 
                       paste(these_variables, collapse = ", "))
@@ -134,14 +184,16 @@ resampled observations from New Zealand Income Survey 2011", 0.5, 0.95,
       
       grid.text(i, 0.05, 0.05, gp = gpar(fontfamily = "myfont", cex = 1))
       
-   dev.off()
+      grid.text("$ numbers in blue are 'average' weekly income:\nsquared(mean(sign(sqrt(abs(x)))))\nwhich is a little less than the median.",
+                0.8, 0.1, 
+                gp = gpar(fontfamily = "myfont", cex = 0.8, col = "blue"))
+      
+      dev.off()
 
 }   
 
-
-
-
-old_dir <- setwd("_output/0025_random_forest")
+# knit into an actual animation
+old_dir <- setwd("_output/0026_random_forest")
 # combine images into an animated GIF
 system('"C:\\Program Files\\ImageMagick-6.9.1-Q16\\convert" -loop 0 -delay 400 *.png "rf.gif"')
 # move the asset over to where needed for the blog
@@ -150,20 +202,63 @@ setwd(old_dir)
 
 
 #-----------------random forest----------
-X <- model.matrix(income ~ ., testData)[ , -1]
+
 # need to relabel the columns if going to use these
 
-rf1Tune <- train(testX, testY,
-                   method = "rf",
-                   tuneLength = 10,
-                   trControl = trainControl(method = "cv"))
-
 # with factors grouped together
-rf1 <- randomForest(testX, testY, ntree = 1000)
+# rf1Tune <- train(trainX, trainY,
+#                    method = "rf",
+#                    tuneLength = 10,
+#                    trControl = trainControl(method = "cv"))
+
+rf1 <- randomForest(trainX, trainY, ntree = 1000)
+
 
 # with factors as individual columns
-rf2 <- randomForest(X, testY, ntree = 1000)
+# rf2Tune <- train(X, trainY,
+#                    method = "rf",
+#                    tuneLength = 10,
+#                    trControl = trainControl(method = "cv"))
+
+
+rf2 <- randomForest(trainX2, trainY, ntree = 1000)
 
 importance(rf1)
 importance(rf2)
+
+
+#---------------compare predictions on test set--------------------
+# baseline linear models
+lin_basic <- lm(income ~ ., data = trainData)          # first order only
+lin_full  <- lm(income ~ . + . ^ 2, data = trainData)  # second order interactions and polynomials
+
+
+tree_preds <- predict(rpartTree, newdata = testData)
+rf1_preds <- predict(rf1, newdata = testX)
+rf2_preds <- predict(rf2, newdata = testX2)
+lin_basic_preds <- predict(lin_basic, newdata = testData)
+lin_full_preds <- predict(lin_full, newdata = testData)
+
+R2(lin_basic_preds, obs = testY)
+R2(lin_full_preds, obs = testY)
+R2(tree_preds, obs = testY)
+R2(rf1_preds, obs = testY)
+R2(rf2_preds, obs = testY)
+
+
+#-----------------quantile random forests-------------
+library(quantregForest)
+
+
+system.time(qrf <- quantregForest(trainX2, trainY, importance = TRUE, ntree = 1000))
+
+p <- predict(qrf, newdata = testX2)
+R2(p, obs = testY)
+
+dim(testX)
+dim(trainX2)
+b <- cbind(p, smallTrainY) %>% as.data.frame()
+names(b) <- c("low", "median", "high", "actual")
+b <- b %>%  mutate(correct = (actual > low & actual < high))
+summary(b)
 
