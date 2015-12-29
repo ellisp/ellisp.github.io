@@ -3,6 +3,7 @@ library(showtext)
 library(RODBC)
 library(ggplot2)
 library(scales)
+library(MASS) # for stepAIC.  Needs to be before dplyr to avoid select namespace clash
 library(dplyr)
 library(tidyr)
 
@@ -12,6 +13,8 @@ library(caret)        # for train()
 library(randomForest)
 library(partykit)     # for plot(as.party())
 library(quantregForest) # for prediction intervals
+
+
 
 PlayPen <- odbcConnect("PlayPen_prod")
 font.add.google("Poppins", "myfont")
@@ -206,19 +209,58 @@ setwd(old_dir)
 # need to relabel the columns if going to use these
 
 # with factors grouped together
+
+
+# train() takes too long
 # rf1Tune <- train(trainX, trainY,
 #                    method = "rf",
 #                    tuneLength = 10,
 #                    trControl = trainControl(method = "cv"))
 
+
+# so we do cross-validation tuning ourselves manually
+
+
+# First we hold ntree constant and try different values of mtry
+# values of m to try for mtry
+m <- c(2, 3, 4, 5, 6, 8, 10)
+
+cvData <- trainData %>%
+   mutate(group = sample(1:5, nrow(trainData), replace = TRUE))
+
+results <- matrix(numeric(length(m) * 5), ncol = 5)
+
+for(i in 1:length(m)){
+   print(i)
+   for(j in 1:5){
+      cat(j)
+      cv_train <- cvData %>% filter(group != j) %>% select(-group)
+      cv_train_x <- cv_train %>% select(-income)
+      cv_train_y <- cv_train$income
+      cv_test <- cvData %>% filter(group == j) %>% select(-group)
+      cv_test_x <- cv_test %>% select(-income)
+      cv_test_y <- cv_test$income
+      system.time(tmp <- randomForest(cv_train_x, cv_train_y, 
+                                      ntree = 500, mtry = m[i])) # about 20 minutes per fit
+      preds <- predict(tmp, newdata = cv_test_x)
+      results[i, j] <- RMSE(preds, obs = cv_test_y)
+   }
+}
+
+results_df <- as.data.frame(results) %>%
+results_df$meanRMSE <- apply(results, 1, mean)
+results_df$mtry <- m
+results_df %>% arrange(meanRMSE)
+results_df <- ggplot() %>%
+   aes(x = m, y = meanRMSE) +
+   geom_point() +
+   geom_line()
+   
+
 rf1 <- randomForest(trainX, trainY, ntree = 1000)
 
 
-# with factors as individual columns
-# rf2Tune <- train(X, trainY,
-#                    method = "rf",
-#                    tuneLength = 10,
-#                    trControl = trainControl(method = "cv"))
+
 
 
 rf2 <- randomForest(trainX2, trainY, ntree = 1000)
@@ -231,23 +273,30 @@ importance(rf2)
 # baseline linear models
 lin_basic <- lm(income ~ ., data = trainData)          # first order only
 lin_full  <- lm(income ~ . + . ^ 2, data = trainData)  # second order interactions and polynomials
+lin_fullish <- lm(income ~ sex * (agegrp + occupation + qualification + region +
+                     hours ^ 2 + Asian + European + Maori + `Middle Eastern/Latin American/African` + 
+                     `Other Ethnicity` + `Pacific Peoples` + `Residual Categories`),
+                  data = trainData)
 
+lin_step <- stepAIC(lin_fullish, k = log(nrow(trainData)))
 
 tree_preds <- predict(rpartTree, newdata = testData)
 rf1_preds <- predict(rf1, newdata = testX)
 rf2_preds <- predict(rf2, newdata = testX2)
 lin_basic_preds <- predict(lin_basic, newdata = testData)
 lin_full_preds <- predict(lin_full, newdata = testData)
+lin_step_preds <-  predict(lin_step, newdata = testData)
 
-R2(lin_basic_preds, obs = testY)
-R2(lin_full_preds, obs = testY)
-R2(tree_preds, obs = testY)
-R2(rf1_preds, obs = testY)
-R2(rf2_preds, obs = testY)
+RMSE(lin_basic_preds, obs = testY)
+RMSE(lin_full_preds, obs = testY)
+RMSE(lin_step_preds, obs = testY)
+RMSE(tree_preds, obs = testY)
+RMSE(rf1_preds, obs = testY)
+RMSE(rf2_preds, obs = testY)
 
 
 #-----------------quantile random forests-------------
-library(quantregForest)
+# needs more memory than I've got
 
 
 system.time(qrf <- quantregForest(trainX2, trainY, importance = TRUE, ntree = 1000))
@@ -261,4 +310,5 @@ b <- cbind(p, smallTrainY) %>% as.data.frame()
 names(b) <- c("low", "median", "high", "actual")
 b <- b %>%  mutate(correct = (actual > low & actual < high))
 summary(b)
+
 
