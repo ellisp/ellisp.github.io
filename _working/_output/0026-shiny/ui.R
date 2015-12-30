@@ -46,11 +46,18 @@ font-family: 'Poppins', 'Lucida Grande', Verdana, Lucida, Helvetica, Arial, Cali
     selectInput("region", 
                 "Region",
                 choices = d_region,
-                selected = sample(d_region, 1))             
+                selected = sample(d_region, 1)),
+checkboxGroupInput("ethnicity", "Choose one or more ethnic groups",
+                  choices = c("Maori", "European", "Asian", "Pacific", "Other"),
+                  selected = sample(c("Maori", "European", "Asian", "Pacific"), 1))                
 ),
     # Show a plot of the generated distribution
     mainPanel(
-      plotOutput("distPlot")
+      ggvisOutput("plot"),
+      tableOutput("table"),
+      textOutput("txt"),
+      p("This page shows an estimated modelled income distribution for 'what if' scenarios of combinations of variables including rare or impossible combinations."),
+      p("All estimates should be treated with great caution!  Effective confidence intervals are in many cases around +/- 20% or higher.")
     )
   )
 ))

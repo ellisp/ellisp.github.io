@@ -362,33 +362,31 @@ d_occupation <- sort(as.character(unique(nzis$occupation)))
 d_qualification <- sort(as.character(unique(nzis$qualification)))
 d_region <- sort(as.character(unique(nzis$region)))
 
+
+
 save(d_sex, d_agegrp, d_occupation, d_qualification, d_region,
      file = "_output/0026-shiny/dimensions.rda")
 
-nzis_shiny <- nzis %>% select(-use)
+nzis_shiny <- nzis %>% 
+   select(-use) %>%
+   mutate(Other = factor(ifelse(Other == "Yes" | Residual == "Yes" | MELAA == "Yes",
+                         "Yes", "No"))) %>%
+   select(-MELAA, -Residual)
+   
 
 mod1_shiny <- glm((income > 0) ~ ., family = binomial, data = nzis_shiny)
 
 nzis_pos <- subset(nzis_shiny, income != 0) 
 
-mod2_shiny <- randomForest(income ~ ., data = nzis_pos, ntree = 500, mtry = 3, 
+mod2_shiny <- randomForest(income ~ ., data = nzis_pos, ntree = 1000, mtry = 3, 
                            nodesize = 15, importance = FALSE, replace = FALSE)
 
-save(mod1_shiny, mod2_shiny, 
+res <- predict(mod2_shiny) - nzis_pos$income
+nzis_skeleton <- nzis_shiny[0, ]
+all_income <- nzis$income
+
+save(mod1_shiny, mod2_shiny, res, nzis_skeleton, all_income, nzis_shiny,
      file = "_output/0026-shiny/models.rda")
 
-person <- nzis[sample(1:nrow(nzis), 1), ]
-print(person)
-
-
-prob <- predict(mod1_shiny, newdata = person, type = "response")
-point <- predict(mod2_shiny, newdata = person)
-
-n <- 10000
-positives <- prob * n
-dist <- c(rep(0, (n - positives)),
-          point + sample(r, positives, replace = TRUE))
-
-plot(density(dist))
-
-
+#------------------save expensive stuff---------------
+save.image("0026-workspace.rdata")
