@@ -75,6 +75,9 @@ for(col in unique(orig$ethnicity)){
    nzis[ , col] <- factor(ifelse(nzis[ , col], "Yes", "No"))
 }
 
+
+names(nzis)[11:14] <- c("MELAA", "Other", "Pacific", "Residual")
+
 set.seed(123)
 nzis$use <- ifelse(runif(nrow(nzis)) > 0.8, "Test", "Train")
 trainData <- nzis %>% filter(use == "Train") %>% select(-use)
@@ -206,6 +209,8 @@ setwd(old_dir)
 
 #-----------------random forest----------
 
+tuneRF(trainX, trainY, 3, stepFactor = 1)
+
 # need to relabel the columns if going to use these
 
 # with factors grouped together
@@ -223,17 +228,19 @@ setwd(old_dir)
 
 # First we hold ntree constant and try different values of mtry
 # values of m to try for mtry
-m <- c(2, 3, 4, 5, 6, 8, 10)
+m <- c(2, 3, 4, 5, 6, 8)
+
+folds <- 3
 
 cvData <- trainData %>%
-   mutate(group = sample(1:5, nrow(trainData), replace = TRUE))
+   mutate(group = sample(1:folds, nrow(trainData), replace = TRUE))
 
-results <- matrix(numeric(length(m) * 5), ncol = 5)
+results <- matrix(numeric(length(m) * folds), ncol = folds)
 
 for(i in 1:length(m)){
-   print(i)
-   for(j in 1:5){
-      cat(j)
+   message(i)
+   for(j in 1:folds){
+      
       cv_train <- cvData %>% filter(group != j) %>% select(-group)
       cv_train_x <- cv_train %>% select(-income)
       cv_train_y <- cv_train$income
@@ -244,29 +251,58 @@ for(i in 1:length(m)){
                                       ntree = 500, mtry = m[i])) # about 20 minutes per fit
       preds <- predict(tmp, newdata = cv_test_x)
       results[i, j] <- RMSE(preds, obs = cv_test_y)
+      print(paste("mtry", m[i], j, round(results[i, j], 2), sep = " : "))
    }
 }
 
-results_df <- as.data.frame(results) %>%
+results_df <- as.data.frame(results)
 results_df$meanRMSE <- apply(results, 1, mean)
 results_df$mtry <- m
 results_df %>% arrange(meanRMSE)
-results_df <- ggplot() %>%
-   aes(x = m, y = meanRMSE) +
+results_df %>% ggplot() +
+   aes(x = mtry, y = meanRMSE) +
    geom_point() +
    geom_line()
    
 
-rf1 <- randomForest(trainX, trainY, ntree = 1000)
-
-
-
-
-
+rf1 <- randomForest(trainX, trainY, ntree = 1000, mtry = 3)
 rf2 <- randomForest(trainX2, trainY, ntree = 1000)
 
 importance(rf1)
 importance(rf2)
+
+
+#-------xgboost------------
+library(xgboost)
+library(Matrix)
+library(data.table)
+
+sparse_matrix <- sparse.model.matrix(income ~ . -1, data = trainData)
+
+# boosting.  After 16 rounds it starts to overfit:
+xgb.cv(data = sparse_matrix, label = trainY, nrounds = 25, objective = "reg:linear", nfold = 5)
+
+mod_xg <- xgboost(sparse_matrix, label = trainY, nrounds = 16, objective = "reg:linear")
+
+
+#---------------------two stage approach-----------
+# this is the only method that preserves the bimodal structure of the response
+mod1 <- glm((income > 0) ~ ., family = binomial, data = trainData)
+
+trainData2 <- subset(trainData, income != 0)
+mod2 <- randomForest(income ~ ., data = trainData2, ntree = 1000, mtry = 3)
+
+prob_pos <- predict(mod1, newdata = testData, type = "response")
+pred_inc <- predict(mod2, newdata = testData)
+
+pred_comb <- prob_pos  * pred_inc # specify what elements though
+
+
+r <- predict(mod2) - trainData2$income
+plot(predict(mod2), r)
+
+plot(pred_comb, testY - pred_comb)
+
 
 
 #---------------compare predictions on test set--------------------
@@ -274,8 +310,8 @@ importance(rf2)
 lin_basic <- lm(income ~ ., data = trainData)          # first order only
 lin_full  <- lm(income ~ . + . ^ 2, data = trainData)  # second order interactions and polynomials
 lin_fullish <- lm(income ~ sex * (agegrp + occupation + qualification + region +
-                     hours ^ 2 + Asian + European + Maori + `Middle Eastern/Latin American/African` + 
-                     `Other Ethnicity` + `Pacific Peoples` + `Residual Categories`),
+                     hours ^ 2 + Asian + European + Maori + MELAA + 
+                     Other + Pacific + Residual),
                   data = trainData)
 
 lin_step <- stepAIC(lin_fullish, k = log(nrow(trainData)))
@@ -286,29 +322,73 @@ rf2_preds <- predict(rf2, newdata = testX2)
 lin_basic_preds <- predict(lin_basic, newdata = testData)
 lin_full_preds <- predict(lin_full, newdata = testData)
 lin_step_preds <-  predict(lin_step, newdata = testData)
+xgboost_pred <- predict(mod_xg, newdata = sparse.model.matrix(income ~ . -1, data = testData))
 
-RMSE(lin_basic_preds, obs = testY)
-RMSE(lin_full_preds, obs = testY)
-RMSE(lin_step_preds, obs = testY)
-RMSE(tree_preds, obs = testY)
+RMSE(lin_basic_preds, obs = testY) # 21.3
+RMSE(lin_full_preds, obs = testY)  # 21.4
+RMSE(lin_step_preds, obs = testY)  # 21.2
+RMSE(tree_preds, obs = testY)      # 21.4
 RMSE(rf1_preds, obs = testY)
 RMSE(rf2_preds, obs = testY)
-
+RMSE(xgboost_pred, obs = testY)    # 21.0
+RMSE(pred_comb, obs = testY)       # 21.0
 
 #-----------------quantile random forests-------------
 # needs more memory than I've got
 
+# 
+# system.time(qrf <- quantregForest(trainX2, trainY, importance = TRUE, ntree = 1000))
+# 
+# p <- predict(qrf, newdata = testX2)
+# R2(p, obs = testY)
+# 
+# dim(testX)
+# dim(trainX2)
+# b <- cbind(p, smallTrainY) %>% as.data.frame()
+# names(b) <- c("low", "median", "high", "actual")
+# b <- b %>%  mutate(correct = (actual > low & actual < high))
+# summary(b)
+# 
+# 
 
-system.time(qrf <- quantregForest(trainX2, trainY, importance = TRUE, ntree = 1000))
 
-p <- predict(qrf, newdata = testX2)
-R2(p, obs = testY)
 
-dim(testX)
-dim(trainX2)
-b <- cbind(p, smallTrainY) %>% as.data.frame()
-names(b) <- c("low", "median", "high", "actual")
-b <- b %>%  mutate(correct = (actual > low & actual < high))
-summary(b)
+
+#----------------shiny app-------------
+
+d_sex <- sort(as.character(unique(nzis$sex)))
+d_agegrp <- sort(as.character(unique(nzis$agegrp)))
+d_occupation <- sort(as.character(unique(nzis$occupation)))
+d_qualification <- sort(as.character(unique(nzis$qualification)))
+d_region <- sort(as.character(unique(nzis$region)))
+
+save(d_sex, d_agegrp, d_occupation, d_qualification, d_region,
+     file = "_output/0026-shiny/dimensions.rda")
+
+nzis_shiny <- nzis %>% select(-use)
+
+mod1_shiny <- glm((income > 0) ~ ., family = binomial, data = nzis_shiny)
+
+nzis_pos <- subset(nzis_shiny, income != 0) 
+
+mod2_shiny <- randomForest(income ~ ., data = nzis_pos, ntree = 500, mtry = 3, 
+                           nodesize = 15, importance = FALSE, replace = FALSE)
+
+save(mod1_shiny, mod2_shiny, 
+     file = "_output/0026-shiny/models.rda")
+
+person <- nzis[sample(1:nrow(nzis), 1), ]
+print(person)
+
+
+prob <- predict(mod1_shiny, newdata = person, type = "response")
+point <- predict(mod2_shiny, newdata = person)
+
+n <- 10000
+positives <- prob * n
+dist <- c(rep(0, (n - positives)),
+          point + sample(r, positives, replace = TRUE))
+
+plot(density(dist))
 
 
