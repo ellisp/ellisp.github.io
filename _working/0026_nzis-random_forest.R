@@ -14,6 +14,9 @@ library(randomForest)
 library(partykit)     # for plot(as.party())
 library(quantregForest) # for prediction intervals
 
+library(xgboost)
+library(Matrix)
+library(data.table)
 
 
 PlayPen <- odbcConnect("PlayPen_prod")
@@ -273,10 +276,6 @@ importance(rf2)
 
 
 #-------xgboost------------
-library(xgboost)
-library(Matrix)
-library(data.table)
-
 sparse_matrix <- sparse.model.matrix(income ~ . -1, data = trainData)
 
 # boosting.  After 16 rounds it starts to overfit:
@@ -351,11 +350,7 @@ RMSE(pred_comb, obs = testY)       # 21.0
 # 
 # 
 
-
-
-
 #----------------shiny app-------------
-
 d_sex <- sort(as.character(unique(nzis$sex)))
 d_agegrp <- sort(as.character(unique(nzis$agegrp)))
 d_occupation <- sort(as.character(unique(nzis$occupation)))
@@ -374,19 +369,92 @@ nzis_shiny <- nzis %>%
    select(-MELAA, -Residual)
    
 
-mod1_shiny <- glm((income > 0) ~ ., family = binomial, data = nzis_shiny)
 
-nzis_pos <- subset(nzis_shiny, income != 0) 
+# income a binomial response for first model
+nzis_rf <- nzis_shiny %>%  mutate(income = factor(income !=0))
+mod1_shiny <- randomForest(income ~ ., data = nzis_rf,
+                           ntree = 1000, importance = FALSE, mtry = 3, nodesize = 5)
+save(mod1_shiny, file = "_output/0026-shiny/mod1.rda")
 
-mod2_shiny <- randomForest(income ~ ., data = nzis_pos, ntree = 1000, mtry = 3, 
-                           nodesize = 15, importance = FALSE, replace = FALSE)
+nzis_nonzero <- subset(nzis_shiny, income != 0) 
+
+mod2_shiny <- randomForest(income ~ ., data = nzis_nonzero, ntree = 1000, mtry = 3, 
+                           nodesize = 10, importance = FALSE, replace = FALSE)
 
 res <- predict(mod2_shiny) - nzis_pos$income
 nzis_skeleton <- nzis_shiny[0, ]
 all_income <- nzis$income
 
-save(mod1_shiny, mod2_shiny, res, nzis_skeleton, all_income, nzis_shiny,
-     file = "_output/0026-shiny/models.rda")
+save(mod2_shiny, res, nzis_skeleton, all_income, nzis_shiny,
+   file = "_output/0026-shiny/models.rda")
+
+
+#---------------population--------
+
+nzis_pop <- expand.grid(d_sex, d_agegrp, d_occupation, d_qualification, d_region,
+                        c("Yes", "No"), c("Yes", "No"), c("Yes", "No"), 
+                        c("Yes", "No"), c("Yes", "No"))
+names(nzis_pop) <-  c("sex", "agegrp", "occupation", "qualification", "region",
+                      "European", "Maori", "Asian", "Pacific", "Other")
+nzis_pop$count <- 0
+
+nzis_pop <- nzis_shiny %>%
+   select(-hours, -income) %>%
+   mutate(count = 1) %>%
+   rbind(nzis_pop) %>%
+   group_by(sex, agegrp, occupation, qualification, region, 
+             European, Maori, Asian, Pacific, Other) %>%
+   summarise(count = sum(count)) %>%
+   ungroup()
+
+mod3 <- glm(count ~ (sex + agegrp) * (occupation + qualification + region + European + Maori + Asian + Pacific + Other), 
+            data = nzis_pop, family = poisson)
+
+nzis_pop$pop <- predict(mod3, type = "response")
+
+sum(nzis_pop$pop)
+ggplot(nzis_pop, aes(x= pop, y = count)) + geom_point()
+
+nzis_pop %>%
+   ungroup() %>%
+   arrange(-count) %>%
+   head(10)
+# 
+# sex agegrp    occupation    qualification     region European  Maori  Asian Pacific  Other count      pop
+# (fctr) (fctr)        (fctr)           (fctr)     (fctr)   (fctr) (fctr) (fctr)  (fctr) (fctr) (dbl)    (dbl)
+# 1  female    65+ No occupation             None Canterbury      Yes     No     No      No     No   150 16.28243
+# 2  female    65+ No occupation             None   Auckland      Yes     No     No      No     No   120 33.74518
+# 3  female    65+ No occupation           School   Auckland      Yes     No     No      No     No   103 34.59236
+# 4    male    65+ No occupation             None   Auckland      Yes     No     No      No     No   101 31.60963
+# 5  female  15-19 No occupation           School   Auckland      Yes     No     No      No     No    88 19.29372
+# 6    male    65+ No occupation Vocational/Trade   Auckland      Yes     No     No      No     No    87 38.69210
+# 7  female    65+ No occupation Vocational/Trade   Auckland      Yes     No     No      No     No    85 41.30613
+# 8  female  15-19 No occupation           School Canterbury      Yes     No     No      No     No    82  9.30944
+# 9  female    65+ No occupation             None Wellington      Yes     No     No      No     No    78 12.89786
+# 10   male    65+ No occupation             None Canterbury      Yes     No     No      No     No    77 15.25200
+
+
+
+
+
+
+
+nzis_sparse <- sparse.model.matrix(income ~ ., data = nzis_shiny)
+
+sparse_matrix <- sparse.model.matrix(income ~ . -1, data = trainData)
+
+# boosting.  After 16 rounds it starts to overfit:
+xgb.cv(data = sparse_matrix, label = trainY, nrounds = 25, objective = "reg:linear", nfold = 5)
+
+
+mod_xg <- xgboost(sparse_matrix, label = trainY, nrounds = 16, objective = "reg:linear")
+
+
+
+
 
 #------------------save expensive stuff---------------
+
+
+
 save.image("0026-workspace.rdata")

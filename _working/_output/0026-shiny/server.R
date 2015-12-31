@@ -2,7 +2,9 @@ library(shiny)
 library(randomForest)
 library(ggvis)
 library(dplyr)
+
 load("models.rda")
+load("mod1.rda")
 
 lambda = 0.5
 
@@ -33,32 +35,44 @@ FormatDollars <- function (x, endmark = "", ...) {
 }
 
 shinyServer(function(input, output) {
-# input <- data.frame(sex = "male", agegrp = "35-39", occupation = "Community and Personal Service Workers", qualification = "Other", region = "Southland", hours = 35)
+# input <- data.frame(sex = "female", agegrp = "40-44", occupation = "Community and Personal Service Workers", qualification = "Other", region = "Auckland", hours = 35)
   
-  the_data <- reactive({
-    person <-   nzis_skeleton
-    person[1, "hours"] <- input$hours
-    person[1, "sex"] <- input$sex
-    person[1, "agegrp"] <- input$agegrp
-    person[1, "occupation"] <- input$occupation
-    person[1, "qualification"] <- input$qualification
-    person[1, "region"] <- input$region
-    person[1, "Asian"] <- "No" 
-    person[1, "Maori"] <- "No" 
-    person[1, "European"] <- "No" 
-    person[1, "Pacific"]  <- "No" 
-    person[1, "Other"]  <- "No" 
+  person <- reactive({
+   tmp <-   nzis_skeleton
+    tmp[1, "hours"] <- input$hours
+    tmp[1, "sex"] <- input$sex
+    tmp[1, "agegrp"] <- input$agegrp
+    tmp[1, "occupation"] <- input$occupation
+    tmp[1, "qualification"] <- input$qualification
+    tmp[1, "region"] <- input$region
+    tmp[1, "Asian"] <- "No" 
+    tmp[1, "Maori"] <- "No" 
+    tmp[1, "European"] <- "No" 
+    tmp[1, "Pacific"]  <- "No" 
+    tmp[1, "Other"]  <- "No" 
     
     for(eth in c("Asian", "Maori", "European", "Pacific", "Other")){
-      if(eth %in% input$ethnicity) person[1, eth] <- "Yes"
-      }
+      if(eth %in% input$ethnicity) tmp[1, eth] <- "Yes"
+     }
     
-    prob <- predict(mod1_shiny, newdata = person, type = "response")
-    point <- predict(mod2_shiny, newdata = person)
+    
+    return(tmp)
+  })
+  
+  the_prob <- reactive({
+   prob <- predict(mod1_shiny, newdata = person(), type = "prob")[ , "TRUE"]
+   return(prob)
+  })
+  
+  the_data <- reactive({
+   
+    point <- predict(mod2_shiny, newdata = person())
+    
+  
+    n <- 10000
+    positives <- round(the_prob() * n)
     
     set.seed(123)
-    n <- 10000
-    positives <- round(prob * n)
     x <- c(rep(0, (n - positives)),
           point + sample(res, positives, replace = TRUE))
           
@@ -96,13 +110,22 @@ shinyServer(function(input, output) {
                         include.rownames = FALSE, include.colnames = FALSE)
     
     sample_size <- reactive({
-      tmp <- person %>%
-      left_join(nzis_shiny)
-      n <- nrow(tmp) * 1174
-      txt <- paste("<p>An estimated", round(n, -2), "people in New Zealand in 2011 actually fitted this description.</p>")
+      tmp <- person() %>%
+      select(-hours, -income) %>%
+      mutate(marker = 1) %>%
+      right_join(nzis_shiny) %>%
+      filter(!is.na(marker))
+      
+      n <- nrow(tmp) 
+      txt <- paste("Sample size of ", n, " people in the NZIS with this combination of sex, age, occupation, qualification and region.")
       return(txt)
     })
-   
-   output$txt <- renderText(sample_size())
+     output$txt1 <- renderText(sample_size())
+     
+     no_income <- reactive({
+      txt <- paste0(round((1 - the_prob()) * 100), "% of this category (taking hours worked into account) are estimated to have zero income from any source.")
+      return(txt)
+     })
+     output$txt2 <- renderText(no_income())
 
 })

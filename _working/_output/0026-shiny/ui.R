@@ -55,8 +55,9 @@ checkboxGroupInput("ethnicity", "Choose one or more ethnic groups",
     mainPanel(
       ggvisOutput("plot"),
       tableOutput("table"),
-      textOutput("txt"),
       p("This page shows an estimated modelled income distribution for 'what if' scenarios of combinations of variables including rare or impossible combinations."),
+      p(textOutput("txt1")),
+      p(textOutput("txt2")),
       p("All estimates should be treated with great caution!  Effective confidence intervals are in many cases around +/- 20% or higher.")
     )
   )
