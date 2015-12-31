@@ -18,6 +18,7 @@ library(xgboost)
 library(Matrix)
 library(data.table)
 
+library(survey) # for rake()
 
 PlayPen <- odbcConnect("PlayPen_prod")
 font.add.google("Poppins", "myfont")
@@ -405,49 +406,77 @@ nzis_pop <- nzis_shiny %>%
    group_by(sex, agegrp, occupation, qualification, region, 
              European, Maori, Asian, Pacific, Other) %>%
    summarise(count = sum(count)) %>%
-   ungroup()
-
-mod3 <- glm(count ~ (sex + agegrp) * (occupation + qualification + region + European + Maori + Asian + Pacific + Other), 
-            data = nzis_pop, family = poisson)
-
-nzis_pop$pop <- predict(mod3, type = "response")
-
-sum(nzis_pop$pop)
-ggplot(nzis_pop, aes(x= pop, y = count)) + geom_point()
-
-nzis_pop %>%
    ungroup() %>%
-   arrange(-count) %>%
-   head(10)
-# 
-# sex agegrp    occupation    qualification     region European  Maori  Asian Pacific  Other count      pop
-# (fctr) (fctr)        (fctr)           (fctr)     (fctr)   (fctr) (fctr) (fctr)  (fctr) (fctr) (dbl)    (dbl)
-# 1  female    65+ No occupation             None Canterbury      Yes     No     No      No     No   150 16.28243
-# 2  female    65+ No occupation             None   Auckland      Yes     No     No      No     No   120 33.74518
-# 3  female    65+ No occupation           School   Auckland      Yes     No     No      No     No   103 34.59236
-# 4    male    65+ No occupation             None   Auckland      Yes     No     No      No     No   101 31.60963
-# 5  female  15-19 No occupation           School   Auckland      Yes     No     No      No     No    88 19.29372
-# 6    male    65+ No occupation Vocational/Trade   Auckland      Yes     No     No      No     No    87 38.69210
-# 7  female    65+ No occupation Vocational/Trade   Auckland      Yes     No     No      No     No    85 41.30613
-# 8  female  15-19 No occupation           School Canterbury      Yes     No     No      No     No    82  9.30944
-# 9  female    65+ No occupation             None Wellington      Yes     No     No      No     No    78 12.89786
-# 10   male    65+ No occupation             None Canterbury      Yes     No     No      No     No    77 15.25200
+   filter(!(European == "No" & Maori == "No" & Asian == "No" & Pacific == "No" & Other == "No"))
+
+# this pushes my little 4GB of memory to its limits
+ mod3 <- glm(count ~ (sex + Maori) * (agegrp + occupation + qualification + region) + European + Asian + Pacific + Other, 
+             data = nzis_pop, family = poisson)
+ 
+ nzis_pop$pop <- predict(mod3, type = "response")
+
+# total population should be (1787 + 1410) * 1000 = 319700.  But we also want
+# the marginal totals (eg all men, or all women) to match the sum of weights
+# in the NZIS (where wts = 319700 / 28900 = 1174).  So we use the raking method
+# for iterative proportional fitting of survey weights
 
 
+wt <- 1174
 
+sex_pop <- nzis %>%
+   group_by(sex) %>%
+   summarise(freq = length(sex) * wt)
 
+agegrp_pop <- nzis %>%
+   group_by(agegrp) %>%
+   summarise(freq = length(agegrp) * wt)
 
+occupation_pop <- nzis %>%
+   group_by(occupation) %>%
+   summarise(freq = length(occupation) * wt)
 
+qualification_pop <- nzis %>%
+   group_by(qualification) %>%
+   summarise(freq = length(qualification) * wt)
 
-nzis_sparse <- sparse.model.matrix(income ~ ., data = nzis_shiny)
+region_pop <- nzis %>%
+   group_by(region) %>%
+   summarise(freq = length(region) * wt)
 
-sparse_matrix <- sparse.model.matrix(income ~ . -1, data = trainData)
+European_pop <- nzis %>%
+   group_by(European) %>%
+   summarise(freq = length(European) * wt)
 
-# boosting.  After 16 rounds it starts to overfit:
-xgb.cv(data = sparse_matrix, label = trainY, nrounds = 25, objective = "reg:linear", nfold = 5)
+Asian_pop <- nzis %>%
+   group_by(Asian) %>%
+   summarise(freq = length(Asian) * wt)
 
+Maori_pop <- nzis %>%
+   group_by(Maori) %>%
+   summarise(freq = length(Maori) * wt)
 
-mod_xg <- xgboost(sparse_matrix, label = trainY, nrounds = 16, objective = "reg:linear")
+Pacific_pop <- nzis %>%
+   group_by(Pacific) %>%
+   summarise(freq = length(Pacific) * wt)
+
+Other_pop <- nzis %>%
+   group_by(Other) %>%
+   summarise(freq = length(Other) * wt)
+
+nzis_svy <- svydesign(~1, data = nzis_pop, weights = ~pop)
+
+nzis_raked <- rake(nzis_svy,
+                   sample = list(~sex, ~agegrp, ~occupation, 
+                                 ~qualification, ~region, ~European,
+                                 ~Maori, ~Pacific, ~Asian, ~Other),
+                   population = list(sex_pop, agegrp_pop, occupation_pop,
+                                     qualification_pop, region_pop, European_pop,
+                                     Maori_pop, Pacific_pop, Asian_pop, Other_pop),
+                   control = list(maxit = 20, verbose = FALSE))
+
+nzis_pop$pop <- weights(nzis_raked)
+
+save(nzis_pop, file = "_output/0026-shiny/nzis_pop.rda")
 
 
 

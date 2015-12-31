@@ -5,6 +5,7 @@ library(dplyr)
 
 load("models.rda")
 load("mod1.rda")
+load("nzis_pop.rda")
 
 lambda = 0.5
 
@@ -117,15 +118,35 @@ shinyServer(function(input, output) {
       filter(!is.na(marker))
       
       n <- nrow(tmp) 
-      txt <- paste("Sample size of ", n, " people in the NZIS with this combination of sex, age, occupation, qualification and region.")
+      return(n)
+      })
+      
+      sample_text <- reactive({
+         txt <- paste("Sample size of ", sample_size(), " people in the NZIS with this combination of sex, age, occupation, qualification and region.")
       return(txt)
-    })
-     output$txt1 <- renderText(sample_size())
+      })
+      
+     output$txt1 <- renderText(sample_text())
      
      no_income <- reactive({
       txt <- paste0(round((1 - the_prob()) * 100), "% of this category (taking hours worked into account) are estimated to have zero income from any source.")
       return(txt)
      })
      output$txt2 <- renderText(no_income())
+     
+     population <- reactive({
+      tmp <- person() %>%
+      left_join(nzis_pop)
+     
+     x <- round(tmp$pop, -1)
+     if (x < sample_size()) x <- sample_size()
+          
+     txt <- paste0("It's estimated that ", x, " people actually fitted this description in 2011.")
+     return(txt)
+     
+     })
+     output$txt3 <- renderText(population())
+     
+     
 
 })
