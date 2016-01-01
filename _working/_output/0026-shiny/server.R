@@ -46,17 +46,16 @@ shinyServer(function(input, output) {
     tmp[1, "occupation"] <- input$occupation
     tmp[1, "qualification"] <- input$qualification
     tmp[1, "region"] <- input$region
-    tmp[1, "Asian"] <- "No" 
-    tmp[1, "Maori"] <- "No" 
-    tmp[1, "European"] <- "No" 
-    tmp[1, "Pacific"]  <- "No" 
-    tmp[1, "Other"]  <- "No" 
+    tmp[1, "Asian"] <- 0 
+    tmp[1, "Maori"] <- 0 
+    tmp[1, "European"] <- 0 
+    tmp[1, "Pacific"]  <- 0 
+    tmp[1, "Other"]  <- 0 
     
     for(eth in c("Asian", "Maori", "European", "Pacific", "Other")){
-      if(eth %in% input$ethnicity) tmp[1, eth] <- "Yes"
+      if(eth %in% c(input$ethnicity1, input$ethnicity2)) tmp[1, eth] <- 1
      }
-    
-    
+        
     return(tmp)
   })
   
@@ -68,8 +67,7 @@ shinyServer(function(input, output) {
   the_data <- reactive({
    
     point <- predict(mod2_shiny, newdata = person())
-    
-  
+      
     n <- 10000
     positives <- round(the_prob() * n)
     
@@ -94,8 +92,7 @@ shinyServer(function(input, output) {
          add_axis("x", title = "Income per week ($)") %>%
          add_axis("y", title = "Density", title_offset = 50) %>%
          bind_shiny("plot")
-    
-    
+        
     the_table <- reactive({
       tmp <- the_data() %>%    summarise(Mean = FormatDollars(mean(income)), 
                          Median = FormatDollars(median(income))) %>%
@@ -146,7 +143,6 @@ shinyServer(function(input, output) {
      
      })
      output$txt3 <- renderText(population())
-     
-     
+         
 
 })

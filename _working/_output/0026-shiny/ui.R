@@ -15,11 +15,9 @@ font-family: 'Poppins', 'Lucida Grande', Verdana, Lucida, Helvetica, Arial, Cali
          background-color: #d2d2d2;
                       }
 ")),
-  # Application title
-  titlePanel("Modelled weekly income based on the New Zealand Income Survey 2011"),
+   titlePanel("Modelled weekly income based on the New Zealand Income Survey 2011"),
 
-  # Sidebar with a slider input for the number of bins
-  sidebarLayout(
+    sidebarLayout(
     sidebarPanel(
       sliderInput("hours",
                   "Hours of work:",
@@ -47,9 +45,15 @@ font-family: 'Poppins', 'Lucida Grande', Verdana, Lucida, Helvetica, Arial, Cali
                 "Region",
                 choices = d_region,
                 selected = sample(d_region, 1)),
-checkboxGroupInput("ethnicity", "Choose one or more ethnic groups",
-                  choices = c("Maori", "European", "Asian", "Pacific", "Other"),
-                  selected = sample(c("Maori", "European", "Asian", "Pacific"), 1))                
+    selectInput("ethnicity1",
+               "Select a primary ethnicity",
+               choices = c("Maori", "European", "Asian", "Pacific", "Other"),
+               selected = sample(c("Maori", "European", "Asian", "Pacific"), 1)),
+    selectInput("ethnicity2",
+               "Select a secondary ethnicity",
+               choices = c("None", "Maori", "European", "Asian", "Pacific", "Other"),
+               selected = "None")
+               
 ),
     # Show a plot of the generated distribution
     mainPanel(

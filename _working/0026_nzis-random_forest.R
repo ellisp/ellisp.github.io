@@ -18,11 +18,15 @@ library(xgboost)
 library(Matrix)
 library(data.table)
 
+
 library(survey) # for rake()
 
-PlayPen <- odbcConnect("PlayPen_prod")
+
 font.add.google("Poppins", "myfont")
 showtext.auto()
+theme_set(theme_light(base_family = "myfont"))
+
+PlayPen <- odbcConnect("PlayPen_prod")
 sqlQuery(PlayPen, "use nzis11")
 
 
@@ -252,7 +256,7 @@ for(i in 1:length(m)){
       cv_test_x <- cv_test %>% select(-income)
       cv_test_y <- cv_test$income
       system.time(tmp <- randomForest(cv_train_x, cv_train_y, 
-                                      ntree = 500, mtry = m[i])) # about 20 minutes per fit
+                                      ntree = 250, mtry = m[i])) # about 20 minutes per fit
       preds <- predict(tmp, newdata = cv_test_x)
       results[i, j] <- RMSE(preds, obs = cv_test_y)
       print(paste("mtry", m[i], j, round(results[i, j], 2), sep = " : "))
@@ -260,21 +264,36 @@ for(i in 1:length(m)){
 }
 
 results_df <- as.data.frame(results)
-results_df$meanRMSE <- apply(results, 1, mean)
 results_df$mtry <- m
-results_df %>% arrange(meanRMSE)
-results_df %>% ggplot() +
-   aes(x = mtry, y = meanRMSE) +
+
+svg("../img/0026-rf-cv3.svg", 6, 4)
+print(
+   results_df %>% 
+   gather(trial, RMSE, -mtry) %>% 
+   ggplot() +
+   aes(x = mtry, y = RMSE) +
    geom_point() +
-   geom_line()
-   
+   geom_smooth(se = FALSE) +
+   ggtitle("3-fold cross-validation for random forest;\ndiffering values of mtry")
+)
+dev.off()   
 
 rf1 <- randomForest(trainX, trainY, ntree = 1000, mtry = 3)
 rf2 <- randomForest(trainX2, trainY, ntree = 1000)
 
-importance(rf1)
-importance(rf2)
+svg("../img/0026-rf1.svg", 8, 5)
+   par(mfrow = c(1, 2), family = "myfont")
+   plot(rf1, bty = "l", main = "Random forest model 1")
+   grid()
+   
+   varImpPlot(rf1, pch = 19, main = "Importance of variables\nmodel 1")
+dev.off()
 
+
+svg("../img/0026-rf2.svg", 7, 8)
+par(family = "myfont")
+varImpPlot(rf2, pch = 19, main = "Importance of variables\nmodel 2")
+dev.off()
 
 #-------xgboost------------
 sparse_matrix <- sparse.model.matrix(income ~ . -1, data = trainData)
@@ -290,7 +309,7 @@ mod_xg <- xgboost(sparse_matrix, label = trainY, nrounds = 16, objective = "reg:
 mod1 <- glm((income > 0) ~ ., family = binomial, data = trainData)
 
 trainData2 <- subset(trainData, income != 0)
-mod2 <- randomForest(income ~ ., data = trainData2, ntree = 1000, mtry = 3)
+mod2 <- randomForest(income ~ ., data = trainData2, ntree = 500, mtry = 3)
 
 prob_pos <- predict(mod1, newdata = testData, type = "response")
 pred_inc <- predict(mod2, newdata = testData)
@@ -369,17 +388,21 @@ nzis_shiny <- nzis %>%
                          "Yes", "No"))) %>%
    select(-MELAA, -Residual)
    
+for(col in c("European", "Asian", "Maori", "Other", "Pacific")){
+   nzis_shiny[ , col]   <- ifelse(nzis_shiny[ , col] == "Yes", 1, 0)
+   }
+
 
 
 # income a binomial response for first model
 nzis_rf <- nzis_shiny %>%  mutate(income = factor(income !=0))
 mod1_shiny <- randomForest(income ~ ., data = nzis_rf,
-                           ntree = 1000, importance = FALSE, mtry = 3, nodesize = 5)
+                           ntree = 500, importance = FALSE, mtry = 3, nodesize = 5)
 save(mod1_shiny, file = "_output/0026-shiny/mod1.rda")
 
 nzis_nonzero <- subset(nzis_shiny, income != 0) 
 
-mod2_shiny <- randomForest(income ~ ., data = nzis_nonzero, ntree = 1000, mtry = 3, 
+mod2_shiny <- randomForest(income ~ ., data = nzis_nonzero, ntree = 500, mtry = 3, 
                            nodesize = 10, importance = FALSE, replace = FALSE)
 
 res <- predict(mod2_shiny) - nzis_pos$income
@@ -393,11 +416,14 @@ save(mod2_shiny, res, nzis_skeleton, all_income, nzis_shiny,
 #---------------population--------
 
 nzis_pop <- expand.grid(d_sex, d_agegrp, d_occupation, d_qualification, d_region,
-                        c("Yes", "No"), c("Yes", "No"), c("Yes", "No"), 
-                        c("Yes", "No"), c("Yes", "No"))
+                        c(1, 0), c(1, 0), c(1, 0), c(1, 0), c(1, 0))
 names(nzis_pop) <-  c("sex", "agegrp", "occupation", "qualification", "region",
                       "European", "Maori", "Asian", "Pacific", "Other")
 nzis_pop$count <- 0
+for(col in c("European", "Asian", "Maori", "Other", "Pacific")){
+ nzis_pop[ , col]   <- as.numeric(nzis_pop[ , col])
+   
+}
 
 nzis_pop <- nzis_shiny %>%
    select(-hours, -income) %>%
@@ -407,10 +433,12 @@ nzis_pop <- nzis_shiny %>%
              European, Maori, Asian, Pacific, Other) %>%
    summarise(count = sum(count)) %>%
    ungroup() %>%
-   filter(!(European == "No" & Maori == "No" & Asian == "No" & Pacific == "No" & Other == "No"))
+   mutate(Ethnicities = European + Maori + Asian + Pacific + Other) %>%
+   filter(Ethnicities %in% 1:2) %>%
+   select(-Ethnicities)
 
 # this pushes my little 4GB of memory to its limits
- mod3 <- glm(count ~ (sex + Maori) * (agegrp + occupation + qualification + region) + European + Asian + Pacific + Other, 
+ mod3 <- glm(count ~ (sex + Maori) * (agegrp + occupation + qualification + region), 
              data = nzis_pop, family = poisson)
  
  nzis_pop$pop <- predict(mod3, type = "response")
@@ -423,43 +451,43 @@ nzis_pop <- nzis_shiny %>%
 
 wt <- 1174
 
-sex_pop <- nzis %>%
+sex_pop <- nzis_shiny %>%
    group_by(sex) %>%
    summarise(freq = length(sex) * wt)
 
-agegrp_pop <- nzis %>%
+agegrp_pop <- nzis_shiny %>%
    group_by(agegrp) %>%
    summarise(freq = length(agegrp) * wt)
 
-occupation_pop <- nzis %>%
+occupation_pop <- nzis_shiny %>%
    group_by(occupation) %>%
    summarise(freq = length(occupation) * wt)
 
-qualification_pop <- nzis %>%
+qualification_pop <- nzis_shiny %>%
    group_by(qualification) %>%
    summarise(freq = length(qualification) * wt)
 
-region_pop <- nzis %>%
+region_pop <- nzis_shiny %>%
    group_by(region) %>%
    summarise(freq = length(region) * wt)
 
-European_pop <- nzis %>%
+European_pop <- nzis_shiny %>%
    group_by(European) %>%
    summarise(freq = length(European) * wt)
 
-Asian_pop <- nzis %>%
+Asian_pop <- nzis_shiny %>%
    group_by(Asian) %>%
    summarise(freq = length(Asian) * wt)
 
-Maori_pop <- nzis %>%
+Maori_pop <- nzis_shiny %>%
    group_by(Maori) %>%
    summarise(freq = length(Maori) * wt)
 
-Pacific_pop <- nzis %>%
+Pacific_pop <- nzis_shiny %>%
    group_by(Pacific) %>%
    summarise(freq = length(Pacific) * wt)
 
-Other_pop <- nzis %>%
+Other_pop <- nzis_shiny %>%
    group_by(Other) %>%
    summarise(freq = length(Other) * wt)
 
