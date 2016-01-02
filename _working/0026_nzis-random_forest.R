@@ -18,6 +18,8 @@ library(xgboost)
 library(Matrix)
 library(data.table)
 
+library(shinyapps)
+
 
 library(survey) # for rake()
 
@@ -438,7 +440,9 @@ nzis_pop <- nzis_shiny %>%
    select(-Ethnicities)
 
 # this pushes my little 4GB of memory to its limits
- mod3 <- glm(count ~ (sex + Maori) * (agegrp + occupation + qualification + region), 
+ mod3 <- glm(count ~ (sex + Maori) * (agegrp + occupation + qualification) + region + 
+                Maori:region + occupation:qualification + agegrp:occupation +
+                agegrp:qualification, 
              data = nzis_pop, family = poisson)
  
  nzis_pop$pop <- predict(mod3, type = "response")
