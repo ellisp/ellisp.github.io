@@ -6,6 +6,7 @@ library(scales)
 library(MASS) # for stepAIC.  Needs to be before dplyr to avoid select namespace clash
 library(dplyr)
 library(tidyr)
+library(stringr)
 
 library(rpart)
 library(rpart.plot)   # for prp()
@@ -17,8 +18,6 @@ library(quantregForest) # for prediction intervals
 library(xgboost)
 library(Matrix)
 library(data.table)
-
-library(shinyapps)
 
 
 library(survey) # for rake()
@@ -158,6 +157,15 @@ n <- nrow(trainData)
 
 home_made_rf <- list()
 reps <- 50
+
+commentary <- str_wrap(c(
+   "This animation illustrates the use of an ensemble of regression trees to improve estimates of income based on a range of predictor variables.",
+   "Each tree is fitted on a resample with replacement from the original data; and only three variables are available to the tree.",
+   "The result is that each tree will have a different but still unbiased forecast for a new data point when a prediction is made.  Taken together, the average prediction is still unbiased and has less variance than the prediction of any single tree.",
+   "This method is similar but not identical to a Random Forest (tm).  In a Random Forest, the choice of variables is made at each split in a tree rather than for the tree as a whole."
+   ), 50)
+
+
 set.seed(123)
 for(i in 1:reps){
    
@@ -194,7 +202,7 @@ for(i in 1:reps){
                 , 0.5, 0.90,
                 gp = gpar(fontfamily = "myfont", cex = 0.8, col = "darkblue"))
       
-      grid.text("One tree in a random forest - three randomly chosen predictor variables for weekly income,
+      grid.text("One tree in a random spinney - three randomly chosen predictor variables for weekly income,
 resampled observations from New Zealand Income Survey 2011", 0.5, 0.95,
                 gp = gpar(fontfamily = "myfont", cex = 1))
       
@@ -203,6 +211,12 @@ resampled observations from New Zealand Income Survey 2011", 0.5, 0.95,
       grid.text("$ numbers in blue are 'average' weekly income:\nsquared(mean(sign(sqrt(abs(x)))))\nwhich is a little less than the median.",
                 0.8, 0.1, 
                 gp = gpar(fontfamily = "myfont", cex = 0.8, col = "blue"))
+      
+      comment_i <- floor(i / 12.5) + 1
+      
+      grid.text(commentary[comment_i], 
+                0.3, 0.1,
+                gp = gpar(fontfamily = "myfont", cex = 1.2, col = "orange"))
       
       dev.off()
 
@@ -213,7 +227,7 @@ old_dir <- setwd("_output/0026_random_forest")
 # combine images into an animated GIF
 system('"C:\\Program Files\\ImageMagick-6.9.1-Q16\\convert" -loop 0 -delay 400 *.png "rf.gif"')
 # move the asset over to where needed for the blog
-file.copy("rf.gif", "../../../img/0025-rf.gif", overwrite = TRUE)
+file.copy("rf.gif", "../../../img/0026-rf.gif", overwrite = TRUE)
 setwd(old_dir)
 
 
@@ -328,10 +342,14 @@ plot(pred_comb, testY - pred_comb)
 
 #---------------compare predictions on test set--------------------
 # baseline linear models
-lin_basic <- lm(income ~ ., data = trainData)          # first order only
-lin_full  <- lm(income ~ . + . ^ 2, data = trainData)  # second order interactions and polynomials
+lin_basic <- lm(income ~ sex + agegrp + occupation + qualification + region +
+                   sqrt(hours) + Asian + European + Maori + MELAA + Other + Pacific + Residual, 
+                data = trainData)          # first order only
+lin_full  <- lm(income ~ (income ~ sex + agegrp + occupation + qualification + region +
+                   sqrt(hours) + Asian + European + Maori + MELAA + Other + Pacific + Residual) ^ 2, 
+                data = trainData)  # second order interactions and polynomials
 lin_fullish <- lm(income ~ sex * (agegrp + occupation + qualification + region +
-                     hours ^ 2 + Asian + European + Maori + MELAA + 
+                     sqrt(hours) + Asian + European + Maori + MELAA + 
                      Other + Pacific + Residual),
                   data = trainData)
 
@@ -509,10 +527,7 @@ nzis_raked <- rake(nzis_svy,
 nzis_pop$pop <- weights(nzis_raked)
 
 save(nzis_pop, file = "_output/0026-shiny/nzis_pop.rda")
-
-
-
-
+shinyapps::deployApp("_output/0026-shiny", "NZIS", account = "ellisp")
 
 #------------------save expensive stuff---------------
 
