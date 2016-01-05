@@ -11,9 +11,10 @@ library(stringr)
 library(rpart)
 library(rpart.plot)   # for prp()
 library(caret)        # for train()
-library(randomForest)
 library(partykit)     # for plot(as.party())
-library(quantregForest) # for prediction intervals
+
+library(h2o)
+
 
 library(xgboost)
 library(Matrix)
@@ -233,24 +234,8 @@ setwd(old_dir)
 
 #-----------------random forest----------
 
-tuneRF(trainX, trainY, 3, stepFactor = 1)
 
-# need to relabel the columns if going to use these
-
-# with factors grouped together
-
-
-# train() takes too long
-# rf1Tune <- train(trainX, trainY,
-#                    method = "rf",
-#                    tuneLength = 10,
-#                    trControl = trainControl(method = "cv"))
-
-
-# so we do cross-validation tuning ourselves manually
-
-
-# First we hold ntree constant and try different values of mtry
+# Hold ntree constant and try different values of mtry
 # values of m to try for mtry
 m <- c(2, 3, 4, 5, 6, 8)
 
@@ -294,6 +279,16 @@ print(
 )
 dev.off()   
 
+
+h2o.init(ip = "localhost", 
+         port = 54321, 
+         startH2O = TRUE, 
+         max_mem_size = '1g', 
+         nthreads = -1) # use all CPUs available
+
+train_h2o <- as.h2o(my_train)
+
+
 rf1 <- randomForest(trainX, trainY, ntree = 1000, mtry = 3)
 rf2 <- randomForest(trainX2, trainY, ntree = 1000)
 
@@ -322,7 +317,7 @@ mod_xg <- xgboost(sparse_matrix, label = trainY, nrounds = 16, objective = "reg:
 
 #---------------------two stage approach-----------
 # this is the only method that preserves the bimodal structure of the response
-mod1 <- glm((income > 0) ~ ., family = binomial, data = trainData)
+mod1 <- glm((income != 0) ~ ., family = binomial, data = trainData)
 
 trainData2 <- subset(trainData, income != 0)
 mod2 <- randomForest(income ~ ., data = trainData2, ntree = 500, mtry = 3)
@@ -345,13 +340,13 @@ plot(pred_comb, testY - pred_comb)
 lin_basic <- lm(income ~ sex + agegrp + occupation + qualification + region +
                    sqrt(hours) + Asian + European + Maori + MELAA + Other + Pacific + Residual, 
                 data = trainData)          # first order only
-lin_full  <- lm(income ~ (income ~ sex + agegrp + occupation + qualification + region +
+lin_full  <- lm(income ~ (sex + agegrp + occupation + qualification + region +
                    sqrt(hours) + Asian + European + Maori + MELAA + Other + Pacific + Residual) ^ 2, 
                 data = trainData)  # second order interactions and polynomials
-lin_fullish <- lm(income ~ sex * (agegrp + occupation + qualification + region +
-                     sqrt(hours) + Asian + European + Maori + MELAA + 
-                     Other + Pacific + Residual),
-                  data = trainData)
+lin_fullish <- lm(income ~ (sex + Maori) * (agegrp + occupation + qualification + region +
+                     sqrt(hours)) + Asian + European + MELAA + 
+                     Other + Pacific + Residual,
+                  data = trainData) # selected interactions only
 
 lin_step <- stepAIC(lin_fullish, k = log(nrow(trainData)))
 
@@ -363,15 +358,20 @@ lin_full_preds <- predict(lin_full, newdata = testData)
 lin_step_preds <-  predict(lin_step, newdata = testData)
 xgboost_pred <- predict(mod_xg, newdata = sparse.model.matrix(income ~ . -1, data = testData))
 
-RMSE(lin_basic_preds, obs = testY) # 21.3
-RMSE(lin_full_preds, obs = testY)  # 21.4
-RMSE(lin_step_preds, obs = testY)  # 21.2
+RMSE(lin_basic_preds, obs = testY) # 21.5
+RMSE(lin_full_preds, obs = testY)  # 25.0
+RMSE(lin_step_preds, obs = testY)  # 21.4
 RMSE(tree_preds, obs = testY)      # 21.4
-RMSE(rf1_preds, obs = testY)
-RMSE(rf2_preds, obs = testY)
+RMSE(rf1_preds, obs = testY)       # 21.0
+RMSE(rf2_preds, obs = testY)       # 21.6
 RMSE(xgboost_pred, obs = testY)    # 21.0
 RMSE(pred_comb, obs = testY)       # 21.0
 
+
+plot(density(.mod_inverse(pred_comb, lambda)), xlim = c(-1000, 4000), col = 2)
+lines(density(.mod_inverse(nzis$income, lambda)), xlim = c(-1000, 4000), col = 1)
+lines(density(.mod_inverse(rf1_preds, lambda)), xlim = c(-1000, 4000), col = 3)
+lines(density(.mod_inverse(xgboost_pred, lambda)), xlim = c(-1000, 4000), col = 4)
 #-----------------quantile random forests-------------
 # needs more memory than I've got
 
