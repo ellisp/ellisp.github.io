@@ -1,6 +1,6 @@
 #------------------setup------------------------
 library(showtext)
-library(RODBC)
+library(RMySQL)
 library(ggplot2)
 library(scales)
 library(MASS) # for stepAIC.  Needs to be before dplyr to avoid select namespace clash

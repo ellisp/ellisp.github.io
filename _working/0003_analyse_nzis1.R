@@ -1,24 +1,25 @@
 library(showtext)
-library(RODBC)
+library(RMySQL)
 library(ggplot2)
 library(scales)
 library(dplyr)
 library(Cairo)
 
-PlayPen <- odbcConnect("PlayPen_prod")
+PlayPen <- dbConnect(RMySQL::MySQL(), username = "analyst", dbname = "nzis11")
+   
 font.add.google("Poppins", "myfont")
 showtext.auto()
-sqlQuery(PlayPen, "use nzis11")
+
 
 
 
 #==========tables==============
 #---------------------test against summary statistics in data dictionary-------------
 
-# what's the implicit weight for each row?
-3461.1 / nrow(f_mainheader) # .1174409
+# what's the implicit weight for each row? - only works if just ran 0003_import_nzis.R
+# 3461.1 / nrow(f_mainheader) # .1174409
 
-tab1 <- sqlQuery(PlayPen, "SELECT 
+tab1 <- dbGetQuery(PlayPen, "SELECT 
                  sex,
                  ROUND(AVG(income))          as Mean, 
                  COUNT(1)                    as Sample,
@@ -30,7 +31,7 @@ tab1
 
 
 
-tab2 <- sqlQuery(PlayPen, "SELECT 
+tab2 <- dbGetQuery(PlayPen, "SELECT 
                  agegrp,
                  ROUND(AVG(income))          as Mean, 
                  COUNT(1)                    as Sample,
@@ -42,7 +43,7 @@ tab2
 
 
 # qualification summary in data dictionary uses a different classification to that in data
-tab3 <- sqlQuery(PlayPen, "SELECT 
+tab3 <- dbGetQuery(PlayPen, "SELECT 
                  qualification,
                  ROUND(AVG(income))          as Mean, 
                  COUNT(1)                    as Sample,
@@ -54,7 +55,7 @@ tab3 <- sqlQuery(PlayPen, "SELECT
 tab3
 
 # occupation summary not given in data dictionary
-tab4 <- sqlQuery(PlayPen, "SELECT 
+tab4 <- dbGetQuery(PlayPen, "SELECT 
                  occupation,
                  ROUND(AVG(income))          as Mean, 
                  COUNT(1)                    as Sample,
@@ -66,7 +67,7 @@ tab4 <- sqlQuery(PlayPen, "SELECT
 tab4
 
 # region summary not given in data dictionary
-tab5 <- sqlQuery(PlayPen, "SELECT 
+tab5 <- dbGetQuery(PlayPen, "SELECT 
                              region,
                              ROUND(AVG(income))          as Mean, 
                              COUNT(1)                    as Sample,
@@ -78,7 +79,7 @@ tab5 <- sqlQuery(PlayPen, "SELECT
 tab5
 
 
-tab6 <- sqlQuery(PlayPen,
+tab6 <- dbGetQuery(PlayPen,
                  "SELECT
                      ethnicity,
                      ROUND(AVG(income))          as Mean,
@@ -94,7 +95,7 @@ tab6
 
 #=======graphics==================
 
-dtf <- sqlQuery(PlayPen,
+dtf <- dbGetQuery(PlayPen,
                 "SELECT
                 ethnicity,
                 income
@@ -157,7 +158,7 @@ x[x < 1] <- 1 # not interested in negative income just now
 exp(find_modes(log(x)))
 
 
-dtf2 <- sqlQuery(PlayPen, "select hours, income from vw_mainheader")
+dtf2 <- dbGetQuery(PlayPen, "select hours, income from vw_mainheader")
 
 p3 <- ggplot(dtf2, aes(x = hours, y = income)) +
    geom_jitter(alpha = 0.05) +
