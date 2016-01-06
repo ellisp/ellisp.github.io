@@ -3,7 +3,7 @@ library(showtext)
 library(RMySQL)
 library(ggplot2)
 library(scales)
-library(MASS) # for stepAIC.  Needs to be before dplyr to avoid select namespace clash
+library(MASS) # for stepAIC.  Needs to be before dplyr to avoid "select" namespace clash
 library(dplyr)
 library(tidyr)
 library(stringr)
@@ -12,6 +12,9 @@ library(rpart)
 library(rpart.plot)   # for prp()
 library(caret)        # for train()
 library(partykit)     # for plot(as.party())
+
+library(doMC)         # for multicore processing with caret, on Linux
+
 
 library(h2o)
 
@@ -28,8 +31,7 @@ font.add.google("Poppins", "myfont")
 showtext.auto()
 theme_set(theme_light(base_family = "myfont"))
 
-PlayPen <- odbcConnect("PlayPen_prod")
-sqlQuery(PlayPen, "use nzis11")
+PlayPen <- dbConnect(RMySQL::MySQL(), username = "analyst", dbname = "nzis11")
 
 
 #------------------transformation functions------------
@@ -72,7 +74,7 @@ sql <-
    f_ethnicity h     on h.survey_id = a.survey_id               JOIN
    d_ethnicity i     on h.ethnicity_id = i.ethnicity_id"
 
-orig <- sqlQuery(PlayPen, sql, stringsAsFactors = TRUE)
+orig <- dbGetQuery(PlayPen, sql) %>% data.frame() # for once, we *want* them to be factors....
 
 # ...so we spread into wider format with one column per ethnicity
 nzis <- orig %>%
@@ -106,11 +108,13 @@ testX2 <- model.matrix(income ~ ., testData)[ , -1]
 #---------------------modelling with a single tree---------------
 # single tree, with factors all grouped together
 set.seed(234)
+
+# set up parallel processing to make this faster, for this and future use of train()
+registerDoMC(cores = 3)
 rpartTune <- train(trainX, trainY,
                      method = "rpart",
                      tuneLength = 10,
                      trControl = trainControl(method = "cv"))
-
 
 rpartTree <- rpart(income ~ ., data = trainData, 
                    control = rpart.control(cp = rpartTune$bestTune),
@@ -226,7 +230,7 @@ resampled observations from New Zealand Income Survey 2011", 0.5, 0.95,
 # knit into an actual animation
 old_dir <- setwd("_output/0026_random_forest")
 # combine images into an animated GIF
-system('"C:\\Program Files\\ImageMagick-6.9.1-Q16\\convert" -loop 0 -delay 400 *.png "rf.gif"')
+system('convert -loop 0 -delay 400 *.png "rf.gif"') # linux only; in Windows need full file path to convert
 # move the asset over to where needed for the blog
 file.copy("rf.gif", "../../../img/0026-rf.gif", overwrite = TRUE)
 setwd(old_dir)
