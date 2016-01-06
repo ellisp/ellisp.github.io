@@ -1,8 +1,13 @@
+# Script loads NZIS data from the Stats NZ website into a MySQL database
+# Peter Ellis, August 2015, updated January 2016 to work with RMySQL (*much* faster than RODBC)
 library(dplyr)
-library(RODBC)
 library(tidyr)
-library(mbie) # for AskCreds, which is alternatively directly available 
-              # https://github.com/nz-mbie/mbie-r-package/blob/master/pkg/R/Creds.R 
+library(RMySQL)
+
+# set up credentials
+# need to replace the XXX s with credentials of someone who can create databases
+creds <- list(uid = "XXXXX", pwd = "XXXXX")
+
 
 # imports, clean up, and save to database the data from
 # http://www.stats.govt.nz/tools_and_services/microdata-access/nzis-2011-cart-surf.aspx
@@ -27,6 +32,7 @@ f_ethnicity <- f_mainheader %>%
    select(-ethnicity) %>%
    gather(ethnicity_type, ethnicity_id, -survey_id) %>%
    filter(ethnicity_id != "") 
+f_ethnicity$PK <- 1:nrow(f_ethnicity)
    
 # drop the original messy ethnicity variable and tidy up names on main header
 f_mainheader <- f_mainheader %>%
@@ -55,6 +61,7 @@ d_ethnicity <- data_frame(ethnicity_id = c(1,2,3,4,5,6,9),
                              "Middle Eastern/Latin American/African",
                              "Other Ethnicity",
                              "Residual Categories"))
+
 
 
 d_occupation <- data_frame(occupation_id = 1:10,
@@ -88,48 +95,47 @@ d_region <- data_frame(region_id =1:12,
 
 
 #---------------save to database---------------
-creds <- AskCreds("Credentials for someone who can create databases")
+PlayPen <- dbConnect(RMySQL::MySQL(), username = creds$uid, password = creds$pwd)
 
-PlayPen <- odbcConnect("PlayPen_prod", uid = creds$uid, pwd = creds$pwd)
-try(sqlQuery(PlayPen, "create database nzis11") )
-sqlQuery(PlayPen, "use nzis11")
 
-sqlQuery(PlayPen, "DROP TABLE IF EXISTS f_mainheader")
-sqlQuery(PlayPen, "DROP TABLE IF EXISTS f_ethnicity")
-sqlQuery(PlayPen, "DROP TABLE IF EXISTS d_sex")
-sqlQuery(PlayPen, "DROP TABLE IF EXISTS d_agegrp")
-sqlQuery(PlayPen, "DROP TABLE IF EXISTS d_ethnicity")
-sqlQuery(PlayPen, "DROP TABLE IF EXISTS d_occupation")
-sqlQuery(PlayPen, "DROP TABLE IF EXISTS d_qualification")
-sqlQuery(PlayPen, "DROP TABLE IF EXISTS d_region")
-sqlQuery(PlayPen, "DROP VIEW IF EXISTS vw_mainheader")
 
-# fact tables.  These take a long time to load up with sqlSave (which adds one row at a time)
-# but it's easier (quick and dirty) than creating a table and doing a bulk upload from a temp 
-# file.  Any bigger than this you'd want to bulk upload though - took 20 minutes or more.
-sqlSave(PlayPen, f_mainheader, addPK = FALSE, rownames = FALSE)
-sqlSave(PlayPen, f_ethnicity, addPK = TRUE, rownames = FALSE) 
-                                            # add a primary key on the fly in this case.  All other tables
-                                            # have their own already created by R.
+try(dbSendQuery(PlayPen, "create database nzis11") )
+
+PlayPen <- dbConnect(RMySQL::MySQL(), dbname = "nzis11", username = creds$uid, password = creds$pwd)
+
+
+dbSendQuery(PlayPen, "DROP TABLE IF EXISTS f_mainheader")
+dbSendQuery(PlayPen, "DROP TABLE IF EXISTS f_ethnicity")
+dbSendQuery(PlayPen, "DROP TABLE IF EXISTS d_sex")
+dbSendQuery(PlayPen, "DROP TABLE IF EXISTS d_agegrp")
+dbSendQuery(PlayPen, "DROP TABLE IF EXISTS d_ethnicity")
+dbSendQuery(PlayPen, "DROP TABLE IF EXISTS d_occupation")
+dbSendQuery(PlayPen, "DROP TABLE IF EXISTS d_qualification")
+dbSendQuery(PlayPen, "DROP TABLE IF EXISTS d_region")
+dbSendQuery(PlayPen, "DROP VIEW IF EXISTS vw_mainheader")
+
+# fact tables.  These load up quickly in DBI, compared to RODBC.
+dbWriteTable(PlayPen, "f_mainheader", f_mainheader, row.names = FALSE, overwrite = TRUE)
+dbWriteTable(PlayPen, "f_ethnicity", f_ethnicity, row.names = FALSE, overwrite = TRUE) 
 
 # dimension tables
-sqlSave(PlayPen, d_sex, addPK = FALSE, rownames = FALSE)
-sqlSave(PlayPen, d_agegrp, addPK = FALSE, rownames = FALSE)
-sqlSave(PlayPen, d_ethnicity, addPK = FALSE, rownames = FALSE)
-sqlSave(PlayPen, d_occupation, addPK = FALSE, rownames = FALSE)
-sqlSave(PlayPen, d_qualification, addPK = FALSE, rownames = FALSE)
-sqlSave(PlayPen, d_region, addPK = FALSE, rownames = FALSE)
+dbWriteTable(PlayPen, "d_sex", as.data.frame(d_sex), row.names = FALSE, overwrite = TRUE)
+dbWriteTable(PlayPen, "d_agegrp", as.data.frame(d_agegrp), row.names = FALSE, overwrite = TRUE)
+dbWriteTable(PlayPen, "d_ethnicity", as.data.frame(d_ethnicity), row.names = FALSE, overwrite = TRUE)
+dbWriteTable(PlayPen, "d_occupation", as.data.frame(d_occupation), row.names = FALSE, overwrite = TRUE)
+dbWriteTable(PlayPen, "d_qualification", as.data.frame(d_qualification), row.names = FALSE, overwrite = TRUE)
+dbWriteTable(PlayPen, "d_region", as.data.frame(d_region), row.names = FALSE, overwrite = TRUE)
 
 #----------------indexing----------------------
 
-sqlQuery(PlayPen, "ALTER TABLE f_mainheader ADD PRIMARY KEY(survey_id)")
+dbSendQuery(PlayPen, "ALTER TABLE f_mainheader ADD PRIMARY KEY(survey_id)")
 
-sqlQuery(PlayPen, "ALTER TABLE d_sex ADD PRIMARY KEY(sex_id)")
-sqlQuery(PlayPen, "ALTER TABLE d_agegrp ADD PRIMARY KEY(agegrp_id)")
-sqlQuery(PlayPen, "ALTER TABLE d_ethnicity ADD PRIMARY KEY(ethnicity_id)")
-sqlQuery(PlayPen, "ALTER TABLE d_occupation ADD PRIMARY KEY(occupation_id)")
-sqlQuery(PlayPen, "ALTER TABLE d_qualification ADD PRIMARY KEY(qualification_id)")
-sqlQuery(PlayPen, "ALTER TABLE d_region ADD PRIMARY KEY(region_id)")
+dbSendQuery(PlayPen, "ALTER TABLE d_sex ADD PRIMARY KEY(sex_id)")
+dbSendQuery(PlayPen, "ALTER TABLE d_agegrp ADD PRIMARY KEY(agegrp_id)")
+dbSendQuery(PlayPen, "ALTER TABLE d_ethnicity ADD PRIMARY KEY(ethnicity_id)")
+dbSendQuery(PlayPen, "ALTER TABLE d_occupation ADD PRIMARY KEY(occupation_id)")
+dbSendQuery(PlayPen, "ALTER TABLE d_qualification ADD PRIMARY KEY(qualification_id)")
+dbSendQuery(PlayPen, "ALTER TABLE d_region ADD PRIMARY KEY(region_id)")
 
 
 
@@ -146,6 +152,6 @@ sql1 <-
       d_qualification f on a.qualification_id = f.qualification_id JOIN
       d_region g       on a.region_id = g.region_id"
 
-sqlQuery(PlayPen, sql1)
+dbSendQuery(PlayPen, sql1)
 
 
