@@ -7,6 +7,7 @@ library(MASS) # for stepAIC.  Needs to be before dplyr to avoid "select" namespa
 library(dplyr)
 library(tidyr)
 library(stringr)
+library(gridExtra)
 
 library(rpart)
 library(rpart.plot)   # for prp()
@@ -14,7 +15,6 @@ library(caret)        # for train()
 library(partykit)     # for plot(as.party())
 
 library(doMC)         # for multicore processing with caret, on Linux
-
 
 library(h2o)
 
@@ -74,7 +74,9 @@ sql <-
    f_ethnicity h     on h.survey_id = a.survey_id               JOIN
    d_ethnicity i     on h.ethnicity_id = i.ethnicity_id"
 
-orig <- dbGetQuery(PlayPen, sql) %>% data.frame() # for once, we *want* them to be factors....
+orig <- dbGetQuery(PlayPen, sql) 
+
+
 
 # ...so we spread into wider format with one column per ethnicity
 nzis <- orig %>%
@@ -87,6 +89,14 @@ for(col in unique(orig$ethnicity)){
    nzis[ , col] <- factor(ifelse(nzis[ , col], "Yes", "No"))
 }
 
+# in fact, we want all characters to be factors
+for(i in 1:ncol(nzis)){
+   if(class(nzis[ , i]) == "character"){
+      nzis[ , i] <- factor(nzis[ , i])
+   }
+}
+
+
 
 names(nzis)[11:14] <- c("MELAA", "Other", "Pacific", "Residual")
 
@@ -94,12 +104,6 @@ set.seed(123)
 nzis$use <- ifelse(runif(nrow(nzis)) > 0.8, "Test", "Train")
 trainData <- nzis %>% filter(use == "Train") %>% select(-use)
 testData <- nzis %>% filter(use == "Test") %>% select(-use)
-
-# traditional R modelling formula versions:
-trainX <- trainData %>% select(-income) %>% data.frame()
-trainY <- trainData$income
-testX <- testData %>% select(-income) %>% data.frame()
-testY <- testData$income
 
 # sparse versions with a column for each factor-level combination:
 trainX2 <- model.matrix(income ~ ., trainData)[ , -1]
@@ -111,7 +115,7 @@ set.seed(234)
 
 # set up parallel processing to make this faster, for this and future use of train()
 registerDoMC(cores = 3)
-rpartTune <- train(trainX, trainY,
+rpartTune <- train(income ~., data = trainData,
                      method = "rpart",
                      tuneLength = 10,
                      trControl = trainControl(method = "cv"))
@@ -237,33 +241,36 @@ setwd(old_dir)
 
 
 #-----------------random forest----------
-
+h2o.init(nthreads = 4, max_mem_size = "3G")
 
 # Hold ntree constant and try different values of mtry
 # values of m to try for mtry
-m <- c(2, 3, 4, 5, 6, 8)
+m <- c(1, 2, 3, 4, 5, 6)
 
-folds <- 3
+folds <- 10
 
 cvData <- trainData %>%
    mutate(group = sample(1:folds, nrow(trainData), replace = TRUE))
 
 results <- matrix(numeric(length(m) * folds), ncol = folds)
 
+var_names <- names(trainData)[!names(trainData) == "income"]
+
+# note - this next section isn't efficient use of h2o because I ported it from something
+# much less powerful.  But it does the job fine, and I like to do the CV by hand sometimes.
 for(i in 1:length(m)){
    message(i)
    for(j in 1:folds){
       
-      cv_train <- cvData %>% filter(group != j) %>% select(-group)
-      cv_train_x <- cv_train %>% select(-income)
-      cv_train_y <- cv_train$income
-      cv_test <- cvData %>% filter(group == j) %>% select(-group)
-      cv_test_x <- cv_test %>% select(-income)
-      cv_test_y <- cv_test$income
-      system.time(tmp <- randomForest(cv_train_x, cv_train_y, 
-                                      ntree = 250, mtry = m[i])) # about 20 minutes per fit
-      preds <- predict(tmp, newdata = cv_test_x)
-      results[i, j] <- RMSE(preds, obs = cv_test_y)
+      cv_train <- cvData %>% filter(group != j) %>% select(-group) %>% as.h2o()
+      cv_test <- cvData %>% filter(group == j) %>% select(-group) %>% as.h2o()
+      
+      system.time(tmp <- h2o.randomForest(x = var_names, y = "income", 
+                                          training_frame = cv_train,
+                                          validation_frame = cv_test, 
+                                          ntrees = 100,
+                                          mtries = m[i])) # about 26 seconds - compared to 20 minutes per fit for {randomForest}
+      results[i, j] <- sqrt(tmp@model$validation_metrics@metrics$MSE)
       print(paste("mtry", m[i], j, round(results[i, j], 2), sep = " : "))
    }
 }
@@ -271,7 +278,7 @@ for(i in 1:length(m)){
 results_df <- as.data.frame(results)
 results_df$mtry <- m
 
-svg("../img/0026-rf-cv3.svg", 6, 4)
+svg("../img/0026-rf-cv.svg", 6, 4)
 print(
    results_df %>% 
    gather(trial, RMSE, -mtry) %>% 
@@ -279,36 +286,38 @@ print(
    aes(x = mtry, y = RMSE) +
    geom_point() +
    geom_smooth(se = FALSE) +
-   ggtitle("3-fold cross-validation for random forest;\ndiffering values of mtry")
+   ggtitle(paste0(folds, "-fold cross-validation for random forest;\ndiffering values of mtry"))
 )
 dev.off()   
 
-
-h2o.init(ip = "localhost", 
-         port = 54321, 
-         startH2O = TRUE, 
-         max_mem_size = '1g', 
-         nthreads = -1) # use all CPUs available
-
-train_h2o <- as.h2o(my_train)
+trainData_h2o <- as.h2o(trainData)
+rf <- h2o.randomForest(x = var_names, y = "income", 
+                    training_frame = trainData_h2o, 
+                    ntrees = 1000, 
+                    mtries = 2)
 
 
-rf1 <- randomForest(trainX, trainY, ntree = 1000, mtry = 3)
-rf2 <- randomForest(trainX2, trainY, ntree = 1000)
+# importances
+p1 <- rf@model$variable_importances %>%
+   arrange(percentage) %>%
+   mutate(variable = factor(variable, levels = variable)) %>%
+   ggplot(aes(x = percentage, y = variable)) + 
+   geom_point() +
+   labs(x = "Percentage importance contribution to estimating income", 
+        title = "Variables in the random forest")
 
-svg("../img/0026-rf1.svg", 8, 5)
-   par(mfrow = c(1, 2), family = "myfont")
-   plot(rf1, bty = "l", main = "Random forest model 1")
-   grid()
-   
-   varImpPlot(rf1, pch = 19, main = "Importance of variables\nmodel 1")
+
+p2 <- rf@model$scoring_history %>%
+   mutate(RMSE = sqrt(training_MSE)) %>%
+   ggplot(aes(x = number_of_trees, y = RMSE)) +
+   geom_line() +
+   labs(x = "Number of trees", y = "Root Mean Square Error",
+        title = "Training scoring history of random forest")
+
+svg("../img/0026-rf.svg", 8, 5)
+   grid.arrange(p1, p2, ncol = 2)   
 dev.off()
 
-
-svg("../img/0026-rf2.svg", 7, 8)
-par(family = "myfont")
-varImpPlot(rf2, pch = 19, main = "Importance of variables\nmodel 2")
-dev.off()
 
 #-------xgboost------------
 sparse_matrix <- sparse.model.matrix(income ~ . -1, data = trainData)
@@ -321,21 +330,29 @@ mod_xg <- xgboost(sparse_matrix, label = trainY, nrounds = 16, objective = "reg:
 
 #---------------------two stage approach-----------
 # this is the only method that preserves the bimodal structure of the response
-mod1 <- glm((income != 0) ~ ., family = binomial, data = trainData)
+trainData2 <- trainData %>%
+   mutate(income = factor(income != 0)) %>%
+   as.h2o()
 
-trainData2 <- subset(trainData, income != 0)
-mod2 <- randomForest(income ~ ., data = trainData2, ntree = 500, mtry = 3)
+mod1 <- h2o.randomForest(x = var_names, y = "income",
+                         training_frame = trainData2,
+                         ntrees = 1000)
 
-prob_pos <- predict(mod1, newdata = testData, type = "response")
-pred_inc <- predict(mod2, newdata = testData)
+trainData3 <- trainData %>% filter(income != 0) %>% as.h2o()
+mod2 <- h2o.randomForest(x = var_names, y = "income",
+                         training_frame = trainData3, 
+                         ntrees = 1000, 
+                         mtries = 3)
 
-pred_comb <- prob_pos  * pred_inc # specify what elements though
 
+# best point estimate for an individual is the probability of any income, multiplied by
+# the expected income given that they have any income
+prob_inc <- predict(mod1, newdata = as.h2o(select(testData, -income)), type = "response")[ , "TRUE"]
+pred_inc <- predict(mod2, newdata = as.h2o(testData))
+pred_comb <- as.vector(prob_inc  * pred_inc)
 
-r <- predict(mod2) - trainData2$income
-plot(predict(mod2), r)
-
-plot(pred_comb, testY - pred_comb)
+# Note that this is different to how we eventually use this 2 stage model for estimating an
+# overall distribution.
 
 
 
@@ -352,29 +369,29 @@ lin_fullish <- lm(income ~ (sex + Maori) * (agegrp + occupation + qualification 
                      Other + Pacific + Residual,
                   data = trainData) # selected interactions only
 
-lin_step <- stepAIC(lin_fullish, k = log(nrow(trainData)))
+lin_step <- stepAIC(lin_fullish, k = log(nrow(trainData))) # bigger penalisation for parameters given large dataset
 
 tree_preds <- predict(rpartTree, newdata = testData)
-rf1_preds <- predict(rf1, newdata = testX)
-rf2_preds <- predict(rf2, newdata = testX2)
+# home made random decision tree preds go here
+rf_preds <- as.vector(predict(rf, newdata = as.h2o(testData)))
 lin_basic_preds <- predict(lin_basic, newdata = testData)
 lin_full_preds <- predict(lin_full, newdata = testData)
 lin_step_preds <-  predict(lin_step, newdata = testData)
 xgboost_pred <- predict(mod_xg, newdata = sparse.model.matrix(income ~ . -1, data = testData))
+# and we already worked out the combined model predictions
 
-RMSE(lin_basic_preds, obs = testY) # 21.5
-RMSE(lin_full_preds, obs = testY)  # 25.0
-RMSE(lin_step_preds, obs = testY)  # 21.4
-RMSE(tree_preds, obs = testY)      # 21.4
-RMSE(rf1_preds, obs = testY)       # 21.0
-RMSE(rf2_preds, obs = testY)       # 21.6
-RMSE(xgboost_pred, obs = testY)    # 21.0
-RMSE(pred_comb, obs = testY)       # 21.0
+RMSE(lin_basic_preds, obs = testY) # 22.09
+RMSE(lin_full_preds, obs = testY)  # 22.09
+RMSE(lin_step_preds, obs = testY)  # 21.93
+RMSE(tree_preds, obs = testY)      # 21.64
+RMSE(rf_preds, obs = testY)        # 21.65 - something definitely wrong...
+RMSE(xgboost_pred, obs = testY)    # 21.57
+RMSE(pred_comb, obs = testY)       # 21.78
 
 
 plot(density(.mod_inverse(pred_comb, lambda)), xlim = c(-1000, 4000), col = 2)
 lines(density(.mod_inverse(nzis$income, lambda)), xlim = c(-1000, 4000), col = 1)
-lines(density(.mod_inverse(rf1_preds, lambda)), xlim = c(-1000, 4000), col = 3)
+lines(density(.mod_inverse(rf_preds, lambda)), xlim = c(-1000, 4000), col = 3)
 lines(density(.mod_inverse(xgboost_pred, lambda)), xlim = c(-1000, 4000), col = 4)
 #-----------------quantile random forests-------------
 # needs more memory than I've got
@@ -474,6 +491,9 @@ nzis_pop <- nzis_shiny %>%
 # in the NZIS (where wts = 319700 / 28900 = 1174).  So we use the raking method
 # for iterative proportional fitting of survey weights
 
+ 
+ 
+ h2o.shutdown(prompt = F) 
 
 wt <- 1174
 
