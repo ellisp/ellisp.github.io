@@ -13,6 +13,7 @@ library(rpart)
 library(rpart.plot)   # for prp()
 library(caret)        # for train()
 library(partykit)     # for plot(as.party())
+library(randomForest)
 
 library(doMC)         # for multicore processing with caret, on Linux
 
@@ -72,7 +73,8 @@ sql <-
    d_qualification f on a.qualification_id = f.qualification_id JOIN
    d_region g        on a.region_id = g.region_id               JOIN
    f_ethnicity h     on h.survey_id = a.survey_id               JOIN
-   d_ethnicity i     on h.ethnicity_id = i.ethnicity_id"
+   d_ethnicity i     on h.ethnicity_id = i.ethnicity_id
+   ORDER BY a.survey_id, ethnicity"
 
 orig <- dbGetQuery(PlayPen, sql) 
 
@@ -103,7 +105,9 @@ names(nzis)[11:14] <- c("MELAA", "Other", "Pacific", "Residual")
 set.seed(123)
 nzis$use <- ifelse(runif(nrow(nzis)) > 0.8, "Test", "Train")
 trainData <- nzis %>% filter(use == "Train") %>% select(-use)
+trainY <- trainData$income
 testData <- nzis %>% filter(use == "Test") %>% select(-use)
+testY <- testData$income
 
 # sparse versions with a column for each factor-level combination:
 trainX2 <- model.matrix(income ~ ., trainData)[ , -1]
@@ -155,10 +159,10 @@ grid.text("$ numbers in blue are 'average' weekly income:\nsquared(mean(sign(sqr
 
 dev.off()
 
-#----------home made random forest--------------
-# resample both rows and columns, as in a random forest,
+#----------home made random decision forest--------------
+# resample both rows and columns, as in a random decision forest,
 # and draw a picture for each fitted tree.  Knit these
-# into an animation.
+# into an animation.  Note this isn't quite the same as a random forest (tm).
 
 variables <- c("sex", "agegrp", "occupation", "qualification",
                "region", "hours", "Maori")
@@ -240,6 +244,8 @@ file.copy("rf.gif", "../../../img/0026-rf.gif", overwrite = TRUE)
 setwd(old_dir)
 
 
+
+
 #-----------------random forest----------
 h2o.init(nthreads = 4, max_mem_size = "3G")
 
@@ -256,8 +262,8 @@ results <- matrix(numeric(length(m) * folds), ncol = folds)
 
 var_names <- names(trainData)[!names(trainData) == "income"]
 
-# note - this next section isn't efficient use of h2o because I ported it from something
-# much less powerful.  But it does the job fine, and I like to do the CV by hand sometimes.
+# note - this next section with loops isn't efficient use of h2o because I ported it from something
+# much else.  But it does the job fine, and I like to do the CV by hand sometimes.
 for(i in 1:length(m)){
    message(i)
    for(j in 1:folds){
@@ -322,7 +328,7 @@ dev.off()
 #-------xgboost------------
 sparse_matrix <- sparse.model.matrix(income ~ . -1, data = trainData)
 
-# boosting.  After 16 rounds it starts to overfit:
+# boosting with different levels of rounds.  After 16 rounds it starts to overfit:
 xgb.cv(data = sparse_matrix, label = trainY, nrounds = 25, objective = "reg:linear", nfold = 5)
 
 mod_xg <- xgboost(sparse_matrix, label = trainY, nrounds = 16, objective = "reg:linear")
@@ -338,26 +344,16 @@ mod1 <- h2o.randomForest(x = var_names, y = "income",
                          training_frame = trainData2,
                          ntrees = 1000)
 
-trainData3 <- trainData %>% filter(income != 0) %>% as.h2o()
+trainData3 <- trainData %>% 
+   filter(income != 0) %>% 
+   as.h2o()
 mod2 <- h2o.randomForest(x = var_names, y = "income",
                          training_frame = trainData3, 
                          ntrees = 1000, 
                          mtries = 3)
 
 
-# best point estimate for an individual is the probability of any income, multiplied by
-# the expected income given that they have any income
-prob_inc <- predict(mod1, newdata = as.h2o(select(testData, -income)), type = "response")[ , "TRUE"]
-pred_inc <- predict(mod2, newdata = as.h2o(testData))
-pred_comb <- as.vector(prob_inc  * pred_inc)
-
-# Note that this is different to how we eventually use this 2 stage model for estimating an
-# overall distribution.
-
-
-
-#---------------compare predictions on test set--------------------
-# baseline linear models
+#------------baseline linear models for reference-----------
 lin_basic <- lm(income ~ sex + agegrp + occupation + qualification + region +
                    sqrt(hours) + Asian + European + Maori + MELAA + Other + Pacific + Residual, 
                 data = trainData)          # first order only
@@ -371,22 +367,45 @@ lin_fullish <- lm(income ~ (sex + Maori) * (agegrp + occupation + qualification 
 
 lin_step <- stepAIC(lin_fullish, k = log(nrow(trainData))) # bigger penalisation for parameters given large dataset
 
+#---------------compare predictions on test set--------------------
+
+# prediction from tree
 tree_preds <- predict(rpartTree, newdata = testData)
-# home made random decision tree preds go here
+
+# prediction from the random decision forest
+rdf_preds <- rep(NA, nrow(testData))
+for(i in 1:reps){
+   tmp <- predict(home_made_rf[[i]], newdata = testData)
+   rdf_preds <- cbind(rdf_preds, tmp)
+}
+rdf_preds <- apply(rdf_preds, 1, mean, na.rm= TRUE)
+
+# prediction from random forest
 rf_preds <- as.vector(predict(rf, newdata = as.h2o(testData)))
+
+# prediction from linear models
 lin_basic_preds <- predict(lin_basic, newdata = testData)
 lin_full_preds <- predict(lin_full, newdata = testData)
 lin_step_preds <-  predict(lin_step, newdata = testData)
+
+# prediction from extreme gradient boosting
 xgboost_pred <- predict(mod_xg, newdata = sparse.model.matrix(income ~ . -1, data = testData))
 # and we already worked out the combined model predictions
+
+# prediction from two stage approach
+prob_inc <- predict(mod1, newdata = as.h2o(select(testData, -income)), type = "response")[ , "TRUE"]
+pred_inc <- predict(mod2, newdata = as.h2o(testData))
+pred_comb <- as.vector((prob_inc > 0.5)  * pred_inc)
+
 
 RMSE(lin_basic_preds, obs = testY) # 22.09
 RMSE(lin_full_preds, obs = testY)  # 22.09
 RMSE(lin_step_preds, obs = testY)  # 21.93
 RMSE(tree_preds, obs = testY)      # 21.64
-RMSE(rf_preds, obs = testY)        # 21.65 - something definitely wrong...
+RMSE(rdf_preds, obs = testY)       # 22.95 - how come this is *worse* than the tree?
+RMSE(rf_preds, obs = testY)        # 21.66 - something definitely wrong... shouldn't be more than the tree!
 RMSE(xgboost_pred, obs = testY)    # 21.57
-RMSE(pred_comb, obs = testY)       # 21.78
+RMSE(pred_comb, obs = testY)       # 21.90
 
 
 plot(density(.mod_inverse(pred_comb, lambda)), xlim = c(-1000, 4000), col = 2)
