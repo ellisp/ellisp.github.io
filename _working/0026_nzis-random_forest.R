@@ -15,7 +15,7 @@ library(caret)        # for train()
 library(partykit)     # for plot(as.party())
 library(randomForest)
 
-library(doMC)         # for multicore processing with caret, on Linux
+# library(doMC)         # for multicore processing with caret, on Linux only
 
 library(h2o)
 
@@ -77,7 +77,7 @@ sql <-
    ORDER BY a.survey_id, ethnicity"
 
 orig <- dbGetQuery(PlayPen, sql) 
-
+dbDisconnect(PlayPen)
 
 
 # ...so we spread into wider format with one column per ethnicity
@@ -102,7 +102,7 @@ for(i in 1:ncol(nzis)){
 
 names(nzis)[11:14] <- c("MELAA", "Other", "Pacific", "Residual")
 
-set.seed(123)
+set.seed(234)
 nzis$use <- ifelse(runif(nrow(nzis)) > 0.8, "Test", "Train")
 trainData <- nzis %>% filter(use == "Train") %>% select(-use)
 trainY <- trainData$income
@@ -118,7 +118,7 @@ testX2 <- model.matrix(income ~ ., testData)[ , -1]
 set.seed(234)
 
 # set up parallel processing to make this faster, for this and future use of train()
-registerDoMC(cores = 3)
+# registerDoMC(cores = 3) # linux only
 rpartTune <- train(income ~., data = trainData,
                      method = "rpart",
                      tuneLength = 10,
@@ -134,7 +134,7 @@ node.fun1 <- function(x, labs, digits, varlen){
 }
 
 # exploratory plot only - not for dissemination:
-plot(as.party(rpartTree))
+# plot(as.party(rpartTree))
 
 
 svg("../img/0026-polished-tree.svg", 12, 10)
@@ -164,8 +164,36 @@ dev.off()
 # and draw a picture for each fitted tree.  Knit these
 # into an animation.  Note this isn't quite the same as a random forest (tm).
 
+# define the candidate variables
 variables <- c("sex", "agegrp", "occupation", "qualification",
                "region", "hours", "Maori")
+
+# estimate the value of the individual variables, one at a time
+
+var_weights <- data_frame(var = variables, r2 = 0)
+for(i in 1:length(variables)){
+   tmp <- trainData[ , c("income", variables[i])]
+   if(variables[i] == "hours"){
+      tmp$hours <- sqrt(tmp$hours)
+   }
+   tmpmod <- lm(income ~ ., data = tmp)
+   var_weights[i, "r2"] <- summary(tmpmod)$adj.r.squared
+}
+
+svg("../img/0026-variables.svg", 8, 6)
+print(
+   var_weights %>%
+   arrange(r2) %>%
+   mutate(var = factor(var, levels = var)) %>%
+   ggplot(aes(y = var, x = r2)) +
+   geom_point() +
+   labs(x = "Adjusted R-squared from one-variable regression",
+        y = "",
+        title = "Effectiveness of one variable at a time in predicting income")
+)
+dev.off()
+
+
 n <- nrow(trainData)
 
 home_made_rf <- list()
@@ -182,7 +210,7 @@ commentary <- str_wrap(c(
 set.seed(123)
 for(i in 1:reps){
    
-   these_variables <- sample(variables, 3, replace = FALSE)
+   these_variables <- sample(var_weights$var, 3, replace = FALSE, prob = var_weights$r2)
    
    this_data <- trainData[
       sample(1:n, n, replace = TRUE),
@@ -238,7 +266,8 @@ resampled observations from New Zealand Income Survey 2011", 0.5, 0.95,
 # knit into an actual animation
 old_dir <- setwd("_output/0026_random_forest")
 # combine images into an animated GIF
-system('convert -loop 0 -delay 400 *.png "rf.gif"') # linux only; in Windows need full file path to convert
+system('"C:\\Program Files\\ImageMagick-6.9.1-Q16\\convert" -loop 0 -delay 400 *.png "rf.gif"') # Windows
+# system('convert -loop 0 -delay 400 *.png "rf.gif"') # linux
 # move the asset over to where needed for the blog
 file.copy("rf.gif", "../../../img/0026-rf.gif", overwrite = TRUE)
 setwd(old_dir)
@@ -247,7 +276,7 @@ setwd(old_dir)
 
 
 #-----------------random forest----------
-h2o.init(nthreads = 4, max_mem_size = "3G")
+h2o.init(nthreads = 4, max_mem_size = "2G")
 
 # Hold ntree constant and try different values of mtry
 # values of m to try for mtry
@@ -397,15 +426,13 @@ prob_inc <- predict(mod1, newdata = as.h2o(select(testData, -income)), type = "r
 pred_inc <- predict(mod2, newdata = as.h2o(testData))
 pred_comb <- as.vector((prob_inc > 0.5)  * pred_inc)
 
-
-RMSE(lin_basic_preds, obs = testY) # 22.09
-RMSE(lin_full_preds, obs = testY)  # 22.09
-RMSE(lin_step_preds, obs = testY)  # 21.93
-RMSE(tree_preds, obs = testY)      # 21.64
-RMSE(rdf_preds, obs = testY)       # 22.95 - how come this is *worse* than the tree?
-RMSE(rf_preds, obs = testY)        # 21.66 - something definitely wrong... shouldn't be more than the tree!
-RMSE(xgboost_pred, obs = testY)    # 21.57
-RMSE(pred_comb, obs = testY)       # 21.90
+RMSE(lin_full_preds, obs = testY)  # 21.30
+RMSE(lin_step_preds, obs = testY)  # 21.21
+RMSE(tree_preds, obs = testY)      # 20.96
+RMSE(rdf_preds, obs = testY)       # 21.02 - how come this is *worse* than the tree?
+RMSE(rf_preds, obs = testY)        # 21.13 - something definitely wrong... shouldn't be more than the tree!
+RMSE(xgboost_pred, obs = testY)    # 20.78
+RMSE(pred_comb, obs = testY)       # 21.39
 
 
 plot(density(.mod_inverse(pred_comb, lambda)), xlim = c(-1000, 4000), col = 2)
