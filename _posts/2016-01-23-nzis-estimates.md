@@ -11,13 +11,13 @@ tag:
    - NZIS2011
    - Distributions
    - R
-description: I use Random Forests to create estimated income distributions for small (sometimes non-existent) subsets of the New Zealand population, using the 2011 New Zealand Income Survey.
+description: I use Random Forests to create estimated income distributions for small (sometimes non-existent) subsets of the New Zealand population, using the 2011 New Zealand Income Survey.  The estimated distributions are showcased in an interactive web app.
 image: /img/0026-rf.gif
 socialimage: http://ellisp.github.io/img/0026-rf.gif
 category: R
 ---
 <style>
-               #scaled-frame { width: 900px; height: 880px; border: 0px; }
+               #scaled-frame { width: 960px; height: 910px; border: 0px; }
                #scaled-frame {
                zoom: 0.75;
                -moz-transform: scale(0.75);
@@ -37,8 +37,8 @@ category: R
 ## Individual-level estimates from survey data
 
 I was motivated by web apps like the British Office of National Statistics' [How well do you know your area?](http://www.ons.gov.uk/ons/dcp14298_372374.xml) and [How well does your job pay?](http://www.ons.gov.uk/ons/dcp14298_386103.xml) to see if I could turn the New Zealand Income Survey into an individual-oriented estimate of income given age group, qualification, occupation, ethnicity, region and hours worked.  My tentative go at this is embedded below, and there's also a [full screen version](https://ellisp.shinyapps.io/NZIS) available.
-<div style="height: 680px">
-<iframe id="scaled-frame" width="775" src="https://ellisp.shinyapps.io/NZIS" style = "overflow-y: hidden;"></iframe>
+<div style="height: 700px">
+<iframe id="scaled-frame" width="800" src="https://ellisp.shinyapps.io/NZIS" style = "overflow-y: hidden;"></iframe>
 </div>
 The job's a tricky one because the survey data available doesn't go to anywhere near that level of granularity.  It could be done with census data of course, but any such effort to publish would come up against confidentiality problems - there are just too few people in any particular combination of category to release real data there.  So some kind of modelling is required that can smooth over the actual data but still give a plausible and realistic estimate.
 
@@ -484,7 +484,7 @@ grid.arrange(p1, p2, ncol = 2)
 ### Extreme gradient boosting
 I wanted to check out extreme gradient boosting as an alternative prediction method.  Like Random Forests, this method is based on a forest of many regression trees, but in the case of boosting each tree is relatively shallow (not many layers of branch divisions), and the trees are not independent of eachother.  Instead, successive trees are built specifically to explain the observations poorly explained by previous trees - this is done by giving extra weight to outliers from the prediction to date.
 
-Boosting is prone to over-fitting and if you let it run long enough it will memorize the entire training set (and be useless for new data), so it's important to use cross-validation to work out how many iterations are worth using and at what point is not picking up general patterns but just the idiosyncracies of a dataset.  The excellent [{xgboost} R package](https://cran.r-project.org/web/packages/xgboost/index.html) by Tianqui Chen, Tong He and Michael Benesty applies gradient boosting algorithms super-efficiently and comes with built in cross-validation functionality.  In this case it becomes clear that 15 or 16 rounds is the maximum boosting before overfitting takes place, so my final boosting model is fit to the full training data set with that number of rounds.
+Boosting is prone to over-fitting and if you let it run long enough it will memorize the entire training set (and be useless for new data), so it's important to use cross-validation to work out how many iterations are worth using and at what point is not picking up general patterns but just the idiosyncracies of the training sample data.  The excellent [{xgboost} R package](https://cran.r-project.org/web/packages/xgboost/index.html) by Tianqui Chen, Tong He and Michael Benesty applies gradient boosting algorithms super-efficiently and comes with built in cross-validation functionality.  In this case it becomes clear that 15 or 16 rounds is the maximum boosting before overfitting takes place, so my final boosting model is fit to the full training data set with that number of rounds.
 {% highlight R lineanchors %}
 #-------xgboost------------
 sparse_matrix <- sparse.model.matrix(income ~ . -1, data = trainData)
@@ -556,7 +556,7 @@ lin_step <- stepAIC(lin_fullish, k = log(nrow(trainData))) # bigger penalisation
 {% endhighlight %}
 
 ## Results - predictive power
-I used root mean square error against the hold-out test set - which had not been touched so far in the model-fitting - to get an assessment of how well the various methods perform.  The results are shown in the plot below.  Extreme gradient boosting and my two stage Random Forest approaches are neck and neck, followed by the single tree and the random decision forest, with the traditional linear regressions making up the "also rans".  
+I used root mean square error of the predictions of (transformed) income in the hold-out test set - which had not been touched so far in the model-fitting - to get an assessment of how well the various methods perform.  The results are shown in the plot below.  Extreme gradient boosting and my two stage Random Forest approaches are neck and neck, followed by the single tree and the random decision forest, with the traditional linear regressions making up the "also rans".  
 
 ![rmses](/img/0026-rmse.svg)
 
@@ -643,6 +643,7 @@ ggpairs(pred_res_small)
 There's a few small preparatory steps now before I can put the results of my model into an interactive web app, which will be built with Shiny.
 
 I opt for the two stage Random Forest model as the best way of re-creating the income distribution.  It will let me create simulated data with a spike at zero dollars of income in a way none of the other models (which focus just on averages) will do; plus it has equal best (with extreme gradient boosting) in overall predictive power.
+
 ### Adding back in individual level variation
 
 After refitting my final model to the full dataset, my first substantive problem is to recreate the full distribution, with individual level randomness, not just a predicted value at each point.  On my transformed scale for income, the residuals from the models are fairly homoskedastic, so decide that the Shiny app will simulate a population at any point by sampling with replacement from the residuals of the second stage model.
@@ -792,5 +793,8 @@ nzis_pop$pop <- weights(nzis_raked)
 save(nzis_pop, file = "_output/0026-shiny/nzis_pop.rda")
 {% endhighlight %}
 
+### The final shiny app
 
+* The [full screen version](https://ellisp.shinyapps.io/NZIS)  of the web app
+* The [source code](https://github.com/ellisp/ellisp.github.io/tree/source/_working/_output/0026-shiny)
 

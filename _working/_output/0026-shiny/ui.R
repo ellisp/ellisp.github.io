@@ -59,11 +59,12 @@ font-family: 'Poppins', 'Lucida Grande', Verdana, Lucida, Helvetica, Arial, Cali
     mainPanel(
       ggvisOutput("plot"),
       tableOutput("table"),
-      p("This page shows an estimated modelled income distribution for 'what if' scenarios of combinations of variables including rare or impossible combinations.  Interpretation at your own risk."),
+      p("This is an estimated modelled income distribution for 'what if' scenarios of combinations of variables including rare or impossible combinations.  Interpretation at your own risk."),
       p(textOutput("txt1")),
       p(textOutput("txt3")),
       p(textOutput("txt2")),
-      p("All estimates should be treated with great caution!  Effective confidence intervals are in many cases around +/- 20% or higher.")
+      p("All estimates should be treated with great caution!  Effective confidence intervals are in many cases around +/- 20% or higher."),
+      HTML("<p><strong>Puzzled about how I did this, or got suggestions/comments? Check out the <a href = 'http://ellisp.github.io/blog/2016/01/23/nzis-estimates/'> blog post</a> that explains it. </strong></p>")
     )
   )
 ))
