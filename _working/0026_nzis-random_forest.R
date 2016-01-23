@@ -8,6 +8,7 @@ library(dplyr)
 library(tidyr)
 library(stringr)
 library(gridExtra)
+library(GGally)
 
 library(rpart)
 library(rpart.plot)   # for prp()
@@ -79,7 +80,6 @@ sql <-
 orig <- dbGetQuery(PlayPen, sql) 
 dbDisconnect(PlayPen)
 
-
 # ...so we spread into wider format with one column per ethnicity
 nzis <- orig %>%
    mutate(ind = TRUE) %>%
@@ -98,8 +98,6 @@ for(i in 1:ncol(nzis)){
    }
 }
 
-
-
 names(nzis)[11:14] <- c("MELAA", "Other", "Pacific", "Residual")
 
 set.seed(234)
@@ -109,14 +107,11 @@ trainY <- trainData$income
 testData <- nzis %>% filter(use == "Test") %>% select(-use)
 testY <- testData$income
 
-# sparse versions with a column for each factor-level combination:
-trainX2 <- model.matrix(income ~ ., trainData)[ , -1]
-testX2 <- model.matrix(income ~ ., testData)[ , -1]
-
 #---------------------modelling with a single tree---------------
 # single tree, with factors all grouped together
 set.seed(234)
 
+# Determine the best value of cp via cross-validation
 # set up parallel processing to make this faster, for this and future use of train()
 # registerDoMC(cores = 3) # linux only
 rpartTune <- train(income ~., data = trainData,
@@ -276,10 +271,8 @@ setwd(old_dir)
 
 
 #-----------------random forest----------
-h2o.init(nthreads = 4, max_mem_size = "2G")
-
 # Hold ntree constant and try different values of mtry
-# values of m to try for mtry
+# values of m to try for mtry for cross-validation tuning
 m <- c(1, 2, 3, 4, 5, 6)
 
 folds <- 10
@@ -289,23 +282,21 @@ cvData <- trainData %>%
 
 results <- matrix(numeric(length(m) * folds), ncol = folds)
 
-var_names <- names(trainData)[!names(trainData) == "income"]
 
-# note - this next section with loops isn't efficient use of h2o because I ported it from something
-# much else.  But it does the job fine, and I like to do the CV by hand sometimes.
+
+# Cross validation, done by hand with single processing - not very efficient or fast:
 for(i in 1:length(m)){
    message(i)
    for(j in 1:folds){
       
-      cv_train <- cvData %>% filter(group != j) %>% select(-group) %>% as.h2o()
-      cv_test <- cvData %>% filter(group == j) %>% select(-group) %>% as.h2o()
+      cv_train <- cvData %>% filter(group != j) %>% select(-group)
+      cv_test <- cvData %>% filter(group == j) %>% select(-group)
+
+      tmp <- randomForest(income ~ ., data = cv_train, ntree = 100, mtry = m[i], 
+                          nodesize = 10, importance = FALSE, replace = FALSE)
+      tmp_p <- predict(tmp, newdata = cv_test)
       
-      system.time(tmp <- h2o.randomForest(x = var_names, y = "income", 
-                                          training_frame = cv_train,
-                                          validation_frame = cv_test, 
-                                          ntrees = 100,
-                                          mtries = m[i])) # about 26 seconds - compared to 20 minutes per fit for {randomForest}
-      results[i, j] <- sqrt(tmp@model$validation_metrics@metrics$MSE)
+      results[i, j] <- RMSE(tmp_p, cv_test$income)
       print(paste("mtry", m[i], j, round(results[i, j], 2), sep = " : "))
    }
 }
@@ -325,31 +316,35 @@ print(
 )
 dev.off()   
 
-trainData_h2o <- as.h2o(trainData)
-rf <- h2o.randomForest(x = var_names, y = "income", 
-                    training_frame = trainData_h2o, 
-                    ntrees = 1000, 
-                    mtries = 2)
+# refit model with full training data set
+rf <- randomForest(income ~ ., 
+                    data = trainData, 
+                    ntrees = 500, 
+                    mtries = 3,
+                    importance = TRUE,
+                    replace = FALSE)
 
 
 # importances
-p1 <- rf@model$variable_importances %>%
-   arrange(percentage) %>%
+ir <- as.data.frame(importance(rf))
+ir$variable  <- row.names(ir)
+
+p1 <- ir %>%
+   arrange(IncNodePurity) %>%
    mutate(variable = factor(variable, levels = variable)) %>%
-   ggplot(aes(x = percentage, y = variable)) + 
+   ggplot(aes(x = IncNodePurity, y = variable)) + 
    geom_point() +
-   labs(x = "Percentage importance contribution to estimating income", 
+   labs(x = "Importance of contribution to\nestimating income", 
         title = "Variables in the random forest")
 
-
-p2 <- rf@model$scoring_history %>%
-   mutate(RMSE = sqrt(training_MSE)) %>%
-   ggplot(aes(x = number_of_trees, y = RMSE)) +
+# changing RMSE as more trees added
+tmp <- data_frame(ntrees = 1:500, RMSE = sqrt(rf$mse))
+p2 <- ggplot(tmp, aes(x = ntrees, y = RMSE)) +
    geom_line() +
-   labs(x = "Number of trees", y = "Root Mean Square Error",
-        title = "Training scoring history of random forest")
+   labs(x = "Number of trees", y = "Root mean square error",
+        title = "Improvement in prediction\nwith increasing number of trees")
 
-svg("../img/0026-rf.svg", 8, 5)
+svg("../img/0026-rf.svg", 9, 5)
    grid.arrange(p1, p2, ncol = 2)   
 dev.off()
 
@@ -365,6 +360,10 @@ mod_xg <- xgboost(sparse_matrix, label = trainY, nrounds = 16, objective = "reg:
 
 #---------------------two stage approach-----------
 # this is the only method that preserves the bimodal structure of the response
+h2o.init(nthreads = 4, max_mem_size = "2G")
+
+var_names <- names(trainData)[!names(trainData) == "income"]
+
 trainData2 <- trainData %>%
    mutate(income = factor(income != 0)) %>%
    as.h2o()
@@ -374,12 +373,18 @@ mod1 <- h2o.randomForest(x = var_names, y = "income",
                          ntrees = 1000)
 
 trainData3 <- trainData %>% 
-   filter(income != 0) %>% 
-   as.h2o()
-mod2 <- h2o.randomForest(x = var_names, y = "income",
-                         training_frame = trainData3, 
-                         ntrees = 1000, 
-                         mtries = 3)
+   filter(income != 0) 
+mod2 <- randomForest(income ~ ., 
+                     data = trainData3, 
+                     ntree = 250, 
+                     mtry = 3, 
+                     nodesize = 10, 
+                     importance = FALSE, 
+                     replace = FALSE)
+
+
+
+
 
 
 #------------baseline linear models for reference-----------
@@ -410,7 +415,7 @@ for(i in 1:reps){
 rdf_preds <- apply(rdf_preds, 1, mean, na.rm= TRUE)
 
 # prediction from random forest
-rf_preds <- as.vector(predict(rf, newdata = as.h2o(testData)))
+rf_preds <- as.vector(predict(rf, newdata = testData))
 
 # prediction from linear models
 lin_basic_preds <- predict(lin_basic, newdata = testData)
@@ -419,26 +424,58 @@ lin_step_preds <-  predict(lin_step, newdata = testData)
 
 # prediction from extreme gradient boosting
 xgboost_pred <- predict(mod_xg, newdata = sparse.model.matrix(income ~ . -1, data = testData))
-# and we already worked out the combined model predictions
 
 # prediction from two stage approach
 prob_inc <- predict(mod1, newdata = as.h2o(select(testData, -income)), type = "response")[ , "TRUE"]
-pred_inc <- predict(mod2, newdata = as.h2o(testData))
-pred_comb <- as.vector((prob_inc > 0.5)  * pred_inc)
+pred_inc <- predict(mod2, newdata = testData)
+pred_comb <- as.vector(prob_inc)  * pred_inc
 
-RMSE(lin_full_preds, obs = testY)  # 21.30
-RMSE(lin_step_preds, obs = testY)  # 21.21
-RMSE(tree_preds, obs = testY)      # 20.96
-RMSE(rdf_preds, obs = testY)       # 21.02 - how come this is *worse* than the tree?
-RMSE(rf_preds, obs = testY)        # 21.13 - something definitely wrong... shouldn't be more than the tree!
-RMSE(xgboost_pred, obs = testY)    # 20.78
-RMSE(pred_comb, obs = testY)       # 21.39
+rmse <- rbind(
+   c("BasicLinear", RMSE(lin_basic_preds, obs = testY)), # 21.31
+   c("FullLinear", RMSE(lin_full_preds, obs = testY)),  # 21.30
+   c("StepLinear", RMSE(lin_step_preds, obs = testY)),  # 21.21
+   c("Tree", RMSE(tree_preds, obs = testY)),         # 20.96
+   c("RandDecForest", RMSE(rdf_preds, obs = testY)),       # 21.02 - NB *worse* than the single tree!
+   c("randomForest", RMSE(rf_preds, obs = testY)),        # 20.85
+   c("XGBoost", RMSE(xgboost_pred, obs = testY)),    # 20.78
+   c("TwoStageRF", RMSE(pred_comb, obs = testY))       # 21.11
+   )
+
+svg("../img/0026-rmse.svg", 8, 5)
+rmse %>%
+   as.data.frame(stringsAsFactors = FALSE) %>%
+   mutate(V2 = as.numeric(V2)) %>%
+   arrange(V2) %>%
+   mutate(V1 = factor(V1, levels = V1)) %>%
+   ggplot(aes(x = V2, y = V1)) +
+   geom_point() +
+   labs(x = "Root Mean Square Error (smaller is better)",
+        y = "Model type",
+        title = "Predictive performance on hold-out test set of\ndifferent models of individual income")
+dev.off()   
+
+#------------comparing results at individual level------------
+pred_results <- data.frame(
+   BasicLinear = lin_basic_preds,
+   FullLinear = lin_full_preds,
+   StepLinear = lin_step_preds,
+   Tree = tree_preds,
+   RandDecForest = rdf_preds,
+   randomForest = rf_preds,
+   XGBoost = xgboost_pred,
+   TwoStageRF = pred_comb,
+   Actual = testY
+)
+
+pred_res_small <- pred_results[sample(1:nrow(pred_results), 1000),]
+
+svg("../img/0026-pairs-comparison.svg", 13, 13)
+   ggpairs(pred_res_small)
+dev.off()   
 
 
-plot(density(.mod_inverse(pred_comb, lambda)), xlim = c(-1000, 4000), col = 2)
-lines(density(.mod_inverse(nzis$income, lambda)), xlim = c(-1000, 4000), col = 1)
-lines(density(.mod_inverse(rf_preds, lambda)), xlim = c(-1000, 4000), col = 3)
-lines(density(.mod_inverse(xgboost_pred, lambda)), xlim = c(-1000, 4000), col = 4)
+h2o.shutdown(prompt = F) 
+
 #-----------------quantile random forests-------------
 # needs more memory than I've got
 
@@ -458,6 +495,7 @@ lines(density(.mod_inverse(xgboost_pred, lambda)), xlim = c(-1000, 4000), col = 
 # 
 
 #----------------shiny app-------------
+# dimension variables for the user interface:
 d_sex <- sort(as.character(unique(nzis$sex)))
 d_agegrp <- sort(as.character(unique(nzis$agegrp)))
 d_occupation <- sort(as.character(unique(nzis$occupation)))
@@ -465,10 +503,10 @@ d_qualification <- sort(as.character(unique(nzis$qualification)))
 d_region <- sort(as.character(unique(nzis$region)))
 
 
-
 save(d_sex, d_agegrp, d_occupation, d_qualification, d_region,
      file = "_output/0026-shiny/dimensions.rda")
 
+# tidy up data of full dataset, combining various ethnicities into an 'other' category:
 nzis_shiny <- nzis %>% 
    select(-use) %>%
    mutate(Other = factor(ifelse(Other == "Yes" | Residual == "Yes" | MELAA == "Yes",
