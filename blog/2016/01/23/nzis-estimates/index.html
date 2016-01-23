@@ -1,0 +1,976 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Filling in the gaps - highly granular estimates of income and population for New Zealand from survey data</title>
+      	
+         
+         
+            <meta name ="description" content ="I use Random Forests to create estimated income distributions for small (sometimes non-existent) subsets of the New Zealand population, using the 2011 New Zealand Income Survey.  The estimated distributions are showcased in an interactive web app.">
+            <meta property="og:description" content ="I use Random Forests to create estimated income distributions for small (sometimes non-existent) subsets of the New Zealand population, using the 2011 New Zealand Income Survey.  The estimated distributions are showcased in an interactive web app.">
+         
+         <meta property="og:site_name" content="Peter's stats stuff" />
+         <meta property="og:title" content="Filling in the gaps - highly granular estimates of income and population for New Zealand from survey data" />
+         
+            <meta property="og:image" content="http://ellisp.github.io/img/0026-rf.gif" />
+         
+         <meta property="og:url" content="http://ellisp.github.io/blog/2016/01/23/nzis-estimates/" />
+         <meta property="og:author" content= "https://www.facebook.com/peter.ellis.353" />
+         <meta property="og:type" content="article" />
+           
+          <link href="/css/bootstrap.min.css" rel ="stylesheet">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet">
+            <link href="/css/custom.css" rel ="stylesheet">       
+     <link rel="stylesheet" href="/css/Pygments/autumn.css">      
+     <link rel="stylesheet" href="/css/Pygments/custom.css">      
+            
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="Peter's stats stuff by Peter Ellis"
+      href="/feed.xml">
+
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+         <script src="/js/bootstrap.min.js"></script>
+         
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Peter's stats stuff</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">All blog posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">Ordered by date</a></li>
+                  <li><a href="/blog/index_by_tag.html">Grouped by subject matter</a></li>
+                  <li><a href = /blog/2016/01/23/nzis-estimates>Most recent post</a></li>
+                 </ul>
+            </li>
+              <li><a href="/blog/showcase.html">Showcase</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			    <div class="jumbotron">
+      <div class="container">
+        <h1>Filling in the gaps - highly granular estimates of income and population for New Zealand from survey data</h1>
+         <p class="meta">23 Jan 2016</p>
+        
+      </div>
+    </div>
+
+
+
+
+<div class = "post-summary">
+<h2>TL;DR Summary:</h2>
+   I use Random Forests to create estimated income distributions for small (sometimes non-existent) subsets of the New Zealand population, using the 2011 New Zealand Income Survey.  The estimated distributions are showcased in an interactive web app.
+   <hr></hr>
+</div>
+
+<div class="post">
+<div class="col-md-2">
+
+</div>
+  <div class="col-md-8">
+
+  <style>
+               #scaled-frame { width: 960px; height: 910px; border: 0px; }
+               #scaled-frame {
+               zoom: 0.75;
+               -moz-transform: scale(0.75);
+               -moz-transform-origin: 0 0;
+               -o-transform: scale(0.75);
+               -o-transform-origin: 0 0;
+               -webkit-transform: scale(0.75);
+               -webkit-transform-origin: 0 0;
+               overflow: hidden;
+               }
+
+               @media screen and (-webkit-min-device-pixel-ratio:0) {
+               #scaled-frame  { zoom: 1;  }
+               }
+</style>
+
+<h2 id="individual-level-estimates-from-survey-data">Individual-level estimates from survey data</h2>
+
+<p>I was motivated by web apps like the British Office of National Statistics’ <a href="http://www.ons.gov.uk/ons/dcp14298_372374.xml">How well do you know your area?</a> and <a href="http://www.ons.gov.uk/ons/dcp14298_386103.xml">How well does your job pay?</a> to see if I could turn the New Zealand Income Survey into an individual-oriented estimate of income given age group, qualification, occupation, ethnicity, region and hours worked.  My tentative go at this is embedded below, and there’s also a <a href="https://ellisp.shinyapps.io/NZIS">full screen version</a> available.</p>
+<div style="height: 700px">
+<iframe id="scaled-frame" width="800" src="https://ellisp.shinyapps.io/NZIS" style="overflow-y: hidden;"></iframe>
+</div>
+<p>The job’s a tricky one because the survey data available doesn’t go to anywhere near that level of granularity.  It could be done with census data of course, but any such effort to publish would come up against confidentiality problems - there are just too few people in any particular combination of category to release real data there.  So some kind of modelling is required that can smooth over the actual data but still give a plausible and realistic estimate.</p>
+
+<p>I also wanted to emphasise the <em>distribution</em> of income, not just a single measure like mean or median - something I think that we statisticians should do much more than we do, with all sorts of variables.  And in particular I wanted to find a good way of dealing with the significant number of people in many categories (particularly but not only “no occupation”) who have zero income; and also the people who have negative income in any given week.</p>
+
+<p>My data source is the New Zealand Income Survey 2011 simulated record file published by Statistics New Zealand.  An <a href="http://ellisp.github.io/blog/2015/08/15/importing-nzis-surf/">earlier post</a> by me describes how I accessed this, normalised it and put it into a database.  I’ve also written several posts about dealing with the tricky distribution of individual incomes, listed <a href="http://ellisp.github.io/blog/index_by_tag.html">here</a> under the “NZIS2011” heading.</p>
+
+<p>This is a longer post than usual, with a digression into the use of Random Forests (tm) to predict continuous variables, an attempt at producing a more polished plot of a regression tree than usually available, and some reflections on strengths and weakness of several different approaches to estimating distributions.</p>
+
+<h2 id="data-import-and-shape">Data import and shape</h2>
+<p>I begin by setting up the environment and importing the data I’d placed in the data base in that <a href="http://ellisp.github.io/blog/2015/08/15/importing-nzis-surf/">earlier post</a>.  There’s a big chunk of R packages needed for all the things I’m doing  here.  I also re-create some helper functions for transforming skewed continuous variables that include zero and negative values, which I first created in <a href="http://ellisp.github.io/blog/2015/09/07/transforming-breaks-in-a-scale/">another post back in September 2015</a>.</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a><span class="c1">#------------------setup------------------------</span>
+<a name="True-2"></a><span class="kn">library</span><span class="p">(</span>showtext<span class="p">)</span>
+<a name="True-3"></a><span class="kn">library</span><span class="p">(</span>RMySQL<span class="p">)</span>
+<a name="True-4"></a><span class="kn">library</span><span class="p">(</span>ggplot2<span class="p">)</span>
+<a name="True-5"></a><span class="kn">library</span><span class="p">(</span>scales<span class="p">)</span>
+<a name="True-6"></a><span class="kn">library</span><span class="p">(</span>MASS<span class="p">)</span> <span class="c1"># for stepAIC.  Needs to be before dplyr to avoid &quot;select&quot; namespace clash</span>
+<a name="True-7"></a><span class="kn">library</span><span class="p">(</span>dplyr<span class="p">)</span>
+<a name="True-8"></a><span class="kn">library</span><span class="p">(</span>tidyr<span class="p">)</span>
+<a name="True-9"></a><span class="kn">library</span><span class="p">(</span>stringr<span class="p">)</span>
+<a name="True-10"></a><span class="kn">library</span><span class="p">(</span>gridExtra<span class="p">)</span>
+<a name="True-11"></a><span class="kn">library</span><span class="p">(</span>GGally<span class="p">)</span>
+<a name="True-12"></a>
+<a name="True-13"></a><span class="kn">library</span><span class="p">(</span>rpart<span class="p">)</span>
+<a name="True-14"></a><span class="kn">library</span><span class="p">(</span>rpart.plot<span class="p">)</span>   <span class="c1"># for prp()</span>
+<a name="True-15"></a><span class="kn">library</span><span class="p">(</span>caret<span class="p">)</span>        <span class="c1"># for train()</span>
+<a name="True-16"></a><span class="kn">library</span><span class="p">(</span>partykit<span class="p">)</span>     <span class="c1"># for plot(as.party())</span>
+<a name="True-17"></a><span class="kn">library</span><span class="p">(</span>randomForest<span class="p">)</span>
+<a name="True-18"></a>
+<a name="True-19"></a><span class="c1"># library(doMC)         # for multicore processing with caret, on Linux only</span>
+<a name="True-20"></a>
+<a name="True-21"></a><span class="kn">library</span><span class="p">(</span>h2o<span class="p">)</span>
+<a name="True-22"></a>
+<a name="True-23"></a>
+<a name="True-24"></a><span class="kn">library</span><span class="p">(</span>xgboost<span class="p">)</span>
+<a name="True-25"></a><span class="kn">library</span><span class="p">(</span>Matrix<span class="p">)</span>
+<a name="True-26"></a><span class="kn">library</span><span class="p">(</span>data.table<span class="p">)</span>
+<a name="True-27"></a>
+<a name="True-28"></a>
+<a name="True-29"></a><span class="kn">library</span><span class="p">(</span>survey<span class="p">)</span> <span class="c1"># for rake()</span>
+<a name="True-30"></a>
+<a name="True-31"></a>
+<a name="True-32"></a>font.add.google<span class="p">(</span><span class="s">&quot;Poppins&quot;</span><span class="p">,</span> <span class="s">&quot;myfont&quot;</span><span class="p">)</span>
+<a name="True-33"></a>showtext.auto<span class="p">()</span>
+<a name="True-34"></a>theme_set<span class="p">(</span>theme_light<span class="p">(</span>base_family <span class="o">=</span> <span class="s">&quot;myfont&quot;</span><span class="p">))</span>
+<a name="True-35"></a>
+<a name="True-36"></a>PlayPen <span class="o">&lt;-</span> dbConnect<span class="p">(</span>RMySQL<span class="o">::</span>MySQL<span class="p">(),</span> username <span class="o">=</span> <span class="s">&quot;analyst&quot;</span><span class="p">,</span> dbname <span class="o">=</span> <span class="s">&quot;nzis11&quot;</span><span class="p">)</span>
+<a name="True-37"></a>
+<a name="True-38"></a>
+<a name="True-39"></a><span class="c1">#------------------transformation functions------------</span>
+<a name="True-40"></a><span class="c1"># helper functions for transformations of skewed data that crosses zero.  See </span>
+<a name="True-41"></a><span class="c1"># http://ellisp.github.io/blog/2015/09/07/transforming-breaks-in-a-scale/</span>
+<a name="True-42"></a><span class="m">.</span>mod_transform <span class="o">&lt;-</span> <span class="kr">function</span><span class="p">(</span>y<span class="p">,</span> lambda<span class="p">){</span>
+<a name="True-43"></a>   <span class="kr">if</span><span class="p">(</span>lambda <span class="o">!=</span> <span class="m">0</span><span class="p">){</span>
+<a name="True-44"></a>      yt <span class="o">&lt;-</span> <span class="kp">sign</span><span class="p">(</span>y<span class="p">)</span> <span class="o">*</span> <span class="p">(((</span><span class="kp">abs</span><span class="p">(</span>y<span class="p">)</span> <span class="o">+</span> <span class="m">1</span><span class="p">)</span> <span class="o">^</span> lambda <span class="o">-</span> <span class="m">1</span><span class="p">)</span> <span class="o">/</span> lambda<span class="p">)</span>
+<a name="True-45"></a>   <span class="p">}</span> <span class="kr">else</span> <span class="p">{</span>
+<a name="True-46"></a>      yt <span class="o">=</span> <span class="kp">sign</span><span class="p">(</span>y<span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="kp">log</span><span class="p">(</span><span class="kp">abs</span><span class="p">(</span>y<span class="p">)</span> <span class="o">+</span> <span class="m">1</span><span class="p">))</span>
+<a name="True-47"></a>   <span class="p">}</span>
+<a name="True-48"></a>   <span class="kr">return</span><span class="p">(</span>yt<span class="p">)</span>
+<a name="True-49"></a><span class="p">}</span>
+<a name="True-50"></a>
+<a name="True-51"></a>
+<a name="True-52"></a><span class="m">.</span>mod_inverse <span class="o">&lt;-</span> <span class="kr">function</span><span class="p">(</span>yt<span class="p">,</span> lambda<span class="p">){</span>
+<a name="True-53"></a>   <span class="kr">if</span><span class="p">(</span>lambda <span class="o">!=</span> <span class="m">0</span><span class="p">){</span>
+<a name="True-54"></a>      y <span class="o">&lt;-</span> <span class="p">((</span><span class="kp">abs</span><span class="p">(</span>yt<span class="p">)</span> <span class="o">*</span> lambda <span class="o">+</span> <span class="m">1</span><span class="p">)</span>  <span class="o">^</span> <span class="p">(</span><span class="m">1</span> <span class="o">/</span> lambda<span class="p">)</span> <span class="o">-</span> <span class="m">1</span><span class="p">)</span> <span class="o">*</span> <span class="kp">sign</span><span class="p">(</span>yt<span class="p">)</span>
+<a name="True-55"></a>   <span class="p">}</span> <span class="kr">else</span> <span class="p">{</span>
+<a name="True-56"></a>      y <span class="o">&lt;-</span> <span class="p">(</span><span class="kp">exp</span><span class="p">(</span><span class="kp">abs</span><span class="p">(</span>yt<span class="p">))</span> <span class="o">-</span> <span class="m">1</span><span class="p">)</span> <span class="o">*</span> <span class="kp">sign</span><span class="p">(</span>yt<span class="p">)</span>
+<a name="True-57"></a>      
+<a name="True-58"></a>   <span class="p">}</span>
+<a name="True-59"></a>   <span class="kr">return</span><span class="p">(</span>y<span class="p">)</span>
+<a name="True-60"></a><span class="p">}</span>
+<a name="True-61"></a>
+<a name="True-62"></a><span class="c1"># parameter for reshaping - equivalent to sqrt:</span>
+<a name="True-63"></a>lambda <span class="o">&lt;-</span> <span class="m">0.5</span></code></pre></div>
+
+<p>Importing the data is a straightforward SQL query, with some reshaping required because survey respondents were allowed to specify either one or two ethnicities.  This means I need an indicator column for each individual ethnicity if I’m going to include ethnicity in any meaningful way (for example, an “Asian” column with “Yes” or “No” for each survey respondent).  Wickham’s {dplyr} and {tidyr} packages handle this sort of thing easily.</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a><span class="c1">#---------------------------download and transform data--------------------------</span>
+<a name="True-2"></a><span class="c1"># This query will include double counting of people with multiple ethnicities</span>
+<a name="True-3"></a>sql <span class="o">&lt;-</span>
+<a name="True-4"></a><span class="s">&quot;SELECT sex, agegrp, occupation, qualification, region, hours, income, </span>
+<a name="True-5"></a><span class="s">         a.survey_id, ethnicity FROM</span>
+<a name="True-6"></a><span class="s">   f_mainheader a                                               JOIN</span>
+<a name="True-7"></a><span class="s">   d_sex b           on a.sex_id = b.sex_id                     JOIN</span>
+<a name="True-8"></a><span class="s">   d_agegrp c        on a.agegrp_id = c.agegrp_id               JOIN</span>
+<a name="True-9"></a><span class="s">   d_occupation e    on a.occupation_id = e.occupation_id       JOIN</span>
+<a name="True-10"></a><span class="s">   d_qualification f on a.qualification_id = f.qualification_id JOIN</span>
+<a name="True-11"></a><span class="s">   d_region g        on a.region_id = g.region_id               JOIN</span>
+<a name="True-12"></a><span class="s">   f_ethnicity h     on h.survey_id = a.survey_id               JOIN</span>
+<a name="True-13"></a><span class="s">   d_ethnicity i     on h.ethnicity_id = i.ethnicity_id</span>
+<a name="True-14"></a><span class="s">   ORDER BY a.survey_id, ethnicity&quot;</span>
+<a name="True-15"></a>
+<a name="True-16"></a>orig <span class="o">&lt;-</span> dbGetQuery<span class="p">(</span>PlayPen<span class="p">,</span> sql<span class="p">)</span> 
+<a name="True-17"></a>dbDisconnect<span class="p">(</span>PlayPen<span class="p">)</span>
+<a name="True-18"></a>
+<a name="True-19"></a><span class="c1"># ...so we spread into wider format with one column per ethnicity</span>
+<a name="True-20"></a>nzis <span class="o">&lt;-</span> orig <span class="o">%&gt;%</span>
+<a name="True-21"></a>   mutate<span class="p">(</span>ind <span class="o">=</span> <span class="kc">TRUE</span><span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-22"></a>   spread<span class="p">(</span>ethnicity<span class="p">,</span> ind<span class="p">,</span> fill <span class="o">=</span> <span class="kc">FALSE</span><span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-23"></a>   select<span class="p">(</span><span class="o">-</span>survey_id<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-24"></a>   mutate<span class="p">(</span>income <span class="o">=</span> <span class="m">.</span>mod_transform<span class="p">(</span>income<span class="p">,</span> lambda <span class="o">=</span> lambda<span class="p">))</span>
+<a name="True-25"></a>
+<a name="True-26"></a><span class="kr">for</span><span class="p">(</span>col <span class="kr">in</span> <span class="kp">unique</span><span class="p">(</span>orig<span class="o">$</span>ethnicity<span class="p">)){</span>
+<a name="True-27"></a>   nzis<span class="p">[</span> <span class="p">,</span> <span class="kp">col</span><span class="p">]</span> <span class="o">&lt;-</span> <span class="kp">factor</span><span class="p">(</span><span class="kp">ifelse</span><span class="p">(</span>nzis<span class="p">[</span> <span class="p">,</span> <span class="kp">col</span><span class="p">],</span> <span class="s">&quot;Yes&quot;</span><span class="p">,</span> <span class="s">&quot;No&quot;</span><span class="p">))</span>
+<a name="True-28"></a><span class="p">}</span>
+<a name="True-29"></a>
+<a name="True-30"></a><span class="c1"># in fact, we want all characters to be factors</span>
+<a name="True-31"></a><span class="kr">for</span><span class="p">(</span>i <span class="kr">in</span> <span class="m">1</span><span class="o">:</span><span class="kp">ncol</span><span class="p">(</span>nzis<span class="p">)){</span>
+<a name="True-32"></a>   <span class="kr">if</span><span class="p">(</span><span class="kp">class</span><span class="p">(</span>nzis<span class="p">[</span> <span class="p">,</span> i<span class="p">])</span> <span class="o">==</span> <span class="s">&quot;character&quot;</span><span class="p">){</span>
+<a name="True-33"></a>      nzis<span class="p">[</span> <span class="p">,</span> i<span class="p">]</span> <span class="o">&lt;-</span> <span class="kp">factor</span><span class="p">(</span>nzis<span class="p">[</span> <span class="p">,</span> i<span class="p">])</span>
+<a name="True-34"></a>   <span class="p">}</span>
+<a name="True-35"></a><span class="p">}</span>
+<a name="True-36"></a>
+<a name="True-37"></a><span class="kp">names</span><span class="p">(</span>nzis<span class="p">)[</span><span class="m">11</span><span class="o">:</span><span class="m">14</span><span class="p">]</span> <span class="o">&lt;-</span> <span class="kt">c</span><span class="p">(</span><span class="s">&quot;MELAA&quot;</span><span class="p">,</span> <span class="s">&quot;Other&quot;</span><span class="p">,</span> <span class="s">&quot;Pacific&quot;</span><span class="p">,</span> <span class="s">&quot;Residual&quot;</span><span class="p">)</span></code></pre></div>
+
+<p>After reshaping ethnicity and transforming the income data into something a little less skewed (so measures of prediction accuracy like root mean square error are not going to be dominated by the high values), I split my data into training and test sets, with 80 percent of the sample in the training set.</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a><span class="kp">set.seed</span><span class="p">(</span><span class="m">234</span><span class="p">)</span>
+<a name="True-2"></a>nzis<span class="o">$</span>use <span class="o">&lt;-</span> <span class="kp">ifelse</span><span class="p">(</span>runif<span class="p">(</span><span class="kp">nrow</span><span class="p">(</span>nzis<span class="p">))</span> <span class="o">&gt;</span> <span class="m">0.8</span><span class="p">,</span> <span class="s">&quot;Test&quot;</span><span class="p">,</span> <span class="s">&quot;Train&quot;</span><span class="p">)</span>
+<a name="True-3"></a>trainData <span class="o">&lt;-</span> nzis <span class="o">%&gt;%</span> filter<span class="p">(</span>use <span class="o">==</span> <span class="s">&quot;Train&quot;</span><span class="p">)</span> <span class="o">%&gt;%</span> select<span class="p">(</span><span class="o">-</span>use<span class="p">)</span>
+<a name="True-4"></a>trainY <span class="o">&lt;-</span> trainData<span class="o">$</span>income
+<a name="True-5"></a>testData <span class="o">&lt;-</span> nzis <span class="o">%&gt;%</span> filter<span class="p">(</span>use <span class="o">==</span> <span class="s">&quot;Test&quot;</span><span class="p">)</span> <span class="o">%&gt;%</span> select<span class="p">(</span><span class="o">-</span>use<span class="p">)</span>
+<a name="True-6"></a>testY <span class="o">&lt;-</span> testData<span class="o">$</span>income</code></pre></div>
+
+<h2 id="modelling-income">Modelling income</h2>
+<p>The first job is to get a model that can estimate income for any arbitrary combination of the explanatory variables hourse worked, occupation, qualification, age group, ethnicity x 7 and region.  I worked through five or six different ways of doing this before eventually settling on Random Forests which had the right combination of convenience and accuracy.</p>
+
+<h3 id="regression-tree">Regression tree</h3>
+<p>My first crude baseline is a single regression tree.  I didn’t seriously expect this to work particularly well, but treated it as an interim measure before moving to a random forest.  I use the train() function from the {caret} package to determine the best value for the complexity parameter (cp) - the minimum improvement in overall R-squared needed before a split is made.  The best single tree is shown below.</p>
+
+<p><img width="750px" src="/img/0026-polished-tree.svg" /></p>
+
+<p>One nice feature of regression trees - so long as they aren’t too large to see all at once - is usually their easy interpretability.  Unfortunately this goes a bit by the wayside because I’m using a transformed version of income, and the tree is returning the mean of that transformed version.  When I reverse the transform back into dollars I get a dollar number that is in effect the squared mean of the square root of the original income in a particular category; which happens to generally be close to the median, hence the somewhat obscure footnote in the bottom right corner of the plot above.  It’s a reasonable measure of the centre in any particular group, but not one I’d relish explaining to a client.</p>
+
+<p>Following the tree through, we see that</p>
+
+<ul>
+  <li>the overall centre of the data is $507 income per week</li>
+  <li>for people who work less than 23 hours, it goes down to $241; and those who work 23 or more hours receive $994.</li>
+  <li>of those who work few hours, if they are a community and personal service worker, labourer, no occupation, or residual category occupation their average income is $169 and all other incomes it is $477.</li>
+  <li>of those people who work few hours and are in the low paying occupations (including no occupation), those aged 15 - 19 receive $28 per week and those in other categories $214 per week.</li>
+  <li>and so on.</li>
+</ul>
+
+<p>It takes a bit of effort to look at this plot and work out what is going on (and the abbreviated occupation labels don’t help sorry), but it’s possible once you’ve got the hang of it.  Leftwards branches always receive less income than rightwards branches; the split is always done on only one variable at a time, and the leftwards split label is slightly higher on the page than the rightwards split label.</p>
+
+<p>Trees are a nice tool for this sort of data because they can capture fairly complex interactions in a very flexible way.  Where they’re weaker is in dealing with relationships between continuous variables that can be smoothly modelled by simple arithmetic - that’s when more traditional regression methods, or model-tree combinations, prove useful.</p>
+
+<p>The code that fitted and plotted this tree (using the wonderful and not-used-enough prp() function that allows considerable control and polish of rpart trees) is below.</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a><span class="c1">#---------------------modelling with a single tree---------------</span>
+<a name="True-2"></a><span class="c1"># single tree, with factors all grouped together</span>
+<a name="True-3"></a><span class="kp">set.seed</span><span class="p">(</span><span class="m">234</span><span class="p">)</span>
+<a name="True-4"></a>
+<a name="True-5"></a><span class="c1"># Determine the best value of cp via cross-validation</span>
+<a name="True-6"></a><span class="c1"># set up parallel processing to make this faster, for this and future use of train()</span>
+<a name="True-7"></a><span class="c1"># registerDoMC(cores = 3) # linux only</span>
+<a name="True-8"></a>rpartTune <span class="o">&lt;-</span> train<span class="p">(</span>income <span class="o">~</span><span class="m">.</span><span class="p">,</span> data <span class="o">=</span> trainData<span class="p">,</span>
+<a name="True-9"></a>                     method <span class="o">=</span> <span class="s">&quot;rpart&quot;</span><span class="p">,</span>
+<a name="True-10"></a>                     tuneLength <span class="o">=</span> <span class="m">10</span><span class="p">,</span>
+<a name="True-11"></a>                     trControl <span class="o">=</span> trainControl<span class="p">(</span>method <span class="o">=</span> <span class="s">&quot;cv&quot;</span><span class="p">))</span>
+<a name="True-12"></a>
+<a name="True-13"></a>rpartTree <span class="o">&lt;-</span> rpart<span class="p">(</span>income <span class="o">~</span> <span class="m">.</span><span class="p">,</span> data <span class="o">=</span> trainData<span class="p">,</span> 
+<a name="True-14"></a>                   control <span class="o">=</span> rpart.control<span class="p">(</span>cp <span class="o">=</span> rpartTune<span class="o">$</span>bestTune<span class="p">),</span>
+<a name="True-15"></a>                   method <span class="o">=</span> <span class="s">&quot;anova&quot;</span><span class="p">)</span>
+<a name="True-16"></a>
+<a name="True-17"></a>
+<a name="True-18"></a>node.fun1 <span class="o">&lt;-</span> <span class="kr">function</span><span class="p">(</span>x<span class="p">,</span> labs<span class="p">,</span> digits<span class="p">,</span> varlen<span class="p">){</span>
+<a name="True-19"></a>   <span class="kp">paste0</span><span class="p">(</span><span class="s">&quot;$&quot;</span><span class="p">,</span> <span class="kp">round</span><span class="p">(</span><span class="m">.</span>mod_inverse<span class="p">(</span>x<span class="o">$</span>frame<span class="o">$</span>yval<span class="p">,</span> lambda <span class="o">=</span> lambda<span class="p">),</span> <span class="m">0</span><span class="p">))</span>
+<a name="True-20"></a><span class="p">}</span>
+<a name="True-21"></a>
+<a name="True-22"></a><span class="c1"># exploratory plot only - not for dissemination:</span>
+<a name="True-23"></a><span class="c1"># plot(as.party(rpartTree))</span>
+<a name="True-24"></a>
+<a name="True-25"></a>svg<span class="p">(</span><span class="s">&quot;../img/0026-polished-tree.svg&quot;</span><span class="p">,</span> <span class="m">12</span><span class="p">,</span> <span class="m">10</span><span class="p">)</span>
+<a name="True-26"></a>par<span class="p">(</span>fg <span class="o">=</span> <span class="s">&quot;blue&quot;</span><span class="p">,</span> family <span class="o">=</span> <span class="s">&quot;myfont&quot;</span><span class="p">)</span>
+<a name="True-27"></a>
+<a name="True-28"></a>prp<span class="p">(</span>rpartTree<span class="p">,</span> varlen <span class="o">=</span> <span class="m">5</span><span class="p">,</span> faclen <span class="o">=</span> <span class="m">7</span><span class="p">,</span> type <span class="o">=</span> <span class="m">4</span><span class="p">,</span> extra <span class="o">=</span> <span class="m">1</span><span class="p">,</span> 
+<a name="True-29"></a>    under <span class="o">=</span> <span class="kc">TRUE</span><span class="p">,</span> tweak <span class="o">=</span> <span class="m">0.9</span><span class="p">,</span> box.col <span class="o">=</span> <span class="s">&quot;grey95&quot;</span><span class="p">,</span> border.col <span class="o">=</span> <span class="s">&quot;grey92&quot;</span><span class="p">,</span>
+<a name="True-30"></a>    split.font <span class="o">=</span> <span class="m">1</span><span class="p">,</span> split.cex <span class="o">=</span> <span class="m">0.8</span><span class="p">,</span> eq <span class="o">=</span> <span class="s">&quot;: &quot;</span><span class="p">,</span> facsep <span class="o">=</span> <span class="s">&quot; &quot;</span><span class="p">,</span>
+<a name="True-31"></a>    branch.col <span class="o">=</span> <span class="s">&quot;grey85&quot;</span><span class="p">,</span> under.col <span class="o">=</span> <span class="s">&quot;lightblue&quot;</span><span class="p">,</span>
+<a name="True-32"></a>    node.fun <span class="o">=</span> node.fun1<span class="p">)</span>
+<a name="True-33"></a>
+<a name="True-34"></a>grid.text<span class="p">(</span><span class="s">&quot;New Zealanders&#39; income in one week in 2011&quot;</span><span class="p">,</span> <span class="m">0.5</span><span class="p">,</span> <span class="m">0.89</span><span class="p">,</span>
+<a name="True-35"></a>          gp <span class="o">=</span> gpar<span class="p">(</span>fontfamily <span class="o">=</span> <span class="s">&quot;myfont&quot;</span><span class="p">,</span> fontface <span class="o">=</span> <span class="s">&quot;bold&quot;</span><span class="p">))</span>  
+<a name="True-36"></a>
+<a name="True-37"></a>grid.text<span class="p">(</span><span class="s">&quot;Other factors considered: qualification, region, ethnicity.&quot;</span><span class="p">,</span>
+<a name="True-38"></a>          <span class="m">0.8</span><span class="p">,</span> <span class="m">0.2</span><span class="p">,</span> 
+<a name="True-39"></a>          gp <span class="o">=</span> gpar<span class="p">(</span>fontfamily <span class="o">=</span> <span class="s">&quot;myfont&quot;</span><span class="p">,</span> cex <span class="o">=</span> <span class="m">0.8</span><span class="p">))</span>
+<a name="True-40"></a>
+<a name="True-41"></a>grid.text<span class="p">(</span><span class="s">&quot;$ numbers in blue are &#39;average&#39; weekly income:\nsquared(mean(sign(sqrt(abs(x)))))\nwhich is a little less than the median.&quot;</span><span class="p">,</span>
+<a name="True-42"></a>          <span class="m">0.8</span><span class="p">,</span> <span class="m">0.1</span><span class="p">,</span> 
+<a name="True-43"></a>          gp <span class="o">=</span> gpar<span class="p">(</span>fontfamily <span class="o">=</span> <span class="s">&quot;myfont&quot;</span><span class="p">,</span> cex <span class="o">=</span> <span class="m">0.8</span><span class="p">,</span> col <span class="o">=</span> <span class="s">&quot;blue&quot;</span><span class="p">))</span>
+<a name="True-44"></a>
+<a name="True-45"></a>dev.off<span class="p">()</span></code></pre></div>
+
+<p>(Note - in working on this post I was using at different times several different machines, including some of it on a Linux server which is much easier than Windows for parallel processing.  I’ve commented out the Linux-only bits of code so it should all be fully portable.)</p>
+
+<p>The success rates of the various modelling methods in predicting income in the test data I put aside will be shown all in one part of this post, later.</p>
+
+<h3 id="a-home-made-random-spinney-not-forest">A home-made random spinney (not forest…)</h3>
+<p>Regression trees have high variance.  Basically, they are unstable, and vulnerable to influential small pockets of data changing them quite radically.  The solution to this problem is to generate an ensemble of different trees and take the average prediction.  Two most commonly used methods are:</p>
+
+<ul>
+  <li><a href="https://en.wikipedia.org/wiki/Bootstrap_aggregating">“bagging”</a> or bootstrap aggregation, which involves resampling from the data and fitting trees to the resamples</li>
+  <li><a href="https://en.wikipedia.org/wiki/Random_forest">Random Forests</a> (trademark of Breiman and Cutler), which resamples rows from the data and also restricts the number of variables to a different subset of variables for each split.</li>
+</ul>
+
+<p>Gradient boosting can also be seen as a variant in this class of solutions but I think takes a sufficiently different approach for me to leave it to further down the post.</p>
+
+<p>Bagging is probably an appropriate method here given the relatively small number of explanatory variables, but to save space in an already grossly over-long post I’ve left it out.</p>
+
+<p>Random Forests (tm) are a subset of the broader group of ensemble tree techniques known as “random decision forests”, and I set out to explore one variant of random decision forests visually (I’m a very visual person - if I can’t make a picture or movie of something happening I can’t understand it).  The animation below shows an ensemble of 50 differing trees, where each tree was fitted to a set of data sample with replacement from the original data, and each tree was also restricted to just three randomly chosen variables.  Note that this differs from a Random Forest, where the restriction differs for each split within a tree, rather than being a restriction for the tree as a whole.</p>
+
+<p><img width="750px" src="/img/0026-rf.gif" /></p>
+
+<p>Here’s how I generated my <a href="http://www.thefreedictionary.com/spinney">spinney</a> of regression trees.  Some of this code depends on a particular folder structure.  The basic strategy is to</p>
+
+<ul>
+  <li>work out which variables have the most crude explanatory power</li>
+  <li>subset the data</li>
+  <li>subset the variables, choosing those with good explanatory power more often than the weaker ones</li>
+  <li>use cross-validation to work out the best tuning for the complexity parameter</li>
+  <li>fit the best tree possible with our subset of data nad variables</li>
+  <li>draw an image, with appropriate bits of commentary and labelling added to it, and save it for later</li>
+  <li>repeat the above 50 times, and then knit all the images into an animated GIF using ImageMagick.</li>
+</ul>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a><span class="c1">#----------home made random decision forest--------------</span>
+<a name="True-2"></a><span class="c1"># resample both rows and columns, as in a random decision forest,</span>
+<a name="True-3"></a><span class="c1"># and draw a picture for each fitted tree.  Knit these</span>
+<a name="True-4"></a><span class="c1"># into an animation.  Note this isn&#39;t quite the same as a random forest (tm).</span>
+<a name="True-5"></a>
+<a name="True-6"></a><span class="c1"># define the candidate variables</span>
+<a name="True-7"></a>variables <span class="o">&lt;-</span> <span class="kt">c</span><span class="p">(</span><span class="s">&quot;sex&quot;</span><span class="p">,</span> <span class="s">&quot;agegrp&quot;</span><span class="p">,</span> <span class="s">&quot;occupation&quot;</span><span class="p">,</span> <span class="s">&quot;qualification&quot;</span><span class="p">,</span>
+<a name="True-8"></a>               <span class="s">&quot;region&quot;</span><span class="p">,</span> <span class="s">&quot;hours&quot;</span><span class="p">,</span> <span class="s">&quot;Maori&quot;</span><span class="p">)</span>
+<a name="True-9"></a>
+<a name="True-10"></a><span class="c1"># estimate the value of the individual variables, one at a time</span>
+<a name="True-11"></a>
+<a name="True-12"></a>var_weights <span class="o">&lt;-</span> <span class="kt">data_frame</span><span class="p">(</span>var <span class="o">=</span> variables<span class="p">,</span> r2 <span class="o">=</span> <span class="m">0</span><span class="p">)</span>
+<a name="True-13"></a><span class="kr">for</span><span class="p">(</span>i <span class="kr">in</span> <span class="m">1</span><span class="o">:</span><span class="kp">length</span><span class="p">(</span>variables<span class="p">)){</span>
+<a name="True-14"></a>   tmp <span class="o">&lt;-</span> trainData<span class="p">[</span> <span class="p">,</span> <span class="kt">c</span><span class="p">(</span><span class="s">&quot;income&quot;</span><span class="p">,</span> variables<span class="p">[</span>i<span class="p">])]</span>
+<a name="True-15"></a>   <span class="kr">if</span><span class="p">(</span>variables<span class="p">[</span>i<span class="p">]</span> <span class="o">==</span> <span class="s">&quot;hours&quot;</span><span class="p">){</span>
+<a name="True-16"></a>      tmp<span class="o">$</span>hours <span class="o">&lt;-</span> <span class="kp">sqrt</span><span class="p">(</span>tmp<span class="o">$</span>hours<span class="p">)</span>
+<a name="True-17"></a>   <span class="p">}</span>
+<a name="True-18"></a>   tmpmod <span class="o">&lt;-</span> lm<span class="p">(</span>income <span class="o">~</span> <span class="m">.</span><span class="p">,</span> data <span class="o">=</span> tmp<span class="p">)</span>
+<a name="True-19"></a>   var_weights<span class="p">[</span>i<span class="p">,</span> <span class="s">&quot;r2&quot;</span><span class="p">]</span> <span class="o">&lt;-</span> <span class="kp">summary</span><span class="p">(</span>tmpmod<span class="p">)</span><span class="o">$</span>adj.r.squared
+<a name="True-20"></a><span class="p">}</span>
+<a name="True-21"></a>
+<a name="True-22"></a>svg<span class="p">(</span><span class="s">&quot;../img/0026-variables.svg&quot;</span><span class="p">,</span> <span class="m">8</span><span class="p">,</span> <span class="m">6</span><span class="p">)</span>
+<a name="True-23"></a><span class="kp">print</span><span class="p">(</span>
+<a name="True-24"></a>   var_weights <span class="o">%&gt;%</span>
+<a name="True-25"></a>   arrange<span class="p">(</span>r2<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-26"></a>   mutate<span class="p">(</span>var <span class="o">=</span> <span class="kp">factor</span><span class="p">(</span>var<span class="p">,</span> levels <span class="o">=</span> var<span class="p">))</span> <span class="o">%&gt;%</span>
+<a name="True-27"></a>   ggplot<span class="p">(</span>aes<span class="p">(</span>y <span class="o">=</span> var<span class="p">,</span> x <span class="o">=</span> r2<span class="p">))</span> <span class="o">+</span>
+<a name="True-28"></a>   geom_point<span class="p">()</span> <span class="o">+</span>
+<a name="True-29"></a>   labs<span class="p">(</span>x <span class="o">=</span> <span class="s">&quot;Adjusted R-squared from one-variable regression&quot;</span><span class="p">,</span>
+<a name="True-30"></a>        y <span class="o">=</span> <span class="s">&quot;&quot;</span><span class="p">,</span>
+<a name="True-31"></a>        title <span class="o">=</span> <span class="s">&quot;Effectiveness of one variable at a time in predicting income&quot;</span><span class="p">)</span>
+<a name="True-32"></a><span class="p">)</span>
+<a name="True-33"></a>dev.off<span class="p">()</span>
+<a name="True-34"></a>
+<a name="True-35"></a>
+<a name="True-36"></a>n <span class="o">&lt;-</span> <span class="kp">nrow</span><span class="p">(</span>trainData<span class="p">)</span>
+<a name="True-37"></a>
+<a name="True-38"></a>home_made_rf <span class="o">&lt;-</span> <span class="kt">list</span><span class="p">()</span>
+<a name="True-39"></a>reps <span class="o">&lt;-</span> <span class="m">50</span>
+<a name="True-40"></a>
+<a name="True-41"></a>commentary <span class="o">&lt;-</span> str_wrap<span class="p">(</span><span class="kt">c</span><span class="p">(</span>
+<a name="True-42"></a>   <span class="s">&quot;This animation illustrates the use of an ensemble of regression trees to improve estimates of income based on a range of predictor variables.&quot;</span><span class="p">,</span>
+<a name="True-43"></a>   <span class="s">&quot;Each tree is fitted on a resample with replacement from the original data; and only three variables are available to the tree.&quot;</span><span class="p">,</span>
+<a name="True-44"></a>   <span class="s">&quot;The result is that each tree will have a different but still unbiased forecast for a new data point when a prediction is made.  Taken together, the average prediction is still unbiased and has less variance than the prediction of any single tree.&quot;</span><span class="p">,</span>
+<a name="True-45"></a>   <span class="s">&quot;This method is similar but not identical to a Random Forest (tm).  In a Random Forest, the choice of variables is made at each split in a tree rather than for the tree as a whole.&quot;</span>
+<a name="True-46"></a>   <span class="p">),</span> <span class="m">50</span><span class="p">)</span>
+<a name="True-47"></a>
+<a name="True-48"></a>
+<a name="True-49"></a><span class="kp">set.seed</span><span class="p">(</span><span class="m">123</span><span class="p">)</span>
+<a name="True-50"></a><span class="kr">for</span><span class="p">(</span>i <span class="kr">in</span> <span class="m">1</span><span class="o">:</span>reps<span class="p">){</span>
+<a name="True-51"></a>   
+<a name="True-52"></a>   these_variables <span class="o">&lt;-</span> <span class="kp">sample</span><span class="p">(</span>var_weights<span class="o">$</span>var<span class="p">,</span> <span class="m">3</span><span class="p">,</span> replace <span class="o">=</span> <span class="kc">FALSE</span><span class="p">,</span> prob <span class="o">=</span> var_weights<span class="o">$</span>r2<span class="p">)</span>
+<a name="True-53"></a>   
+<a name="True-54"></a>   this_data <span class="o">&lt;-</span> trainData<span class="p">[</span>
+<a name="True-55"></a>      <span class="kp">sample</span><span class="p">(</span><span class="m">1</span><span class="o">:</span>n<span class="p">,</span> n<span class="p">,</span> replace <span class="o">=</span> <span class="kc">TRUE</span><span class="p">),</span>
+<a name="True-56"></a>      <span class="kt">c</span><span class="p">(</span>these_variables<span class="p">,</span> <span class="s">&quot;income&quot;</span><span class="p">)</span>
+<a name="True-57"></a>   <span class="p">]</span>
+<a name="True-58"></a>   
+<a name="True-59"></a>   
+<a name="True-60"></a>   
+<a name="True-61"></a>   this_rpartTune <span class="o">&lt;-</span> train<span class="p">(</span>this_data<span class="p">[,</span><span class="m">1</span><span class="o">:</span><span class="m">3</span><span class="p">],</span> this_data<span class="p">[,</span><span class="m">4</span><span class="p">],</span>
+<a name="True-62"></a>                      method <span class="o">=</span> <span class="s">&quot;rpart&quot;</span><span class="p">,</span>
+<a name="True-63"></a>                      tuneLength <span class="o">=</span> <span class="m">10</span><span class="p">,</span>
+<a name="True-64"></a>                      trControl <span class="o">=</span> trainControl<span class="p">(</span>method <span class="o">=</span> <span class="s">&quot;cv&quot;</span><span class="p">))</span>
+<a name="True-65"></a>   
+<a name="True-66"></a>   
+<a name="True-67"></a>   
+<a name="True-68"></a>   home_made_rf<span class="p">[[</span>i<span class="p">]]</span> <span class="o">&lt;-</span> rpart<span class="p">(</span>income <span class="o">~</span> <span class="m">.</span><span class="p">,</span> data <span class="o">=</span> this_data<span class="p">,</span> 
+<a name="True-69"></a>                      control <span class="o">=</span> rpart.control<span class="p">(</span>cp <span class="o">=</span> this_rpartTune<span class="o">$</span>bestTune<span class="p">),</span>
+<a name="True-70"></a>                      method <span class="o">=</span> <span class="s">&quot;anova&quot;</span><span class="p">)</span>
+<a name="True-71"></a> 
+<a name="True-72"></a>   png<span class="p">(</span><span class="kp">paste0</span><span class="p">(</span><span class="s">&quot;_output/0026_random_forest/&quot;</span><span class="p">,</span> <span class="m">1000</span> <span class="o">+</span> i<span class="p">,</span> <span class="s">&quot;.png&quot;</span><span class="p">),</span> <span class="m">1200</span><span class="p">,</span> <span class="m">1000</span><span class="p">,</span> res <span class="o">=</span> <span class="m">100</span><span class="p">)</span>  
+<a name="True-73"></a>      par<span class="p">(</span>fg <span class="o">=</span> <span class="s">&quot;blue&quot;</span><span class="p">,</span> family <span class="o">=</span> <span class="s">&quot;myfont&quot;</span><span class="p">)</span>
+<a name="True-74"></a>      prp<span class="p">(</span>home_made_rf<span class="p">[[</span>i<span class="p">]],</span> varlen <span class="o">=</span> <span class="m">5</span><span class="p">,</span> faclen <span class="o">=</span> <span class="m">7</span><span class="p">,</span> type <span class="o">=</span> <span class="m">4</span><span class="p">,</span> extra <span class="o">=</span> <span class="m">1</span><span class="p">,</span> 
+<a name="True-75"></a>          under <span class="o">=</span> <span class="kc">TRUE</span><span class="p">,</span> tweak <span class="o">=</span> <span class="m">0.9</span><span class="p">,</span> box.col <span class="o">=</span> <span class="s">&quot;grey95&quot;</span><span class="p">,</span> border.col <span class="o">=</span> <span class="s">&quot;grey92&quot;</span><span class="p">,</span>
+<a name="True-76"></a>          split.font <span class="o">=</span> <span class="m">1</span><span class="p">,</span> split.cex <span class="o">=</span> <span class="m">0.8</span><span class="p">,</span> eq <span class="o">=</span> <span class="s">&quot;: &quot;</span><span class="p">,</span> facsep <span class="o">=</span> <span class="s">&quot; &quot;</span><span class="p">,</span>
+<a name="True-77"></a>          branch.col <span class="o">=</span> <span class="s">&quot;grey85&quot;</span><span class="p">,</span> under.col <span class="o">=</span> <span class="s">&quot;lightblue&quot;</span><span class="p">,</span>
+<a name="True-78"></a>          node.fun <span class="o">=</span> node.fun1<span class="p">,</span> mar <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="m">3</span><span class="p">,</span> <span class="m">1</span><span class="p">,</span> <span class="m">5</span><span class="p">,</span> <span class="m">1</span><span class="p">))</span>
+<a name="True-79"></a>      
+<a name="True-80"></a>      grid.text<span class="p">(</span><span class="kp">paste0</span><span class="p">(</span><span class="s">&quot;Variables available to this tree: &quot;</span><span class="p">,</span> 
+<a name="True-81"></a>                      <span class="kp">paste</span><span class="p">(</span>these_variables<span class="p">,</span> collapse <span class="o">=</span> <span class="s">&quot;, &quot;</span><span class="p">))</span>
+<a name="True-82"></a>                <span class="p">,</span> <span class="m">0.5</span><span class="p">,</span> <span class="m">0.90</span><span class="p">,</span>
+<a name="True-83"></a>                gp <span class="o">=</span> gpar<span class="p">(</span>fontfamily <span class="o">=</span> <span class="s">&quot;myfont&quot;</span><span class="p">,</span> cex <span class="o">=</span> <span class="m">0.8</span><span class="p">,</span> col <span class="o">=</span> <span class="s">&quot;darkblue&quot;</span><span class="p">))</span>
+<a name="True-84"></a>      
+<a name="True-85"></a>      grid.text<span class="p">(</span><span class="s">&quot;One tree in a random spinney - three randomly chosen predictor variables for weekly income,</span>
+<a name="True-86"></a><span class="s">resampled observations from New Zealand Income Survey 2011&quot;</span><span class="p">,</span> <span class="m">0.5</span><span class="p">,</span> <span class="m">0.95</span><span class="p">,</span>
+<a name="True-87"></a>                gp <span class="o">=</span> gpar<span class="p">(</span>fontfamily <span class="o">=</span> <span class="s">&quot;myfont&quot;</span><span class="p">,</span> cex <span class="o">=</span> <span class="m">1</span><span class="p">))</span>
+<a name="True-88"></a>      
+<a name="True-89"></a>      grid.text<span class="p">(</span>i<span class="p">,</span> <span class="m">0.05</span><span class="p">,</span> <span class="m">0.05</span><span class="p">,</span> gp <span class="o">=</span> gpar<span class="p">(</span>fontfamily <span class="o">=</span> <span class="s">&quot;myfont&quot;</span><span class="p">,</span> cex <span class="o">=</span> <span class="m">1</span><span class="p">))</span>
+<a name="True-90"></a>      
+<a name="True-91"></a>      grid.text<span class="p">(</span><span class="s">&quot;$ numbers in blue are &#39;average&#39; weekly income:\nsquared(mean(sign(sqrt(abs(x)))))\nwhich is a little less than the median.&quot;</span><span class="p">,</span>
+<a name="True-92"></a>                <span class="m">0.8</span><span class="p">,</span> <span class="m">0.1</span><span class="p">,</span> 
+<a name="True-93"></a>                gp <span class="o">=</span> gpar<span class="p">(</span>fontfamily <span class="o">=</span> <span class="s">&quot;myfont&quot;</span><span class="p">,</span> cex <span class="o">=</span> <span class="m">0.8</span><span class="p">,</span> col <span class="o">=</span> <span class="s">&quot;blue&quot;</span><span class="p">))</span>
+<a name="True-94"></a>      
+<a name="True-95"></a>      comment_i <span class="o">&lt;-</span> <span class="kp">floor</span><span class="p">(</span>i <span class="o">/</span> <span class="m">12.5</span><span class="p">)</span> <span class="o">+</span> <span class="m">1</span>
+<a name="True-96"></a>      
+<a name="True-97"></a>      grid.text<span class="p">(</span>commentary<span class="p">[</span>comment_i<span class="p">],</span> 
+<a name="True-98"></a>                <span class="m">0.3</span><span class="p">,</span> <span class="m">0.1</span><span class="p">,</span>
+<a name="True-99"></a>                gp <span class="o">=</span> gpar<span class="p">(</span>fontfamily <span class="o">=</span> <span class="s">&quot;myfont&quot;</span><span class="p">,</span> cex <span class="o">=</span> <span class="m">1.2</span><span class="p">,</span> col <span class="o">=</span> <span class="s">&quot;orange&quot;</span><span class="p">))</span>
+<a name="True-100"></a>      
+<a name="True-101"></a>      dev.off<span class="p">()</span>
+<a name="True-102"></a>
+<a name="True-103"></a><span class="p">}</span>   
+<a name="True-104"></a>
+<a name="True-105"></a><span class="c1"># knit into an actual animation</span>
+<a name="True-106"></a>old_dir <span class="o">&lt;-</span> <span class="kp">setwd</span><span class="p">(</span><span class="s">&quot;_output/0026_random_forest&quot;</span><span class="p">)</span>
+<a name="True-107"></a><span class="c1"># combine images into an animated GIF</span>
+<a name="True-108"></a><span class="kp">system</span><span class="p">(</span><span class="s">&#39;&quot;C:\\Program Files\\ImageMagick-6.9.1-Q16\\convert&quot; -loop 0 -delay 400 *.png &quot;rf.gif&quot;&#39;</span><span class="p">)</span> <span class="c1"># Windows</span>
+<a name="True-109"></a><span class="c1"># system(&#39;convert -loop 0 -delay 400 *.png &quot;rf.gif&quot;&#39;) # linux</span>
+<a name="True-110"></a><span class="c1"># move the asset over to where needed for the blog</span>
+<a name="True-111"></a><span class="kp">file.copy</span><span class="p">(</span><span class="s">&quot;rf.gif&quot;</span><span class="p">,</span> <span class="s">&quot;../../../img/0026-rf.gif&quot;</span><span class="p">,</span> overwrite <span class="o">=</span> <span class="kc">TRUE</span><span class="p">)</span>
+<a name="True-112"></a><span class="kp">setwd</span><span class="p">(</span>old_dir<span class="p">)</span></code></pre></div>
+
+<h3 id="random-forest">Random Forest</h3>
+<p>Next model to try is a genuine Random Forest (tm).  As mentioned above, a Random Forest is an ensemble of regression trees, where each tree is a resample with replacement (variations are possible) of the original data, and each split in the tree is only allowed to choose from a subset of the variables available.  To do this I used the {randomForests} R package, but it’s not efficiently written and is really pushing its limits with data of this size on modest hardware like mine.  For classification problems the amazing open source <a href="http://www.h2o.ai/">H2O</a> (written in Java but <a href="https://cran.r-project.org/web/packages/h2o/index.html">binding nicely with R</a>) gives super-efficient and scalable implementations of Random Forests and of deep learning neural networks, but it doesn’t work with a continuous response variable.</p>
+
+<p>Training a Random Forest requires you to specify how many explanatory variables to make available for each individual tree, and the best way to decide this is vai cross validation.</p>
+
+<p>Cross-validation is all about splitting the data into a number of different training and testing sets, to get around the problem of using a single hold-out test set for multiple purposes.  It’s better to give each bit of the data a turn as the hold-out test set.  In the tuning exercise below, I divide the data into ten so I can try different values of the “mtry” parameter in my randomForest fitting and see the average Root Mean Square Error for the ten fits for each value of mtry.  “mtry” defines the number of variables the tree building algorithm has available to it at each split of the tree.  For forests with a continuous response variable like mine, the default value is the number of variables divided by three and I have 10 variables, so I try a range of options from 2 to 6 as the subset of variables for the tree to choose from at each split.  It turns out the conventional default value of mtry = 3 is in fact the best:</p>
+
+<p><img src="/img/0026-rf-cv.svg" alt="rf-tuning" /></p>
+
+<p>Here’s the code for this home-made cross-validation of randomForest:</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a><span class="c1">#-----------------random forest----------</span>
+<a name="True-2"></a><span class="c1"># Hold ntree constant and try different values of mtry</span>
+<a name="True-3"></a><span class="c1"># values of m to try for mtry for cross-validation tuning</span>
+<a name="True-4"></a>m <span class="o">&lt;-</span> <span class="kt">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span> <span class="m">2</span><span class="p">,</span> <span class="m">3</span><span class="p">,</span> <span class="m">4</span><span class="p">,</span> <span class="m">5</span><span class="p">,</span> <span class="m">6</span><span class="p">)</span>
+<a name="True-5"></a>
+<a name="True-6"></a>folds <span class="o">&lt;-</span> <span class="m">10</span>
+<a name="True-7"></a>
+<a name="True-8"></a>cvData <span class="o">&lt;-</span> trainData <span class="o">%&gt;%</span>
+<a name="True-9"></a>   mutate<span class="p">(</span>group <span class="o">=</span> <span class="kp">sample</span><span class="p">(</span><span class="m">1</span><span class="o">:</span>folds<span class="p">,</span> <span class="kp">nrow</span><span class="p">(</span>trainData<span class="p">),</span> replace <span class="o">=</span> <span class="kc">TRUE</span><span class="p">))</span>
+<a name="True-10"></a>
+<a name="True-11"></a>results <span class="o">&lt;-</span> <span class="kt">matrix</span><span class="p">(</span><span class="kt">numeric</span><span class="p">(</span><span class="kp">length</span><span class="p">(</span>m<span class="p">)</span> <span class="o">*</span> folds<span class="p">),</span> ncol <span class="o">=</span> folds<span class="p">)</span>
+<a name="True-12"></a>
+<a name="True-13"></a>
+<a name="True-14"></a>
+<a name="True-15"></a><span class="c1"># Cross validation, done by hand with single processing - not very efficient or fast:</span>
+<a name="True-16"></a><span class="kr">for</span><span class="p">(</span>i <span class="kr">in</span> <span class="m">1</span><span class="o">:</span><span class="kp">length</span><span class="p">(</span>m<span class="p">)){</span>
+<a name="True-17"></a>   <span class="kp">message</span><span class="p">(</span>i<span class="p">)</span>
+<a name="True-18"></a>   <span class="kr">for</span><span class="p">(</span>j <span class="kr">in</span> <span class="m">1</span><span class="o">:</span>folds<span class="p">){</span>
+<a name="True-19"></a>      
+<a name="True-20"></a>      cv_train <span class="o">&lt;-</span> cvData <span class="o">%&gt;%</span> filter<span class="p">(</span>group <span class="o">!=</span> j<span class="p">)</span> <span class="o">%&gt;%</span> select<span class="p">(</span><span class="o">-</span>group<span class="p">)</span>
+<a name="True-21"></a>      cv_test <span class="o">&lt;-</span> cvData <span class="o">%&gt;%</span> filter<span class="p">(</span>group <span class="o">==</span> j<span class="p">)</span> <span class="o">%&gt;%</span> select<span class="p">(</span><span class="o">-</span>group<span class="p">)</span>
+<a name="True-22"></a>
+<a name="True-23"></a>      tmp <span class="o">&lt;-</span> randomForest<span class="p">(</span>income <span class="o">~</span> <span class="m">.</span><span class="p">,</span> data <span class="o">=</span> cv_train<span class="p">,</span> ntree <span class="o">=</span> <span class="m">100</span><span class="p">,</span> mtry <span class="o">=</span> m<span class="p">[</span>i<span class="p">],</span> 
+<a name="True-24"></a>                          nodesize <span class="o">=</span> <span class="m">10</span><span class="p">,</span> importance <span class="o">=</span> <span class="kc">FALSE</span><span class="p">,</span> replace <span class="o">=</span> <span class="kc">FALSE</span><span class="p">)</span>
+<a name="True-25"></a>      tmp_p <span class="o">&lt;-</span> predict<span class="p">(</span>tmp<span class="p">,</span> newdata <span class="o">=</span> cv_test<span class="p">)</span>
+<a name="True-26"></a>      
+<a name="True-27"></a>      results<span class="p">[</span>i<span class="p">,</span> j<span class="p">]</span> <span class="o">&lt;-</span> RMSE<span class="p">(</span>tmp_p<span class="p">,</span> cv_test<span class="o">$</span>income<span class="p">)</span>
+<a name="True-28"></a>      <span class="kp">print</span><span class="p">(</span><span class="kp">paste</span><span class="p">(</span><span class="s">&quot;mtry&quot;</span><span class="p">,</span> m<span class="p">[</span>i<span class="p">],</span> j<span class="p">,</span> <span class="kp">round</span><span class="p">(</span>results<span class="p">[</span>i<span class="p">,</span> j<span class="p">],</span> <span class="m">2</span><span class="p">),</span> sep <span class="o">=</span> <span class="s">&quot; : &quot;</span><span class="p">))</span>
+<a name="True-29"></a>   <span class="p">}</span>
+<a name="True-30"></a><span class="p">}</span>
+<a name="True-31"></a>
+<a name="True-32"></a>results_df <span class="o">&lt;-</span> <span class="kp">as.data.frame</span><span class="p">(</span>results<span class="p">)</span>
+<a name="True-33"></a>results_df<span class="o">$</span>mtry <span class="o">&lt;-</span> m
+<a name="True-34"></a>
+<a name="True-35"></a>svg<span class="p">(</span><span class="s">&quot;../img/0026-rf-cv.svg&quot;</span><span class="p">,</span> <span class="m">6</span><span class="p">,</span> <span class="m">4</span><span class="p">)</span>
+<a name="True-36"></a><span class="kp">print</span><span class="p">(</span>
+<a name="True-37"></a>   results_df <span class="o">%&gt;%</span> 
+<a name="True-38"></a>   gather<span class="p">(</span>trial<span class="p">,</span> RMSE<span class="p">,</span> <span class="o">-</span>mtry<span class="p">)</span> <span class="o">%&gt;%</span> 
+<a name="True-39"></a>   ggplot<span class="p">()</span> <span class="o">+</span>
+<a name="True-40"></a>   aes<span class="p">(</span>x <span class="o">=</span> mtry<span class="p">,</span> y <span class="o">=</span> RMSE<span class="p">)</span> <span class="o">+</span>
+<a name="True-41"></a>   geom_point<span class="p">()</span> <span class="o">+</span>
+<a name="True-42"></a>   geom_smooth<span class="p">(</span>se <span class="o">=</span> <span class="kc">FALSE</span><span class="p">)</span> <span class="o">+</span>
+<a name="True-43"></a>   ggtitle<span class="p">(</span><span class="kp">paste0</span><span class="p">(</span>folds<span class="p">,</span> <span class="s">&quot;-fold cross-validation for random forest;\ndiffering values of mtry&quot;</span><span class="p">))</span>
+<a name="True-44"></a><span class="p">)</span>
+<a name="True-45"></a>dev.off<span class="p">()</span></code></pre></div>
+
+<p>Having determined a value for mtry of three variables to use for each tree in the forest, we re-fit the Random Forest with the full training dataset.  It’s interesting to see the “importance” of the different variables - which ones make the most contribution to the most trees in the forest.  This is the best way of relating as Random Forest to a theoretical question; otherwise their black box nature makes them harder to interpret than a more traditional regression with its t tests and confidence intervals for each explanatory variable’s explanation.</p>
+
+<p>It’s also good to note that after the first 300 or so trees, increasing the size of the forest seems to have little impact.</p>
+
+<p><img src="/img/0026-rf.svg" alt="final-forest" /></p>
+
+<p>Here’s the code that fits this forest to the training data and draws those plots:</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a><span class="c1"># refit model with full training data set</span>
+<a name="True-2"></a>rf <span class="o">&lt;-</span> randomForest<span class="p">(</span>income <span class="o">~</span> <span class="m">.</span><span class="p">,</span> 
+<a name="True-3"></a>                    data <span class="o">=</span> trainData<span class="p">,</span> 
+<a name="True-4"></a>                    ntrees <span class="o">=</span> <span class="m">500</span><span class="p">,</span> 
+<a name="True-5"></a>                    mtries <span class="o">=</span> <span class="m">3</span><span class="p">,</span>
+<a name="True-6"></a>                    importance <span class="o">=</span> <span class="kc">TRUE</span><span class="p">,</span>
+<a name="True-7"></a>                    replace <span class="o">=</span> <span class="kc">FALSE</span><span class="p">)</span>
+<a name="True-8"></a>
+<a name="True-9"></a>
+<a name="True-10"></a><span class="c1"># importances</span>
+<a name="True-11"></a>ir <span class="o">&lt;-</span> <span class="kp">as.data.frame</span><span class="p">(</span>importance<span class="p">(</span>rf<span class="p">))</span>
+<a name="True-12"></a>ir<span class="o">$</span>variable  <span class="o">&lt;-</span> <span class="kp">row.names</span><span class="p">(</span>ir<span class="p">)</span>
+<a name="True-13"></a>
+<a name="True-14"></a>p1 <span class="o">&lt;-</span> ir <span class="o">%&gt;%</span>
+<a name="True-15"></a>   arrange<span class="p">(</span>IncNodePurity<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-16"></a>   mutate<span class="p">(</span>variable <span class="o">=</span> <span class="kp">factor</span><span class="p">(</span>variable<span class="p">,</span> levels <span class="o">=</span> variable<span class="p">))</span> <span class="o">%&gt;%</span>
+<a name="True-17"></a>   ggplot<span class="p">(</span>aes<span class="p">(</span>x <span class="o">=</span> IncNodePurity<span class="p">,</span> y <span class="o">=</span> variable<span class="p">))</span> <span class="o">+</span> 
+<a name="True-18"></a>   geom_point<span class="p">()</span> <span class="o">+</span>
+<a name="True-19"></a>   labs<span class="p">(</span>x <span class="o">=</span> <span class="s">&quot;Importance of contribution to\nestimating income&quot;</span><span class="p">,</span> 
+<a name="True-20"></a>        title <span class="o">=</span> <span class="s">&quot;Variables in the random forest&quot;</span><span class="p">)</span>
+<a name="True-21"></a>
+<a name="True-22"></a><span class="c1"># changing RMSE as more trees added</span>
+<a name="True-23"></a>tmp <span class="o">&lt;-</span> <span class="kt">data_frame</span><span class="p">(</span>ntrees <span class="o">=</span> <span class="m">1</span><span class="o">:</span><span class="m">500</span><span class="p">,</span> RMSE <span class="o">=</span> <span class="kp">sqrt</span><span class="p">(</span>rf<span class="o">$</span>mse<span class="p">))</span>
+<a name="True-24"></a>p2 <span class="o">&lt;-</span> ggplot<span class="p">(</span>tmp<span class="p">,</span> aes<span class="p">(</span>x <span class="o">=</span> ntrees<span class="p">,</span> y <span class="o">=</span> RMSE<span class="p">))</span> <span class="o">+</span>
+<a name="True-25"></a>   geom_line<span class="p">()</span> <span class="o">+</span>
+<a name="True-26"></a>   labs<span class="p">(</span>x <span class="o">=</span> <span class="s">&quot;Number of trees&quot;</span><span class="p">,</span> y <span class="o">=</span> <span class="s">&quot;Root mean square error&quot;</span><span class="p">,</span>
+<a name="True-27"></a>        title <span class="o">=</span> <span class="s">&quot;Improvement in prediction\nwith increasing number of trees&quot;</span><span class="p">)</span>
+<a name="True-28"></a>
+<a name="True-29"></a>grid.arrange<span class="p">(</span>p1<span class="p">,</span> p2<span class="p">,</span> ncol <span class="o">=</span> <span class="m">2</span><span class="p">)</span></code></pre></div>
+
+<h3 id="extreme-gradient-boosting">Extreme gradient boosting</h3>
+<p>I wanted to check out extreme gradient boosting as an alternative prediction method.  Like Random Forests, this method is based on a forest of many regression trees, but in the case of boosting each tree is relatively shallow (not many layers of branch divisions), and the trees are not independent of eachother.  Instead, successive trees are built specifically to explain the observations poorly explained by previous trees - this is done by giving extra weight to outliers from the prediction to date.</p>
+
+<p>Boosting is prone to over-fitting and if you let it run long enough it will memorize the entire training set (and be useless for new data), so it’s important to use cross-validation to work out how many iterations are worth using and at what point is not picking up general patterns but just the idiosyncracies of the training sample data.  The excellent <a href="https://cran.r-project.org/web/packages/xgboost/index.html">{xgboost} R package</a> by Tianqui Chen, Tong He and Michael Benesty applies gradient boosting algorithms super-efficiently and comes with built in cross-validation functionality.  In this case it becomes clear that 15 or 16 rounds is the maximum boosting before overfitting takes place, so my final boosting model is fit to the full training data set with that number of rounds.</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a><span class="c1">#-------xgboost------------</span>
+<a name="True-2"></a>sparse_matrix <span class="o">&lt;-</span> sparse.model.matrix<span class="p">(</span>income <span class="o">~</span> <span class="m">.</span> <span class="m">-1</span><span class="p">,</span> data <span class="o">=</span> trainData<span class="p">)</span>
+<a name="True-3"></a>
+<a name="True-4"></a><span class="c1"># boosting with different levels of rounds.  After 16 rounds it starts to overfit:</span>
+<a name="True-5"></a>xgb.cv<span class="p">(</span>data <span class="o">=</span> sparse_matrix<span class="p">,</span> label <span class="o">=</span> trainY<span class="p">,</span> nrounds <span class="o">=</span> <span class="m">25</span><span class="p">,</span> objective <span class="o">=</span> <span class="s">&quot;reg:linear&quot;</span><span class="p">,</span> nfold <span class="o">=</span> <span class="m">5</span><span class="p">)</span>
+<a name="True-6"></a>
+<a name="True-7"></a>mod_xg <span class="o">&lt;-</span> xgboost<span class="p">(</span>sparse_matrix<span class="p">,</span> label <span class="o">=</span> trainY<span class="p">,</span> nrounds <span class="o">=</span> <span class="m">16</span><span class="p">,</span> objective <span class="o">=</span> <span class="s">&quot;reg:linear&quot;</span><span class="p">)</span></code></pre></div>
+
+<h3 id="two-stage-random-forests">Two stage Random Forests</h3>
+<p>My final serious candidate for a predictive model is a two stage Random Forest.  One of my problems with this data is the big spike at $0 income per week, and this suggests a possible way of modelling it does so in two steps:</p>
+
+<ul>
+  <li>first, fit a classification model to predict the probability of an individual, based on their characteristics, having any income at all</li>
+  <li>fit a regression model, conditional on them getting any income and trained only on those observations with non-zero income, to predict the size of their income (which may be positive or negative).</li>
+</ul>
+
+<p>The individual models could be chosen from many options but I’ve opted for Random Forests in both cases.  Because the first stage is a classification problem, I can use the more efficient H2O platform to fit it - much faster.</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a><span class="c1">#---------------------two stage approach-----------</span>
+<a name="True-2"></a><span class="c1"># this is the only method that preserves the bimodal structure of the response</span>
+<a name="True-3"></a><span class="c1"># Initiate an H2O instance that uses 4 processors and up to 2GB of RAM</span>
+<a name="True-4"></a>h2o.init<span class="p">(</span>nthreads <span class="o">=</span> <span class="m">4</span><span class="p">,</span> max_mem_size <span class="o">=</span> <span class="s">&quot;2G&quot;</span><span class="p">)</span>
+<a name="True-5"></a>
+<a name="True-6"></a>var_names <span class="o">&lt;-</span> <span class="kp">names</span><span class="p">(</span>trainData<span class="p">)[</span><span class="o">!</span><span class="kp">names</span><span class="p">(</span>trainData<span class="p">)</span> <span class="o">==</span> <span class="s">&quot;income&quot;</span><span class="p">]</span>
+<a name="True-7"></a>
+<a name="True-8"></a>trainData2 <span class="o">&lt;-</span> trainData <span class="o">%&gt;%</span>
+<a name="True-9"></a>   mutate<span class="p">(</span>income <span class="o">=</span> <span class="kp">factor</span><span class="p">(</span>income <span class="o">!=</span> <span class="m">0</span><span class="p">))</span> <span class="o">%&gt;%</span>
+<a name="True-10"></a>   as.h2o<span class="p">()</span>
+<a name="True-11"></a>
+<a name="True-12"></a>mod1 <span class="o">&lt;-</span> h2o.randomForest<span class="p">(</span>x <span class="o">=</span> var_names<span class="p">,</span> y <span class="o">=</span> <span class="s">&quot;income&quot;</span><span class="p">,</span>
+<a name="True-13"></a>                         training_frame <span class="o">=</span> trainData2<span class="p">,</span>
+<a name="True-14"></a>                         ntrees <span class="o">=</span> <span class="m">1000</span><span class="p">)</span>
+<a name="True-15"></a>
+<a name="True-16"></a>trainData3 <span class="o">&lt;-</span> trainData <span class="o">%&gt;%</span> filter<span class="p">(</span>income <span class="o">!=</span> <span class="m">0</span><span class="p">)</span> 
+<a name="True-17"></a>mod2 <span class="o">&lt;-</span> randomForest<span class="p">(</span>income <span class="o">~</span> <span class="m">.</span><span class="p">,</span> 
+<a name="True-18"></a>                     data <span class="o">=</span> trainData3<span class="p">,</span> 
+<a name="True-19"></a>                     ntree <span class="o">=</span> <span class="m">250</span><span class="p">,</span> 
+<a name="True-20"></a>                     mtry <span class="o">=</span> <span class="m">3</span><span class="p">,</span> 
+<a name="True-21"></a>                     nodesize <span class="o">=</span> <span class="m">10</span><span class="p">,</span> 
+<a name="True-22"></a>                     importance <span class="o">=</span> <span class="kc">FALSE</span><span class="p">,</span> 
+<a name="True-23"></a>                     replace <span class="o">=</span> <span class="kc">FALSE</span><span class="p">)</span></code></pre></div>
+
+<h3 id="traditional-regression-methods">Traditional regression methods</h3>
+<p>As a baseline, I also fit three more traditional linear regression models:</p>
+
+<ul>
+  <li>one with all variables</li>
+  <li>one with all variables and many of the obvious two way interactions</li>
+  <li>a stepwise selection model.</li>
+</ul>
+
+<p>I’m not a big fan of stepwise selection for all sorts of reasons but if done carefully, and you refrain from interpreting the final model as though it was specified in advance (which virtually everyone gets wrong) they have their place.  It’s certainly a worthwhile comparison point as stepwise selection still prevails in many fields despite development in recent decades of much better methods of model building.</p>
+
+<p>Here’s the code that fit those ones:</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a><span class="c1">#------------baseline linear models for reference-----------</span>
+<a name="True-2"></a>lin_basic <span class="o">&lt;-</span> lm<span class="p">(</span>income <span class="o">~</span> sex <span class="o">+</span> agegrp <span class="o">+</span> occupation <span class="o">+</span> qualification <span class="o">+</span> region <span class="o">+</span>
+<a name="True-3"></a>                   <span class="kp">sqrt</span><span class="p">(</span>hours<span class="p">)</span> <span class="o">+</span> Asian <span class="o">+</span> European <span class="o">+</span> Maori <span class="o">+</span> MELAA <span class="o">+</span> Other <span class="o">+</span> Pacific <span class="o">+</span> Residual<span class="p">,</span> 
+<a name="True-4"></a>                data <span class="o">=</span> trainData<span class="p">)</span>          <span class="c1"># first order only</span>
+<a name="True-5"></a>lin_full  <span class="o">&lt;-</span> lm<span class="p">(</span>income <span class="o">~</span> <span class="p">(</span>sex <span class="o">+</span> agegrp <span class="o">+</span> occupation <span class="o">+</span> qualification <span class="o">+</span> region <span class="o">+</span>
+<a name="True-6"></a>                   <span class="kp">sqrt</span><span class="p">(</span>hours<span class="p">)</span> <span class="o">+</span> Asian <span class="o">+</span> European <span class="o">+</span> Maori <span class="o">+</span> MELAA <span class="o">+</span> Other <span class="o">+</span> Pacific <span class="o">+</span> Residual<span class="p">)</span> <span class="o">^</span> <span class="m">2</span><span class="p">,</span> 
+<a name="True-7"></a>                data <span class="o">=</span> trainData<span class="p">)</span>  <span class="c1"># second order interactions and polynomials</span>
+<a name="True-8"></a>lin_fullish <span class="o">&lt;-</span> lm<span class="p">(</span>income <span class="o">~</span> <span class="p">(</span>sex <span class="o">+</span> Maori<span class="p">)</span> <span class="o">*</span> <span class="p">(</span>agegrp <span class="o">+</span> occupation <span class="o">+</span> qualification <span class="o">+</span> region <span class="o">+</span>
+<a name="True-9"></a>                     <span class="kp">sqrt</span><span class="p">(</span>hours<span class="p">))</span> <span class="o">+</span> Asian <span class="o">+</span> European <span class="o">+</span> MELAA <span class="o">+</span> 
+<a name="True-10"></a>                     Other <span class="o">+</span> Pacific <span class="o">+</span> Residual<span class="p">,</span>
+<a name="True-11"></a>                  data <span class="o">=</span> trainData<span class="p">)</span> <span class="c1"># selected interactions only</span>
+<a name="True-12"></a>
+<a name="True-13"></a>lin_step <span class="o">&lt;-</span> stepAIC<span class="p">(</span>lin_fullish<span class="p">,</span> k <span class="o">=</span> <span class="kp">log</span><span class="p">(</span><span class="kp">nrow</span><span class="p">(</span>trainData<span class="p">)))</span> <span class="c1"># bigger penalisation for parameters given large dataset</span></code></pre></div>
+
+<h2 id="results---predictive-power">Results - predictive power</h2>
+<p>I used root mean square error of the predictions of (transformed) income in the hold-out test set - which had not been touched so far in the model-fitting - to get an assessment of how well the various methods perform.  The results are shown in the plot below.  Extreme gradient boosting and my two stage Random Forest approaches are neck and neck, followed by the single tree and the random decision forest, with the traditional linear regressions making up the “also rans”.</p>
+
+<p><img src="/img/0026-rmse.svg" alt="rmses" /></p>
+
+<p>I was surprised to see that a humble single regression tree out-performed my home made random decision forest, but concluded that this is probably something to do with the relatively small number of explanatory variables to choose from, and the high performance of “hours worked” and “occupation” in predicting income.  A forest (or spinney…) that excludes those variables from whole trees at a time will be dragged down by trees with very little predictive power.  In contrast, Random Forests choose from a random subset of variables at each split, so excluding hours from the choice in one split doesn’t deny it to future splits in the tree, and the tree as a whole still makes a good contribution.</p>
+
+<p>It’s useful to compare at a glance the individual-level predictions of all these different models on some of the hold-out set, and I do this in the scatterplot matrix below.  The predictions from different models are highly correlated with eachother (correlation of well over 0.9 in all cases), and less strongly correlated with the actual income.  This difference is caused by the fact that the observed income includes individual level random variance, whereas all the models are predicting some kind of centre value for income given the various demographic values.  This is something I come back to in the next stage, when I want to predict a full distribution.</p>
+
+<p><img src="/img/0026-pairs-comparison.svg" alt="pairs" /></p>
+
+<p>Here’s the code that produces the predicted values of all the models on the test set and produces those summary plots:</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a><span class="c1">#---------------compare predictions on test set--------------------</span>
+<a name="True-2"></a><span class="c1"># prediction from tree</span>
+<a name="True-3"></a>tree_preds <span class="o">&lt;-</span> predict<span class="p">(</span>rpartTree<span class="p">,</span> newdata <span class="o">=</span> testData<span class="p">)</span>
+<a name="True-4"></a>
+<a name="True-5"></a><span class="c1"># prediction from the random decision forest</span>
+<a name="True-6"></a>rdf_preds <span class="o">&lt;-</span> <span class="kp">rep</span><span class="p">(</span><span class="kc">NA</span><span class="p">,</span> <span class="kp">nrow</span><span class="p">(</span>testData<span class="p">))</span>
+<a name="True-7"></a><span class="kr">for</span><span class="p">(</span>i <span class="kr">in</span> <span class="m">1</span><span class="o">:</span>reps<span class="p">){</span>
+<a name="True-8"></a>   tmp <span class="o">&lt;-</span> predict<span class="p">(</span>home_made_rf<span class="p">[[</span>i<span class="p">]],</span> newdata <span class="o">=</span> testData<span class="p">)</span>
+<a name="True-9"></a>   rdf_preds <span class="o">&lt;-</span> <span class="kp">cbind</span><span class="p">(</span>rdf_preds<span class="p">,</span> tmp<span class="p">)</span>
+<a name="True-10"></a><span class="p">}</span>
+<a name="True-11"></a>rdf_preds <span class="o">&lt;-</span> <span class="kp">apply</span><span class="p">(</span>rdf_preds<span class="p">,</span> <span class="m">1</span><span class="p">,</span> <span class="kp">mean</span><span class="p">,</span> na.rm<span class="o">=</span> <span class="kc">TRUE</span><span class="p">)</span>
+<a name="True-12"></a>
+<a name="True-13"></a><span class="c1"># prediction from random forest</span>
+<a name="True-14"></a>rf_preds <span class="o">&lt;-</span> <span class="kp">as.vector</span><span class="p">(</span>predict<span class="p">(</span>rf<span class="p">,</span> newdata <span class="o">=</span> testData<span class="p">))</span>
+<a name="True-15"></a>
+<a name="True-16"></a><span class="c1"># prediction from linear models</span>
+<a name="True-17"></a>lin_basic_preds <span class="o">&lt;-</span> predict<span class="p">(</span>lin_basic<span class="p">,</span> newdata <span class="o">=</span> testData<span class="p">)</span>
+<a name="True-18"></a>lin_full_preds <span class="o">&lt;-</span> predict<span class="p">(</span>lin_full<span class="p">,</span> newdata <span class="o">=</span> testData<span class="p">)</span>
+<a name="True-19"></a>lin_step_preds <span class="o">&lt;-</span>  predict<span class="p">(</span>lin_step<span class="p">,</span> newdata <span class="o">=</span> testData<span class="p">)</span>
+<a name="True-20"></a>
+<a name="True-21"></a><span class="c1"># prediction from extreme gradient boosting</span>
+<a name="True-22"></a>xgboost_pred <span class="o">&lt;-</span> predict<span class="p">(</span>mod_xg<span class="p">,</span> newdata <span class="o">=</span> sparse.model.matrix<span class="p">(</span>income <span class="o">~</span> <span class="m">.</span> <span class="m">-1</span><span class="p">,</span> data <span class="o">=</span> testData<span class="p">))</span>
+<a name="True-23"></a>
+<a name="True-24"></a><span class="c1"># prediction from two stage approach</span>
+<a name="True-25"></a>prob_inc <span class="o">&lt;-</span> predict<span class="p">(</span>mod1<span class="p">,</span> newdata <span class="o">=</span> as.h2o<span class="p">(</span>select<span class="p">(</span>testData<span class="p">,</span> <span class="o">-</span>income<span class="p">)),</span> type <span class="o">=</span> <span class="s">&quot;response&quot;</span><span class="p">)[</span> <span class="p">,</span> <span class="s">&quot;TRUE&quot;</span><span class="p">]</span>
+<a name="True-26"></a>pred_inc <span class="o">&lt;-</span> predict<span class="p">(</span>mod2<span class="p">,</span> newdata <span class="o">=</span> testData<span class="p">)</span>
+<a name="True-27"></a>pred_comb <span class="o">&lt;-</span> <span class="kp">as.vector</span><span class="p">(</span>prob_inc <span class="o">&gt;</span> <span class="m">0.5</span><span class="p">)</span>  <span class="o">*</span> pred_inc
+<a name="True-28"></a>h2o.shutdown<span class="p">(</span>prompt <span class="o">=</span> <span class="bp">F</span><span class="p">)</span> 
+<a name="True-29"></a>
+<a name="True-30"></a>rmse <span class="o">&lt;-</span> <span class="kp">rbind</span><span class="p">(</span>
+<a name="True-31"></a>   <span class="kt">c</span><span class="p">(</span><span class="s">&quot;BasicLinear&quot;</span><span class="p">,</span> RMSE<span class="p">(</span>lin_basic_preds<span class="p">,</span> obs <span class="o">=</span> testY<span class="p">)),</span> <span class="c1"># 21.31</span>
+<a name="True-32"></a>   <span class="kt">c</span><span class="p">(</span><span class="s">&quot;FullLinear&quot;</span><span class="p">,</span> RMSE<span class="p">(</span>lin_full_preds<span class="p">,</span> obs <span class="o">=</span> testY<span class="p">)),</span>  <span class="c1"># 21.30</span>
+<a name="True-33"></a>   <span class="kt">c</span><span class="p">(</span><span class="s">&quot;StepLinear&quot;</span><span class="p">,</span> RMSE<span class="p">(</span>lin_step_preds<span class="p">,</span> obs <span class="o">=</span> testY<span class="p">)),</span>  <span class="c1"># 21.21</span>
+<a name="True-34"></a>   <span class="kt">c</span><span class="p">(</span><span class="s">&quot;Tree&quot;</span><span class="p">,</span> RMSE<span class="p">(</span>tree_preds<span class="p">,</span> obs <span class="o">=</span> testY<span class="p">)),</span>         <span class="c1"># 20.96</span>
+<a name="True-35"></a>   <span class="kt">c</span><span class="p">(</span><span class="s">&quot;RandDecForest&quot;</span><span class="p">,</span> RMSE<span class="p">(</span>rdf_preds<span class="p">,</span> obs <span class="o">=</span> testY<span class="p">)),</span>       <span class="c1"># 21.02 - NB *worse* than the single tree!</span>
+<a name="True-36"></a>   <span class="kt">c</span><span class="p">(</span><span class="s">&quot;randomForest&quot;</span><span class="p">,</span> RMSE<span class="p">(</span>rf_preds<span class="p">,</span> obs <span class="o">=</span> testY<span class="p">)),</span>        <span class="c1"># 20.85</span>
+<a name="True-37"></a>   <span class="kt">c</span><span class="p">(</span><span class="s">&quot;XGBoost&quot;</span><span class="p">,</span> RMSE<span class="p">(</span>xgboost_pred<span class="p">,</span> obs <span class="o">=</span> testY<span class="p">)),</span>    <span class="c1"># 20.78</span>
+<a name="True-38"></a>   <span class="kt">c</span><span class="p">(</span><span class="s">&quot;TwoStageRF&quot;</span><span class="p">,</span> RMSE<span class="p">(</span>pred_comb<span class="p">,</span> obs <span class="o">=</span> testY<span class="p">))</span>       <span class="c1"># 21.11</span>
+<a name="True-39"></a>   <span class="p">)</span>
+<a name="True-40"></a>
+<a name="True-41"></a>rmse <span class="o">%&gt;%</span>
+<a name="True-42"></a>   <span class="kp">as.data.frame</span><span class="p">(</span>stringsAsFactors <span class="o">=</span> <span class="kc">FALSE</span><span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-43"></a>   mutate<span class="p">(</span>V2 <span class="o">=</span> <span class="kp">as.numeric</span><span class="p">(</span>V2<span class="p">))</span> <span class="o">%&gt;%</span>
+<a name="True-44"></a>   arrange<span class="p">(</span>V2<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-45"></a>   mutate<span class="p">(</span>V1 <span class="o">=</span> <span class="kp">factor</span><span class="p">(</span>V1<span class="p">,</span> levels <span class="o">=</span> V1<span class="p">))</span> <span class="o">%&gt;%</span>
+<a name="True-46"></a>   ggplot<span class="p">(</span>aes<span class="p">(</span>x <span class="o">=</span> V2<span class="p">,</span> y <span class="o">=</span> V1<span class="p">))</span> <span class="o">+</span>
+<a name="True-47"></a>   geom_point<span class="p">()</span> <span class="o">+</span>
+<a name="True-48"></a>   labs<span class="p">(</span>x <span class="o">=</span> <span class="s">&quot;Root Mean Square Error (smaller is better)&quot;</span><span class="p">,</span>
+<a name="True-49"></a>        y <span class="o">=</span> <span class="s">&quot;Model type&quot;</span><span class="p">,</span>
+<a name="True-50"></a>        title <span class="o">=</span> <span class="s">&quot;Predictive performance on hold-out test set of different models of individual income&quot;</span><span class="p">)</span>
+<a name="True-51"></a>
+<a name="True-52"></a><span class="c1">#------------comparing results at individual level------------</span>
+<a name="True-53"></a>pred_results <span class="o">&lt;-</span> <span class="kt">data.frame</span><span class="p">(</span>
+<a name="True-54"></a>   BasicLinear <span class="o">=</span> lin_basic_preds<span class="p">,</span>
+<a name="True-55"></a>   FullLinear <span class="o">=</span> lin_full_preds<span class="p">,</span>
+<a name="True-56"></a>   StepLinear <span class="o">=</span> lin_step_preds<span class="p">,</span>
+<a name="True-57"></a>   Tree <span class="o">=</span> tree_preds<span class="p">,</span>
+<a name="True-58"></a>   RandDecForest <span class="o">=</span> rdf_preds<span class="p">,</span>
+<a name="True-59"></a>   randomForest <span class="o">=</span> rf_preds<span class="p">,</span>
+<a name="True-60"></a>   XGBoost <span class="o">=</span> xgboost_pred<span class="p">,</span>
+<a name="True-61"></a>   TwoStageRF <span class="o">=</span> pred_comb<span class="p">,</span>
+<a name="True-62"></a>   Actual <span class="o">=</span> testY
+<a name="True-63"></a><span class="p">)</span>
+<a name="True-64"></a>
+<a name="True-65"></a>pred_res_small <span class="o">&lt;-</span> pred_results<span class="p">[</span><span class="kp">sample</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="kp">nrow</span><span class="p">(</span>pred_results<span class="p">),</span> <span class="m">1000</span><span class="p">),]</span>
+<a name="True-66"></a>
+<a name="True-67"></a>ggpairs<span class="p">(</span>pred_res_small<span class="p">)</span></code></pre></div>
+
+<h2 id="building-the-shiny-app">Building the Shiny app</h2>
+<p>There’s a few small preparatory steps now before I can put the results of my model into an interactive web app, which will be built with Shiny.</p>
+
+<p>I opt for the two stage Random Forest model as the best way of re-creating the income distribution.  It will let me create simulated data with a spike at zero dollars of income in a way none of the other models (which focus just on averages) will do; plus it has equal best (with extreme gradient boosting) in overall predictive power.</p>
+
+<h3 id="adding-back-in-individual-level-variation">Adding back in individual level variation</h3>
+
+<p>After refitting my final model to the full dataset, my first substantive problem is to recreate the full distribution, with individual level randomness, not just a predicted value at each point.  On my transformed scale for income, the residuals from the models are fairly homoskedastic, so decide that the Shiny app will simulate a population at any point by sampling with replacement from the residuals of the second stage model.</p>
+
+<p>I save the models, the residauals, and the various dimension variables for my Shiny app.</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a><span class="c1">#----------------shiny app-------------</span>
+<a name="True-2"></a><span class="c1"># dimension variables for the user interface:</span>
+<a name="True-3"></a>d_sex <span class="o">&lt;-</span> <span class="kp">sort</span><span class="p">(</span><span class="kp">as.character</span><span class="p">(</span><span class="kp">unique</span><span class="p">(</span>nzis<span class="o">$</span>sex<span class="p">)))</span>
+<a name="True-4"></a>d_agegrp <span class="o">&lt;-</span> <span class="kp">sort</span><span class="p">(</span><span class="kp">as.character</span><span class="p">(</span><span class="kp">unique</span><span class="p">(</span>nzis<span class="o">$</span>agegrp<span class="p">)))</span>
+<a name="True-5"></a>d_occupation <span class="o">&lt;-</span> <span class="kp">sort</span><span class="p">(</span><span class="kp">as.character</span><span class="p">(</span><span class="kp">unique</span><span class="p">(</span>nzis<span class="o">$</span>occupation<span class="p">)))</span>
+<a name="True-6"></a>d_qualification <span class="o">&lt;-</span> <span class="kp">sort</span><span class="p">(</span><span class="kp">as.character</span><span class="p">(</span><span class="kp">unique</span><span class="p">(</span>nzis<span class="o">$</span>qualification<span class="p">)))</span>
+<a name="True-7"></a>d_region <span class="o">&lt;-</span> <span class="kp">sort</span><span class="p">(</span><span class="kp">as.character</span><span class="p">(</span><span class="kp">unique</span><span class="p">(</span>nzis<span class="o">$</span>region<span class="p">)))</span>
+<a name="True-8"></a>
+<a name="True-9"></a><span class="kp">save</span><span class="p">(</span>d_sex<span class="p">,</span> d_agegrp<span class="p">,</span> d_occupation<span class="p">,</span> d_qualification<span class="p">,</span> d_region<span class="p">,</span>
+<a name="True-10"></a>     file <span class="o">=</span> <span class="s">&quot;_output/0026-shiny/dimensions.rda&quot;</span><span class="p">)</span>
+<a name="True-11"></a>
+<a name="True-12"></a><span class="c1"># tidy up data of full dataset, combining various ethnicities into an &#39;other&#39; category:     </span>
+<a name="True-13"></a>nzis_shiny <span class="o">&lt;-</span> nzis <span class="o">%&gt;%</span> 
+<a name="True-14"></a>   select<span class="p">(</span><span class="o">-</span>use<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-15"></a>   mutate<span class="p">(</span>Other <span class="o">=</span> <span class="kp">factor</span><span class="p">(</span><span class="kp">ifelse</span><span class="p">(</span>Other <span class="o">==</span> <span class="s">&quot;Yes&quot;</span> <span class="o">|</span> Residual <span class="o">==</span> <span class="s">&quot;Yes&quot;</span> <span class="o">|</span> MELAA <span class="o">==</span> <span class="s">&quot;Yes&quot;</span><span class="p">,</span>
+<a name="True-16"></a>                         <span class="s">&quot;Yes&quot;</span><span class="p">,</span> <span class="s">&quot;No&quot;</span><span class="p">)))</span> <span class="o">%&gt;%</span>
+<a name="True-17"></a>   select<span class="p">(</span><span class="o">-</span>MELAA<span class="p">,</span> <span class="o">-</span>Residual<span class="p">)</span>
+<a name="True-18"></a>   
+<a name="True-19"></a><span class="kr">for</span><span class="p">(</span>col <span class="kr">in</span> <span class="kt">c</span><span class="p">(</span><span class="s">&quot;European&quot;</span><span class="p">,</span> <span class="s">&quot;Asian&quot;</span><span class="p">,</span> <span class="s">&quot;Maori&quot;</span><span class="p">,</span> <span class="s">&quot;Other&quot;</span><span class="p">,</span> <span class="s">&quot;Pacific&quot;</span><span class="p">)){</span>
+<a name="True-20"></a>   nzis_shiny<span class="p">[</span> <span class="p">,</span> <span class="kp">col</span><span class="p">]</span>   <span class="o">&lt;-</span> <span class="kp">ifelse</span><span class="p">(</span>nzis_shiny<span class="p">[</span> <span class="p">,</span> <span class="kp">col</span><span class="p">]</span> <span class="o">==</span> <span class="s">&quot;Yes&quot;</span><span class="p">,</span> <span class="m">1</span><span class="p">,</span> <span class="m">0</span><span class="p">)</span>
+<a name="True-21"></a>   <span class="p">}</span>
+<a name="True-22"></a>
+<a name="True-23"></a><span class="c1"># Refit the models to the full dataset</span>
+<a name="True-24"></a><span class="c1"># income a binomial response for first model</span>
+<a name="True-25"></a>nzis_rf <span class="o">&lt;-</span> nzis_shiny <span class="o">%&gt;%</span>  mutate<span class="p">(</span>income <span class="o">=</span> <span class="kp">factor</span><span class="p">(</span>income <span class="o">!=</span><span class="m">0</span><span class="p">))</span>
+<a name="True-26"></a>mod1_shiny <span class="o">&lt;-</span> randomForest<span class="p">(</span>income <span class="o">~</span> <span class="m">.</span><span class="p">,</span> data <span class="o">=</span> nzis_rf<span class="p">,</span>
+<a name="True-27"></a>                           ntree <span class="o">=</span> <span class="m">500</span><span class="p">,</span> importance <span class="o">=</span> <span class="kc">FALSE</span><span class="p">,</span> mtry <span class="o">=</span> <span class="m">3</span><span class="p">,</span> nodesize <span class="o">=</span> <span class="m">5</span><span class="p">)</span>
+<a name="True-28"></a><span class="kp">save</span><span class="p">(</span>mod1_shiny<span class="p">,</span> file <span class="o">=</span> <span class="s">&quot;_output/0026-shiny/mod1.rda&quot;</span><span class="p">)</span>
+<a name="True-29"></a>
+<a name="True-30"></a>nzis_nonzero <span class="o">&lt;-</span> <span class="kp">subset</span><span class="p">(</span>nzis_shiny<span class="p">,</span> income <span class="o">!=</span> <span class="m">0</span><span class="p">)</span> 
+<a name="True-31"></a>
+<a name="True-32"></a>mod2_shiny <span class="o">&lt;-</span> randomForest<span class="p">(</span>income <span class="o">~</span> <span class="m">.</span><span class="p">,</span> data <span class="o">=</span> nzis_nonzero<span class="p">,</span> ntree <span class="o">=</span> <span class="m">500</span><span class="p">,</span> mtry <span class="o">=</span> <span class="m">3</span><span class="p">,</span> 
+<a name="True-33"></a>                           nodesize <span class="o">=</span> <span class="m">10</span><span class="p">,</span> importance <span class="o">=</span> <span class="kc">FALSE</span><span class="p">,</span> replace <span class="o">=</span> <span class="kc">FALSE</span><span class="p">)</span>
+<a name="True-34"></a>
+<a name="True-35"></a>res <span class="o">&lt;-</span> predict<span class="p">(</span>mod2_shiny<span class="p">)</span> <span class="o">-</span> nzis_pos<span class="o">$</span>income
+<a name="True-36"></a>nzis_skeleton <span class="o">&lt;-</span> nzis_shiny<span class="p">[</span><span class="m">0</span><span class="p">,</span> <span class="p">]</span>
+<a name="True-37"></a>all_income <span class="o">&lt;-</span> nzis<span class="o">$</span>income
+<a name="True-38"></a>
+<a name="True-39"></a><span class="kp">save</span><span class="p">(</span>mod2_shiny<span class="p">,</span> res<span class="p">,</span> nzis_skeleton<span class="p">,</span> all_income<span class="p">,</span> nzis_shiny<span class="p">,</span>
+<a name="True-40"></a>   file <span class="o">=</span> <span class="s">&quot;_output/0026-shiny/models.rda&quot;</span><span class="p">)</span></code></pre></div>
+
+<h3 id="contextual-information---how-many-people-are-like-that-anyway">Contextual information - how many people are like “that” anyway?</h3>
+<p>After my first iteration of the web app, I realised that it could be badly misleading by giving a full distribution for a non-existent combination of demographic variables.  For example, Maori female managers aged 15-19 with Bachelor or Higher qualification and living in Southland (predicted to have median weekly income of $932 for what it’s worth).</p>
+
+<p>I realised that for meaningful context I needed a model that estimated the number of people in New Zealand with the particular combination of demographics selected.  This is something that traditional survey estimation methods don’t provide, because individuals in the sample are weighted to represent a discrete number of exactly similar people in the population; there’s no “smoothing” impact allowing you to widen inferences to similar but not-identical people.</p>
+
+<p>Fortunately this problem is simpler than the income modelling problem above and I use a straightforward generalized linear model with a Poisson response to create the seeds of such a model, with smoothed estimates of the number of people for each combination of demographics.  I then can use iterative proportional fitting to force the marginal totals for each explanatory variable to match the population totals that were used to weight the original New Zealand Income Survey.  Explaining this probably deserves a post of its own, but no time for that now.</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a><span class="c1">#---------------population--------</span>
+<a name="True-2"></a>
+<a name="True-3"></a>nzis_pop <span class="o">&lt;-</span> <span class="kp">expand.grid</span><span class="p">(</span>d_sex<span class="p">,</span> d_agegrp<span class="p">,</span> d_occupation<span class="p">,</span> d_qualification<span class="p">,</span> d_region<span class="p">,</span>
+<a name="True-4"></a>                        <span class="kt">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span> <span class="m">0</span><span class="p">),</span> <span class="kt">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span> <span class="m">0</span><span class="p">),</span> <span class="kt">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span> <span class="m">0</span><span class="p">),</span> <span class="kt">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span> <span class="m">0</span><span class="p">),</span> <span class="kt">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span> <span class="m">0</span><span class="p">))</span>
+<a name="True-5"></a><span class="kp">names</span><span class="p">(</span>nzis_pop<span class="p">)</span> <span class="o">&lt;-</span>  <span class="kt">c</span><span class="p">(</span><span class="s">&quot;sex&quot;</span><span class="p">,</span> <span class="s">&quot;agegrp&quot;</span><span class="p">,</span> <span class="s">&quot;occupation&quot;</span><span class="p">,</span> <span class="s">&quot;qualification&quot;</span><span class="p">,</span> <span class="s">&quot;region&quot;</span><span class="p">,</span>
+<a name="True-6"></a>                      <span class="s">&quot;European&quot;</span><span class="p">,</span> <span class="s">&quot;Maori&quot;</span><span class="p">,</span> <span class="s">&quot;Asian&quot;</span><span class="p">,</span> <span class="s">&quot;Pacific&quot;</span><span class="p">,</span> <span class="s">&quot;Other&quot;</span><span class="p">)</span>
+<a name="True-7"></a>nzis_pop<span class="o">$</span>count <span class="o">&lt;-</span> <span class="m">0</span>
+<a name="True-8"></a><span class="kr">for</span><span class="p">(</span>col <span class="kr">in</span> <span class="kt">c</span><span class="p">(</span><span class="s">&quot;European&quot;</span><span class="p">,</span> <span class="s">&quot;Asian&quot;</span><span class="p">,</span> <span class="s">&quot;Maori&quot;</span><span class="p">,</span> <span class="s">&quot;Other&quot;</span><span class="p">,</span> <span class="s">&quot;Pacific&quot;</span><span class="p">)){</span>
+<a name="True-9"></a> nzis_pop<span class="p">[</span> <span class="p">,</span> <span class="kp">col</span><span class="p">]</span>   <span class="o">&lt;-</span> <span class="kp">as.numeric</span><span class="p">(</span>nzis_pop<span class="p">[</span> <span class="p">,</span> <span class="kp">col</span><span class="p">])</span>
+<a name="True-10"></a><span class="p">}</span>
+<a name="True-11"></a>
+<a name="True-12"></a>nzis_pop <span class="o">&lt;-</span> nzis_shiny <span class="o">%&gt;%</span>
+<a name="True-13"></a>   select<span class="p">(</span><span class="o">-</span>hours<span class="p">,</span> <span class="o">-</span>income<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-14"></a>   mutate<span class="p">(</span>count <span class="o">=</span> <span class="m">1</span><span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-15"></a>   <span class="kp">rbind</span><span class="p">(</span>nzis_pop<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-16"></a>   group_by<span class="p">(</span>sex<span class="p">,</span> agegrp<span class="p">,</span> occupation<span class="p">,</span> qualification<span class="p">,</span> region<span class="p">,</span> 
+<a name="True-17"></a>             European<span class="p">,</span> Maori<span class="p">,</span> Asian<span class="p">,</span> Pacific<span class="p">,</span> Other<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-18"></a>   summarise<span class="p">(</span>count <span class="o">=</span> <span class="kp">sum</span><span class="p">(</span>count<span class="p">))</span> <span class="o">%&gt;%</span>
+<a name="True-19"></a>   ungroup<span class="p">()</span> <span class="o">%&gt;%</span>
+<a name="True-20"></a>   mutate<span class="p">(</span>Ethnicities <span class="o">=</span> European <span class="o">+</span> Maori <span class="o">+</span> Asian <span class="o">+</span> Pacific <span class="o">+</span> Other<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-21"></a>   filter<span class="p">(</span>Ethnicities <span class="o">%in%</span> <span class="m">1</span><span class="o">:</span><span class="m">2</span><span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-22"></a>   select<span class="p">(</span><span class="o">-</span>Ethnicities<span class="p">)</span>
+<a name="True-23"></a>
+<a name="True-24"></a><span class="c1"># this pushes my little 4GB of memory to its limits:</span>
+<a name="True-25"></a> mod3 <span class="o">&lt;-</span> glm<span class="p">(</span>count <span class="o">~</span> <span class="p">(</span>sex <span class="o">+</span> Maori<span class="p">)</span> <span class="o">*</span> <span class="p">(</span>agegrp <span class="o">+</span> occupation <span class="o">+</span> qualification<span class="p">)</span> <span class="o">+</span> region <span class="o">+</span> 
+<a name="True-26"></a>                Maori<span class="o">:</span>region <span class="o">+</span> occupation<span class="o">:</span>qualification <span class="o">+</span> agegrp<span class="o">:</span>occupation <span class="o">+</span>
+<a name="True-27"></a>                agegrp<span class="o">:</span>qualification<span class="p">,</span> 
+<a name="True-28"></a>             data <span class="o">=</span> nzis_pop<span class="p">,</span> family <span class="o">=</span> poisson<span class="p">)</span>
+<a name="True-29"></a> 
+<a name="True-30"></a> nzis_pop<span class="o">$</span>pop <span class="o">&lt;-</span> predict<span class="p">(</span>mod3<span class="p">,</span> type <span class="o">=</span> <span class="s">&quot;response&quot;</span><span class="p">)</span>
+<a name="True-31"></a>
+<a name="True-32"></a><span class="c1"># total population should be (1787 + 1410) * 1000 = 319700.  But we also want</span>
+<a name="True-33"></a><span class="c1"># the marginal totals (eg all men, or all women) to match the sum of weights</span>
+<a name="True-34"></a><span class="c1"># in the NZIS (where wts = 319700 / 28900 = 1174).  So we use the raking method</span>
+<a name="True-35"></a><span class="c1"># for iterative proportional fitting of survey weights</span>
+<a name="True-36"></a>
+<a name="True-37"></a>wt <span class="o">&lt;-</span> <span class="m">1174</span>
+<a name="True-38"></a>
+<a name="True-39"></a>sex_pop <span class="o">&lt;-</span> nzis_shiny <span class="o">%&gt;%</span>
+<a name="True-40"></a>   group_by<span class="p">(</span>sex<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-41"></a>   summarise<span class="p">(</span>freq <span class="o">=</span> <span class="kp">length</span><span class="p">(</span>sex<span class="p">)</span> <span class="o">*</span> wt<span class="p">)</span>
+<a name="True-42"></a>
+<a name="True-43"></a>agegrp_pop <span class="o">&lt;-</span> nzis_shiny <span class="o">%&gt;%</span>
+<a name="True-44"></a>   group_by<span class="p">(</span>agegrp<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-45"></a>   summarise<span class="p">(</span>freq <span class="o">=</span> <span class="kp">length</span><span class="p">(</span>agegrp<span class="p">)</span> <span class="o">*</span> wt<span class="p">)</span>
+<a name="True-46"></a>
+<a name="True-47"></a>occupation_pop <span class="o">&lt;-</span> nzis_shiny <span class="o">%&gt;%</span>
+<a name="True-48"></a>   group_by<span class="p">(</span>occupation<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-49"></a>   summarise<span class="p">(</span>freq <span class="o">=</span> <span class="kp">length</span><span class="p">(</span>occupation<span class="p">)</span> <span class="o">*</span> wt<span class="p">)</span>
+<a name="True-50"></a>
+<a name="True-51"></a>qualification_pop <span class="o">&lt;-</span> nzis_shiny <span class="o">%&gt;%</span>
+<a name="True-52"></a>   group_by<span class="p">(</span>qualification<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-53"></a>   summarise<span class="p">(</span>freq <span class="o">=</span> <span class="kp">length</span><span class="p">(</span>qualification<span class="p">)</span> <span class="o">*</span> wt<span class="p">)</span>
+<a name="True-54"></a>
+<a name="True-55"></a>region_pop <span class="o">&lt;-</span> nzis_shiny <span class="o">%&gt;%</span>
+<a name="True-56"></a>   group_by<span class="p">(</span>region<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-57"></a>   summarise<span class="p">(</span>freq <span class="o">=</span> <span class="kp">length</span><span class="p">(</span>region<span class="p">)</span> <span class="o">*</span> wt<span class="p">)</span>
+<a name="True-58"></a>
+<a name="True-59"></a>European_pop <span class="o">&lt;-</span> nzis_shiny <span class="o">%&gt;%</span>
+<a name="True-60"></a>   group_by<span class="p">(</span>European<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-61"></a>   summarise<span class="p">(</span>freq <span class="o">=</span> <span class="kp">length</span><span class="p">(</span>European<span class="p">)</span> <span class="o">*</span> wt<span class="p">)</span>
+<a name="True-62"></a>
+<a name="True-63"></a>Asian_pop <span class="o">&lt;-</span> nzis_shiny <span class="o">%&gt;%</span>
+<a name="True-64"></a>   group_by<span class="p">(</span>Asian<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-65"></a>   summarise<span class="p">(</span>freq <span class="o">=</span> <span class="kp">length</span><span class="p">(</span>Asian<span class="p">)</span> <span class="o">*</span> wt<span class="p">)</span>
+<a name="True-66"></a>
+<a name="True-67"></a>Maori_pop <span class="o">&lt;-</span> nzis_shiny <span class="o">%&gt;%</span>
+<a name="True-68"></a>   group_by<span class="p">(</span>Maori<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-69"></a>   summarise<span class="p">(</span>freq <span class="o">=</span> <span class="kp">length</span><span class="p">(</span>Maori<span class="p">)</span> <span class="o">*</span> wt<span class="p">)</span>
+<a name="True-70"></a>
+<a name="True-71"></a>Pacific_pop <span class="o">&lt;-</span> nzis_shiny <span class="o">%&gt;%</span>
+<a name="True-72"></a>   group_by<span class="p">(</span>Pacific<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-73"></a>   summarise<span class="p">(</span>freq <span class="o">=</span> <span class="kp">length</span><span class="p">(</span>Pacific<span class="p">)</span> <span class="o">*</span> wt<span class="p">)</span>
+<a name="True-74"></a>
+<a name="True-75"></a>Other_pop <span class="o">&lt;-</span> nzis_shiny <span class="o">%&gt;%</span>
+<a name="True-76"></a>   group_by<span class="p">(</span>Other<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-77"></a>   summarise<span class="p">(</span>freq <span class="o">=</span> <span class="kp">length</span><span class="p">(</span>Other<span class="p">)</span> <span class="o">*</span> wt<span class="p">)</span>
+<a name="True-78"></a>
+<a name="True-79"></a>nzis_svy <span class="o">&lt;-</span> svydesign<span class="p">(</span><span class="o">~</span><span class="m">1</span><span class="p">,</span> data <span class="o">=</span> nzis_pop<span class="p">,</span> weights <span class="o">=</span> <span class="o">~</span>pop<span class="p">)</span>
+<a name="True-80"></a>
+<a name="True-81"></a>nzis_raked <span class="o">&lt;-</span> rake<span class="p">(</span>nzis_svy<span class="p">,</span>
+<a name="True-82"></a>                   sample <span class="o">=</span> <span class="kt">list</span><span class="p">(</span><span class="o">~</span>sex<span class="p">,</span> <span class="o">~</span>agegrp<span class="p">,</span> <span class="o">~</span>occupation<span class="p">,</span> 
+<a name="True-83"></a>                                 <span class="o">~</span>qualification<span class="p">,</span> <span class="o">~</span>region<span class="p">,</span> <span class="o">~</span>European<span class="p">,</span>
+<a name="True-84"></a>                                 <span class="o">~</span>Maori<span class="p">,</span> <span class="o">~</span>Pacific<span class="p">,</span> <span class="o">~</span>Asian<span class="p">,</span> <span class="o">~</span>Other<span class="p">),</span>
+<a name="True-85"></a>                   population <span class="o">=</span> <span class="kt">list</span><span class="p">(</span>sex_pop<span class="p">,</span> agegrp_pop<span class="p">,</span> occupation_pop<span class="p">,</span>
+<a name="True-86"></a>                                     qualification_pop<span class="p">,</span> region_pop<span class="p">,</span> European_pop<span class="p">,</span>
+<a name="True-87"></a>                                     Maori_pop<span class="p">,</span> Pacific_pop<span class="p">,</span> Asian_pop<span class="p">,</span> Other_pop<span class="p">),</span>
+<a name="True-88"></a>                   control <span class="o">=</span> <span class="kt">list</span><span class="p">(</span>maxit <span class="o">=</span> <span class="m">20</span><span class="p">,</span> verbose <span class="o">=</span> <span class="kc">FALSE</span><span class="p">))</span>
+<a name="True-89"></a>
+<a name="True-90"></a>nzis_pop<span class="o">$</span>pop <span class="o">&lt;-</span> weights<span class="p">(</span>nzis_raked<span class="p">)</span>
+<a name="True-91"></a>
+<a name="True-92"></a><span class="kp">save</span><span class="p">(</span>nzis_pop<span class="p">,</span> file <span class="o">=</span> <span class="s">&quot;_output/0026-shiny/nzis_pop.rda&quot;</span><span class="p">)</span></code></pre></div>
+
+<h3 id="the-final-shiny-app">The final shiny app</h3>
+
+<ul>
+  <li>The <a href="https://ellisp.shinyapps.io/NZIS">full screen version</a>  of the web app</li>
+  <li>The <a href="https://github.com/ellisp/ellisp.github.io/tree/source/_working/_output/0026-shiny">source code</a></li>
+</ul>
+
+
+
+</div>
+
+<div class = "container">
+   <div class="col-md-4">
+    
+        <a rel="prev" href="/blog/2015/12/29/Rrobot-born">
+        <p>&larr; Older</p>
+        <p>A (not too talkative) twitterbot is born</p>
+        
+        </a>
+    
+    </div>
+    <div class="col-md-4">
+    </div>
+    <div class="col-md-4" style="text-align: right;">
+    
+      </div>
+      </div>
+      
+      
+      
+</div>
+
+
+   
+    <div id="disqus_thread"></div>
+
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+    
+    
+   
+			
+			</div><!-- /.container -->
+
+         
+
+   <div class = "container footer">
+			<footer>
+	    		
+            <p>Follow <a href = "/feed.xml">this blog with RSS</a>.  Or follow <a href = "/feed.r.xml">posts in this blog featuring R with RSS</a>.</p>
+	
+            <p>This blog is built with <a href = "http://jekyllrb.com/">Jekyll</a>, <a href = "http://getbootstrap.com/">Bootstrap</a>, <a href = "https://www.ruby-lang.org/en/">Ruby</a> and <a href = "https://cran.r-project.org/">R</a>.  Read my <a href="/about/acknowledgements.html">acknowledgements</a> for a little more on how.  I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Peter's stats stuff</span> by <a xmlns:cc="http://creativecommons.org/ns#" href="/" property="cc:attributionName" rel="cc:attributionURL">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+
+
+			</footer>
+    </div>
+
+
+
+  
+</body>
+</html>
+   
+
+
+
+
+         
