@@ -7,6 +7,8 @@ library(Mcomp)
 library(tidyr)
 library(dplyr)
 
+source("https://raw.githubusercontent.com/ellisp/forecast/dev/R/hybridf.R")
+
 font.add.google("Poppins", "myfont")
 showtext.auto()
 theme_set(theme_light(base_family = "myfont"))
@@ -28,6 +30,7 @@ pi_accuracy <- function(fc, yobs){
    
 }
 
+#============with default values===============
 num_series <- length(M3)
 results <- matrix(0, nrow = num_series, ncol = 7)
 
@@ -38,15 +41,14 @@ for(i in 1:num_series){
    xx <- series$xx
    h <- length(xx)
    
-   fc1 <- forecast(ets(x), h = h)
-   results[i, 1:2] <- pi_accuracy(fc1, xx)$Success
-   
-   fc2 <- forecast(auto.arima(x), h = h)
-   results[i, 3:4] <- pi_accuracy(fc2, xx)$Success
-   
-   
    fc3 <- hybridf(x, h = h)
    results[i, 5:6] <- pi_accuracy(fc3, xx)$Success
+   
+   fc1 <- fc3$fc_ets
+   results[i, 1:2] <- pi_accuracy(fc1, xx)$Success
+   
+   fc2 <- fc3$fc_aa
+   results[i, 3:4] <- pi_accuracy(fc2, xx)$Success
    
    results[i, 7] <- h
 }
@@ -62,13 +64,67 @@ results %>%
    group_by(variable) %>%
    summarise(Success = round(sum(weighted_value) / sum(h), 2))
 
-par(mfrow = c(3, 1))
-plot(fc1)
+
+results %>%
+   gather(variable, value, -h) %>%
+   mutate(Level = ifelse(grepl("p80", variable), "80%", "95%"),
+          Level = factor(Level, levels = c("95%", "80%")),
+          variable = gsub("_p[0-9].", "", variable)) %>%
+   ggplot(aes(x = h, y = value, colour = Level)) +
+   facet_grid(Level~variable) +
+   scale_y_continuous("Percentage of actual results within forecast prediction interval\n",
+                      label = percent, breaks = c(0, .25, .5, .75, .8, .95, 1)) +
+   labs(x = "Forecast period", colour = "Desired level") +
+   ggtitle("Prediction interval success for three forecasting methods on 3003 M3 timeseries") +
+   geom_jitter(alpha = 0.2, width = 1.3, height = 0.1, shape = 1) +
+   geom_smooth(se = FALSE, method = "lm") +
+   theme(panel.grid.minor = element_blank())
+
+
+
+par(mfrow = c(3, 1), bty = "l")
+plot(fc1); grid()
 lines(xx, col = "red")
-plot(fc2)
+plot(fc2); grid()
 lines(xx, col = "red")
-plot(fc3)
+plot(fc3); grid()
 lines(xx, col = "red")
 
 
 colMeans(results)
+
+
+#=====with bootstrapping instead of formulae for the prediction intervals=============
+
+num_series <- length(M3)
+resultsb <- matrix(0, nrow = num_series, ncol = 7)
+
+for(i in 1:num_series){
+   cat(i, " ")
+   series <- M3[[i]]
+   x <- series$x
+   xx <- series$xx
+   h <- length(xx)
+   
+   fc3 <- hybridf(x, h = h, simulate = TRUE, bootstrap.ets = TRUE, bootstrap.aa = TRUE)
+   resultsb[i, 5:6] <- pi_accuracy(fc3, xx)$Success
+   
+   fc1 <- fc3$fc_ets
+   resultsb[i, 1:2] <- pi_accuracy(fc1, xx)$Success
+   
+   fc2 <- fc3$fc_aa
+   resultsb[i, 3:4] <- pi_accuracy(fc2, xx)$Success
+   
+   resultsb[i, 7] <- h
+}
+
+resultsb <- as.data.frame(resultsb)
+
+names(resultsb) <- c("ets_p80", "ets_p95", "auto.arima_p80", "auto.arima_p95",
+                    "hybrid_p80", "hybrid_p95", "h")
+
+resultsb %>% 
+   gather(variable, value, -h) %>%
+   mutate(weighted_value = value * h) %>%
+   group_by(variable) %>%
+   summarise(Success = round(sum(weighted_value) / sum(h), 2))
