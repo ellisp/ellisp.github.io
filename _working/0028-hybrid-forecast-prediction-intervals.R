@@ -2,12 +2,14 @@
 library(showtext)
 library(ggplot2)
 library(scales)
-library(forecast) # probably should rebuild this as a fork
+library(forecast)
 library(Mcomp)
 library(tidyr)
 library(dplyr)
 library(knitr) # for kable
 
+library(devtools)
+install_github("robjhyndman/forecast") 
 source("https://raw.githubusercontent.com/ellisp/forecast/dev/R/hybridf.R")
 
 font.add.google("Poppins", "myfont")

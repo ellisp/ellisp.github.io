@@ -28,8 +28,12 @@ Forecasting makes me nervous, and in my day job when the reality is noticeably d
 ## Introducing hybridf()
 I like combining auto.arima() and ets() for a quick, effective hybrid forecast that is probably as good as can be hoped for with a univariate series.  In fact, it's the sort of thing that could easily be done thousands of times in a day so to make it more convenient I created a function hybridf() that does this for me in R and produces an object of class "forecast".  This means that I can fit a forecast with one line of code and that other functionality Hyndman developed for that class, like the standard forecast plot, can be used on the resulting object.  Here it is in action with the monthly time series of accidental deaths in the USA from 1973 to 1978, used in Brockwell and Davis' 1991 <i>Time Series: Theory and Methods</i> and one of R's in-built datasets.
 {% highlight R lineanchors %}
+library(devtools)
+install_github("robjhyndman/forecast") # development version needed sorry
 library(forecast)
-source("https://raw.githubusercontent.com/ellisp/forecast/dev/R/hybridf.R") 
+
+source("https://raw.githubusercontent.com/ellisp/forecast/dev/R/hybridf.R")
+
 fc <- hybridf(USAccDeaths)
 par(mfrow = c(3, 1), bty = "l")
 plot(fc)

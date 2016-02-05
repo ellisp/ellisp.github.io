@@ -570,7 +570,7 @@ nzis_pop <- nzis_shiny %>%
  
  nzis_pop$pop <- predict(mod3, type = "response")
 
-# total population should be (1787 + 1410) * 1000 = 319700.  But we also want
+# total population should be (1787 + 1674) * 1000 = 3197000.  But we also want
 # the marginal totals (eg all men, or all women) to match the sum of weights
 # in the NZIS (where wts = 319700 / 28900 = 1174).  So we use the raking method
 # for iterative proportional fitting of survey weights
@@ -579,7 +579,7 @@ nzis_pop <- nzis_shiny %>%
  
  h2o.shutdown(prompt = F) 
 
-wt <- 1174
+wt <- 117.4
 
 sex_pop <- nzis_shiny %>%
    group_by(sex) %>%
@@ -633,6 +633,9 @@ nzis_raked <- rake(nzis_svy,
                    control = list(maxit = 20, verbose = FALSE))
 
 nzis_pop$pop <- weights(nzis_raked)
+if(round(sum(nzis_pop$pop), -4) != 3460000){
+   stop("You've got the wrong population of working age New Zealanders.")
+}
 
 save(nzis_pop, file = "_output/0026-shiny/nzis_pop.rda")
 shinyapps::deployApp("_output/0026-shiny", "NZIS", account = "ellisp")
