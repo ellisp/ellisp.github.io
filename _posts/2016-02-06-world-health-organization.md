@@ -1,3 +1,42 @@
+---
+layout: post
+title: Data from the World Health Organization API
+date: 2016-02-06
+tag: 
+   - OpenData
+   - DataFromTheWeb
+   - Health
+   - R
+description: Eric Persson's new WHO package makes it easy for R users to access data from the World Health Organization
+image: /img/0029-scatter.png
+socialimage: http://ellisp.github.io/img/0029-scatter.png
+category: R
+---
+
+Eric Persson released yesterday a new [WHO R package](https://cran.r-project.org/web/packages/WHO/index.html) which allows easy access to the [World Health Organization](http://www.who.int)'s data API.  He's also done a [nice vignette](https://cran.r-project.org/web/packages/WHO/vignettes/who_vignette.html) introducing its use.
+
+I had a play and found it was easy access to some interesting data.  Some time down the track I might do a comparison of this with other sources, the most obvious being the World Bank's World Development Indicators, to identify relative advantages - there's a lot of duplication of course.  It's a nice problem to have, too much data that's too easy to get hold of.  I wish we'd had that problem when I studied aid and development last century - I vividly remember re-keying numbers from almanac-like hard copy publications, and pleased we were to have them too!
+
+Here's a plot showing country-level relationships between the latest data of three indicators - access to contraception, adolescent fertility, and infant mortality - that help track the Millennium Development Goals.
+<iframe src="/img/0029-scatter.html" style = "overflow-y: hidden;" width = "800px" height = "650px"></iframe>
+
+Note that there's some micro-interactivity here - you can move the labels around, zoom in on a part of the plot, or reposition the whole thing.  It's easier to explor in the [full screen version](/img/0029-scatter.html).  Thanks to [Julien Barnier's scatterD3](https://github.com/juba/scatterD3) R package for making this JavaScript D3 functionality easily available from R.
+
+Here are the exploratory plots I made on the way to that.  All the code is reproduced at the bottom of the post.
+
+Infant mortality has been increasing steadily since 1990 when these data start, and in fact from decades before too.  Sad blip in Haiti from the 2010 earthquake:
+![MDG1](/img/0029-mdg1.svg)
+
+The data on adolescent fertility is surprisingly sparse, with only one data point per country and many of them quite old.  While Africa is often in a class of its own on development indicators, this graphic might surprise people in showing how much teen pregnancy is such an issue in Africa (note that the inclusion of Sudan and Somalia in "Eastern Mediterranean" region wasn't done by me):
+![MDG3](/img/0029-mdg3.svg)
+
+
+Data on contraception use is also sparse; mostly one data point per country, but a few have two.  There's not much that stands out here other than the high usage in the wealthier countries of Europe (the blue ones) and low in the poor countries of Africa (red). 
+![MDG5](/img/0029-mdg5.svg)
+
+
+Here's the R code that did that.  Hopefully other people will pick up on this - good work from the WHO for their database and API, and Eric Persson for making it easy to access from R.
+{% highlight R lineanchors %}
 # basic functionality
 library(WHO)
 library(dplyr)
@@ -146,5 +185,5 @@ scatterD3(x = comb$Contra, y = comb$AdolFert, lab = comb$country,
           size_lab = "Infant Mortality per 1000",
           ellipses = TRUE, ellipses_level = 0.75)
 # note - next step to get into a web page requires manually saving it.
-
+{% endhighlight %}
 
