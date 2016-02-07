@@ -113,9 +113,7 @@ p1 <- mdg1a %>%
         y = mdg_codes[1, "display"],
         title = "'Reduce child mortality' MDG Indicator 14, infant mortality rate")
 
-svg("../img/0029-mdg1.svg", 10, 9)
 print(p1)
-dev.off()
 
 #--------------Adolescent fertility----------------
 mdg3 <- get_data("MDG_0000000003")
@@ -123,7 +121,6 @@ mdg3 <- get_data("MDG_0000000003")
 # but according to http://www.wikigender.org/wiki/adolescent-birth-rate/ it's part of
 # measuring Goal 5 "Improve Maternal Health"
 
-svg("../img/0029-mdg3.svg", 10, 9)
 mdg3 %>%
    prep() %>%
    ggplot(aes(x = year, y = value, label = country, colour = worldbankincomegroup)) +
@@ -134,7 +131,6 @@ mdg3 %>%
    facet_wrap(~region) +
    scale_colour_manual("", values = brewer.pal(6, "Spectral")[c(1,2,5,6)]) +
    theme(legend.position = "bottom")
-dev.off()
 
 #----------contraceptive prevalence----------
 mdg5 <- get_data("MDG_0000000005")
@@ -156,9 +152,7 @@ p5 <- mdg5a %>%
    geom_line() +
    geom_text(data = latest(mdg5a, 0.3), aes(label = country), hjust = 0, size = 3)
    
-svg("../img/0029-mdg5.svg", 10, 9)
 print(p5)
-dev.off()
 
 
 
