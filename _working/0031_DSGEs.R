@@ -10,24 +10,54 @@
 
 # Sourcing R - code
 library(gEcon)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
 
 download.file("http://gecon.r-forge.r-project.org/models/SW_03/SW_03.gcn",
               destfile = "SW_03.gcn")
 sw_gecon1 <- make_model('SW_03.gcn')
 
-# set our starting values for various parameters
 initv <- list(z = 1, z_f = 1, Q = 1, Q_f = 1, pi = 1, pi_obj = 1,
               epsilon_b = 1, epsilon_L = 1, epsilon_I = 1, epsilon_a = 1, epsilon_G = 1,
               r_k = 0.01, r_k_f = 0.01)
+
 sw_gecon1 <- initval_var(sw_gecon1, init_var = initv)
 
+initf <- list(
+   beta = 0.99,            # Discount factor
+   tau = 0.025,            # Capital depreciation rate
+   varphi = 6.771,         # Parameter of investment adjustment cost function
+   psi = 0.169,            # Capacity utilisation cost parameter
+   sigma_c = 1.353,        # Coefficient of relative risk aversion
+   h = 0.573,              # Habit formation intensity
+   sigma_l = 2.4,          # Reciprocal of labour elasticity w.r.t. wage
+   omega = 1               # Labour disutility parameter
+)
+sw_gecon1 <- set_free_par(sw_gecon1, initf)
+ 
 # find the steady state for that set of starting values
 sw_gecon2 <- steady_state(sw_gecon1)
+get_ss_values(sw_gecon2)
 
 # solve the model in linearised form for 1st order perturbations/randomness
 sw_gecon2 <- solve_pert(sw_gecon2, loglin = TRUE)
 
-summary(sw_gecon)
+summary(sw_gecon2)
+
+one_path <- random_path(sw_gecon2, var_list = list("Y", "K", "I", "C", "W"))
+plot_simulation(one_path) # shows deviation from the statey_state
+
+
+one_path_df <- as.data.frame(t(one_path@sim[ , , 1]))
+names(one_path_df) <- one_path@var_list
+one_path_df$TimePeriod <- 1:100
+ggplot(one_path_df, aes(x = TimePeriod, y = Y)) + geom_line()
+
+
+
+#==============shocks=================
+
 
 # set covariance matrix of the parameters to be used in shock simulation
 a <- c(eta_b = 0.336 ^ 2, eta_L = 3.52 ^ 2, eta_I = 0.085 ^ 2, eta_a = 0.598 ^ 2,
@@ -48,23 +78,14 @@ plot_simulation(sw_gecon_irf, to_tex = FALSE)
 
 #---------------shinyapp prep----------------
 
-shocks <- data.frame(param = names(a), value = sqrt(a), stringsAsFactors = FALSE)
+shocks <- data.frame(param = names(a), 
+                     value = sqrt(a), 
+                     longer_name = c("Preference", "Labour supply", "Investment",
+                                     "Productivity", "Wage markup", "Price markup",
+                                     "Government spending", "Interest rates",
+                                     "Inflation objective"),
+                     stringsAsFactors = FALSE)
 save(shocks, file = "_output/0031-shiny/shocks.rda")
 
-sw_gecon_orig <- make_model('SW_03.gcn')
-
-
-
-# set our starting values for various parameters
-initv <- list(z = 1, z_f = 1, Q = 1, Q_f = 1, pi = 1, pi_obj = 1,
-              epsilon_b = 1, epsilon_L = 1, epsilon_I = 1, epsilon_a = 1, epsilon_G = 1,
-              r_k = 0.01, r_k_f = 0.01)
-
-sw_gecon <- initval_var(sw_gecon_orig, init_var = initv)
-
-# find the steady state for that set of starting values
-sw_gecon <- steady_state(sw_gecon)
-
-# solve the model in linearised form for 1st order perturbations/randomness
-sw_gecon <- solve_pert(sw_gecon, loglin = TRUE)
-save(sw_gecon, file = "_output/0031-shiny/sw_gecon.rda")
+library(shinyapps)
+deployApp("_output/0031-shiny", account = "ellisp")

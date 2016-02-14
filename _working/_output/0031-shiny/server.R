@@ -1,6 +1,6 @@
 library(shiny)
 library(gEcon)
-
+load("shocks.rda")
 sw_gecon_orig <- make_model('SW_03.gcn')
 
 shinyServer(function(input, output) {
@@ -10,20 +10,38 @@ shinyServer(function(input, output) {
    sw_gecon <- reactive({
       # set our starting values for various parameters
       isolate({
-         initv <- list(z = input$z, z_f = input$z_f, Q = input$Q, Q_f = input$Q_f, 
-                    pi = input$pi, pi_obj = input$pi_obj,
-                    epsilon_b = input$epsilon_b, epsilon_L = input$epsilon_L, 
-                    epsilon_I = input$epsilon_I, epsilon_a = input$epsilon_a, 
-                    epsilon_G = input$epsilon_G,
-                    r_k = input$r_k, r_k_f = input$r_k_f)
+         initv <- list(z = 1, z_f = 1, Q = 1, Q_f = 1, pi = 1, pi_obj = 1,
+                       epsilon_b = 1, epsilon_L = 1, epsilon_I = 1, epsilon_a = 1, epsilon_G = 1,
+                       r_k = 0.01, r_k_f = 0.01)
       
-      tmp <- initval_var(sw_gecon_orig, init_var = initv)
+         tmp <- initval_var(sw_gecon_orig, init_var = initv)
+         
+         initf <- list(
+            beta = input$beta,            # Discount factor
+            tau = input$tau,            # Capital depreciation rate
+            varphi = input$varphi,         # Parameter of investment adjustment cost function
+            psi = input$psi,            # Capacity utilisation cost parameter
+            sigma_c = input$sigma_c,        # Coefficient of relative risk aversion
+            h = input$h,              # Habit formation intensity
+            sigma_l = 1 / input$sigma_l_inv,         # Reciprocal of labour elasticity w.r.t. wage
+            omega = input$omega,               # Labour disutility parameter,
+            alpha = input$alpha,
+            gamma_w = input$gamma_w,
+            lambda_w = input$lambda_w,
+            xi_w = input$xi_w,
+            gamma_p = input$gamma_p,
+            xi_p = input$xi_p,
+            r_pi = input$r_pi
+         )
+         tmp <- set_free_par(tmp, initf)
+         
+         
    
-      # find the steady state for that set of starting values
-      tmp <- steady_state(tmp)
-   
-      # solve the model in linearised form for 1st order perturbations/randomness
-      tmp <- solve_pert(tmp, loglin = TRUE)
+         # find the steady state for that set of starting values
+         tmp <- steady_state(tmp)
+      
+         # solve the model in linearised form for 1st order perturbations/randomness
+         tmp <- solve_pert(tmp, loglin = TRUE)
       })
       input$goButton
       return(tmp)
@@ -46,8 +64,9 @@ shinyServer(function(input, output) {
    })
    
    sw_gecon_irf <- reactive({
+      shock_row <- which(shocks$longer_name == input$shock_var)
       compute_irf(sw_gecon_shocked(), var_list = c('C', 'Y', 'K', 'I', 'L'), chol = T,
-                               shock_list = list(input$shock_var), path_length = 40)
+                               shock_list = list(shocks[shock_row, "param"]), path_length = 40)
    })
       
    output$irf_plot <- renderPlot(
