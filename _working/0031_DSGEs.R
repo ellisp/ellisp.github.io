@@ -1,9 +1,9 @@
 # ###################################################################
 # (c) Chancellery of the Prime Minister 2012-2015                   #
-# Licence terms can be found in the file:                           #
+# Licence terms for gEcon can be found in the file:                 #
 # http://gecon.r-forge.r-project.org/files/gEcon_licence.txt        #
 #                                                                   #
-# Authors: Grzegorz Klima, Karol Podemski,                          #
+# gEcon authors: Grzegorz Klima, Karol Podemski,                    #
 #          Kaja Retkiewicz-Wijtiwiak, Anna Sowińska                 #
 # ###################################################################
 
