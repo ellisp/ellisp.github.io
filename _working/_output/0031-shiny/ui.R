@@ -74,7 +74,11 @@ font-family: 'Poppins', 'Lucida Grande', Verdana, Lucida, Helvetica, Arial, Cali
        )),
        
        
-      plotOutput("irf_plot", height = "600px")
+      plotOutput("irf_plot", height = "600px"),
+      HTML("<p>This is an implementation using R, gEcon and Shiny of the <i>Smets-Wouters '03</i> 
+Dynamic Stochastic General Equilibrium model of the Euro zone.  See this
+<a href = 'http://ellisp.github.io/blog/2016/02/20/DSGE/'>blog post by Peter Ellis</a> for
+further information.</p>")
       
       
     )
