@@ -1,0 +1,358 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Dynamic Stochastic General Equilibrium models made (relatively) easy with R</title>
+      	
+         
+         
+            <meta name ="description" content ="The gEcon R package makes it (relatively) easy to define and calibrate Computable General Equilibrium models and their more nuanced next-generation successors, Dynamic Stochastic General Equilibrium models.">
+            <meta property="og:description" content ="The gEcon R package makes it (relatively) easy to define and calibrate Computable General Equilibrium models and their more nuanced next-generation successors, Dynamic Stochastic General Equilibrium models.">
+         
+         <meta property="og:site_name" content="Peter's stats stuff" />
+         <meta property="og:title" content="Dynamic Stochastic General Equilibrium models made (relatively) easy with R" />
+         
+            <meta property="og:image" content="http://ellisp.github.io/img/0031-irf.png" />
+         
+         <meta property="og:url" content="http://ellisp.github.io/blog/2016/02/20/DSGE/" />
+         <meta property="og:author" content= "https://www.facebook.com/peter.ellis.353" />
+         <meta property="og:type" content="article" />
+           
+          <link href="/css/bootstrap.min.css" rel ="stylesheet">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet">
+            <link href="/css/custom.css" rel ="stylesheet">       
+     <link rel="stylesheet" href="/css/Pygments/autumn.css">      
+     <link rel="stylesheet" href="/css/Pygments/custom.css">      
+            
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="Peter's stats stuff by Peter Ellis"
+      href="/feed.xml">
+
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+         <script src="/js/bootstrap.min.js"></script>
+         
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Peter's stats stuff</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">All blog posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">Ordered by date</a></li>
+                  <li><a href="/blog/index_by_tag.html">Grouped by subject matter</a></li>
+                  <li><a href = /blog/2016/02/20/DSGE>Most recent post</a></li>
+                 </ul>
+            </li>
+              <li><a href="/blog/showcase.html">Showcase</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			    <div class="jumbotron">
+      <div class="container">
+        <h1>Dynamic Stochastic General Equilibrium models made (relatively) easy with R</h1>
+         <p class="meta">20 Feb 2016</p>
+        
+      </div>
+    </div>
+
+
+
+
+<div class = "post-summary">
+<h2>TL;DR Summary:</h2>
+   The gEcon R package makes it (relatively) easy to define and calibrate Computable General Equilibrium models and their more nuanced next-generation successors, Dynamic Stochastic General Equilibrium models.
+   <hr></hr>
+</div>
+
+<div class="post">
+<div class="col-md-2">
+
+</div>
+  <div class="col-md-8">
+
+  <h2 id="general-equilibrium-economic-models">General Equilibrium economic models</h2>
+<p>To expand my economics toolkit I’ve been trying to get my head around <a href="https://en.wikipedia.org/wiki/Computable_general_equilibrium">Computable General Equilibrium (CGE)</a> and <a href="https://en.wikipedia.org/wiki/Dynamic_stochastic_general_equilibrium">Dynamic Stochastic General Equilibrium (DSGE)</a> models.  Both classes of model are used in theoretical and policy settings to understand the impact of changes to an economic system on its equilibrium state.</p>
+
+<p>I’m not a specialist in this area so the below should be taken as the best effort by a keen amateur.  Corrections or suggestions welcomed!</p>
+
+<p>CGE models have the simpler approach of the two and a longer history and have been very widely applied to practical policy questions such as the impact of trade deals.  Many economic consultancies have their own in-house CGE model/s which they wheel out and aadapt to a range of their clients’ questions.  They work by comparing static equilibrium states, assumed to meet requirements (such as markets clearing effectively instantly) needed to be in equilibrium, “calibrated” to the real economy by choosing a set of numbers for the various parameters that match the state of the economy at a particular point in time.  The model is then adjusted - for example, to allow for changes in prices from a free trade agreement - and the new equilibrium compared to the old.</p>
+
+<p>DSGE models are also based on an assumption of a steady state equilibrium of the economy, but they allow for real amounts of time being taken to move towards that steady state, and for a random (ie stochastic) element in the path taken towards that steady state.  This greatly improves their coherence in terms of philosophy of science - compared to a CGE which simply calibrates to a single point of time and doesn’t have any degrees of freedom to quantify uncertainty or the fit of the model to reality, the parameters in DSGEs can be estimated based on a history of observations, and parameters can have probability distributions not just points.  Parameters are typically estimated with Bayesian methods.</p>
+
+<p>Over the past 15 years or so as the maths and computing has gotten better, the DSGE approach has become dominant in macroeconomic modelling, although not yet (to my observation) in everyday applied economics of the sort done by consultants for government agencies contemplating policy choices.  DSGE models perform ok (to the degree that anything does) at economic forecasting, and give a nice coherent framework for considering policy options.  For example, the Reserve Bank of New Zealand (like many if not all monetary authorities around the world - I haven’t counted) developed the cutely-named <a href="http://www.rbnz.govt.nz/research-and-publications/research-programme/additional-research/kitt---a-dsge-model-for-forecasting-and-policy-analysis">KITT (Kiwi Inflation Targeting Technology)</a> DSGE model and adopted it in 2009 as the main forecasting and scenario tool; and apparently replaced this with <a href="http://www.nzae.org.nz/wp-content/uploads/2015/01/Sander.pdf">NZSIM, a more parsimonious model in 2014</a> - slightly condescendingly described as “deliberately kept small so is easily understood and applied by a range of users.”</p>
+
+<h2 id="critiques">Critiques</h2>
+<p>General Equilibrium approach has been roundly criticised from the margins of the economics field (pun) ever since it leapt to dominance in the second half of the twentieth century, from a philosophy of science perspective (doesn’t really make Popperian falsifiable predictions) and from the obvious and acknowledged absurdity/simplification of the assumptions needed to make the system tractable.</p>
+
+<p>Noah Smith provides a <a href="http://noahpinionblog.blogspot.co.nz/2013/05/what-can-you-do-with-dsge-model.html">good sceptical discussion of the worth of DSGE in this post</a> and elsewhere.</p>
+
+<p>I find the arguments for a <a href="http://www.amazon.com/Post-Walrasian-Macroeconomics-Stochastic-Equilibrium/dp/052168420X">post-Walrasian economics - beyond the DSGE</a> fairly compelling.  My key takeout from that book (not necessarily it’s main intent) is that new computing power means that we are increasingly in a position where we no longer have to just accept the simplifying assumptions needed for General Equilibrium approach to be tractable.  <a href="https://en.wikipedia.org/wiki/Agent-based_computational_economics">Agent-based models</a> are now possible that allow simulation of much more complex interactions between agents who lack the perfect knowledge required in the GE approach and behave realistically in terms of interactions and other ways.  Such models lack analytical solutions (ie ones that could in principle be worked out with pen and paper) but Monte Carlo methods can lead to insight as to how the real economy behaves.</p>
+
+<h2 id="defining-a-ge-model-with-gecon">Defining a GE model with gEcon</h2>
+<p>While I do think that these general equilibrium approaches will be superseded in the next 20 years (bit of a call I know), the alternatives are currently immature.  I still need to get my head around GE approaches.  Luckily I came across the <a href="http://gecon.r-forge.r-project.org/">gEcon project</a> - an exciting off-shoot of work done for the Polish government, now open-sourced and maintained by the original authors.  gEcon provides an easy language for defining a CGE or DSGE model, taking much of the hand-done mathematics pain out of the whole thing:</p>
+
+<blockquote>
+  <p>“Owing to the development of an algorithm for automatic derivation of first order conditions and implementation of a comprehensive symbolic library, gEcon allows users to describe their models in terms of optimisation problems of agents. To authors’ best knowledge there is no other publicly available framework for writing and solving DSGE &amp; CGE models in this natural way. Writing models in terms of optimisation problems instead of the FOCs is far more natural to an economist, takes off the burden of tedious differentiation, and reduces the risk of making a mistake.”</p>
+</blockquote>
+
+<p>The definition of agents’ optimisation problems in a sophisticated DGSE in the gEcon environment looks like this example extract from <a href="https://ideas.repec.org/p/pra/mprapa/64440.html">an implementation of the classic Smets-Wouters 2003 DSGE for the Euro area</a>.  The total model description is around 500 lines of code.  This particular block  is describing aspects of the price setting mechanism.  It’s not easy, but it is a lot easier than solving first order conditions by hand:</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a>block PRICE_SETTING_PROBLEM <span class="c1"># example gEcon language extract</span>
+<a name="True-2"></a><span class="p">{</span>
+<a name="True-3"></a>    identities
+<a name="True-4"></a>    <span class="p">{</span>
+<a name="True-5"></a>        g_1<span class="p">[]</span> <span class="o">=</span> <span class="p">(</span><span class="m">1</span> <span class="o">+</span> lambda_p<span class="p">)</span> <span class="o">*</span> g_2<span class="p">[]</span> <span class="o">+</span> eta_p<span class="p">[];</span>
+<a name="True-6"></a>        g_1<span class="p">[]</span> <span class="o">=</span> lambda<span class="p">[]</span> <span class="o">*</span> pi_star<span class="p">[]</span> <span class="o">*</span> Y<span class="p">[]</span> <span class="o">+</span> beta <span class="o">*</span> xi_p <span class="o">*</span>
+<a name="True-7"></a>                E<span class="p">[][(</span><span class="kc">pi</span><span class="p">[]</span> <span class="o">^</span> gamma_p <span class="o">/</span> <span class="kc">pi</span><span class="p">[</span><span class="m">1</span><span class="p">])</span> <span class="o">^</span> <span class="p">(</span><span class="m">-1</span> <span class="o">/</span> lambda_p<span class="p">)</span> <span class="o">*</span>
+<a name="True-8"></a>                    <span class="p">(</span>pi_star<span class="p">[]</span> <span class="o">/</span> pi_star<span class="p">[</span><span class="m">1</span><span class="p">])</span> <span class="o">*</span> g_1<span class="p">[</span><span class="m">1</span><span class="p">]];</span>
+<a name="True-9"></a>        g_2<span class="p">[]</span> <span class="o">=</span> lambda<span class="p">[]</span> <span class="o">*</span> mc<span class="p">[]</span> <span class="o">*</span> Y<span class="p">[]</span> <span class="o">+</span> beta <span class="o">*</span> xi_p <span class="o">*</span>
+<a name="True-10"></a>                E<span class="p">[][(</span><span class="kc">pi</span><span class="p">[]</span> <span class="o">^</span> gamma_p <span class="o">/</span> <span class="kc">pi</span><span class="p">[</span><span class="m">1</span><span class="p">])</span> <span class="o">^</span> <span class="p">(</span><span class="o">-</span><span class="p">((</span><span class="m">1</span> <span class="o">+</span> lambda_p<span class="p">)</span> <span class="o">/</span> lambda_p<span class="p">))</span> <span class="o">*</span> g_2<span class="p">[</span><span class="m">1</span><span class="p">]];</span>
+<a name="True-11"></a>    <span class="p">};</span>
+<a name="True-12"></a>
+<a name="True-13"></a>    shocks
+<a name="True-14"></a>    <span class="p">{</span>
+<a name="True-15"></a>        eta_p<span class="p">[];</span>                <span class="c1"># Price mark-up shock</span>
+<a name="True-16"></a>    <span class="p">};</span>
+<a name="True-17"></a>
+<a name="True-18"></a>    calibration
+<a name="True-19"></a>    <span class="p">{</span>
+<a name="True-20"></a>        xi_p <span class="o">=</span> <span class="m">0.908</span><span class="p">;</span>           <span class="c1"># Probability of not receiving the ``price-change signal&#39;&#39;</span>
+<a name="True-21"></a>        gamma_p <span class="o">=</span> <span class="m">0.469</span><span class="p">;</span>        <span class="c1"># Indexation parameter for non-optimising firms</span>
+<a name="True-22"></a>    <span class="p">};</span>
+<a name="True-23"></a><span class="p">};</span></code></pre></div>
+
+<p>Similar code controls parts of the system such as the approach taken by the monetary authority (how much weight do they give to controlling inflation?), government expenditure, friction in the labour market, etc.</p>
+
+<p>Incidentally, when the gEcon authors implemented the Smets-Wouters ‘03 model they identified a few small mistakes in the original implementation, which for me adds to the credibility of their argument that their (relatively) natural agent-based optimisation language is less prone to human error.</p>
+
+<p>gEcon is implemented in R; the authors give the reason for this (as opposed to more traditional Matlab / Octave / GAMS solution) being the greater flexibility (“not everything needs to be a matrix”) and easy connections to full range of other econometric and data management methods.</p>
+
+<h2 id="solving-a-gecon-dsge-model-from-r">Solving a gEcon DSGE model from R</h2>
+<p>Once the model has been defined, R functions can perform tasks such as :</p>
+
+<ul>
+  <li>calculate its steady state</li>
+  <li>estimate the impact of randomness</li>
+  <li>simulate paths through time (the “dynamic stochastic” bit)</li>
+  <li>estimate the impact of changes over time through impulse-response functions</li>
+</ul>
+
+<p>For example, here is a simulation of one path through time for the deviation from the steady state of consumption, investment, capital, wages and income just from randomness in the Smets-Wouters ‘03 model:</p>
+
+<p><img src="/img/0031-onepath.svg" alt="onepath" /></p>
+
+<p>Getting to this point used this R code.  Note that I’m not reproducing below the full definition of the model, though I am including code that downloads it for you</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a><span class="c1"># ###################################################################</span>
+<a name="True-2"></a><span class="c1"># (c) Chancellery of the Prime Minister 2012-2015                   #</span>
+<a name="True-3"></a><span class="c1"># Licence terms for gEcon can be found in the file:                 #</span>
+<a name="True-4"></a><span class="c1"># http://gecon.r-forge.r-project.org/files/gEcon_licence.txt        #</span>
+<a name="True-5"></a><span class="c1">#                                                                   #</span>
+<a name="True-6"></a><span class="c1"># gEcon authors: Grzegorz Klima, Karol Podemski,                    #</span>
+<a name="True-7"></a><span class="c1">#          Kaja Retkiewicz-Wijtiwiak, Anna Sowińska                 #</span>
+<a name="True-8"></a><span class="c1"># ###################################################################</span>
+<a name="True-9"></a>
+<a name="True-10"></a><span class="kn">library</span><span class="p">(</span>gEcon<span class="p">)</span>
+<a name="True-11"></a><span class="kn">library</span><span class="p">(</span>dplyr<span class="p">)</span>
+<a name="True-12"></a><span class="kn">library</span><span class="p">(</span>tidyr<span class="p">)</span>
+<a name="True-13"></a>
+<a name="True-14"></a><span class="c1"># download model definition and import into R:</span>
+<a name="True-15"></a>download.file<span class="p">(</span><span class="s">&quot;http://gecon.r-forge.r-project.org/models/SW_03/SW_03.gcn&quot;</span><span class="p">,</span>
+<a name="True-16"></a>              destfile <span class="o">=</span> <span class="s">&quot;SW_03.gcn&quot;</span><span class="p">)</span>
+<a name="True-17"></a>sw_gecon1 <span class="o">&lt;-</span> make_model<span class="p">(</span><span class="s">&#39;SW_03.gcn&#39;</span><span class="p">)</span>
+<a name="True-18"></a>
+<a name="True-19"></a><span class="c1"># set some initial variable values:</span>
+<a name="True-20"></a>initv <span class="o">&lt;-</span> <span class="kt">list</span><span class="p">(</span>z <span class="o">=</span> <span class="m">1</span><span class="p">,</span> z_f <span class="o">=</span> <span class="m">1</span><span class="p">,</span> Q <span class="o">=</span> <span class="m">1</span><span class="p">,</span> Q_f <span class="o">=</span> <span class="m">1</span><span class="p">,</span> <span class="kc">pi</span> <span class="o">=</span> <span class="m">1</span><span class="p">,</span> pi_obj <span class="o">=</span> <span class="m">1</span><span class="p">,</span>
+<a name="True-21"></a>              epsilon_b <span class="o">=</span> <span class="m">1</span><span class="p">,</span> epsilon_L <span class="o">=</span> <span class="m">1</span><span class="p">,</span> epsilon_I <span class="o">=</span> <span class="m">1</span><span class="p">,</span> epsilon_a <span class="o">=</span> <span class="m">1</span><span class="p">,</span> epsilon_G <span class="o">=</span> <span class="m">1</span><span class="p">,</span>
+<a name="True-22"></a>              r_k <span class="o">=</span> <span class="m">0.01</span><span class="p">,</span> r_k_f <span class="o">=</span> <span class="m">0.01</span><span class="p">)</span>
+<a name="True-23"></a>
+<a name="True-24"></a>sw_gecon1 <span class="o">&lt;-</span> initval_var<span class="p">(</span>sw_gecon1<span class="p">,</span> init_var <span class="o">=</span> initv<span class="p">)</span>
+<a name="True-25"></a>
+<a name="True-26"></a><span class="c1"># set some initial parameter values:</span>
+<a name="True-27"></a>initf <span class="o">&lt;-</span> <span class="kt">list</span><span class="p">(</span>
+<a name="True-28"></a>   beta <span class="o">=</span> <span class="m">0.99</span><span class="p">,</span>            <span class="c1"># Discount factor</span>
+<a name="True-29"></a>   tau <span class="o">=</span> <span class="m">0.025</span><span class="p">,</span>            <span class="c1"># Capital depreciation rate</span>
+<a name="True-30"></a>   varphi <span class="o">=</span> <span class="m">6.771</span><span class="p">,</span>         <span class="c1"># Parameter of investment adjustment cost function</span>
+<a name="True-31"></a>   psi <span class="o">=</span> <span class="m">0.169</span><span class="p">,</span>            <span class="c1"># Capacity utilisation cost parameter</span>
+<a name="True-32"></a>   sigma_c <span class="o">=</span> <span class="m">1.353</span><span class="p">,</span>        <span class="c1"># Coefficient of relative risk aversion</span>
+<a name="True-33"></a>   h <span class="o">=</span> <span class="m">0.573</span><span class="p">,</span>              <span class="c1"># Habit formation intensity</span>
+<a name="True-34"></a>   sigma_l <span class="o">=</span> <span class="m">2.4</span><span class="p">,</span>          <span class="c1"># Reciprocal of labour elasticity w.r.t. wage</span>
+<a name="True-35"></a>   omega <span class="o">=</span> <span class="m">1</span>               <span class="c1"># Labour disutility parameter</span>
+<a name="True-36"></a><span class="p">)</span>
+<a name="True-37"></a>sw_gecon1 <span class="o">&lt;-</span> set_free_par<span class="p">(</span>sw_gecon1<span class="p">,</span> initf<span class="p">)</span>
+<a name="True-38"></a>
+<a name="True-39"></a> 
+<a name="True-40"></a><span class="c1"># find the steady state for that set of starting values:</span>
+<a name="True-41"></a>sw_gecon2 <span class="o">&lt;-</span> steady_state<span class="p">(</span>sw_gecon1<span class="p">)</span>
+<a name="True-42"></a>get_ss_values<span class="p">(</span>sw_gecon2<span class="p">)</span>
+<a name="True-43"></a>
+<a name="True-44"></a><span class="c1"># solve the model in linearised form for 1st order perturbations/randomness:</span>
+<a name="True-45"></a>sw_gecon2 <span class="o">&lt;-</span> solve_pert<span class="p">(</span>sw_gecon2<span class="p">,</span> loglin <span class="o">=</span> <span class="kc">TRUE</span><span class="p">)</span>
+<a name="True-46"></a>
+<a name="True-47"></a><span class="c1"># simulate one path:</span>
+<a name="True-48"></a>one_path <span class="o">&lt;-</span> random_path<span class="p">(</span>sw_gecon2<span class="p">,</span> var_list <span class="o">=</span> <span class="kt">list</span><span class="p">(</span><span class="s">&quot;Y&quot;</span><span class="p">,</span> <span class="s">&quot;K&quot;</span><span class="p">,</span> <span class="s">&quot;I&quot;</span><span class="p">,</span> <span class="s">&quot;C&quot;</span><span class="p">,</span> <span class="s">&quot;W&quot;</span><span class="p">))</span>
+<a name="True-49"></a>plot_simulation<span class="p">(</span>one_path<span class="p">)</span> <span class="c1"># shows deviation from the steady_state</span></code></pre></div>
+
+<h2 id="impulse-response-functions">Impulse response functions</h2>
+<p>In a method familiar to users of other economic modelling methods like Vector Autoregressions (VARs), it’s possible to “shock” the DSGE system and see the impact play out over time as the complex inter-relationships of agents within the system move from the shock towards a new equilibrium.  Here’s an example of the expected impact of a shock to the inflation objective applied to the Smets-Wouters ‘03 model:</p>
+
+<p><img src="/img/0031-irf.svg" alt="irf" /></p>
+
+<p>One of the characteristics of the DSGE models is the importance they give to agents’ expectations.  As their philosophy has increasingly dominated in recent decades, discussion of monetary policy has become less focused on individual actions of the monetary authority than on the overal regime and set of targets.  Any more-than-casual observer of public economic debate will have noticed the importance given to discussion of the overall inflation-targetting regime.  Hence the plot above shows the modelled impact of a change in the inflation objective - with no other direct exogenous shock in the model at all.</p>
+
+<p>Here’s the R code that produced that plot:</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a><span class="c1"># set covariance matrix of the parameters to be used in shock simulation:</span>
+<a name="True-2"></a>a <span class="o">&lt;-</span> <span class="kt">c</span><span class="p">(</span>eta_b <span class="o">=</span> <span class="m">0.336</span> <span class="o">^</span> <span class="m">2</span><span class="p">,</span> eta_L <span class="o">=</span> <span class="m">3.52</span> <span class="o">^</span> <span class="m">2</span><span class="p">,</span> eta_I <span class="o">=</span> <span class="m">0.085</span> <span class="o">^</span> <span class="m">2</span><span class="p">,</span> eta_a <span class="o">=</span> <span class="m">0.598</span> <span class="o">^</span> <span class="m">2</span><span class="p">,</span>
+<a name="True-3"></a>       eta_w <span class="o">=</span> <span class="m">0.6853261</span> <span class="o">^</span> <span class="m">2</span><span class="p">,</span> eta_p <span class="o">=</span> <span class="m">0.7896512</span> <span class="o">^</span> <span class="m">2</span><span class="p">,</span>
+<a name="True-4"></a>       eta_G <span class="o">=</span> <span class="m">0.325</span> <span class="o">^</span> <span class="m">2</span><span class="p">,</span> eta_R <span class="o">=</span> <span class="m">0.081</span> <span class="o">^</span> <span class="m">2</span><span class="p">,</span> eta_pi <span class="o">=</span> <span class="m">0.017</span> <span class="o">^</span> <span class="m">2</span><span class="p">)</span>
+<a name="True-5"></a>sw_gecon3  <span class="o">&lt;-</span> set_shock_cov_mat<span class="p">(</span>sw_gecon2<span class="p">,</span> shock_matrix <span class="o">=</span> <span class="kp">diag</span><span class="p">(</span>a<span class="p">),</span> shock_order <span class="o">=</span> <span class="kp">names</span><span class="p">(</span>a<span class="p">))</span>
+<a name="True-6"></a>
+<a name="True-7"></a><span class="c1"># compute the moments with that covariance matrix:</span>
+<a name="True-8"></a>sw_gecon3 <span class="o">&lt;-</span> compute_moments<span class="p">(</span>sw_gecon3<span class="p">)</span>
+<a name="True-9"></a>
+<a name="True-10"></a>sw_gecon_irf <span class="o">&lt;-</span> compute_irf<span class="p">(</span>sw_gecon3<span class="p">,</span> var_list <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="s">&#39;C&#39;</span><span class="p">,</span> <span class="s">&#39;Y&#39;</span><span class="p">,</span> <span class="s">&#39;K&#39;</span><span class="p">,</span> <span class="s">&#39;I&#39;</span><span class="p">,</span> <span class="s">&#39;L&#39;</span><span class="p">),</span> chol <span class="o">=</span> <span class="bp">T</span><span class="p">,</span>
+<a name="True-11"></a>                            shock_list <span class="o">=</span> <span class="kt">list</span><span class="p">(</span><span class="s">&#39;eta_pi&#39;</span><span class="p">),</span> path_length <span class="o">=</span> <span class="m">40</span><span class="p">)</span>
+<a name="True-12"></a>plot_simulation<span class="p">(</span>sw_gecon_irf<span class="p">,</span> to_tex <span class="o">=</span> <span class="kc">FALSE</span><span class="p">)</span></code></pre></div>
+
+<h2 id="putting-a-dsge-model-into-shiny">Putting a DSGE model into Shiny</h2>
+<p>With so many complex and mysteriously named parameters - and I’ve shown very few of them - an interactive web application seems an obvious way to explore a model of this sort.  I’ve set up a prototype which explores the impulse response functions of the model, responding to shocks to parameters like labour supply, investment, productivity and government spending:</p>
+
+<ul>
+  <li>The <a href="https://ellisp.shinyapps.io/0031-shiny/">full screen version</a>  of the web app.  Once all buttons on the screen appear, give it 90 seconds or so to solve its steady state.  Then try choosing different variables to shock by from the drop down list.</li>
+  <li>The <a href="https://github.com/ellisp/ellisp.github.io/tree/source/_working/_output/0031-shiny">source code</a></li>
+</ul>
+
+<h2 id="conclusion">Conclusion</h2>
+<p>I’m a way off from being able to define my own DSGE for the New Zealand and connecting economies.  In particular the important question of calibration/estimation of parameters based on actual observable data is a a mystery to me at this stage.  But I can see how the basic idea works, and the gEcon package looks very promising for its relatively simple agent-optimisation approach to specifying the model.</p>
+
+
+
+</div>
+
+<div class = "container">
+   <div class="col-md-4">
+    
+        <a rel="prev" href="/blog/2016/02/08/ggseas">
+        <p>&larr; Older</p>
+        <p>ggseas package for seasonal adjustment on the fly with ggplot2</p>
+        
+        </a>
+    
+    </div>
+    <div class="col-md-4">
+    </div>
+    <div class="col-md-4" style="text-align: right;">
+    
+      </div>
+      </div>
+      
+      
+      
+</div>
+
+
+   
+    <div id="disqus_thread"></div>
+
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+    
+    
+   
+			
+			</div><!-- /.container -->
+
+         
+
+   <div class = "container footer">
+			<footer>
+	    		
+            <p>Follow <a href = "/feed.xml">this blog with RSS</a>.  Or follow <a href = "/feed.r.xml">posts in this blog featuring R with RSS</a>.</p>
+	
+            <p>This blog is built with <a href = "http://jekyllrb.com/">Jekyll</a>, <a href = "http://getbootstrap.com/">Bootstrap</a>, <a href = "https://www.ruby-lang.org/en/">Ruby</a> and <a href = "https://cran.r-project.org/">R</a>.  Read my <a href="/about/acknowledgements.html">acknowledgements</a> for a little more on how.  I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Peter's stats stuff</span> by <a xmlns:cc="http://creativecommons.org/ns#" href="/" property="cc:attributionName" rel="cc:attributionURL">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+
+
+			</footer>
+    </div>
+
+
+
+  
+</body>
+</html>
+   
+
+
+
+
+         
