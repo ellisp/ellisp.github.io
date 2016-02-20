@@ -77,6 +77,11 @@ par(family = "myfont")
 plot_simulation(sw_gecon_irf, to_tex = FALSE)
 dev.off()
 
+png("../img/0031-irf.png", 750, 450, res = 100)
+par(family = "myfont")
+plot_simulation(sw_gecon_irf, to_tex = FALSE)
+dev.off()
+
 #---------------shinyapp prep----------------
 
 shocks <- data.frame(param = names(a), 
