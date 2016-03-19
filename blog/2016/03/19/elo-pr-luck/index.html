@@ -1,0 +1,422 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Skill v luck in determining backgammon winners</title>
+      	
+         
+         
+            <meta name ="description" content ="I explore the relationship between decision quality and winning in backgammon, using data from XG-Gammon analysis of matches on FIBS and grid.gammon">
+            <meta property="og:description" content ="I explore the relationship between decision quality and winning in backgammon, using data from XG-Gammon analysis of matches on FIBS and grid.gammon">
+         
+         <meta property="og:site_name" content="Peter's stats stuff" />
+         <meta property="og:title" content="Skill v luck in determining backgammon winners" />
+         
+            <meta property="og:image" content="http://ellisp.github.io/img/0032-luck-v-net-skill.png" />
+         
+         <meta property="og:url" content="http://ellisp.github.io/blog/2016/03/19/elo-pr-luck/" />
+         <meta property="og:author" content= "https://www.facebook.com/peter.ellis.353" />
+         <meta property="og:type" content="article" />
+           
+          <link href="/css/bootstrap.min.css" rel ="stylesheet">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet">
+            <link href="/css/custom.css" rel ="stylesheet">       
+     <link rel="stylesheet" href="/css/Pygments/autumn.css">      
+     <link rel="stylesheet" href="/css/Pygments/custom.css">      
+            
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="Peter's stats stuff by Peter Ellis"
+      href="/feed.xml">
+
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+         <script src="/js/bootstrap.min.js"></script>
+         
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Peter's stats stuff</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">All blog posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">Ordered by date</a></li>
+                  <li><a href="/blog/index_by_tag.html">Grouped by subject matter</a></li>
+                  <li><a href = /blog/2016/03/19/elo-pr-luck>Most recent post</a></li>
+                 </ul>
+            </li>
+              <li><a href="/blog/showcase.html">Showcase</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			    <div class="jumbotron">
+      <div class="container">
+        <h1>Skill v luck in determining backgammon winners</h1>
+         <p class="meta">19 Mar 2016</p>
+        
+      </div>
+    </div>
+
+
+
+
+<div class = "post-summary">
+<h2>TL;DR Summary:</h2>
+   I explore the relationship between decision quality and winning in backgammon, using data from XG-Gammon analysis of matches on FIBS and grid.gammon
+   <hr></hr>
+</div>
+
+<div class="post">
+<div class="col-md-2">
+
+</div>
+  <div class="col-md-8">
+
+  <h2 id="getting-backgammon-data-out-of-xg-gammon">Getting backgammon data out of XG-Gammon</h2>
+<p>Backgammon is a game that combines chance and skill, and everyone who comes across it asks “how much is luck, and how much skill?”.  The answer of course is “it depends”.  Consider that for two exactly equally skilled players, the result appears to be 100% luck and the best forecast for a result is a coin flip.  For a complete mismatch - a master playing a beginner - the master will win about 75% of one point matches, and nearly 100% of matches to 11 or more (the longer the match, the more chance for skill to emerge as dominant) - see my <a href="blog/2015/08/07/fibs-elo-ratings-basics/">earlier post on those odds</a>.</p>
+
+<p>Since the rise of robot players that used machine learning neural networks to identify winning strategies, we’ve had a new way to quantify exactly how much skill and how much chance.  Each decision by a player can be compared with an optimal play that the computer would have made, and the computer can estimate exactly how much equity in the final result you just gave up by playing differently to how it would have done.  If you give up 1, you just moved from being certain to win to certain to lose; in practice losing 0.080 of your equity in one turn is usually defined as a “blunder”, and 0.020 as an “error”.  Whereas gaining 0.300 of equity by a luck dice roll is a common threshold for a “joker”.  Here’s a <a href="http://www.bkgm.com/rgb/rgb.cgi?view+1273">post from ancient history (ie 2005) on the origin of the term “blunder” in backgammon</a> - apparently it only goes back to 1998, who knew?</p>
+
+<p>Of course, while you’re playing a human under match conditions, you don’t know that you just gave up (for example) 0.096 of your equity, although sometimes you have a pretty good idea from a nagging feeling of “I really shouldn’t have done that…”.  We quantify our errors in post-match analysis (you can play a computer in tutor mode too, and that’s the best way to train, but not the subject of today’s post).</p>
+
+<p>As well as being the best backgammon players on the planet, XG-Gammon and other software such as GNU Backgammon and Snowie are used by many backgammon players to analyse their own matches, to identify areas for improvement and (let’s face it) to find out if the opponent really was as lucky as we thought they were.  Online sites like <a href="http://www.fibs.com/">FIBS</a> (the First Internet Backgammon Server - open, free for all, lots of swearing, a bit clunky but a a great environment) and <a href="http://usbgf.org/support/faqs/#GridGammon">grid.gammon</a> (invitation only, more players and more of them are very serious and skilled) let you save games you’ve just played in formats that can be opened and analysed for luck and mistakes by the various backgammon-playing software.  If the user saves the analytical results to player profiles, you build up a database of games and matches.  Against humans, I play mostly matches (eg first to X points, where common values of X are 3, 5, 7 and 11) and in this post I’m analysing match-level data; that is, ultimately I am using a spreadsheet generated by XG-Gammon where there is one row for each match I’ve played, with 54 columns of interesting data about that match.</p>
+
+<p>To get this data out of XG-Gammon:</p>
+
+<ul>
+  <li>choose “players”</li>
+  <li>“see profile results”</li>
+  <li>From the “Results” menu, choose “Copy to clipboard”</li>
+  <li>“sessions list” (not sessions list (Match Play) - for me, this just freezes my system)</li>
+  <li>open Excel or equivalent and paste it in.</li>
+  <li>save it as a CSV, close Excel and load the data into a real analytical environment like R.  Actually, this is me being snobbish - any backgammon players reading this who don’t want to use specialist analytical software like R, you can do a lot with Excel and I encourage you to have a go.</li>
+</ul>
+
+<p>I keep my on-line profile, where I play matches against real opponents, separate from any practice I do against XG-Gammon in tutor mode, so when I do the above steps I get the genuine record of how well I’ve played.  For this post, I’m analysing approximately 650 matches, which is the number I’ve played and recorded since I started using XG-Gammon as my main backgammon analytical tool (I try to record all, and probably do 99%, of matches I play on FIBS and grid.gammon).</p>
+
+<h2 id="blunders-and-jokers">Blunders and jokers</h2>
+<p>OK, let’s have a first look at some data.  One of those columns is the number of blunders I made in each match and here’s a histogram showing the count of matches for which I made different numbers of blunders:</p>
+
+<p><img src="/img/0032-blunders.svg" alt="blunders" /></p>
+
+<p>All the code that created graphics is at the bottom of the post.</p>
+
+<p>My most common number of blunders in a single match is 4, followed by 2 and 5.  In one nightmare I committed more than 40 blunders - quite an achievement!</p>
+
+<p>Another item of interest is the number of jokers - dice rolls that materially changed the odds of success.  Think of the double six you roll when it was your only chance:</p>
+
+<p><img src="/img/0032-jokers.svg" alt="jokers" /></p>
+
+<p>It seems I most frequently get 4 or 5 really lucky rolls per match.</p>
+
+<p>Backgammon matches are of different numbers of moves, of course, and the longer they are the more opportunities for both blunders and jokers.  Apart from the fact that this dataset includes matches for first-to-11 down to first-to-1, sometimes things just whizz by, and sometimes the to-and-fro can go on forever.  Better than the total number of blunders and jokers is the number of such events per move.  Looking at the density of blunders and jokers per move, I’m pleased to see that on average my lucky jokers are more frequent than my blunders:</p>
+
+<p><img src="/img/0032-jokers-blunders.svg" alt="jokers-blunders" /></p>
+
+<h2 id="elo-rating">Elo rating</h2>
+<p>One thing people sometimes wonder about is the relationship between equity loss per decision and <a href="http://www.bkgm.com/faq/Ratings.html">Elo rating</a>.  There can be no fundamental permanent relationship.  Elo rating is basically a relativistic statement of how good you are (or rather, how well you’ve gone) <em>compared to the people you play against</em>; equity loss per decision is an absolute comparison of your decision making to a robot powered by a neural network.</p>
+
+<p>Imagine a backgammon competition, with the same rules as FIBS, populated only by bots.  In FIBS current conditions, these bots have ratings around 2100 compared to the starting point that all new players get of 1500 (chess players may think 2100 is surprisingly low - that’s because the element of chance in backgammon means that the worst player in the world still has a chance against the best, which puts a virtual ceiling on how high the Elo ratings can get).  But in our new world after we reboot FIBS only for expert bot players, the bots will only be able to play eachother, and their Elo ratings will all hover around their starting point of 1500.  Not exactly 1500, there will be a range, but it will be an illusion created by random chance.  See <a href="http://ellisp.github.io/blog/2015/08/07/fibs-elo-ratings-basics/">my earlier post on Elo ratings for more discussion of how actual Elo ratings are volatile around their ‘true’ value</a>.  So the 2100 ratings the bots have in our current world are arbitrarily linked to the errors of the people they happen to be playing.</p>
+
+<p>There’s enough stability in player standards that we know roughly how good a player with a FIBS rating of 1800 is, and XG-Gammon at some point in its life worked out a rule of thumb (ie statistical model) that mapped from the equity given up per decision to the Elo rating you’d expect an online player who consistently played at that level to end up with.  From the data we’ve just extracted from XG-Gammon, it’s possible to reverse engineer that relationship.  The data we got from our player profile included a column for “Eq per decision” and one for “Elo Level”.  The first of these is it’s estimate of how much equity on average I gave up when I had a choice to make (ie excluding times I had only one or no legal moves); the second is the estimate of what my Elo level should be given my decision-making in an individual match.  Here’s the relationship:</p>
+
+<p><img src="/img/0032-Elo.svg" alt="elo-ratings" /></p>
+
+<p>As well as showing the equity given up per decision, I’ve annnotated it with XG “Player Rating” (PR), which is the most commonly recognisable assessment of the actual quality of a player’s decisions (as opposed to their Elo rating, which depends on luck and the competition).  The lower a PR the better; world class players have PRs consistently below 5.</p>
+
+<p>So we can see that if you consistently play with a PR of 10 - which qualifies you to be ‘advanced’ in most people’s books -  you should expect eventually an Elo rating of a bit over 1700.  This seems a lowish Elo rating to me compared to what I intuit are standards on FIBS (my average PR hovers around 11 and Elo rating on FIBS currently at 1800 whereas XG thinks I should be only 1663), but it will be different in any different pool of players and without more data there’s no point in arguing.  Probably XG’s idea of Elo rating is relative to the pool on grid.gammon, which I think has a higher standard of play than FIBS.</p>
+
+<p>Note - I couldn’t find PR defined in the XG manual (I imagine it’s there but I didn’t spend long looking), but according to this <a href="http://www.bgonline.org/forums/webbbs_config.pl?noframes;read=53424">authoritative sounding forum post</a> the XG Player Rating is just the equity error per decision multiplied by 500.  So if you give up 0.01 (or 1%) of your equity each decision on average, you come up with a PR rating of 5, which is excellent <a href="http://bgmastersab.com/">and qualifies you as a ‘Master’</a>.  By definition (at least when it is XG that does the rating), XG’s PR is 0.</p>
+
+<h2 id="skill-versus-luck">Skill versus luck</h2>
+<p>Another column of interest in the data obtained from XG is the “Cost luck” column.  This contains XG’s estimate of how much the rolls of the dice cost you in total.  It’s all very well if you’re a ‘Master’ to keep your error rate down to only give up 0.01 of your equity each turn, but what about those jokers and anti-jokers that push it 0.3 or more in either direction at a single roll of the dice?  An obvious thing to do is to compare the “Cost luck” column with the equity per turn / PR data, and colour code each point on the resulting scatter plot by whether it was a win or a loss.  The result is illuminating:</p>
+
+<p><img src="/img/0032-luck-v-skill.svg" alt="skill-v-luck" /></p>
+
+<p>Very few of the red triangles denoting my wins happened when the dice were against me (ie luck &lt; 0), no matter how well I played.  And only one blue triangle (denoting a match loss) happened when I had good luck (luck &gt; 0).  Yup, the luck alone is all you need to divide matches into two very obvious clusters - those where you were lucky, and those where you weren’t.  It’s a cruel game, and a fascinating one - this luck means that you have to play a lot of games before your skill level starts determining your average success rate, and at the end of the game you don’t know (without a bot to help you) whether it was your fault or not…</p>
+
+<p>There’s two players in backgammon so better than looking at just my own skill rating is to examine the difference between my error rate and my opponents.  Here’s the image of that:</p>
+
+<p><img src="/img/0032-luck-v-net-skill.svg" alt="skill-v-luck2" /></p>
+
+<p>In fact, doing some statistical modelling we find some results that confirm the visuals:</p>
+
+<ul>
+  <li>predicting the result of a match with just luck as an explanatory variable gets it right 97.9% of the time</li>
+  <li>predicting the result with just net error rate as an explanatory variable gets it right only 65.0% of the time (remember, guessing at random would give you 50%)</li>
+  <li>predicting the result using both luck and error rate as explanatory variables gets it right 99.7% of the time.</li>
+</ul>
+
+<h2 id="conclusions">Conclusions</h2>
+<p>Skill matters in backgammon, but when you play people at similar skill levels the games become more and more like a coin flip.  Good playing can overcome moderately bad luck in an individual match, but mostly it doesn’t.  You have to play a lot of matches for the skill to become important.</p>
+
+<h2 id="code">Code</h2>
+<p>All the data management and analysis was done in R.</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a><span class="c1">#---------load up functionality and fonts------------</span>
+<a name="True-2"></a><span class="kn">library</span><span class="p">(</span>readr<span class="p">)</span>
+<a name="True-3"></a><span class="kn">library</span><span class="p">(</span>dplyr<span class="p">)</span>
+<a name="True-4"></a><span class="kn">library</span><span class="p">(</span>tidyr<span class="p">)</span>
+<a name="True-5"></a><span class="kn">library</span><span class="p">(</span>ggplot2<span class="p">)</span>
+<a name="True-6"></a><span class="kn">library</span><span class="p">(</span>showtext<span class="p">)</span>
+<a name="True-7"></a><span class="kn">library</span><span class="p">(</span>directlabels<span class="p">)</span> <span class="c1"># see http://stackoverflow.com/questions/13627735/stat-contour-with-data-labels-on-lines</span>
+<a name="True-8"></a><span class="kn">library</span><span class="p">(</span>caret<span class="p">)</span>        <span class="c1"># for cross-validation</span>
+<a name="True-9"></a><span class="kn">library</span><span class="p">(</span>RColorBrewer<span class="p">)</span>
+<a name="True-10"></a><span class="kn">library</span><span class="p">(</span>directlabels<span class="p">)</span>
+<a name="True-11"></a>
+<a name="True-12"></a>font.add.google<span class="p">(</span><span class="s">&quot;Poppins&quot;</span><span class="p">,</span> <span class="s">&quot;myfont&quot;</span><span class="p">)</span>
+<a name="True-13"></a>showtext.auto<span class="p">()</span>
+<a name="True-14"></a>theme_set<span class="p">(</span>theme_light<span class="p">(</span>base_family <span class="o">=</span> <span class="s">&quot;myfont&quot;</span><span class="p">))</span>
+<a name="True-15"></a>
+<a name="True-16"></a>pal <span class="o">&lt;-</span> brewer.pal<span class="p">(</span><span class="m">7</span><span class="p">,</span> <span class="s">&quot;Set1&quot;</span><span class="p">)[</span> <span class="m">1</span><span class="o">:</span><span class="m">2</span><span class="p">]</span>
+<a name="True-17"></a>
+<a name="True-18"></a><span class="c1">#-----------import data----------------</span>
+<a name="True-19"></a><span class="c1"># Open XG-Gammon, choose &quot;players&quot;, &quot;see profile results&quot;, &quot;Results&quot;,</span>
+<a name="True-20"></a><span class="c1"># &quot;Copy to clipboard&quot;, &quot;sessions list&quot;.  Paste result into Excel and save as a csv.</span>
+<a name="True-21"></a><span class="c1"># xg_orig &lt;- read_csv(&quot;../data/xg-export.csv&quot;)</span>
+<a name="True-22"></a><span class="c1"># or you can use one I&#39;ve prepared earlier, just with the column of opponent names deleted:</span>
+<a name="True-23"></a>xg_orig <span class="o">&lt;-</span> read_csv<span class="p">(</span><span class="s">&quot;https://raw.githubusercontent.com/ellisp/ellisp.github.io/source/data/xg-export.csv&quot;</span><span class="p">)</span>
+<a name="True-24"></a><span class="kp">names</span><span class="p">(</span>xg_orig<span class="p">)</span> <span class="o">&lt;-</span> <span class="kp">gsub</span><span class="p">(</span><span class="s">&quot; &quot;</span><span class="p">,</span> <span class="s">&quot;_&quot;</span><span class="p">,</span> <span class="kp">names</span><span class="p">(</span>xg_orig<span class="p">),</span> fixed <span class="o">=</span> <span class="kc">TRUE</span><span class="p">)</span>
+<a name="True-25"></a>xg <span class="o">&lt;-</span> xg_orig <span class="o">%&gt;%</span>
+<a name="True-26"></a>   filter<span class="p">(</span>Match_Length <span class="o">&lt;=</span> <span class="m">15</span><span class="p">)</span> <span class="c1"># knock out a 99999 outlier</span>
+<a name="True-27"></a>
+<a name="True-28"></a>   ggplot<span class="p">(</span>xg<span class="p">,</span> aes<span class="p">(</span>x <span class="o">=</span> Blunders<span class="p">))</span> <span class="o">+</span> 
+<a name="True-29"></a>   geom_histogram<span class="p">(</span>binwidth <span class="o">=</span> <span class="m">1</span><span class="p">)</span> <span class="o">+</span>
+<a name="True-30"></a>      labs<span class="p">(</span>x <span class="o">=</span> <span class="s">&quot;Blunders per match&quot;</span><span class="p">,</span>
+<a name="True-31"></a>           y <span class="o">=</span> <span class="s">&quot;Number of matches&quot;</span><span class="p">)</span>
+<a name="True-32"></a>
+<a name="True-33"></a>   ggplot<span class="p">(</span>xg<span class="p">,</span> aes<span class="p">(</span>x <span class="o">=</span> Jokers<span class="p">))</span> <span class="o">+</span> 
+<a name="True-34"></a>      geom_histogram<span class="p">(</span>binwidth <span class="o">=</span> <span class="m">1</span><span class="p">)</span> <span class="o">+</span>
+<a name="True-35"></a>      labs<span class="p">(</span>x <span class="o">=</span> <span class="s">&quot;Jokers per match&quot;</span><span class="p">,</span>
+<a name="True-36"></a>           y <span class="o">=</span> <span class="s">&quot;Number of matches&quot;</span><span class="p">)</span>
+<a name="True-37"></a>
+<a name="True-38"></a>p <span class="o">&lt;-</span> xg <span class="o">%&gt;%</span>
+<a name="True-39"></a>   mutate<span class="p">(</span>bm <span class="o">=</span> Blunders <span class="o">/</span> Moves<span class="p">,</span>
+<a name="True-40"></a>          jm <span class="o">=</span> Jokers <span class="o">/</span> Moves<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-41"></a>   select<span class="p">(</span>bm<span class="p">,</span> jm<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-42"></a>   gather<span class="p">(</span>variable<span class="p">,</span> value<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-43"></a>   mutate<span class="p">(</span>variable <span class="o">=</span> <span class="kp">ifelse</span><span class="p">(</span>variable <span class="o">==</span> <span class="s">&quot;bm&quot;</span><span class="p">,</span> <span class="s">&quot;        Blunders per move&quot;</span><span class="p">,</span> <span class="s">&quot;  Jokers per move&quot;</span><span class="p">))</span> <span class="o">%&gt;%</span>
+<a name="True-44"></a>   ggplot<span class="p">(</span>aes<span class="p">(</span>x <span class="o">=</span> value<span class="p">,</span> colour <span class="o">=</span> variable<span class="p">))</span> <span class="o">+</span>
+<a name="True-45"></a>   geom_density<span class="p">()</span> <span class="o">+</span>
+<a name="True-46"></a>   labs<span class="p">(</span>x <span class="o">=</span> <span class="s">&quot;Events per move&quot;</span><span class="p">)</span>
+<a name="True-47"></a>
+<a name="True-48"></a>   direct.label<span class="p">(</span>p<span class="p">)</span>
+<a name="True-49"></a>
+<a name="True-50"></a><span class="c1">#--------equity v Elo-----------</span>
+<a name="True-51"></a><span class="c1"># PR = -(equity error per decision) * 500</span>
+<a name="True-52"></a><span class="c1"># http://www.bgonline.org/forums/webbbs_config.pl?noframes;read=53424</span>
+<a name="True-53"></a><span class="c1"># therefore e =  -PR / 500</span>
+<a name="True-54"></a>
+<a name="True-55"></a><span class="c1"># make a data frame I&#39;ll use for convertin equity per decision to Player Rating</span>
+<a name="True-56"></a><span class="c1"># (PR) on various plots</span>
+<a name="True-57"></a>pr_steps <span class="o">&lt;-</span> <span class="kt">data.frame</span><span class="p">(</span>PR <span class="o">=</span> <span class="kp">seq</span><span class="p">(</span>from <span class="o">=</span> <span class="m">0</span><span class="p">,</span> to <span class="o">=</span> <span class="m">40</span><span class="p">,</span> by <span class="o">=</span> <span class="m">5</span><span class="p">))</span> <span class="o">%&gt;%</span>
+<a name="True-58"></a>   mutate<span class="p">(</span>Eq_per_Decision <span class="o">=</span> <span class="o">-</span> PR <span class="o">/</span> <span class="m">500</span><span class="p">,</span>
+<a name="True-59"></a>          PR <span class="o">=</span> <span class="kp">ifelse</span><span class="p">(</span>PR <span class="o">==</span> <span class="m">40</span><span class="p">,</span> <span class="s">&quot;PR:&quot;</span><span class="p">,</span> <span class="kp">as.character</span><span class="p">(</span>PR<span class="p">)))</span>
+<a name="True-60"></a>
+<a name="True-61"></a>
+<a name="True-62"></a><span class="c1"># this plot shows that the &quot;Elo_Level&quot; is estimated by XG-Gammon based on error rate</span>
+<a name="True-63"></a>ggplot<span class="p">(</span>xg<span class="p">,</span> aes<span class="p">(</span>x <span class="o">=</span> Eq_per_Decision<span class="p">,</span> y <span class="o">=</span> Elo_Level<span class="p">))</span> <span class="o">+</span>
+<a name="True-64"></a>   geom_point<span class="p">()</span> <span class="o">+</span>
+<a name="True-65"></a>   scale_y_continuous<span class="p">(</span>limits<span class="o">=</span><span class="kt">c</span><span class="p">(</span><span class="m">670</span><span class="p">,</span> <span class="m">2100</span><span class="p">),</span> 
+<a name="True-66"></a>                      breaks <span class="o">=</span> <span class="kp">seq</span><span class="p">(</span>from <span class="o">=</span> <span class="m">800</span><span class="p">,</span> to <span class="o">=</span> <span class="m">2000</span><span class="p">,</span> by <span class="o">=</span> <span class="m">200</span><span class="p">))</span> <span class="o">+</span>
+<a name="True-67"></a>   geom_text<span class="p">(</span>data <span class="o">=</span> pr_steps<span class="p">,</span> y <span class="o">=</span> <span class="m">700</span><span class="p">,</span> aes<span class="p">(</span>label <span class="o">=</span> PR<span class="p">),</span> 
+<a name="True-68"></a>             colour <span class="o">=</span> <span class="s">&quot;grey50&quot;</span><span class="p">,</span> family <span class="o">=</span> <span class="s">&quot;myfont&quot;</span><span class="p">)</span> <span class="o">+</span>
+<a name="True-69"></a>   labs<span class="p">(</span>x <span class="o">=</span> <span class="s">&quot;Equity change per decision (negative means lost equity)&quot;</span><span class="p">,</span>
+<a name="True-70"></a>        y <span class="o">=</span> <span class="s">&quot;Equivalent Elo level estimated by XG-Gammon&quot;</span><span class="p">,</span>
+<a name="True-71"></a>        title <span class="o">=</span> <span class="s">&quot;XG-Gammon estimate of how equity per decision\nshould be related to Elo rating&quot;</span><span class="p">)</span>
+<a name="True-72"></a>
+<a name="True-73"></a>
+<a name="True-74"></a><span class="c1">#-------------------skill v luck v winning------------------------</span>
+<a name="True-75"></a>xg <span class="o">&lt;-</span> xg <span class="o">%&gt;%</span>
+<a name="True-76"></a>   mutate<span class="p">(</span>Cost_luck_per_move <span class="o">=</span> Cost_luck <span class="o">/</span> Moves<span class="p">)</span>
+<a name="True-77"></a>
+<a name="True-78"></a>xg <span class="o">%&gt;%</span>
+<a name="True-79"></a>   mutate<span class="p">(</span>Result <span class="o">=</span> <span class="kp">factor</span><span class="p">(</span><span class="kp">ifelse</span><span class="p">(</span>Result <span class="o">==</span> <span class="m">0</span><span class="p">,</span> <span class="s">&quot;Loss&quot;</span><span class="p">,</span> <span class="s">&quot;Win&quot;</span><span class="p">),</span>
+<a name="True-80"></a>                          levels <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="s">&quot;Win&quot;</span><span class="p">,</span> <span class="s">&quot;Loss&quot;</span><span class="p">)))</span> <span class="o">%&gt;%</span>
+<a name="True-81"></a>   ggplot<span class="p">(</span>aes<span class="p">(</span>x <span class="o">=</span> Eq_per_Decision<span class="p">,</span> y <span class="o">=</span> Cost_luck_per_move<span class="p">,</span> colour <span class="o">=</span> Result<span class="p">))</span> <span class="o">+</span>
+<a name="True-82"></a>   geom_point<span class="p">(</span>aes<span class="p">(</span>size <span class="o">=</span> Match_Length<span class="p">),</span> shape <span class="o">=</span> <span class="m">2</span><span class="p">)</span> <span class="o">+</span>
+<a name="True-83"></a>   geom_text<span class="p">(</span>data <span class="o">=</span> pr_steps<span class="p">,</span> y <span class="o">=</span> <span class="m">-1.3</span><span class="p">,</span> aes<span class="p">(</span>label <span class="o">=</span> PR<span class="p">),</span> 
+<a name="True-84"></a>             colour <span class="o">=</span> <span class="s">&quot;grey50&quot;</span><span class="p">,</span> family <span class="o">=</span> <span class="s">&quot;myfont&quot;</span><span class="p">)</span> <span class="o">+</span>
+<a name="True-85"></a>   scale_radius<span class="p">(</span><span class="s">&quot;Match\nlength&quot;</span><span class="p">,</span> breaks <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span> <span class="m">3</span><span class="p">,</span> <span class="m">5</span><span class="p">,</span> <span class="m">7</span><span class="p">,</span> <span class="m">9</span><span class="p">,</span> <span class="m">11</span><span class="p">))</span> <span class="o">+</span>
+<a name="True-86"></a>   scale_colour_manual<span class="p">(</span>values <span class="o">=</span> pal<span class="p">)</span> <span class="o">+</span>
+<a name="True-87"></a>   labs<span class="p">(</span>y <span class="o">=</span> <span class="s">&quot;Match equity gained through luck, per move\n&quot;</span><span class="p">,</span>
+<a name="True-88"></a>        x <span class="o">=</span> <span class="s">&quot;Skill: equity change per decision\nnegative means equity lost through poor choices&quot;</span><span class="p">,</span>
+<a name="True-89"></a>        title <span class="o">=</span> <span class="s">&quot;Luck is more important than skill\nin any single backgammon match&quot;</span><span class="p">)</span>
+<a name="True-90"></a>
+<a name="True-91"></a>
+<a name="True-92"></a>
+<a name="True-93"></a>xg_with_skill <span class="o">&lt;-</span> xg <span class="o">%&gt;%</span>
+<a name="True-94"></a>   mutate<span class="p">(</span>Result <span class="o">=</span> <span class="kp">factor</span><span class="p">(</span><span class="kp">ifelse</span><span class="p">(</span>Result <span class="o">==</span> <span class="m">0</span><span class="p">,</span> <span class="s">&quot;Loss&quot;</span><span class="p">,</span> <span class="s">&quot;Win&quot;</span><span class="p">),</span>
+<a name="True-95"></a>                          levels <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="s">&quot;Win&quot;</span><span class="p">,</span> <span class="s">&quot;Loss&quot;</span><span class="p">)),</span>
+<a name="True-96"></a>          Opp_Eq_per_Decision <span class="o">=</span> Opp_Eq_per_move <span class="o">*</span> Opp_Roll <span class="o">/</span> Opp_Decisions<span class="p">,</span> 
+<a name="True-97"></a>          net_skill <span class="o">=</span> Eq_per_Decision <span class="o">-</span> Opp_Eq_per_Decision <span class="p">)</span> 
+<a name="True-98"></a>
+<a name="True-99"></a>xg_with_skill <span class="o">%&gt;%</span>
+<a name="True-100"></a>   ggplot<span class="p">(</span>aes<span class="p">(</span>x <span class="o">=</span> net_skill<span class="p">,</span> y <span class="o">=</span> Cost_luck_per_move<span class="p">,</span> colour <span class="o">=</span> Result<span class="p">))</span> <span class="o">+</span>
+<a name="True-101"></a>   geom_vline<span class="p">(</span>xintercept <span class="o">=</span> <span class="m">0</span><span class="p">,</span> colour <span class="o">=</span> <span class="s">&quot;grey45&quot;</span><span class="p">)</span> <span class="o">+</span>
+<a name="True-102"></a>   geom_hline<span class="p">(</span>yintercept <span class="o">=</span> <span class="m">0</span><span class="p">,</span> colour <span class="o">=</span> <span class="s">&quot;grey45&quot;</span><span class="p">)</span> <span class="o">+</span>
+<a name="True-103"></a>   geom_point<span class="p">(</span>aes<span class="p">(</span>size <span class="o">=</span> Match_Length<span class="p">),</span> shape <span class="o">=</span> <span class="m">2</span><span class="p">,</span> alpha <span class="o">=</span> <span class="m">0.9</span><span class="p">)</span> <span class="o">+</span>
+<a name="True-104"></a>   scale_radius<span class="p">(</span><span class="s">&quot;Match\nlength&quot;</span><span class="p">,</span> breaks <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span> <span class="m">3</span><span class="p">,</span> <span class="m">5</span><span class="p">,</span> <span class="m">7</span><span class="p">,</span> <span class="m">9</span><span class="p">,</span> <span class="m">11</span><span class="p">))</span> <span class="o">+</span>
+<a name="True-105"></a>   scale_colour_manual<span class="p">(</span>values <span class="o">=</span> pal<span class="p">)</span> <span class="o">+</span>
+<a name="True-106"></a>   labs<span class="p">(</span>y <span class="o">=</span> <span class="s">&quot;Match equity gained through luck, per move\n&quot;</span><span class="p">,</span>
+<a name="True-107"></a>        x <span class="o">=</span> <span class="s">&quot;Skill: net equity change per decision from both players&#39; decisions\nnegative means net equity loss through poor choices&quot;</span><span class="p">,</span>
+<a name="True-108"></a>        title <span class="o">=</span> <span class="s">&quot;Luck is more important than skill\nin any single backgammon match&quot;</span><span class="p">)</span> <span class="o">+</span>
+<a name="True-109"></a>   annotate<span class="p">(</span><span class="s">&quot;text&quot;</span><span class="p">,</span> x <span class="o">=</span> <span class="m">0.3</span><span class="p">,</span> y <span class="o">=</span> <span class="m">0.04</span><span class="p">,</span> label <span class="o">=</span> <span class="s">&quot;More skilled\nand luckier&quot;</span><span class="p">,</span> 
+<a name="True-110"></a>            family <span class="o">=</span> <span class="s">&quot;myfont&quot;</span><span class="p">,</span> colour <span class="o">=</span> <span class="s">&quot;grey40&quot;</span><span class="p">)</span> <span class="o">+</span>
+<a name="True-111"></a>   annotate<span class="p">(</span><span class="s">&quot;text&quot;</span><span class="p">,</span> x <span class="o">=</span> <span class="m">-0.05</span><span class="p">,</span> y <span class="o">=</span> <span class="m">-0.085</span><span class="p">,</span> label <span class="o">=</span> <span class="s">&quot;Less skilled\nand unluckier&quot;</span><span class="p">,</span> 
+<a name="True-112"></a>            family <span class="o">=</span> <span class="s">&quot;myfont&quot;</span><span class="p">,</span> colour <span class="o">=</span> <span class="s">&quot;grey40&quot;</span><span class="p">)</span> <span class="o">+</span>
+<a name="True-113"></a>   
+<a name="True-114"></a>   annotate<span class="p">(</span><span class="s">&quot;text&quot;</span><span class="p">,</span> x <span class="o">=</span> <span class="m">0.2</span><span class="p">,</span> y <span class="o">=</span> <span class="m">-0.01</span><span class="p">,</span> label <span class="o">=</span> <span class="s">&quot;More skilled and\novercame bad luck&quot;</span><span class="p">,</span>
+<a name="True-115"></a>            family <span class="o">=</span> <span class="s">&quot;myfont&quot;</span><span class="p">,</span> colour <span class="o">=</span> pal<span class="p">[</span><span class="m">1</span><span class="p">])</span> <span class="o">+</span>
+<a name="True-116"></a>   annotate<span class="p">(</span><span class="s">&quot;segment&quot;</span><span class="p">,</span> x <span class="o">=</span> <span class="m">0.14</span><span class="p">,</span> xend <span class="o">=</span> <span class="m">0.09</span><span class="p">,</span> y <span class="o">=</span> <span class="m">-0.01</span><span class="p">,</span> yend <span class="o">=</span> <span class="m">-0.01</span><span class="p">,</span>
+<a name="True-117"></a>            colour <span class="o">=</span> pal<span class="p">[</span><span class="m">1</span><span class="p">],</span> arrow <span class="o">=</span> arrow<span class="p">(</span>angle <span class="o">=</span> <span class="m">20</span><span class="p">))</span> <span class="o">+</span>
+<a name="True-118"></a>
+<a name="True-119"></a>   annotate<span class="p">(</span><span class="s">&quot;text&quot;</span><span class="p">,</span> x <span class="o">=</span> <span class="m">0.17</span><span class="p">,</span> y <span class="o">=</span> <span class="m">-0.085</span><span class="p">,</span> label <span class="o">=</span> <span class="s">&quot;More skilled\nbut luck won out&quot;</span><span class="p">,</span>
+<a name="True-120"></a>            family <span class="o">=</span> <span class="s">&quot;myfont&quot;</span><span class="p">,</span> colour <span class="o">=</span> pal<span class="p">[</span><span class="m">2</span><span class="p">])</span> <span class="o">+</span>
+<a name="True-121"></a>   annotate<span class="p">(</span><span class="s">&quot;segment&quot;</span><span class="p">,</span> x <span class="o">=</span> <span class="m">0.12</span><span class="p">,</span> xend <span class="o">=</span> <span class="m">0.04</span><span class="p">,</span> y <span class="o">=</span> <span class="m">-0.085</span><span class="p">,</span> yend <span class="o">=</span> <span class="m">-0.085</span><span class="p">,</span>
+<a name="True-122"></a>            colour <span class="o">=</span> pal<span class="p">[</span><span class="m">2</span><span class="p">],</span> arrow <span class="o">=</span> arrow<span class="p">(</span>angle <span class="o">=</span> <span class="m">20</span><span class="p">))</span>
+<a name="True-123"></a>
+<a name="True-124"></a><span class="c1">#---------------------------luck v skill in modelling----------</span>
+<a name="True-125"></a>ctrl <span class="o">&lt;-</span> trainControl<span class="p">(</span>method <span class="o">=</span> <span class="s">&quot;repeatedcv&quot;</span><span class="p">,</span> number <span class="o">=</span> <span class="m">10</span><span class="p">,</span> savePredictions <span class="o">=</span> <span class="kc">TRUE</span><span class="p">)</span>
+<a name="True-126"></a>
+<a name="True-127"></a>mod1 <span class="o">&lt;-</span> train<span class="p">(</span>Result <span class="o">~</span> Cost_luck_per_move<span class="p">,</span> method <span class="o">=</span> <span class="s">&quot;glm&quot;</span><span class="p">,</span> family <span class="o">=</span> <span class="s">&quot;binomial&quot;</span><span class="p">,</span>
+<a name="True-128"></a>              data <span class="o">=</span> xg_with_skill<span class="p">,</span> trControl <span class="o">=</span> ctrl<span class="p">)</span>
+<a name="True-129"></a>mod1 <span class="c1"># 98.0% accuracy</span>
+<a name="True-130"></a>
+<a name="True-131"></a>mod2 <span class="o">&lt;-</span> train<span class="p">(</span>Result <span class="o">~</span> net_skill<span class="p">,</span> method <span class="o">=</span> <span class="s">&quot;glm&quot;</span><span class="p">,</span> family <span class="o">=</span> <span class="s">&quot;binomial&quot;</span><span class="p">,</span>
+<a name="True-132"></a>              data <span class="o">=</span> xg_with_skill<span class="p">,</span> trControl <span class="o">=</span> ctrl<span class="p">)</span>
+<a name="True-133"></a>mod2 <span class="c1"># 65.0%</span>
+<a name="True-134"></a>
+<a name="True-135"></a>
+<a name="True-136"></a>mod3 <span class="o">&lt;-</span> train<span class="p">(</span>Result <span class="o">~</span> net_skill <span class="o">+</span> Cost_luck_per_move<span class="p">,</span> method <span class="o">=</span> <span class="s">&quot;glm&quot;</span><span class="p">,</span> family <span class="o">=</span> <span class="s">&quot;binomial&quot;</span><span class="p">,</span>
+<a name="True-137"></a>              data <span class="o">=</span> xg_with_skill<span class="p">,</span> trControl <span class="o">=</span> ctrl<span class="p">)</span>
+<a name="True-138"></a>mod3 <span class="c1"># 99.7%</span></code></pre></div>
+
+
+
+</div>
+
+<div class = "container">
+   <div class="col-md-4">
+    
+        <a rel="prev" href="/blog/2016/03/06/control-charts">
+        <p>&larr; Older</p>
+        <p>Explore  with Shiny the impact of sample size on "p-charts"</p>
+        
+        </a>
+    
+    </div>
+    <div class="col-md-4">
+    </div>
+    <div class="col-md-4" style="text-align: right;">
+    
+      </div>
+      </div>
+      
+      
+      
+</div>
+
+
+   
+    <div id="disqus_thread"></div>
+
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+    
+    
+   
+			
+			</div><!-- /.container -->
+
+         
+
+   <div class = "container footer">
+			<footer>
+	    		
+            <p>Follow <a href = "/feed.xml">this blog with RSS</a>.  Or follow <a href = "/feed.r.xml">posts in this blog featuring R with RSS</a>.</p>
+	
+            <p>This blog is built with <a href = "http://jekyllrb.com/">Jekyll</a>, <a href = "http://getbootstrap.com/">Bootstrap</a>, <a href = "https://www.ruby-lang.org/en/">Ruby</a> and <a href = "https://cran.r-project.org/">R</a>.  Read my <a href="/about/acknowledgements.html">acknowledgements</a> for a little more on how.  I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Peter's stats stuff</span> by <a xmlns:cc="http://creativecommons.org/ns#" href="/" property="cc:attributionName" rel="cc:attributionURL">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+
+
+			</footer>
+    </div>
+
+
+
+  
+</body>
+</html>
+   
+
+
+
+
+         
