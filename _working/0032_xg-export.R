@@ -30,7 +30,8 @@ svg("../img/0032-blunders.svg", 5, 3.4)
 print(
    ggplot(xg, aes(x = Blunders)) + 
    geom_histogram(binwidth = 1) +
-      labs(x = "Blunders per match")
+      labs(x = "Blunders per match",
+           y = "Number of matches")
 )
 dev.off()
 
@@ -39,7 +40,8 @@ svg("../img/0032-jokers.svg", 5, 3.4)
 print(
    ggplot(xg, aes(x = Jokers)) + 
       geom_histogram(binwidth = 1) +
-      labs(x = "Jokers per match")
+      labs(x = "Jokers per match",
+           y = "Number of matches")
 )
 dev.off()
 
@@ -150,7 +152,7 @@ ctrl <- trainControl(method = "repeatedcv", number = 10, savePredictions = TRUE)
 
 mod1 <- train(Result ~ Cost_luck_per_move, method = "glm", family = "binomial",
               data = xg_with_skill, trControl = ctrl)
-mod1 # 97.9% accuracy
+mod1 # 98.0% accuracy
 
 mod2 <- train(Result ~ net_skill, method = "glm", family = "binomial",
               data = xg_with_skill, trControl = ctrl)
