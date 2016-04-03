@@ -6,8 +6,8 @@ tag:
    - TimeSeries
    - R
 description: I've updated the {ggseas} R package on CRAN to version 0.4.0 and it now includes a ggplot2-based seasonal decomposition, rolling averages on the fly, and options to scale the data to an index.
-image: /img/0034-ggsdc2.svg
-socialimage: http://ellisp.github.io/img/0034-ggsdc2.png
+image: /img/0034-ggsdc.svg
+socialimage: http://ellisp.github.io/img/0034-ggsdc.png
 category: R
 ---
 The ggseas package for R, which provides convenient treatment of seasonal time series in the ggplot2 universe, was first released by me in February 2016 and since then has been enhanced several ways.  The latest version, 0.4.0, is now on CRAN.  
