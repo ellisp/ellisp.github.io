@@ -1,0 +1,522 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Election analysis contest entry part 2 - building the nzelect R package</title>
+      	
+         
+         
+            <meta name ="description" content ="I explain the structure and techniques behind building the nzelect R package, which has New Zealand election results, in case anyone is interested or wants to adapt the process for other packages that rely on preparatory data munging.">
+            <meta property="og:description" content ="I explain the structure and techniques behind building the nzelect R package, which has New Zealand election results, in case anyone is interested or wants to adapt the process for other packages that rely on preparatory data munging.">
+         
+         <meta property="og:site_name" content="Peter's stats stuff" />
+         <meta property="og:title" content="Election analysis contest entry part 2 - building the nzelect R package" />
+         
+            <meta property="og:image" content="http://ellisp.github.io/img/0036-structure.png" />
+         
+         <meta property="og:url" content="http://ellisp.github.io/blog/2016/04/04/nzelect2/" />
+         <meta property="og:author" content= "https://www.facebook.com/peter.ellis.353" />
+         <meta property="og:type" content="article" />
+           
+          <link href="/css/bootstrap.min.css" rel ="stylesheet">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet">
+            <link href="/css/custom.css" rel ="stylesheet">       
+     <link rel="stylesheet" href="/css/Pygments/autumn.css">      
+     <link rel="stylesheet" href="/css/Pygments/custom.css">      
+            
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="Peter's stats stuff by Peter Ellis"
+      href="/feed.xml">
+
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+         <script src="/js/bootstrap.min.js"></script>
+         
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Peter's stats stuff</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">All blog posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">Ordered by date</a></li>
+                  <li><a href="/blog/index_by_tag.html">Grouped by subject matter</a></li>
+                  <li><a href = /blog/2016/04/04/nzelect2>Most recent post</a></li>
+                 </ul>
+            </li>
+              <li><a href="/blog/showcase.html">Showcase</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			    <div class="jumbotron">
+      <div class="container">
+        <h1>Election analysis contest entry part 2 - building the nzelect R package</h1>
+         <p class="meta">04 Apr 2016</p>
+        
+      </div>
+    </div>
+
+
+
+
+<div class = "post-summary">
+<h2>TL;DR Summary:</h2>
+   I explain the structure and techniques behind building the nzelect R package, which has New Zealand election results, in case anyone is interested or wants to adapt the process for other packages that rely on preparatory data munging.
+   <hr></hr>
+</div>
+
+<div class="post">
+<div class="col-md-2">
+
+</div>
+  <div class="col-md-8">
+
+  <h2 id="motivation">Motivation</h2>
+<p>This post is the second in a series that make up my entry in <a href="http://www.arilamstein.com/blog/2016/03/28/announcing-r-election-analysis-contest/">Ari Lamstein’s R Election Analysis Contest</a>,  <a href="/blog/2016/04/03/nzelect1/">Yesterday</a> I introduced the <a href="https://github.com/ellisp/nzelect"><code>nzelect</code> R package</a> from a user perspective.  Today I’m writing about how the build of that package works.  This might be of interest to someone planning on doing something similar, or to anyone who wants to contribute to <code>nzelect</code>.</p>
+
+<p>Here’s today’s themes:</p>
+
+<ul>
+  <li>Structure - separation of the preparation from the package</li>
+  <li>Modular code</li>
+  <li>Specific techniques - combining multiple CSVs, and overlaying spatial points and shapefiles</li>
+</ul>
+
+<h2 id="structure">Structure</h2>
+<p>Here’s the directory structure within the Git repo that builds this package, with the individual files in the key <code>./prep/</code> folder shown on the right:</p>
+
+<p><img src="/img/0036-structure.png" alt="structure" /></p>
+
+<p>You can view, fork and clone the whole project for yourself if interested from <a href="https://github.com/ellisp/nzelect">GitHub</a>.  The code excerpts in this blog post won’t run if you just paste them into R; they need a specific folder structure that comes from running them in a clone of the main project.</p>
+
+<p>Conceptually, there are three main parts of this project:</p>
+
+<ul>
+  <li>downloads and data munging that need to be done separately to the published R package, and which include products like data tidying scripts and downloaded raw data which must not be included in the package itself.  This comprises the <code>prep</code> and  <code>downloads</code> folders</li>
+  <li>The R package itself, which is in the <code>pkg</code> folder and includes subdirectories for <code>data</code>, <code>man</code>, <code>R</code> and <code>tests</code> folders</li>
+  <li>secondary material which depends on the R package being in existence and installed, such as the <code>README</code> for the GitHub repo, extended examples in <code>examples</code> including a Shiny app which will be the subject of the next post, etc.</li>
+</ul>
+
+<p>There’s also various administrative stuff, such as the <code>.git</code> folder holding the version control database, <code>.Rproj.user</code> holding information on the RStudio project, the <code>travis.yml</code> file that sets up hooks from GitHub to Travis Continuous Integration, and <code>nzelect.Rcheck</code> holding the latest version of the R package build checks.</p>
+
+<p>This is a typical structure for me.  I generally don’t like an R package based in the root folder of a project.  I nearly always have a bunch of stuff I want to do - prep and extended examples - that I don’t want in the built and published version of the package for end users, but I do want kept together with the code building the package in a single RStudio project and Git repository.</p>
+
+<p>The project is held together by a script entitled <code>build.R</code>.  In other projects this would make sense as a <code>makefile</code> but my workflow with <code>nzelect</code> is quite interactive (I pick and choose which files to run during development) and I’m more comfortable doing that with an R script.  In principle it should work if run end to end with a fresh clone of the repository, and it looks like this:</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a><span class="c1">#./build.R</span>
+<a name="True-2"></a><span class="c1"># Peter Ellis, April 2016</span>
+<a name="True-3"></a><span class="c1"># Builds (from scratch if necessary for a fresh clone) the nzelect R package</span>
+<a name="True-4"></a>
+<a name="True-5"></a><span class="c1">#----------------functionality------------</span>
+<a name="True-6"></a><span class="kn">library</span><span class="p">(</span>knitr<span class="p">)</span>
+<a name="True-7"></a><span class="kn">library</span><span class="p">(</span>devtools<span class="p">)</span>
+<a name="True-8"></a>
+<a name="True-9"></a><span class="c1">#-------------downloads---------------</span>
+<a name="True-10"></a><span class="c1"># These are one-offs, and separated from the rest of the grooming to avoid</span>
+<a name="True-11"></a><span class="c1"># repeating expensive downloads</span>
+<a name="True-12"></a>
+<a name="True-13"></a><span class="c1"># About 1MB worth of voting results:</span>
+<a name="True-14"></a><span class="kn">source</span><span class="p">(</span><span class="s">&quot;prep/download_votingplace_results.R&quot;</span><span class="p">)</span>
+<a name="True-15"></a>
+<a name="True-16"></a><span class="c1"># About 130MB of shapefiles / maps, used for locating voting places in areas:</span>
+<a name="True-17"></a><span class="kn">source</span><span class="p">(</span><span class="s">&quot;prep/download_map_shapefiles.R&quot;</span><span class="p">)</span>
+<a name="True-18"></a>
+<a name="True-19"></a>
+<a name="True-20"></a><span class="c1">#----------tidying----------------</span>
+<a name="True-21"></a><span class="c1"># import all the voting results CVS and amalgamate into a single object</span>
+<a name="True-22"></a><span class="kn">source</span><span class="p">(</span><span class="s">&quot;prep/tidy_votingplace_results.R&quot;</span><span class="p">)</span> <span class="c1"># 30 seconds</span>
+<a name="True-23"></a>
+<a name="True-24"></a><span class="c1"># download and import the actual locations.  Includes a 575KB download.</span>
+<a name="True-25"></a><span class="c1"># This script also calls ./prep/match_locations_to_areas.R from within itself </span>
+<a name="True-26"></a><span class="c1"># (takes a few minutes to run because of importing shapefiles, downloaded earlier):</span>
+<a name="True-27"></a><span class="kn">source</span><span class="p">(</span><span class="s">&quot;prep/import_votingplace_locations.R&quot;</span><span class="p">)</span> <span class="c1"># 3 minutes</span>
+<a name="True-28"></a>
+<a name="True-29"></a><span class="c1"># Down the track there might be some import of economic and sociodemographic</span>
+<a name="True-30"></a><span class="c1"># data here; currently only in development</span>
+<a name="True-31"></a>
+<a name="True-32"></a><span class="c1"># munge data for Shiny app and prompts to deploy it:</span>
+<a name="True-33"></a><span class="kn">source</span><span class="p">(</span><span class="s">&quot;prep/shiny_prep.R&quot;</span><span class="p">)</span>
+<a name="True-34"></a>
+<a name="True-35"></a><span class="c1">#--------------build the actual package---------</span>
+<a name="True-36"></a><span class="c1"># create helpfiles:</span>
+<a name="True-37"></a>document<span class="p">(</span><span class="s">&quot;pkg&quot;</span><span class="p">)</span>
+<a name="True-38"></a>
+<a name="True-39"></a><span class="c1"># unit tests, including check against published totals</span>
+<a name="True-40"></a>test<span class="p">(</span><span class="s">&quot;pkg&quot;</span><span class="p">)</span>
+<a name="True-41"></a>
+<a name="True-42"></a><span class="c1"># create README for GitHub repo:</span>
+<a name="True-43"></a>knit<span class="p">(</span><span class="s">&quot;README.Rmd&quot;</span><span class="p">,</span> <span class="s">&quot;README.md&quot;</span><span class="p">)</span>
+<a name="True-44"></a>
+<a name="True-45"></a><span class="c1"># run pedantic CRAN checks</span>
+<a name="True-46"></a>check<span class="p">(</span><span class="s">&quot;pkg&quot;</span><span class="p">)</span> <span class="c1"># currently fail due to inputenc LaTeX compile prob</span>
+<a name="True-47"></a>
+<a name="True-48"></a><span class="c1"># create .tar.gz for CRAN or wherever</span>
+<a name="True-49"></a>build<span class="p">(</span><span class="s">&quot;pkg&quot;</span><span class="p">)</span></code></pre></div>
+
+<h2 id="modular-code">Modular code</h2>
+<p>Looking at that <code>build.R</code> script introduces my second theme for today - modularity.  I have separate scripts for different tasks such as “download election results”, “download shapefiles” and “tidy voting place results”.  This makes development easier to keep track of, and easier to run and debug a whole script at once without repeating expensive processes like downloads.  Note that the downloaded data isn’t tracked by Git - that would bloat out the repository too much, so all downloads are covered in the .gitignore instead.</p>
+
+<p>Some of those scripts are very short.  For example, <code>download_map_shapefiles.R</code> is only 8 lines long including blanks:</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a><span class="c1"># ./prep/download_map_shapefiles.R</span>
+<a name="True-2"></a><span class="c1"># Peter Ellis, April 2016</span>
+<a name="True-3"></a>
+<a name="True-4"></a><span class="c1"># We want 2014 boundaries</span>
+<a name="True-5"></a>download.file<span class="p">(</span><span class="s">&quot;http://www3.stats.govt.nz/digitalboundaries/annual/ESRI_Shapefile_Digital_Boundaries_2014_Generalised_12_Mile.zip&quot;</span><span class="p">,</span>
+<a name="True-6"></a>              destfile <span class="o">=</span> <span class="s">&quot;downloads/shapefiles/2014_boundaries.zip&quot;</span><span class="p">,</span> mode <span class="o">=</span><span class="s">&quot;wb&quot;</span><span class="p">)</span>
+<a name="True-7"></a>
+<a name="True-8"></a>unzip<span class="p">(</span><span class="s">&quot;downloads/shapefiles/2014_boundaries.zip&quot;</span><span class="p">,</span> exdir <span class="o">=</span> <span class="s">&quot;downloads/shapefiles&quot;</span><span class="p">)</span></code></pre></div>
+
+<p>This sort of thing is key for maintainability.  If multiple people are working on a project, it also stops them treading on eachothers’ toes working on the same files at once.</p>
+
+<h2 id="specific-techniques">Specific techniques</h2>
+<p>I won’t go through the whole project - that’s easiest done for yourself if interested from a clone of it - but will highlight three more things.</p>
+
+<h3 id="munging-the-electoral-commission-csvs">Munging the Electoral Commission CSVs</h3>
+<p>The 2014 general election results are published on the web in the form of 71 CSV files for candidate vote (one per electorate) and 71 CSV files for party vote.  Each CSV has data on each voting place used by voters enrolled in the electorate (voting places are not necessarily physically in the electorate).  Here’s a screenshot of a typical CSV:</p>
+
+<p><img src="/img/0036-csv.png" alt="csv" /></p>
+
+<p>As can be seen, they go some way towards being nicely machine readable, but are not yet in tidy shape.</p>
+
+<p>Some features of these CSVs include:</p>
+
+<ul>
+  <li>the name of the electorate is in cell A2</li>
+  <li>the main body of data starts in row 3</li>
+  <li>column A of the main data represents suburb, and a blank represents “same as previous entry”</li>
+  <li>the final row of the main data (not shown) is always a Total, followed by a row that is blank for columns A:E</li>
+  <li>below the main data rectangle there is a secondary rectangle of data (not shown) with data on candidates that is otherwise not presented (ie which party the candidates represent) as well as sum totals of their votes</li>
+</ul>
+
+<p>Luckily, each CSV has an identical pattern - not identical numbers of rows and columns, but enough pattern that it is possible to programmatically identify the main data rectangle.  For example, after skipping the first three rows, the next empty cell in column B indicates the main data rectangle is finished, and the row above that cell is the sum total (which needs to be excluded).  Here’s the part of the tidying script that deals with those candidate CSVs:</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a><span class="c1"># ./prep/tidy_votingplace_results.R</span>
+<a name="True-2"></a><span class="c1"># imports previously downloaded CSVs of election results by voting place.</span>
+<a name="True-3"></a><span class="c1"># So far only for 2014 General Election</span>
+<a name="True-4"></a><span class="c1"># Peter Ellis, April 2016</span>
+<a name="True-5"></a>
+<a name="True-6"></a><span class="kn">library</span><span class="p">(</span>tidyr<span class="p">)</span>
+<a name="True-7"></a><span class="kn">library</span><span class="p">(</span>dplyr<span class="p">)</span>
+<a name="True-8"></a><span class="kn">library</span><span class="p">(</span>stringr<span class="p">)</span>
+<a name="True-9"></a>
+<a name="True-10"></a><span class="c1">#==================2014======================================</span>
+<a name="True-11"></a>number_electorates <span class="o">&lt;-</span> <span class="m">71</span>
+<a name="True-12"></a>
+<a name="True-13"></a><span class="c1">#---------------------2014 candidate results-------------------</span>
+<a name="True-14"></a>filenames <span class="o">&lt;-</span> <span class="kp">paste0</span><span class="p">(</span><span class="s">&quot;downloads/elect2014/e9_part8_cand_&quot;</span><span class="p">,</span> <span class="m">1</span><span class="o">:</span>number_electorates<span class="p">,</span> <span class="s">&quot;.csv&quot;</span><span class="p">)</span>
+<a name="True-15"></a>
+<a name="True-16"></a>results_voting_place <span class="o">&lt;-</span> <span class="kt">list</span><span class="p">()</span>
+<a name="True-17"></a>
+<a name="True-18"></a><span class="kr">for</span> <span class="p">(</span>i <span class="kr">in</span> <span class="m">1</span><span class="o">:</span>number_electorates<span class="p">){</span>
+<a name="True-19"></a>    
+<a name="True-20"></a>    <span class="c1"># What is the electorate name?  Is in cell A2 of each csv</span>
+<a name="True-21"></a>    electorate <span class="o">&lt;-</span> read.csv<span class="p">(</span>filenames<span class="p">[</span>i<span class="p">],</span> skip<span class="o">=</span><span class="m">1</span><span class="p">,</span> nrows<span class="o">=</span><span class="m">1</span><span class="p">,</span> header<span class="o">=</span><span class="kc">FALSE</span><span class="p">,</span> 
+<a name="True-22"></a>                           stringsAsFactors<span class="o">=</span><span class="kc">FALSE</span><span class="p">,</span> fileEncoding <span class="o">=</span> <span class="s">&quot;UTF-8-BOM&quot;</span><span class="p">)[,</span><span class="m">1</span><span class="p">]</span>
+<a name="True-23"></a>    
+<a name="True-24"></a>    <span class="c1"># read in the bulk of the data</span>
+<a name="True-25"></a>    tmp <span class="o">&lt;-</span> read.csv<span class="p">(</span>filenames<span class="p">[</span>i<span class="p">],</span> skip<span class="o">=</span><span class="m">2</span><span class="p">,</span> check.names<span class="o">=</span><span class="kc">FALSE</span><span class="p">,</span> 
+<a name="True-26"></a>                    stringsAsFactors<span class="o">=</span><span class="kc">FALSE</span><span class="p">,</span> fileEncoding <span class="o">=</span> <span class="s">&quot;UTF-8-BOM&quot;</span><span class="p">)</span>
+<a name="True-27"></a>    
+<a name="True-28"></a>    <span class="c1"># read in the candidate names and parties</span>
+<a name="True-29"></a>    first_blank <span class="o">&lt;-</span> <span class="kp">which</span><span class="p">(</span>tmp<span class="p">[,</span><span class="m">2</span><span class="p">]</span> <span class="o">==</span> <span class="s">&quot;&quot;</span><span class="p">)</span>
+<a name="True-30"></a>    candidates_parties <span class="o">&lt;-</span> tmp<span class="p">[(</span>first_blank <span class="o">+</span> <span class="m">2</span><span class="p">)</span> <span class="o">:</span> <span class="kp">nrow</span><span class="p">(</span>tmp<span class="p">),</span> <span class="m">1</span><span class="o">:</span><span class="m">2</span><span class="p">]</span>
+<a name="True-31"></a>    <span class="kp">names</span><span class="p">(</span>candidates_parties<span class="p">)</span> <span class="o">&lt;-</span> <span class="kt">c</span><span class="p">(</span><span class="s">&quot;Candidate&quot;</span><span class="p">,</span> <span class="s">&quot;Party&quot;</span><span class="p">)</span>
+<a name="True-32"></a>    candidates_parties <span class="o">&lt;-</span> <span class="kp">rbind</span><span class="p">(</span>candidates_parties<span class="p">,</span>
+<a name="True-33"></a>                                <span class="kt">data.frame</span><span class="p">(</span>Candidate<span class="o">=</span><span class="s">&quot;Informal Candidate Votes&quot;</span><span class="p">,</span> Party<span class="o">=</span><span class="s">&quot;Informal Candidate Votes&quot;</span><span class="p">))</span>
+<a name="True-34"></a>    
+<a name="True-35"></a>    <span class="c1"># we knock out all the rows from (first_blank - 1) (which is the total)</span>
+<a name="True-36"></a>    tmp <span class="o">&lt;-</span> tmp<span class="p">[</span><span class="o">-</span><span class="p">((</span>first_blank <span class="o">-</span> <span class="m">1</span><span class="p">)</span> <span class="o">:</span> <span class="kp">nrow</span><span class="p">(</span>tmp<span class="p">)),</span> <span class="p">]</span>
+<a name="True-37"></a>    <span class="kp">names</span><span class="p">(</span>tmp<span class="p">)[</span><span class="m">1</span><span class="o">:</span><span class="m">2</span><span class="p">]</span> <span class="o">&lt;-</span> <span class="kt">c</span><span class="p">(</span><span class="s">&quot;ApproxLocation&quot;</span><span class="p">,</span> <span class="s">&quot;VotingPlace&quot;</span><span class="p">)</span>
+<a name="True-38"></a>    
+<a name="True-39"></a>    <span class="c1"># in some of the data there are annoying subheadings in the second column.  We can</span>
+<a name="True-40"></a>    <span class="c1"># identify these as rows that return NA when you sum up where the votes should be</span>
+<a name="True-41"></a>    tmp <span class="o">&lt;-</span> tmp<span class="p">[</span><span class="o">!</span><span class="kp">is.na</span><span class="p">(</span><span class="kp">apply</span><span class="p">(</span>tmp<span class="p">[,</span> <span class="o">-</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">2</span><span class="p">)],</span> <span class="m">1</span><span class="p">,</span> <span class="kr">function</span><span class="p">(</span>x<span class="p">){</span><span class="kp">sum</span><span class="p">(</span><span class="kp">as.numeric</span><span class="p">(</span>x<span class="p">))})),</span> <span class="p">]</span>
+<a name="True-42"></a>    
+<a name="True-43"></a>    <span class="c1"># need to fill in the gaps where there is no polling location</span>
+<a name="True-44"></a>    last_ApproxLocation <span class="o">&lt;-</span> tmp<span class="p">[</span><span class="m">1</span><span class="p">,</span> <span class="m">1</span><span class="p">]</span>
+<a name="True-45"></a>    <span class="kr">for</span><span class="p">(</span>j <span class="kr">in</span> <span class="m">1</span><span class="o">:</span> <span class="kp">nrow</span><span class="p">(</span>tmp<span class="p">)){</span>
+<a name="True-46"></a>        <span class="kr">if</span><span class="p">(</span>tmp<span class="p">[</span>j<span class="p">,</span> <span class="m">1</span><span class="p">]</span> <span class="o">==</span> <span class="s">&quot;&quot;</span><span class="p">)</span> <span class="p">{</span>
+<a name="True-47"></a>            tmp<span class="p">[</span>j<span class="p">,</span> <span class="m">1</span><span class="p">]</span> <span class="o">&lt;-</span> last_ApproxLocation
+<a name="True-48"></a>        <span class="p">}</span> <span class="kr">else</span> <span class="p">{</span>
+<a name="True-49"></a>            last_ApproxLocation <span class="o">&lt;-</span> tmp<span class="p">[</span>j<span class="p">,</span> <span class="m">1</span><span class="p">]</span>
+<a name="True-50"></a>        <span class="p">}</span>
+<a name="True-51"></a>    <span class="p">}</span>  
+<a name="True-52"></a>    
+<a name="True-53"></a>    <span class="c1"># normalise / tidy</span>
+<a name="True-54"></a>    tmp <span class="o">&lt;-</span> tmp<span class="p">[</span><span class="kp">names</span><span class="p">(</span>tmp<span class="p">)</span> <span class="o">!=</span> <span class="s">&quot;Total Valid Candidate Votes&quot;</span><span class="p">]</span> <span class="o">%&gt;%</span>
+<a name="True-55"></a>        gather<span class="p">(</span>Candidate<span class="p">,</span> Votes<span class="p">,</span> <span class="o">-</span>ApproxLocation<span class="p">,</span> <span class="o">-</span>VotingPlace<span class="p">)</span>
+<a name="True-56"></a>    
+<a name="True-57"></a>    tmp<span class="o">$</span>Electorate <span class="o">&lt;-</span> electorate
+<a name="True-58"></a>    tmp <span class="o">&lt;-</span> tmp <span class="o">%&gt;%</span>
+<a name="True-59"></a>        left_join<span class="p">(</span>candidates_parties<span class="p">,</span> by <span class="o">=</span> <span class="s">&quot;Candidate&quot;</span><span class="p">)</span>
+<a name="True-60"></a>    results_voting_place<span class="p">[[</span>i<span class="p">]]</span> <span class="o">&lt;-</span> tmp
+<a name="True-61"></a><span class="p">}</span>
+<a name="True-62"></a>
+<a name="True-63"></a><span class="c1"># combine all electorates</span>
+<a name="True-64"></a>candidate_results_voting_place <span class="o">&lt;-</span> <span class="kp">do.call</span><span class="p">(</span><span class="s">&quot;rbind&quot;</span><span class="p">,</span> results_voting_place<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-65"></a>    mutate<span class="p">(</span>Votes <span class="o">=</span> <span class="kp">as.numeric</span><span class="p">(</span>Votes<span class="p">),</span>
+<a name="True-66"></a>           Party <span class="o">=</span> <span class="kp">gsub</span><span class="p">(</span><span class="s">&quot;M..ori Party&quot;</span><span class="p">,</span> <span class="s">&quot;Maori Party&quot;</span><span class="p">,</span> Party<span class="p">),</span>
+<a name="True-67"></a>           VotingType <span class="o">=</span> <span class="s">&quot;Candidate&quot;</span><span class="p">)</span>
+<a name="True-68"></a><span class="kc">...</span></code></pre></div>
+
+<h3 id="overlaying-shapefiles">Overlaying shapefiles</h3>
+<p>One important task was to take the point locations (in NZTM coordinates) of the 2,500 or so voting places and determine which meshblock, area unit, Territorial Authority and Regional Council each was in.  Luckily this is a piece of cake with the <code>over()</code> function from the <code>sp</code> package.  The process is:</p>
+
+<ul>
+  <li>import a shapefile of the boundaries we want (the originals are at http://www.stats.govt.nz/browse_for_stats/Maps_and_geography/Geographic-areas/digital-boundary-files.aspx and a script in the project downloads the versions for 2014) into R as a <code>sp::SpatialPolygonsDataFrame</code> object</li>
+  <li>use the proj4string from that shapefile to help convert the NZTM coordinates into a <code>sp::SpatialPoints</code> object</li>
+  <li>use <code>sp::over()</code> to map the SpatialPoints to the SpatialPolygonsDataFrame.</li>
+</ul>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a><span class="c1"># ./prep/match_locations_to_areas.R</span>
+<a name="True-2"></a><span class="c1"># Peter Ellis, April 2016</span>
+<a name="True-3"></a>
+<a name="True-4"></a><span class="c1"># depends on the shapefiles having already been downloaded from</span>
+<a name="True-5"></a><span class="c1"># ./prep/download_map_shapefiles.R; and Locations2014 to have</span>
+<a name="True-6"></a><span class="c1"># been created via .prep/import_votingplace_locations.R</span>
+<a name="True-7"></a><span class="c1"># This script then matches those point locations with the polygons</span>
+<a name="True-8"></a><span class="c1"># of Regional Councils, Territorial Authority, and Area Unit.</span>
+<a name="True-9"></a>
+<a name="True-10"></a><span class="c1"># This script is called from ./prep/import_votingplace_locations.R</span>
+<a name="True-11"></a><span class="kn">library</span><span class="p">(</span>rgdal<span class="p">)</span>
+<a name="True-12"></a>
+<a name="True-13"></a><span class="c1">#-------------Import Territorial Authority map------------------</span>
+<a name="True-14"></a>TA <span class="o">&lt;-</span> readOGR<span class="p">(</span><span class="s">&quot;downloads/shapefiles/2014 Digital Boundaries Generlised Full&quot;</span><span class="p">,</span>
+<a name="True-15"></a>              <span class="s">&quot;TA2014_GV_Full&quot;</span><span class="p">)</span>
+<a name="True-16"></a>
+<a name="True-17"></a><span class="c1">#------------------convert locations to sp format-----------</span>
+<a name="True-18"></a>locs <span class="o">&lt;-</span> SpatialPoints<span class="p">(</span>coords <span class="o">=</span> Locations2014<span class="p">[,</span> <span class="kt">c</span><span class="p">(</span><span class="s">&quot;NZTM2000Easting&quot;</span><span class="p">,</span> <span class="s">&quot;NZTM2000Northing&quot;</span><span class="p">)],</span>
+<a name="True-19"></a>                      proj4string <span class="o">=</span> TA<span class="o">@</span>proj4string<span class="p">)</span>
+<a name="True-20"></a>
+<a name="True-21"></a><span class="c1">#-------------Match to Territorial Authority-------</span>
+<a name="True-22"></a>locs2 <span class="o">&lt;-</span> over<span class="p">(</span>locs<span class="p">,</span> TA<span class="p">)</span>
+<a name="True-23"></a>Locations2014<span class="o">$</span>TA2014_NAM <span class="o">&lt;-</span> locs2<span class="o">$</span>TA2014_NAM
+<a name="True-24"></a><span class="m">..</span></code></pre></div>
+
+<h3 id="unit-tests">Unit tests</h3>
+<p>Any serious coding project needs unit tests so you can be sure that things, once fixed, continue to work as you make changes to other parts of the project.  This applies as much to analytical projects as to software development.  Hadley Wickham’s <code>testthat</code> package gives a nice structure for including unit tests in the actual check and build of an R package, and I use that in this project.  Here’s some of the tests I’m using, in the <code>./pkg/tests/testthat/</code> directory:</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a><span class="kn">require</span><span class="p">(</span>testthat<span class="p">)</span>
+<a name="True-2"></a><span class="kn">require</span><span class="p">(</span>dplyr<span class="p">)</span>
+<a name="True-3"></a>
+<a name="True-4"></a><span class="c1"># Must match results from </span>
+<a name="True-5"></a><span class="c1"># http://www.electionresults.govt.nz/electionresults_2014/e9/html/e9_part1.html</span>
+<a name="True-6"></a>
+<a name="True-7"></a><span class="c1"># absolute numbers</span>
+<a name="True-8"></a>expect_that<span class="p">(</span>
+<a name="True-9"></a>    <span class="kp">sum</span><span class="p">(</span>filter<span class="p">(</span>GE2014<span class="p">,</span> Party <span class="o">==</span> <span class="s">&quot;National Party&quot;</span> <span class="o">&amp;</span> VotingType <span class="o">==</span> <span class="s">&quot;Party&quot;</span><span class="p">)</span><span class="o">$</span>Votes<span class="p">),</span>
+<a name="True-10"></a>    equals<span class="p">(</span><span class="m">1131501</span><span class="p">)</span>
+<a name="True-11"></a><span class="p">)</span>
+<a name="True-12"></a>
+<a name="True-13"></a>expect_that<span class="p">(</span>
+<a name="True-14"></a>    <span class="kp">sum</span><span class="p">(</span>filter<span class="p">(</span>GE2014<span class="p">,</span> Party <span class="o">==</span> <span class="s">&quot;National Party&quot;</span> <span class="o">&amp;</span> VotingType <span class="o">==</span> <span class="s">&quot;Candidate&quot;</span><span class="p">)</span><span class="o">$</span>Votes<span class="p">),</span>
+<a name="True-15"></a>    equals<span class="p">(</span><span class="m">1081787</span><span class="p">)</span>
+<a name="True-16"></a><span class="p">)</span>
+<a name="True-17"></a>
+<a name="True-18"></a>expect_that<span class="p">(</span>
+<a name="True-19"></a>    <span class="kp">sum</span><span class="p">(</span>filter<span class="p">(</span>GE2014<span class="p">,</span> Party <span class="o">==</span> <span class="s">&quot;Labour Party&quot;</span> <span class="o">&amp;</span> VotingType <span class="o">==</span> <span class="s">&quot;Party&quot;</span><span class="p">)</span><span class="o">$</span>Votes<span class="p">),</span>
+<a name="True-20"></a>    equals<span class="p">(</span><span class="m">604535</span><span class="p">)</span>
+<a name="True-21"></a><span class="p">)</span>
+<a name="True-22"></a>
+<a name="True-23"></a>expect_that<span class="p">(</span>
+<a name="True-24"></a>    <span class="kp">sum</span><span class="p">(</span>filter<span class="p">(</span>GE2014<span class="p">,</span> Party <span class="o">==</span> <span class="s">&quot;Labour Party&quot;</span> <span class="o">&amp;</span> VotingType <span class="o">==</span> <span class="s">&quot;Candidate&quot;</span><span class="p">)</span><span class="o">$</span>Votes<span class="p">),</span>
+<a name="True-25"></a>    equals<span class="p">(</span><span class="m">801287</span><span class="p">)</span>
+<a name="True-26"></a><span class="p">)</span>
+<a name="True-27"></a>
+<a name="True-28"></a>expect_that<span class="p">(</span>
+<a name="True-29"></a>    <span class="kp">sum</span><span class="p">(</span>filter<span class="p">(</span>GE2014<span class="p">,</span> Party <span class="o">==</span> <span class="s">&quot;New Zealand First Party&quot;</span> <span class="o">&amp;</span> VotingType <span class="o">==</span> <span class="s">&quot;Party&quot;</span><span class="p">)</span><span class="o">$</span>Votes<span class="p">),</span>
+<a name="True-30"></a>    equals<span class="p">(</span><span class="m">208300</span><span class="p">)</span>
+<a name="True-31"></a><span class="p">)</span>
+<a name="True-32"></a>
+<a name="True-33"></a>expect_that<span class="p">(</span>
+<a name="True-34"></a>    <span class="kp">sum</span><span class="p">(</span>filter<span class="p">(</span>GE2014<span class="p">,</span> Party <span class="o">==</span> <span class="s">&quot;New Zealand First Party&quot;</span> <span class="o">&amp;</span> VotingType <span class="o">==</span> <span class="s">&quot;Candidate&quot;</span><span class="p">)</span><span class="o">$</span>Votes<span class="p">),</span>
+<a name="True-35"></a>    equals<span class="p">(</span><span class="m">73384</span><span class="p">)</span>
+<a name="True-36"></a><span class="p">)</span>
+<a name="True-37"></a>
+<a name="True-38"></a>expect_that<span class="p">(</span>
+<a name="True-39"></a>    <span class="kp">sum</span><span class="p">(</span>filter<span class="p">(</span>GE2014<span class="p">,</span> Party <span class="o">==</span> <span class="s">&quot;Patriotic Revolutionary Front&quot;</span> <span class="o">&amp;</span> VotingType <span class="o">==</span> <span class="s">&quot;Candidate&quot;</span><span class="p">)</span><span class="o">$</span>Votes<span class="p">),</span>
+<a name="True-40"></a>    equals<span class="p">(</span><span class="m">48</span><span class="p">)</span>
+<a name="True-41"></a><span class="p">)</span>
+<a name="True-42"></a>
+<a name="True-43"></a><span class="c1"># percentages</span>
+<a name="True-44"></a>expect_that<span class="p">(</span>
+<a name="True-45"></a>    <span class="kp">round</span><span class="p">(</span><span class="kp">sum</span><span class="p">(</span>filter<span class="p">(</span>GE2014<span class="p">,</span> Party <span class="o">==</span> <span class="s">&quot;National Party&quot;</span> <span class="o">&amp;</span> VotingType <span class="o">==</span> <span class="s">&quot;Party&quot;</span><span class="p">)</span><span class="o">$</span>Votes<span class="p">)</span> <span class="o">/</span>
+<a name="True-46"></a>        <span class="kp">sum</span><span class="p">(</span>filter<span class="p">(</span>GE2014<span class="p">,</span> VotingType <span class="o">==</span> <span class="s">&quot;Party&quot;</span> <span class="o">&amp;</span> Party <span class="o">!=</span> <span class="s">&quot;Informal Party Votes&quot;</span><span class="p">)</span><span class="o">$</span>Votes<span class="p">)</span> <span class="o">*</span> <span class="m">100</span><span class="p">,</span> <span class="m">2</span><span class="p">),</span>
+<a name="True-47"></a>    equals<span class="p">(</span><span class="m">47.04</span><span class="p">)</span>
+<a name="True-48"></a> <span class="p">)</span>
+<a name="True-49"></a>
+<a name="True-50"></a>
+<a name="True-51"></a>expect_that<span class="p">(</span>
+<a name="True-52"></a>    <span class="kp">round</span><span class="p">(</span><span class="kp">sum</span><span class="p">(</span>filter<span class="p">(</span>GE2014<span class="p">,</span> Party <span class="o">==</span> <span class="s">&quot;Green Party&quot;</span> <span class="o">&amp;</span> VotingType <span class="o">==</span> <span class="s">&quot;Candidate&quot;</span><span class="p">)</span><span class="o">$</span>Votes<span class="p">)</span> <span class="o">/</span>
+<a name="True-53"></a>              <span class="kp">sum</span><span class="p">(</span>filter<span class="p">(</span>GE2014<span class="p">,</span> VotingType <span class="o">==</span> <span class="s">&quot;Candidate&quot;</span> <span class="o">&amp;</span> Party <span class="o">!=</span> <span class="s">&quot;Informal Candidate Votes&quot;</span><span class="p">)</span><span class="o">$</span>Votes<span class="p">)</span> <span class="o">*</span> <span class="m">100</span><span class="p">,</span> <span class="m">2</span><span class="p">),</span>
+<a name="True-54"></a>    equals<span class="p">(</span><span class="m">7.06</span><span class="p">)</span>
+<a name="True-55"></a><span class="p">)</span></code></pre></div>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a><span class="c1"># compare to http://www.electionresults.govt.nz/electionresults_2014/electorate-47.html</span>
+<a name="True-2"></a>
+<a name="True-3"></a>rotorua <span class="o">&lt;-</span> GE2014 <span class="o">%&gt;%</span>
+<a name="True-4"></a>    filter<span class="p">(</span>Electorate <span class="o">==</span> <span class="s">&quot;Rotorua 47&quot;</span> <span class="o">&amp;</span> VotingType <span class="o">==</span> <span class="s">&quot;Candidate&quot;</span><span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-5"></a>    group_by<span class="p">(</span>Candidate<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-6"></a>    summarise<span class="p">(</span>Votes <span class="o">=</span> <span class="kp">sum</span><span class="p">(</span>Votes<span class="p">))</span> <span class="o">%&gt;%</span>
+<a name="True-7"></a>    arrange<span class="p">(</span>desc<span class="p">(</span>Votes<span class="p">))</span>
+<a name="True-8"></a>
+<a name="True-9"></a>expect_that<span class="p">(</span>
+<a name="True-10"></a>    <span class="kp">tolower</span><span class="p">(</span><span class="kp">as.character</span><span class="p">(</span>rotorua<span class="p">[</span><span class="m">1</span><span class="p">,</span> <span class="m">1</span><span class="p">])),</span>
+<a name="True-11"></a>    equals<span class="p">(</span><span class="kp">tolower</span><span class="p">(</span><span class="s">&quot;McClay, Todd Michael&quot;</span><span class="p">))</span>
+<a name="True-12"></a><span class="p">)</span>
+<a name="True-13"></a>
+<a name="True-14"></a>expect_that<span class="p">(</span>
+<a name="True-15"></a>    <span class="kp">as.numeric</span><span class="p">(</span>rotorua<span class="p">[</span><span class="m">1</span><span class="p">,</span> <span class="m">2</span><span class="p">]),</span>
+<a name="True-16"></a>    equals<span class="p">(</span><span class="m">18715</span><span class="p">)</span>
+<a name="True-17"></a><span class="p">)</span>
+<a name="True-18"></a>
+<a name="True-19"></a>expect_that<span class="p">(</span>
+<a name="True-20"></a>    <span class="kp">tolower</span><span class="p">(</span><span class="kp">as.character</span><span class="p">(</span>rotorua<span class="p">[</span><span class="m">6</span><span class="p">,</span> <span class="m">1</span><span class="p">])),</span>
+<a name="True-21"></a>    equals<span class="p">(</span><span class="kp">tolower</span><span class="p">(</span><span class="s">&quot;russell, lyall&quot;</span><span class="p">))</span>
+<a name="True-22"></a><span class="p">)</span>
+<a name="True-23"></a>
+<a name="True-24"></a>expect_that<span class="p">(</span>
+<a name="True-25"></a>    <span class="kp">as.numeric</span><span class="p">(</span>rotorua<span class="p">[</span><span class="m">6</span><span class="p">,</span> <span class="m">2</span><span class="p">]),</span>
+<a name="True-26"></a>    equals<span class="p">(</span><span class="m">132</span><span class="p">)</span>
+<a name="True-27"></a><span class="p">)</span></code></pre></div>
+
+<h2 id="conclusion">Conclusion</h2>
+<p>The three themes for today:</p>
+
+<ul>
+  <li>structure - separating prep, package, and extended use</li>
+  <li>modularity</li>
+  <li>a few specific techniques of data cleaning</li>
+</ul>
+
+<p>That’s enough for now.  Stay tuned for the next post in the series, which looks at the Shiny app I built as an extended example of use of the <code>nzelect</code> package.</p>
+
+
+</div>
+
+<div class = "container">
+   <div class="col-md-4">
+    
+        <a rel="prev" href="/blog/2016/04/03/nzelect1">
+        <p>&larr; Older</p>
+        <p>Election analysis contest entry part 1 - introducing the nzelect R package</p>
+        
+        </a>
+    
+    </div>
+    <div class="col-md-4">
+    </div>
+    <div class="col-md-4" style="text-align: right;">
+    
+      </div>
+      </div>
+      
+      
+      
+</div>
+
+
+   
+    <div id="disqus_thread"></div>
+
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+    
+    
+   
+			
+			</div><!-- /.container -->
+
+         
+
+   <div class = "container footer">
+			<footer>
+	    		
+            <p>Follow <a href = "/feed.xml">this blog with RSS</a>.  Or follow <a href = "/feed.r.xml">posts in this blog featuring R with RSS</a>.</p>
+	
+            <p>This blog is built with <a href = "http://jekyllrb.com/">Jekyll</a>, <a href = "http://getbootstrap.com/">Bootstrap</a>, <a href = "https://www.ruby-lang.org/en/">Ruby</a> and <a href = "https://cran.r-project.org/">R</a>.  Read my <a href="/about/acknowledgements.html">acknowledgements</a> for a little more on how.  I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Peter's stats stuff</span> by <a xmlns:cc="http://creativecommons.org/ns#" href="/" property="cc:attributionName" rel="cc:attributionURL">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+
+
+			</footer>
+    </div>
+
+
+
+  
+</body>
+</html>
+   
+
+
+
+
+         
