@@ -3,7 +3,7 @@ layout: post
 title: Seasonal decomposition in the ggplot2 universe with ggseas
 date: 2016-03-28
 tag: 
-   - TimeSeries
+   - Timeseries
    - R
 description: I've updated the {ggseas} R package on CRAN to version 0.4.0 and it now includes a ggplot2-based seasonal decomposition, rolling averages on the fly, and options to scale the data to an index.
 image: /img/0034-ggsdc.svg
