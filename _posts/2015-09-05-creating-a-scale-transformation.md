@@ -23,7 +23,7 @@ I hope I'm not breaching copyright by posting that snippet; I'll certainly take 
 John and Draper also show that the methods Box and Cox use to determine parameters of the boxcox transformation can be used to get an optimal value of their tuning parameter lambda.  I'm not too worried about that just yet as I'm only using this for visualising the distribution; it might be something I want to investigate though when I move to modelling the data.  
 
 ## Implementing a transformation for easy re-use
-John and Draper's transformation is slightly different from mine, has some nice properties and is definitely much more thoroughly thought through.    It's more complex though, and deserves a proper defined implementation for re-use.  There's no better way of doing this than creating a new transformation using the platform provided by Wickham's {scales} package, very appropriate given where tip came from.  Here's how I try that:
+John and Draper's transformation is slightly different from mine, has some nice properties and is definitely much more thoroughly thought through.    It's more complex though, and deserves a proper defined implementation for re-use.  There's no better way of doing this than creating a new transformation using the platform provided by Wickham's `scales` package, very appropriate given where tip came from.  Here's how I try that:
 
 {% highlight R lineanchors %}
 library(scales) 
@@ -80,7 +80,7 @@ ggplot(inc, aes(x = income)) +
 
 
 ## Income (including negatives) and hours worked
-So the great advantage of a statistical transformation within the {scales} paradigm is that you never need to worry again about the transformation, you just make it an argument to scale_x_continuous (or any continuous scale, including colour and size, if you want).  I'll finish this latest step in the journey with New Zealand's Income Survey simulated unit record file from Statistics New Zealand by showing the new transformation in action on two axes at once, with a plot showing the relationship between hours worked and income earned by region, this time with the negative incomes left in.
+So the great advantage of a statistical transformation within the `scales` paradigm is that you never need to worry again about the transformation, you just make it an argument to `scale_x_continuous` (or any continuous `scale`, including colour and size, if you want).  I'll finish this latest step in the journey with New Zealand's Income Survey simulated unit record file from Statistics New Zealand by showing the new transformation in action on two axes at once, with a plot showing the relationship between hours worked and income earned by region, this time with the negative incomes left in.
 
 ![regions-plot](/img/0006_income_by_region.png)
 

@@ -12,7 +12,7 @@ socialimage: http://ellisp.github.io/img/0028-USAccDeaths.png
 category: R
 ---
 ## Forecast Combination
-I've referred several times to [this blog post by Rob Hyndman](http://robjhyndman.com/hyndsight/show-me-the-evidence/) in which he shows that a simple averaging of the ets() and auto.arima() functions in his {forecast} R package not only out performs ets() and auto.arima() individually (in the long run, not every time), they outperform nearly every method that was entered in the [M3 competition](https://forecasters.org/resources/time-series-data/m3-competition/) in the year 2000.  This is a good example of a well known part of the forecasting craft, that a "Forecast Combination" of models will produce results closer to reality than its individual component models do.
+I've referred several times to [this blog post by Rob Hyndman](http://robjhyndman.com/hyndsight/show-me-the-evidence/) in which he shows that a simple averaging of the `ets()` and `auto.arima()` functions in his `forecast` R package not only out-performs `ets()` and `auto.arima()` individually (in the long run, not every time), they outperform nearly every method that was entered in the [M3 competition](https://forecasters.org/resources/time-series-data/m3-competition/) in the year 2000.  This is a good example of a well known part of the forecasting craft, that a "Forecast Combination" of models will produce results closer to reality than its individual component models do.
 
 In an [earlier post](http://ellisp.github.io/blog/2015/12/21/m3-and-x13/), I showed that adding X13-SEATS to the combination further improves the forecast, reaching a point where the Mean Absolute Scaled Error (compared to the actual observations once made available) for the ets-auto.arima-SEATS combination is lower even than the competition's top ranking Theta method.
 
@@ -21,12 +21,12 @@ A question for the forecaster is what prediction interval to use in a forecast c
 
 Prediction intervals for forecasts are well known to be [usually too narrow](http://robjhyndman.com/hyndsight/narrow-pi/).  For example, one study found prediction intervals calculated to include the true results 95% of the time only get it right between 71% and 87% of the time (thanks to Hyndman again for making that result easily available on his blog).  There are a number of contributing reasons but the main one is that the uncertainty in the model building and selection process is not adequately taken into account.  Most methods of developing prediction intervals are in effect estimating a range of values conditional on the model being correct in the first place.  As our models are only simplifications of reality we fail more often than we would if the model were exactly right.
 
-On a cursory glance, I couldn't find much discussion of how to produce a prediction interval from a forecast combination.  Hyndman avoids referring the issue in the first post linked to above by making claims only about point estimates "If you only want point forecasts, that (average of ets and auto.arima) is the best approach available in the forecast package."  [One paper I found](http://repository.upenn.edu/cgi/viewcontent.cgi?article=1005&context=marketing_papers) makes the common sense suggestion of taking averages of the prediction intervals from the component models.  But if the original prediction intervals are too narrow, is averaging them going to help?
+On a cursory glance, I couldn't find much discussion of how to produce a prediction interval from a forecast combination.  Hyndman avoids referring the issue in the first post linked to above by making claims only about point estimates "If you only want point forecasts, that (average of `ets` and `auto.arima`) is the best approach available in the `forecast` package."  [One paper I found](http://repository.upenn.edu/cgi/viewcontent.cgi?article=1005&context=marketing_papers) makes the common sense suggestion of taking averages of the prediction intervals from the component models.  But if the original prediction intervals are too narrow, is averaging them going to help?
 
 Forecasting makes me nervous, and in my day job when the reality is noticeably different from the forecast points it causes problems.  I'd like there to be much more focus on the range of prediction intervals in communicating forecasts, and I'd like that range to be accurate or if anything slightly conservative (eg I'd be happier for 83% of observations to come inside my 80% prediction interval than for 77%).
 
 ## Introducing hybridf()
-I like combining auto.arima() and ets() for a quick, effective hybrid forecast that is probably as good as can be hoped for with a univariate series.  In fact, it's the sort of thing that could easily be done thousands of times in a day so to make it more convenient I created a function hybridf() that does this for me in R and produces an object of class "forecast".  This means that I can fit a forecast with one line of code and that other functionality Hyndman developed for that class, like the standard forecast plot, can be used on the resulting object.  Here it is in action with the monthly time series of accidental deaths in the USA from 1973 to 1978, used in Brockwell and Davis' 1991 <i>Time Series: Theory and Methods</i> and one of R's in-built datasets.
+I like combining `auto.arima()` and `ets()` for a quick, effective hybrid forecast that is probably as good as can be hoped for with a univariate series.  In fact, it's the sort of thing that could easily be done thousands of times in a day so to make it more convenient I created a function `hybridf()` that does this for me in R and produces an object of class `forecast`.  This means that I can fit a forecast with one line of code and that other functionality Hyndman developed for that class, like the standard forecast plot, can be used on the resulting object.  Here it is in action with the monthly time series of accidental deaths in the USA from 1973 to 1978, used in Brockwell and Davis' 1991 <i>Time Series: Theory and Methods</i> and one of R's in-built datasets.
 {% highlight R lineanchors %}
 library(devtools)
 install_github("robjhyndman/forecast") # development version needed sorry
@@ -45,7 +45,7 @@ plot(fc$fc_aa)
 The dark grey areas are 80% prediction intervals and the light grey the 95% prediction interval.  The top panel shows the hybrid forecast.  The dark blue line is just the average of the point forecasts of the other two methods, and the prediction interval takes the conservative view of showing the widest range of values of combining the two.  So the hybrid prediction interval will be wider than the prediction intervals for either of the contributing models.
 
 ## Testing against the M3 competition series
-In these days of easy access to computers and to data, we don't have to just theorise about the success rates of different prediction intervals, we can test methods against actual data.  I used the 3,003 [M3 competition datasets](https://forecasters.org/resources/time-series-data/m3-competition/) to compare the 80% and 95% prediction intervals generated by ets(), auto.arima(), and my hybridf().  After fitting the models on the given historical data and producing forecasts of the desired length, I counted how many of the actual results were in the prediction intervals.  Here's the results:
+In these days of easy access to computers and to data, we don't have to just theorise about the success rates of different prediction intervals, we can test methods against actual data.  I used the 3,003 [M3 competition datasets](https://forecasters.org/resources/time-series-data/m3-competition/) to compare the 80% and 95% prediction intervals generated by `ets()`, `auto.arima()`, and my `hybridf()`.  After fitting the models on the given historical data and producing forecasts of the desired length, I counted how many of the actual results were in the prediction intervals.  Here's the results:
 
 |variable       | Success|
 |:--------------|-------:|
@@ -57,9 +57,9 @@ In these days of easy access to computers and to data, we don't have to just the
 |hybrid_p95     |    0.94|
 
 
-My hybrid method has prediction intervals that succeed at close to the advertised rates, whereas both ets() and auto.arima() are less successful.  For example, the hybrid 80% prediction interval contains the actual results 83% of the time, and the 95% prediction interval has the actual result 94% of the time; whereas for auto.arima the success rates are 74% and 88% respectively.
+My hybrid method has prediction intervals that succeed at close to the advertised rates, whereas both `ets()` and `auto.arima()` are less successful.  For example, the hybrid 80% prediction interval contains the actual results 83% of the time, and the 95% prediction interval has the actual result 94% of the time; whereas for auto.arima the success rates are 74% and 88% respectively.
 
-Here's how I tested that on the M3 data.  I build a little function pi_accuracy() to help, which makes use of the fact that objects of class forecast return a matrix called "lower" and another called "upper", with a column for each prediction interval level.  As this is only a temporary function for this blog, I leave it so it only works with the default values of forecast objects producing 80% and 95% intervals:
+Here's how I tested that on the M3 data.  I build a little function `pi_accuracy()` to help, which makes use of the fact that objects of class forecast return a matrix called "lower" and another called "upper", with a column for each prediction interval level.  As this is only a temporary function for this blog, I leave it so it only works with the default values of forecast objects producing 80% and 95% intervals:
 {% highlight R lineanchors %}
 #------------------setup------------------------
 library(showtext)
@@ -91,7 +91,7 @@ pi_accuracy <- function(fc, yobs){
  }
 {% endhighlight %}
 
-Actually fitting all the forecasts is relatively straightforward.  It took about an hour on my laptop.  As the hybridf() function returns an object that provides the underlying ets() and auto.arima() objects, they don't need to be refitted and there's some modest efficiency.
+Actually fitting all the forecasts is relatively straightforward.  It took about an hour on my laptop.  As the `hybridf()` function returns an object that provides the underlying `ets()` and `auto.arima()` objects, they don't need to be refitted and there's some modest efficiency.
 {% highlight R lineanchors %}
 #============forecasting with default values===============
 num_series <- length(M3) # ie 3003
@@ -154,7 +154,7 @@ An interesting pattern emerges when we look at the success rates of individual f
 
 
 ## Bootstrapping
-The forecast methods for both ets() and auto.arima() have the option to estimate prediction intervals by simulation and bootstrapping residuals rather than analytically, and those methods are inherited by my hybridf().  I checked the value of these prediction intervals too.  The results are very similar to the non-bootstrap results; if anything, the prediction intervals based on bootstrap and simulation are slightly less accurate, but the difference is nothing to write home about.
+The forecast methods for both `ets()` and `auto.arima()` have the option to estimate prediction intervals by simulation and bootstrapping residuals rather than analytically, and those methods are inherited by my `hybridf()`.  I checked the value of these prediction intervals too.  The results are very similar to the non-bootstrap results; if anything, the prediction intervals based on bootstrap and simulation are slightly less accurate, but the difference is nothing to write home about.
 
 |variable       | Success|
 |:--------------|-------:|
@@ -207,5 +207,5 @@ resultsb %>%
 
 ## Conclusions
 
-* The hybridf() function at [https://raw.githubusercontent.com/ellisp/forecast/dev/R/hybridf.R](https://raw.githubusercontent.com/ellisp/forecast/dev/R/hybridf.R) provides a convenient and easy way of performing a forecast combination of ets() and auto.arima(), which gives high performing point estimates and an easily-managed object of class forecast.
-* Tested against the M3 competition data, the prediction intervals from hybridf(), formed by combining the prediction intervals of ets() and auto.arima() in a conservative manner ("take the widest range covered by superimposing the two source intervals") performs true to the desired level ie the 80% prediction interval contains the true value just over 80% of the time, and the 95% prediction interval contains the true value just under 95% of the time.
+* The `hybridf()` function at [https://raw.githubusercontent.com/ellisp/forecast/dev/R/hybridf.R](https://raw.githubusercontent.com/ellisp/forecast/dev/R/hybridf.R) provides a convenient and easy way of performing a forecast combination of `ets()` and `auto.arima()`, which gives high performing point estimates and an easily-managed object of class forecast.
+* Tested against the M3 competition data, the prediction intervals from `hybridf()`, formed by combining the prediction intervals of `ets()` and `auto.arima()` in a conservative manner ("take the widest range covered by superimposing the two source intervals") performs true to the desired level ie the 80% prediction interval contains the true value just over 80% of the time, and the 95% prediction interval contains the true value just under 95% of the time.

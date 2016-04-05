@@ -74,7 +74,7 @@ Down the track you need to get familiar with other more general languages - like
 ### Databases, data management, SQL, tidying and cleaning data
 
 * Down the track, you need database skills.  This can wait until familiar with stats and R but at some point you need to be able to set up a database.  [MySQL](https://www.mysql.com/) is the easiest one to do this on a home system.
-* Within R, {dplyr} and {tidyr} are relatively new but are king for data tidying, reshaping and accessing.  Most recent online courses and blogs will use these.
+* Within R, `dplyr` and `tidyr` are relatively new but are king for data tidying, reshaping and accessing.  Most recent online courses and blogs will use these.
 * Only after everything else is sorted and are familiar with medium size data (eg traditional relational databases like MySQL), can think about big-data-specific things like Hadoop clusters.
 
 ### More

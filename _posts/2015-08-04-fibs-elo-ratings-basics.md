@@ -18,9 +18,9 @@ Backgammon clubs and on-line forums use a modified form of the [Elo rating syste
 
 When the two players have the same rating, they are expected to have a 50/50 chance of winning, and this causes the constant diagonal line in the animation above.  When one player is better than the other they have a higher chance of winning, represented for Player A by the increasingly blue space in the bottom right of the plot and the numbers (which are estimated probabilities) labelling the contour lines.  The actual formula used on FIBS and illustrated above is [defined by on the FIBS site](http://www.fibs.com/ratings.html) as:
 
-   Winning prob. = 1 - (1 / (10 ^ ((YOU - HIM) * SQRT(ML) / 2000) + 1))
+   `Winning prob. = 1 - (1 / (10 ^ ((YOU - HIM) * SQRT(ML) / 2000) + 1))`
 
-(As an aside, I don't think there is a strong theoretical reason for the SQRT(ML) in that formula.  With the complications of the doubling cube I very much doubt that the relationship of the probability winning to match length is as simple as that.  But it's a reasonable empirical approximation; I might blog more about that another time.)
+(As an aside, I don't think there is a strong theoretical reason for the `SQRT(ML)` in that formula.  With the complications of the doubling cube I very much doubt that the relationship of the probability winning to match length is as simple as that.  But it's a reasonable empirical approximation; I might blog more about that another time.)
    
 Now, here's how I made that animation.  In the R code below, first, I load up some functionality and the Google font I use for this blog.  Then I define a function that estimates the probability of a player winning using the FIBS formula above.
 
@@ -49,7 +49,7 @@ The strategy to create the animation is simple:
 
 * Create all the combinations of two players' Elo ratings.
 * Loop through 23 possible match lengths, calculating the probabilities of A winning for each combination of Elo ratings at that match length
-* Draw a still image heatmap for each of those 23 match lengths using {ggplot2}
+* Draw a still image heatmap for each of those 23 match lengths using `ggplot2`
 * Compile the images into a single animated Gif using [ImageMagick](http://studio.imagemagick.org/script/index.php).
 
 {% highlight R lang lineanchors %}

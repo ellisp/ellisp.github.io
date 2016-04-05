@@ -178,7 +178,7 @@ p6 <- sampled %>%
 {% endhighlight %}
 So we're ready for some modelling.  After all the data transformations, this part is relatively easy.  I use a mixed effects model that lets the key effects vary in each country, around an average level of the effect.
 
-I tried a few simpler models than below and checked the auto-correlation functions to be sure the time series part was needed (it is; ACF() returns an autocorrelation at lag 1 of around 0.23, and the decay of autocorrelation in subsequent lags characteristic of a fairly simple AR process).  So here we go:
+I tried a few simpler models than below and checked the auto-correlation functions to be sure the time series part was needed (it is; `ACF()` returns an autocorrelation at lag 1 of around 0.23, and the decay of autocorrelation in subsequent lags characteristic of a fairly simple AR process).  So here we go:
 
 {% highlight R lineanchors %}
 model4 <- lme(fixed = gdp_g ~ ordered(first_year) + exports_g + exports_lag + exports_starter + year,
@@ -190,15 +190,15 @@ model4 <- lme(fixed = gdp_g ~ ordered(first_year) + exports_g + exports_lag + ex
 
 Just to visualise what this model is doing, imagine the connected scatter plot of the differenced logarithms of each variable, as shown earlier.  We're drawing a diagonal line of best fit on each facet, with the  slope and  intercept of each line allowed to different for each country.  The average slope is the average impact of changes in exports as a percent of GDP on GDP growth.  Now add to this the complication of the other variables - the first year data starts (basically just a nuisance variable we want to control for); each countrys' absolute level of exports as a percentage of GDP when its data started; the lagged value of exports (which is actually the number of most interest); and year, for which we're trying to control for any linear trend.
 
-The "correlation = corAR1(...)" part is important, as it means that when we come to conduct inference (t statistics, p values and confidence intervals) the model takes into account that each observation in a particular country is related to the previous year's - they aren't as valuable as independent and identically distributed data from a simple random sample.  Failing to include this factor would mean that inference was biased in the direction of concluding results are significant that are in fact due to chance.
+The `correlation = corAR1(...)` part is important, as it means that when we come to conduct inference (t statistics, p values and confidence intervals) the model takes into account that each observation in a particular country is related to the previous year's - they aren't as valuable as independent and identically distributed data from a simple random sample.  Failing to include this factor would mean that inference was biased in the direction of concluding results are significant that are in fact due to chance.
 
 And here are the results.  Bear in mind that:
 
 * the response variable is change in the logarithm of GDP; 
-* exports_g is change in the logarithm of exports as a percentage of GDP; 
-* exports_lag is the lagged value of exports_g;
-* exports_starter is the logarithm of the starting value of exports as a percentage of GDP;
-* year is year, and we are testing for a linear trend in growth of GDP
+* `exports_g` is change in the logarithm of exports as a percentage of GDP; 
+* `exports_lag` is the lagged value of `exports_g`;
+* `exports_starter` is the logarithm of the starting value of exports as a percentage of GDP;
+* `year` is year, and we are testing for a linear trend in growth of GDP
 
 {% highlight R lineanchors %}
 > round(tail(summary(model4)$tTable, 4), 3)
@@ -216,13 +216,13 @@ Not wanting to give too precise an interpretation of this without a bit more the
 * no evidence of a systematic change in growth rates of GDP over time simply related to time and nothing else in the model;
 * no evidence that the starting absolute value of exports as a percentage of GDP impacts on subsequent GDP growth rates
 
-As exports_g, exports_lag and year were all allowed to be random effects ie take different values by country, their differing values for each country are of interest.  The figures above reflect an overall effect of these variables; the actual value in any country is a (approximately) normally distributed random variable.  Here's how their' densities look:
+As `exports_g`, `exports_lag` and `year` were all allowed to be random effects ie take different values by country, their differing values for each country are of interest.  The figures above reflect an overall effect of these variables; the actual value in any country is a (approximately) normally distributed random variable.  Here's how their' densities look:
 
 ![ref](/img/0023-p7.svg)
 
 Each observation (the little rug marks on the horizontal axis) is the size of the effect for a particular country.  So we can see that while overall value of exports_lag - the persistent impact of a change in exports as a percentage of GDP on GDP growth - was 0.021 as per the table above, any particular country has a value that is lower or hight than that, with a reasonable number of countries seeing a negative impact. 
 
-The value for the exports_g parameter plus the exports_lag parameter gives a crude sense of the overall impact, for a particular country, of changing importance of exports on GDP growth.  As can be seen from the top right panel of the above set of plots, this combined value is generally but not always positive.
+The value for the `exports_g` parameter plus the `exports_lag` parameter gives a crude sense of the overall impact, for a particular country, of changing importance of exports on GDP growth.  As can be seen from the top right panel of the above set of plots, this combined value is generally but not always positive.
 
 All up, while we might conclude that for countries "on average" there is a positive relationship between growth in the importance of exports and GDP growth, for any particular country the relationship will vary and may in fact be negative.  Further investigation would need to place this in a more theoretical context, and control for other variables that might be confounding the results; but the above is probably enough for an exploratory blog post.
 

@@ -13,14 +13,14 @@ socialimage: http://ellisp.github.io/img/0029-scatter.png
 category: R
 ---
 
-Eric Persson released yesterday a new [WHO R package](https://cran.r-project.org/web/packages/WHO/index.html) which allows easy access to the [World Health Organization](http://www.who.int)'s data API.  He's also done a [nice vignette](https://cran.r-project.org/web/packages/WHO/vignettes/who_vignette.html) introducing its use.
+Eric Persson released yesterday a new [`WHO` R package](https://cran.r-project.org/web/packages/WHO/index.html) which allows easy access to the [World Health Organization](http://www.who.int)'s data API.  He's also done a [nice vignette](https://cran.r-project.org/web/packages/WHO/vignettes/who_vignette.html) introducing its use.
 
 I had a play and found it was easy access to some interesting data.  Some time down the track I might do a comparison of this with other sources, the most obvious being the World Bank's World Development Indicators, to identify relative advantages - there's a lot of duplication of course.  It's a nice problem to have, too much data that's too easy to get hold of.  I wish we'd had that problem when I studied aid and development last century - I vividly remember re-keying numbers from almanac-like hard copy publications, and pleased we were to have them too!
 
 Here's a plot showing country-level relationships between the latest data of three indicators - access to contraception, adolescent fertility, and infant mortality - that help track the Millennium Development Goals.
 <iframe src="/img/0029-scatter.html" style = "overflow-y: hidden;" width = "800px" height = "650px"></iframe>
 
-Note that there's some micro-interactivity here - you can move the labels around, zoom in on a part of the plot, or reposition the whole thing.  It's easier to explor in the [full screen version](/img/0029-scatter.html).  Thanks to [Julien Barnier's scatterD3](https://github.com/juba/scatterD3) R package for making this JavaScript D3 functionality easily available from R.
+Note that there's some micro-interactivity here - you can move the labels around, zoom in on a part of the plot, or reposition the whole thing.  It's easier to explore in the [full screen version](/img/0029-scatter.html).  Thanks to [Julien Barnier's `scatterD3`](https://github.com/juba/scatterD3) R package for making this JavaScript D3 functionality easily available from R.
 
 Here are the exploratory plots I made on the way to that.  All the code is reproduced at the bottom of the post.
 

@@ -14,7 +14,7 @@ category: R
 ---
 
 ## Something missing
-In [my last post](http://ellisp.github.io/blog/2015/09/05/creating-a-scale-transformation/) I developed a new scale transformation for R using the approach and platform from the {ggplot2} and {scales}. I implemented a method proposed in 1980 by John and Draper that does some of the job of a logarithmic transform in reducing the dominance on the page of the large values, but is also continuous through zero and works for negative numbers.  Here's the image where I demonstrated that:
+In [my last post](http://ellisp.github.io/blog/2015/09/05/creating-a-scale-transformation/) I developed a new scale transformation for R using the approach and platform from the `ggplot2` and `scales`. I implemented a method proposed in 1980 by John and Draper that does some of the job of a logarithmic transform in reducing the dominance on the page of the large values, but is also continuous through zero and works for negative numbers.  Here's the image where I demonstrated that:
 
 ![regions-plot](/img/0006_income_by_region.png)
 
@@ -78,18 +78,18 @@ For inspiration, I drew on the answers to this [Stack Overflow question](http://
 ## Approach
 My strategy is going to be to 
 
-* transform the data with .mod_transform()
-* use the pretty() function from base R to determine nearly-equally spaced breaks along that transformed range
-* transform those breaks back to the original scale with .mod_inverse()
+* transform the data with `.mod_transform()`
+* use the `pretty()` function from base R to determine nearly-equally spaced breaks along that transformed range
+* transform those breaks back to the original scale with `.mod_inverse()`
 * tidy up the numbers by rounding them, rounding more aggressively the larger the number
   
-The whole thing gets wrapped up in a function that can be used by the breaks = argument from a scale like scale_x_continuous.  Let's see where we're heading:
+The whole thing gets wrapped up in a function that can be used by the `breaks = argument` from a `scale` like `scale_x_continuous`.  Let's see where we're heading:
 
 ![density-plots-with-breaks](/img/0007_density_plots_breaks.svg)
 
-One tricky catch was the final tidying up / rounding.  At one point I made the mistake of trying to copy what pretty() does and pick the nearest number that is 1, 2 or 5 times a multiple of 10.  This made the gridlines look oddly spaced; it makes sense for a logarithm transform but not for our more complex one.  
+One tricky catch was the final tidying up / rounding.  At one point I made the mistake of trying to copy what `pretty()` does and pick the nearest number that is 1, 2 or 5 times a multiple of 10.  This made the gridlines look oddly spaced; it makes sense for a logarithm transform but not for our more complex one.  
 
-So here's how I did it.  I broke it into two more functions, because I thought prettify() (which does the rounding) might be useful for something else (I'm sure there's something that does this already in R, maybe even in base R, but it's easier to write than to find).
+So here's how I did it.  I broke it into two more functions, because I thought `prettify()` (which does the rounding) might be useful for something else (I'm sure there's something that does this already in R, maybe even in base R, but it's easier to write than to find).
 
 {% highlight R lineanchors %}
 prettify <- function(breaks){

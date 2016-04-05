@@ -60,7 +60,7 @@ The nub of the issue is that the apparent relationship with Catholicism might be
 There's no simple way to solve the correlation of our two explnatory variables - Americanism and Catholicism - and picking which of the second or third model above is best, and the essentially arbitrary nature of our continent-classification variable.  There's no possibility of creating a test-set of data, for example.  Even if we brought in what data are available on poorer countries and used them as a test set, the confounding relationship between Latin America and Catholicism would pertain to that dataset too.  So until more data or ideas come out (and I'm not claiming to have looked for them, either way) I prefer to stick to the third plot, and say only that male/female assault death ratios are much higher in Latin American countries, we don't know why from just this dataset, and after we've taken that into account there's no real further evidence in this particular dataset of an additional Catholic effect.
 
 ## Arranging the data
-Here's how I import the data into R.  If you know exactly what you're looking for, you can import data directly from OECD.Stat with the [{rsdmx}](https://cran.r-project.org/web/packages/rsdmx/index.html) package by sending an appropriately structured URL (line 18 below) to their website.  However, to work out that URL you'll probably need to navigate [their site](http://stats.oecd.org/) by hand and choose your particular 'customising', then choose the "export" and "SDMX" options, then copy the URL it generates for you.  It's useful for reproducibility purposes (for example, it meant I didn't need to save a copy of the data anywhere to make the code below reproducible for others).
+Here's how I import the data into R.  If you know exactly what you're looking for, you can import data directly from OECD.Stat with the [`rsdmx`](https://cran.r-project.org/web/packages/rsdmx/index.html) package by sending an appropriately structured URL (line 18 below) to their website.  However, to work out that URL you'll probably need to navigate [their site](http://stats.oecd.org/) by hand and choose your particular 'customising', then choose the "export" and "SDMX" options, then copy the URL it generates for you.  It's useful for reproducibility purposes (for example, it meant I didn't need to save a copy of the data anywhere to make the code below reproducible for others).
 {% highlight R lineanchors %}
 library(ggplot2)
 library(scales)
@@ -112,7 +112,7 @@ viol <- viol_sdmx %>%
    filter(Country != "Turkey")
 {% endhighlight %}
 
-Having created the original object "viol" I make a few summary and total objects to help with structuring my graphics.  In particular, I need a data frame that provides average rates since 1990 for the first chart, and a data frame of totals so I can arrange the plots in order of increasing rates of death from assault.
+Having created the original object `viol` I make a few summary and total objects to help with structuring my graphics.  In particular, I need a data frame that provides average rates since 1990 for the first chart, and a data frame of totals so I can arrange the plots in order of increasing rates of death from assault.
 
 {% highlight R lineanchors %}
 # create country x Unit summaries   
@@ -170,7 +170,7 @@ viol %>%
         title = "Deaths from assault", x = "")
 {% endhighlight %}
 
-To investigate the Catholicism and gender ratio issues in the second set of plots, I had to pull down some data from the web using [Hadley Wickham's amazing {rvest} package](https://cran.r-project.org/web/packages/rvest/index.html).  It's inspired by Python's wonderful [Beautiful Soup](http://www.crummy.com/software/BeautifulSoup/) but I have to say is *astonishingly* user friendly.
+To investigate the Catholicism and gender ratio issues in the second set of plots, I had to pull down some data from the web using [Hadley Wickham's amazing `rvest` package](https://cran.r-project.org/web/packages/rvest/index.html).  It's inspired by Python's wonderful [`Beautiful Soup`](http://www.crummy.com/software/BeautifulSoup/) but I have to say is *astonishingly* user friendly.
 
 Here's my complete set of code for the gender dot plot, downloading the Catholicism data, and the resulting scatter plot.  The web-scraping part occupies a total of two lines of code (21 and 22 in the code below) - amazing:
 {% highlight R lineanchors %}

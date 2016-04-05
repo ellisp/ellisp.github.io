@@ -87,7 +87,7 @@ My method of comparison is based on assuming blackbox1 is the known good generat
 
 * calculate the average value at each point in time of the various instances of blackbox1, and the standard deviation of blackbox1’s values at that point.
 * calculate how the absolute value of how different each instance of both series is from that average value, standardised by the standard deviation.
-* correct that difference value for blackbox1 by multiplying it by the (number of instances) / (number of instances - 1), to control for the fact that the centre was defined by blackbox1 data and hence blackbox1 has a head start in trying to be close to the defined centre. In effect, I give it a degrees-of-freedom correction.
+* correct that difference value for blackbox1 by multiplying it by the  (number of instances) / (number of instances - 1)  , to control for the fact that the centre was defined by blackbox1 data and hence blackbox1 has a head start in trying to be close to the defined centre. In effect, I give it a degrees-of-freedom correction.
 * analyse the distribution of the differences to see if the instances of blackbox2 seem, on average, to be further away from the centres than are the instances of blackbox1.
 
 Here’s how it looks. In this case, blackbox2’s differences from the known-good centre is generally higher (ie displaced to the right in this density graph) than is blackbox1’s:
@@ -126,7 +126,7 @@ par(mfrow=c(2, 2), family = "myfont")
 plot(model1) # definitely normality assumption violated, so let's try something a bit more robust
 {% endhighlight %}
 
-There are various possible solutions but I go with using Venables and Ripley's implementation of an M estimator in rlm(), in combination with bootstrapping.  This minimises any assumptions I need to make about distributions, and controls for awkward outliers.
+There are various possible solutions but I go with using Venables and Ripley's implementation of an M estimator in `rlm()`, in combination with bootstrapping.  This minimises any assumptions I need to make about distributions, and controls for awkward outliers.
 
 {% highlight R lineanchors %}
 library(MASS)
@@ -144,7 +144,7 @@ booted_robust <- boot(difference,
 1 - sum(booted_robust$t > 0) / R
 {% endhighlight %}
 
-For the given example, the p-value comes out as zero ie there is no chance that the observed differences could be a result of the same blackbox generating different data at random.  Re-running the exercise with various tests (eg comparing bb1() with bb1()) shows that the process is pretty good at not returning false positives; and it does correctly identify any true positives I've given it so far.  More rigorous testing would be possible, but...
+For the given example, the p-value comes out as zero ie there is no chance that the observed differences could be a result of the same blackbox generating different data at random.  Re-running the exercise with various tests (eg comparing `bb1()` with `bb1()`) shows that the process is pretty good at not returning false positives; and it does correctly identify any true positives I've given it so far.  More rigorous testing would be possible, but...
 
 ## Conclusions
 After all this, I'm not sure where I've come out.  I think I have a pretty good method for telling whether two black box time series generators are identical; but does it really matter?  Going back to the [original question on Cross-Validated](http://stats.stackexchange.com/questions/172226/proving-similarities-of-two-time-series/172353#172353), I guess the OP *knew* that they were different.  So proving this tells him nothing.  Black box 2 is a model of Black box 1, and the question really is not whether it is right, but whether it is "right enough".  Unfortunately, I don't think there's a rigorous objective way of determining that.  Some kind of cost function for wrongness could be developed and assessed against, but the choice of cost function will probably be subjective (maybe not, depending on the field I suppose).

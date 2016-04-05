@@ -117,7 +117,7 @@ PlayPen <- dbConnect(RMySQL::MySQL(), username = "analyst", dbname = "nzis11")
 lambda <- 0.5
 {% endhighlight %}
 
-Importing the data is a straightforward SQL query, with some reshaping required because survey respondents were allowed to specify either one or two ethnicities.  This means I need an indicator column for each individual ethnicity if I'm going to include ethnicity in any meaningful way (for example, an "Asian" column with "Yes" or "No" for each survey respondent).  Wickham's {dplyr} and {tidyr} packages handle this sort of thing easily.
+Importing the data is a straightforward SQL query, with some reshaping required because survey respondents were allowed to specify either one or two ethnicities.  This means I need an indicator column for each individual ethnicity if I'm going to include ethnicity in any meaningful way (for example, an "Asian" column with "Yes" or "No" for each survey respondent).  Wickham's `dplyr` and `tidyr` packages handle this sort of thing easily.
 
 {% highlight R lineanchors %}
 #---------------------------download and transform data--------------------------
@@ -173,7 +173,7 @@ testY <- testData$income
 The first job is to get a model that can estimate income for any arbitrary combination of the explanatory variables hourse worked, occupation, qualification, age group, ethnicity x 7 and region.  I worked through five or six different ways of doing this before eventually settling on Random Forests which had the right combination of convenience and accuracy.
 
 ###Regression tree
-My first crude baseline is a single regression tree.  I didn't seriously expect this to work particularly well, but treated it as an interim measure before moving to a random forest.  I use the train() function from the {caret} package to determine the best value for the complexity parameter (cp) - the minimum improvement in overall R-squared needed before a split is made.  The best single tree is shown below.
+My first crude baseline is a single regression tree.  I didn't seriously expect this to work particularly well, but treated it as an interim measure before moving to a random forest.  I use the `train()` function from the `caret` package to determine the best value for the complexity parameter `cp` - the minimum improvement in overall R-squared needed before a split is made.  The best single tree is shown below.
 
 <img width = "750px" src="/img/0026-polished-tree.svg">
 
@@ -191,7 +191,7 @@ It takes a bit of effort to look at this plot and work out what is going on (and
 
 Trees are a nice tool for this sort of data because they can capture fairly complex interactions in a very flexible way.  Where they're weaker is in dealing with relationships between continuous variables that can be smoothly modelled by simple arithmetic - that's when more traditional regression methods, or model-tree combinations, prove useful.
 
-The code that fitted and plotted this tree (using the wonderful and not-used-enough prp() function that allows considerable control and polish of rpart trees) is below.
+The code that fitted and plotted this tree (using the wonderful and not-used-enough `prp()` function that allows considerable control and polish of `rpart` trees) is below.
 {% highlight R lineanchors %}
 #---------------------modelling with a single tree---------------
 # single tree, with factors all grouped together
@@ -388,7 +388,7 @@ Next model to try is a genuine Random Forest (tm).  As mentioned above, a Random
 
 Training a Random Forest requires you to specify how many explanatory variables to make available for each individual tree, and the best way to decide this is vai cross validation.
 
-Cross-validation is all about splitting the data into a number of different training and testing sets, to get around the problem of using a single hold-out test set for multiple purposes.  It's better to give each bit of the data a turn as the hold-out test set.  In the tuning exercise below, I divide the data into ten so I can try different values of the "mtry" parameter in my randomForest fitting and see the average Root Mean Square Error for the ten fits for each value of mtry.  "mtry" defines the number of variables the tree building algorithm has available to it at each split of the tree.  For forests with a continuous response variable like mine, the default value is the number of variables divided by three and I have 10 variables, so I try a range of options from 2 to 6 as the subset of variables for the tree to choose from at each split.  It turns out the conventional default value of mtry = 3 is in fact the best:
+Cross-validation is all about splitting the data into a number of different training and testing sets, to get around the problem of using a single hold-out test set for multiple purposes.  It's better to give each bit of the data a turn as the hold-out test set.  In the tuning exercise below, I divide the data into ten so I can try different values of the `mtry` parameter in my randomForest fitting and see the average Root Mean Square Error for the ten fits for each value of `mtry`.  `mtry` defines the number of variables the tree building algorithm has available to it at each split of the tree.  For forests with a continuous response variable like mine, the default value is the number of variables divided by three and I have 10 variables, so I try a range of options from 2 to 6 as the subset of variables for the tree to choose from at each split.  It turns out the conventional default value of `mtry = 3` is in fact the best:
 
 ![rf-tuning](/img/0026-rf-cv.svg)
 
@@ -484,7 +484,7 @@ grid.arrange(p1, p2, ncol = 2)
 ### Extreme gradient boosting
 I wanted to check out extreme gradient boosting as an alternative prediction method.  Like Random Forests, this method is based on a forest of many regression trees, but in the case of boosting each tree is relatively shallow (not many layers of branch divisions), and the trees are not independent of eachother.  Instead, successive trees are built specifically to explain the observations poorly explained by previous trees - this is done by giving extra weight to outliers from the prediction to date.
 
-Boosting is prone to over-fitting and if you let it run long enough it will memorize the entire training set (and be useless for new data), so it's important to use cross-validation to work out how many iterations are worth using and at what point is not picking up general patterns but just the idiosyncracies of the training sample data.  The excellent [{xgboost} R package](https://cran.r-project.org/web/packages/xgboost/index.html) by Tianqui Chen, Tong He and Michael Benesty applies gradient boosting algorithms super-efficiently and comes with built in cross-validation functionality.  In this case it becomes clear that 15 or 16 rounds is the maximum boosting before overfitting takes place, so my final boosting model is fit to the full training data set with that number of rounds.
+Boosting is prone to over-fitting and if you let it run long enough it will memorize the entire training set (and be useless for new data), so it's important to use cross-validation to work out how many iterations are worth using and at what point is not picking up general patterns but just the idiosyncracies of the training sample data.  The excellent [`xgboost` R package](https://cran.r-project.org/web/packages/xgboost/index.html) by Tianqui Chen, Tong He and Michael Benesty applies gradient boosting algorithms super-efficiently and comes with built in cross-validation functionality.  In this case it becomes clear that 15 or 16 rounds is the maximum boosting before overfitting takes place, so my final boosting model is fit to the full training data set with that number of rounds.
 {% highlight R lineanchors %}
 #-------xgboost------------
 sparse_matrix <- sparse.model.matrix(income ~ . -1, data = trainData)

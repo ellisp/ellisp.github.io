@@ -28,13 +28,13 @@ By including the residual plots below the scatter plots we get a nice picture of
 
 The animation illustrates the results of simulating and contrasting two fairly extreme cases:
 
-* cross section data, generated exactly from a model of y = a + b.x + e, e ~ N(0, 1).  This is the textbook case introduced in any basic statistics course;
+* cross section data, generated exactly from a model of `y = a + b.x + e, e ~ N(0, 1)`.  This is the textbook case introduced in any basic statistics course;
 * time series data, generated with exactly the same model except the error term, in addition to be normally distributed with mean of zero and standard deviation of 1, has a high autocorrelation.
 
-I chose to make the intercept of my model (a in the above formulation) 1, and the slope (b) equal to 0.3.  Here's what the first 200 observations of the response variable looks like:
+I chose to make the intercept of my model (`a` in the above formulation) 1, and the slope (`b`) equal to 0.3.  Here's what the first 200 observations of the response variable looks like:
 ![lorenz-plot](/img/0017-original.svg)
 
-In fact, I've over-simplified things by leaving x in both datasets as independent and identically distributed white noise.  In reality, if y has a time series random component, x probably will have too.  But I wanted to illustrate how a single violation of our assumptions can lead to problems, rather than create a fully realistic case (which obviously would show up even more problems).
+In fact, I've over-simplified things by leaving `x` in both datasets as independent and identically distributed white noise.  In reality, if y has a time series random component, `x` probably will have too.  But I wanted to illustrate how a single violation of our assumptions can lead to problems, rather than create a fully realistic case (which obviously would show up even more problems).
 
 The data were generated as follows.  To illustrate a point and make it a realistic test, I generate a much larger "population" time series, and the mean of zero and standard deviation of 1 applies only to that larger population.  The first 200 points is all we see.
 {% highlight R lineanchors %}
@@ -82,7 +82,7 @@ p0 <- df1 %>%
    
 {% endhighlight %}
 
-Creating the animation is straightforward graphics.  I make use of [ggplot2's](http://ggplot2.org/) faceting feature to cut down on some code, drawing the top two connected scatterplot images with one chunk and the bottom two residuals with another.  Each frame is saved as an individual PNG image, and [ImageMagick](http://www.imagemagick.org/script/index.php) ties it all together into an animated GIF as easily as usual.
+Creating the animation is straightforward graphics.  I make use of [`ggplot2`'s](http://ggplot2.org/) faceting feature to cut down on some code, drawing the top two connected scatterplot images with one chunk and the bottom two residuals with another.  Each frame is saved as an individual PNG image, and [ImageMagick](http://www.imagemagick.org/script/index.php) ties it all together into an animated GIF as easily as usual.
 
 {% highlight R lineanchors %}
 df_both <- rbind(df1, df2)

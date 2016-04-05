@@ -18,7 +18,7 @@ After my [last post](http://ellisp.github.io/blog/2015/11/26/violent-deaths/) on
 
 > "World Development Indicators (WDI) is the primary World Bank collection of development indicators, compiled from officially recognized international sources. It presents the most current and accurate global development data available, and includes national, regional and global estimates"
 
-I'll be analysing the data using Vincent Arel-Bundock's [{WDI} R package](https://cran.r-project.org/web/packages/WDI/index.html) which makes it super easy to grab data via the World Bank's Application Programming Interface, including fast searching a cached version of the indicator names and of course downloading the actual data into an R session.  With that search ability and the Bank's own page with its categorisations of indicators it wasn't hard to find data that I was interested in.  
+I'll be analysing the data using Vincent Arel-Bundock's [`WDI` R package](https://cran.r-project.org/web/packages/WDI/index.html) which makes it super easy to grab data via the World Bank's Application Programming Interface, including fast searching a cached version of the indicator names and of course downloading the actual data into an R session.  With that search ability and the Bank's own page with its categorisations of indicators it wasn't hard to find data that I was interested in.  
 
 However I quickly found myself doing some repetitive tasks - downloading a dataset and turning them into a standard faceted time series plot.  Following the DRY (Don't Repeat Yourself) fundamental principle of programming I decided this phase of exploration was more suited to a graphic user interface so I spun up this [web-app](https://ellisp.shinyapps.io/WorldDevelopmentIndicators) using Shiny.
 

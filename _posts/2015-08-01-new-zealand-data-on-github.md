@@ -77,7 +77,7 @@ Now we have the data in our R environment, we have a job to turn it into a [tidy
 
 ![Excel with merged cells](/img/0001-screenshot1.png)
 
-First challenge is that the time variable is spread across columns, rather than being a set of different values in a single column.  This is a common issue - the need to convert from 'wide' to 'long' format - and there are straightforward solutions, of which the best in today's R environment is the gather function in Hadley Wickham's tidyr package.
+First challenge is that the time variable is spread across columns, rather than being a set of different values in a single column.  This is a common issue - the need to convert from 'wide' to 'long' format - and there are straightforward solutions, of which the best in today's R environment is the gather function in Hadley Wickham's `tidyr` package.
 
 A slightly trickier issue is that the value cells for rows 5 and 6 have been merged together; also for 8 and 9, 14 and 15, etc.  We can fix this by taking advantage of the still regular structure of the data, with an old-school for loop trundling through it one row at a time and looking to see if it's one of those rows where a classification heading and a first level of the classification have been merged together. Resolving this and "gathering" the data into tidy format takes about 30 lines of code:
 

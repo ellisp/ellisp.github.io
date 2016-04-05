@@ -38,7 +38,7 @@ So far this is what it can do:
 
 * Twice a day it searches the #rstats channel and retweets, with random praise, one of the more popular recent status updates with that hash tag
 * Once a day it updates its own status with one of:
-  - An [R fortune cookie](https://cran.r-project.org/web/packages/fortunes/index.html) (limited to those shorter than 140 characters)
+  - An [R `fortune` cookie](https://cran.r-project.org/web/packages/fortunes/index.html) (limited to those shorter than 140 characters)
   - A babbled, mixed up extract of the [R installation and administration](https://cran.r-project.org/doc/manuals/r-release/R-admin.html) guide
   - A babbled, mixed up extract of the [An Introduction to R](https://cran.r-project.org/doc/manuals/r-release/R-intro.html) guide
 * Twice a month it scans the splash page of R-bloggers and tweets a wordcloud:  
@@ -46,7 +46,7 @@ So far this is what it can do:
 ![wordcloud](/img/0027-cloud.png)
 
 ### How it's done
-It turned out to be outrageously easy to do this thanks to the [{twitteR} package by Jeff Gentry](https://cran.r-project.org/web/packages/twitteR/index.html).  A word of warning - the Twitter API has not been stable in recent years, so if you Google for how to speak to it from R or Python make sure you're using only recent links.
+It turned out to be outrageously easy to do this thanks to the [`twitteR` package by Jeff Gentry](https://cran.r-project.org/web/packages/twitteR/index.html).  A word of warning - the Twitter API has not been stable in recent years, so if you Google for how to speak to it from R or Python make sure you're using only recent links.
 
 The basic steps are set out in [this post where Simon Munzert shows how to program a Twitter bot to send nagging messages to PhD students](http://www.r-datacollection.com/blog/Programming-a-Twitter-bot/).
 
@@ -56,7 +56,7 @@ The full set of code that does the various robot tasks is spread over a number o
 
 Here are some examples of code from that repository.  
 
-Here's the file that finds a fortune of less than 140 characters (after its author is pasted to the end) and puts it into the "tweettxt" object for later use.
+Here's the file that finds a fortune of less than 140 characters (after its author is pasted to the end) and puts it into the `tweettxt` object for later use.
 
 {% highlight R lineanchors %}
 library(fortunes)
@@ -76,7 +76,7 @@ f2 <- f %>% filter(len < 140)
 tweettxt <- sample(f2[, 1], 1)
 {% endhighlight %}
 
-Here's the main daily tweeting file.  It calls a script that sets up the robot's credentials (which I haven't published on GitHub), and another that defines some functions including a simple retweet() function (I couldn't find one like this in twitteR but it was simple enough to make).  Then it decides whether to call the fortunes script (as above), or one of those that babbles in the style of a classic R manual.  It tweets the result, and saves its tweets to a local log.
+Here's the main daily tweeting file.  It calls a script that sets up the robot's credentials (which I haven't published on GitHub), and another that defines some functions including a simple `retweet()` function (I couldn't find one like this in twitteR but it was simple enough to make).  Then it decides whether to call the fortunes script (as above), or one of those that babbles in the style of a classic R manual.  It tweets the result, and saves its tweets to a local log.
 {% highlight R lineanchors %}
 #--------------set up---------------
 library(twitteR)
@@ -112,7 +112,7 @@ cd ~/Rrobot
 R CMD BATCH tweeting/main.R
 {% endhighlight %}
 
-And finally, in my crontab file, I have entries that run the various scripts when needed, at set times of the day (and days of the month, for the R-bloggers word cloud).
+And finally, in my `crontab` file, I have entries that run the various scripts when needed, at set times of the day (and days of the month, for the R-bloggers word cloud).
 {% highlight BASH lineanchors %}
 PATH=/home/ellisp/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
 37 8 *    * * /home/ellisp/Rrobot/cron_scripts/main_tweet
@@ -122,4 +122,4 @@ PATH=/home/ellisp/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/b
 If you have a Windows server these last two steps would be different, but still straightforward; Simon Munzert's post shows how to do that.
 
 ### Acknowledgements
-As well as {twitteR} this project depended heavily on the whimsical but pleasant {praise} plus a bunch of the usual suspects for me: {dplyr}, {tm}, {wordcloud}, {stringr}, {stringi}, {rvest}.
+As well as `twitteR` this project depended heavily on the whimsical but pleasant `praise` plus a bunch of the usual suspects for me: `dplyr`, `tm`, `wordcloud`, `stringr`, `stringi`, `rvest`.
