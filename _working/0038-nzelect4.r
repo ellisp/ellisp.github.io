@@ -4,18 +4,19 @@ devtools::install_github("hadley/ggplot2") # latest version needed for subtitles
 
 library(MASS) # for rlm().  Load before dplyr to avoid "select" conflicts
 library(mice) # for multiple imputation
-library(dplyr)    # must be called after merTools as merTools uses plyr
+library(dplyr)    
 library(tidyr)
 library(ggplot2)
 library(scales)
 library(showtext)
-library(car)  # for vif()
+library(car)      # for vif()
 library(ggthemes) # for theme_tufte
+library(mgcv)     # for a version of gam with vcov() method
 font.add.google("Poppins", "myfont")
 showtext.auto()
 theme_set(theme_light(10, base_family = "myfont"))
 
-
+# load in the data
 library(nzelect)
 
 #-----------general data prep------------
@@ -42,19 +43,21 @@ greens <- GE2014a %>%
    filter(VotingType == "Party" &
              Party %in% c("Green Party", "Labour Party")) %>%
    group_by(VotingPlace) %>%
-   summarise(PropGreens = sum(Votes[Party == "Green Party"]) / sum(Votes)) %>%
+   summarise(PropGreens = sum(Votes[Party == "Green Party"]) / sum(Votes),
+             TotalGLVotes = sum(Votes)) %>%
    ungroup() %>%
    left_join(Locations2014, by = "VotingPlace") %>%
    left_join(Meshblocks2013, by = c("MB2014" = "MB")) %>%
-   select(PropGreens, MeanBedrooms2013:PropStudentAllowance2013) 
+   select(PropGreens, TotalGLVotes, WGS84Latitude, WGS84Longitude,
+          MeanBedrooms2013:PropStudentAllowance2013) 
 
-# tidy up names of variables
+# Tidy up names of variables.  All the census data is from 2013 so we don't
+# need to say so in each variable:
 names(greens) <- gsub("2013", "", names(greens))
 
 
 # Identify and address collinearity in the explanatory variables
 mod1 <- lm(PropGreens ~ . , data = greens)
-summary(mod1)
 sort(vif(mod1) )
 # PropEuropean is 17 - can be predicted from maori, Pacific Asian.
 # PropOwnResidence is 11 - can be predicted from PropNotOwnedHH
@@ -62,21 +65,21 @@ sort(vif(mod1) )
 greens <- greens[ , !names(greens) %in% c("PropEuropean", "PropOwnResidence")]
 
 
-# Image
+# Image of scatter plots of explanatory variables v response variable
 png("../img/0038-green-labour.png", 1000, 1000, res = 100)
 greens %>%
    gather(Variable, Value, -PropGreens) %>%
    mutate(Variable = gsub("2013", "", Variable),
           Variable = gsub("Prop", "Prop ", Variable)) %>%
    ggplot(aes(x = Value, y = PropGreens)) +
-   facet_wrap(~Variable, scales = "free_x", ncol = 5) +
+   facet_wrap(~Variable, scales = "free_x", ncol = 6) +
    geom_point(alpha = 0.2) +
    geom_smooth(method = "rlm", se = FALSE) +
    scale_y_continuous("Percentage of Labour and Green voters who voted Green Party in party vote", 
                       label = percent) +
    scale_x_continuous("", label = comma) +
    labs(caption = "Note: horizontal scales vary; and some proportions exceed 1.0 due to confidentialising.\nBlue lines are outlier-resistant robust regressions.") +
-   ggtitle("Choosing between Labour and Green in the 2014 New Zealand General Election",
+   ggtitle("Choosing Green over Labour in the 2014 New Zealand General Election",
       subtitle = "Each point represents an individual voting location (vertical axis) and the meshblock within which it is located (horizontal axis).") +    theme(panel.margin = unit(1.5, "lines"))
 dev.off()
 
@@ -98,14 +101,18 @@ greens_scaled[ , -(1:2)] <- scale(greens_scaled[ , -(1:2)] )
 # the Xs based on the Y!  First we define the default predictor matrix:
 predMat <- 1 - diag(1, ncol(greens_scaled))
 # Each row corresponds to a target variable, columns to the variables to use in
-# imputing them.  We say nothing should use PropGreens (first column)
+# imputing them.  We say nothing should use PropGreens (first column).  Everything
+# else is ok to use, including latitude and longitude and the total green and labour
+# votes:
 predMat[ , 1] <- 0
-greens_mi <- mice(greens_scaled, predictorMatrix = predMat)
+greens_mi <- mice(greens_scaled, m = 20, predictorMatrix = predMat)
 
-X <- names(greens_scaled)[-1]
-paste(X, collapse = " + ")
+# what are all the variable names?:
+paste(names(greens_scaled)[-1], collapse = " + ")
+
+# fit models to each of the imputed datasets:
 mod2 <- with(greens_mi, 
-             lm(PropGreens ~ MeanBedrooms + PropPrivateDwellings + 
+             gam(PropGreens ~ MeanBedrooms + PropPrivateDwellings + 
                    PropSeparateHouse + NumberInHH + PropMultiPersonHH + 
                    PropInternetHH + PropNotOwnedHH + MedianRentHH + 
                    PropLandlordPublic + PropNoMotorVehicle + PropOld + 
@@ -116,39 +123,54 @@ mod2 <- with(greens_mi,
                    PropNoQualification + PropBachelor + PropDoctorate + 
                    PropFTStudent + PropPTStudent + MedianIncome + 
                    PropSelfEmployed + PropUnemploymentBenefit + 
-                   PropStudentAllowance)
+                   PropStudentAllowance + 
+                    s(WGS84Latitude) + s(WGS84Longitude) +
+                    s(WGS84Latitude * WGS84Longitude),
+                family = binomial, weights = TotalGLVotes)
 )
 
    
-# extract all the estimates of coefficients, except the uninteresting intercept
+# extract all the estimates of coefficients, except the uninteresting intercept:
 coefs <- summary(pool(mod2))[-1, ] 
 vars <- rownames(coefs)
 coefs <- as.data.frame(coefs) %>%
    mutate(variable = vars) %>%
    arrange(est) %>%
    mutate(variable = gsub("Prop", "", variable)) %>%
-   mutate(variable = factor(variable, levels = variable))
+   mutate(variable = factor(variable, levels = variable)) %>%
+   # drop all the uninteresting estimates associated with the spatial splines:
+   filter(!grepl("WGS84", variable))
 
+# make names referrable:
 names(coefs) <- gsub(" ", "_", names(coefs), fixed = TRUE)
 
-svg("../img/0038-model-results.svg", 8, 8)
-ggplot(coefs, aes(x = variable, ymin = lo_95, ymax = hi_95, y = est)) + 
+# define plot of results:
+p2 <- ggplot(coefs, aes(x = variable, ymin = lo_95, ymax = hi_95, y = est)) + 
    geom_hline(yintercept = 0, colour = "lightblue") +
    geom_linerange(colour = "grey20") +
    geom_text(aes(label = variable), size = 3, family = "myfont", vjust = 0, nudge_x = 0.15) +
    coord_flip() +
-   labs(y = "\n95% confidence interval of scaled impact on proportion\nthat voted Green out of Green / Labour voters",
-        x = "") +
-   ggtitle("Census characteristics of voting places that voted Green over Labour",
+   labs(y = "\nHorizontal lines show 95% confidence interval of scaled impact on
+proportion that voted Green out of Green and Labour voters.
+The numbers show coefficients from a logistic regression and 
+should be taken as indicative, not strictly interpretable.\n",
+        x = "",
+        caption = "Source: http://ellisp.github.io") +
+   ggtitle("Census characteristics of voting places that party-voted Green over Labour",
       subtitle = "New Zealand General Election 2014") +
    theme_tufte(base_family = "myfont") +
    theme(axis.text.y = element_blank(),
          axis.ticks.y = element_blank()) +
-   annotate("text", y = -0.05, x = 5, label = "More likely to\nvote Labour", 
-            colour = "red") +
-   annotate("text", y = 0.035, x = 28, label = "More likely to\nvote Green", 
-            colour = "darkgreen")
+   annotate("text", y = -0.2, x = 6, label = "More likely to\nvote Labour", 
+            colour = "red", family = "myfont") +
+   annotate("text", y = 0.18, x = 31, label = "More likely to\nvote Green", 
+            colour = "darkgreen", family = "myfont")
+svg("../img/0038-model-results.svg", 8, 8)
+   print(p2)
 dev.off()
 
+png("../img/0038-model-results.png", 800, 800, res = 100)
+   print(p2)
+dev.off()
 
 
