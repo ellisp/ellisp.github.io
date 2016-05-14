@@ -3,7 +3,7 @@ layout: post
 title: Announcing new forecastHybrid package
 date: 2016-05-07
 tag: 
-   - TimeSeries
+   - Timeseries
    - Forecasting
    - R
 description: The new forecastHybrid package for R by David Shaub and myself provides convenient access to ensemble time series forecasting methods, in any combination of up to five of the modelling approaches from Hyndman's forecast package.  These are auto-selected autoregressive integrated moving average; exponential smoothing state space (both ets and tbats); feed forward neural network with a single hidden layer and lagged inputs; and forecasts of loess-based seasonal decomposition.
