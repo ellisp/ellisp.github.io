@@ -7,6 +7,258 @@
 		<atom:link href="http://ellisp.github.io/feed.R.xml" rel="self" type="application/rss+xml" />
 		
 			<item>
+				<title>Visual contrast of two robust regression methods</title>
+					<description>&lt;h2 id=&quot;robust-regression&quot;&gt;Robust regression&lt;/h2&gt;
+
+&lt;p&gt;For training purposes, I was looking for a way to illustrate some of the different properties of two different &lt;a href=&quot;https://en.wikipedia.org/wiki/Robust_regression&quot;&gt;robust estimation methods&lt;/a&gt; for linear regression models.  The two methods I’m looking at are:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://en.wikipedia.org/wiki/Least_trimmed_squares&quot;&gt;least trimmed squares&lt;/a&gt;, implemented as the default option in &lt;code&gt;lqs()&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;a &lt;a href=&quot;https://en.wikipedia.org/wiki/M-estimator&quot;&gt;Huber M-estimator&lt;/a&gt;, implemented as the default option in &lt;code&gt;rlm()&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Both functions are in Venables and Ripley’s &lt;code&gt;MASS&lt;/code&gt; R package which comes with the standard distribution of R.&lt;/p&gt;
+
+&lt;p&gt;These methods are alternatives to ordinary least squares that can provide estimates with superior qualities when the classical assumptions of linear regression aren’t met.  M-estimators are effective in dealing with various breakdowns in the classical linear model assumptions, while still giving excellent results if the assumptions happen to be valid after all.  Least trimmed squares is very resistant to outliers, at a cost to efficiency.  Unfortunately, neither of these (or any other) robust estimation methods is the best in all situations, although they generally out-perform ordinary least squares in most real-life situations (my own, non-systematic observation).&lt;/p&gt;
+
+&lt;h2 id=&quot;new-zealand-income-survey-2011&quot;&gt;New Zealand Income Survey 2011&lt;/h2&gt;
+
+&lt;p&gt;To explore this I use the simulated unit record file from the New Zealand Income Survey 2011 that I’ve used in a lot of blog posts in the past year.  My &lt;a href=&quot;http://ellisp.github.io/blog/2015/08/15/importing-nzis-surf/&quot;&gt;first post on this dataset&lt;/a&gt; sets out how to import this data and tidy it up into a database.  The data shows weekly individual income from all sources for New Zealanders aged over 15, as well as hours worked and a range of demographic information I won’t be using today.  For looking at robust regression estimation methods, I’m going to pretend that I only ever have a sample of thirty observations from this dataset.&lt;/p&gt;
+
+&lt;p&gt;To illustrate the data, here’s an animation showing the full dataset (in grey) and repeated different samples of thirty data points, as well as lines representing linear models fit to those small samples with ordinary least squares (&lt;code&gt;lm&lt;/code&gt;) and the two robust regression methods I’m investigating today.
+&lt;img src=&quot;http://ellisp.github.io/img/0041-rtm-lqs.gif&quot; alt=&quot;animation&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Some characteristics of this data that make it a useful illustration for robust regression include:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;It’s reasonable to postulate the underlying relationship between hours worked and income as linear for much of the population.  So a linear model on the original scale is likely to be appropriate.&lt;/li&gt;
+  &lt;li&gt;However, the population seems likely to be made up of a number of diverse groups, making assumptions of homogeneity implausible. For example, a large number of people have incomes, some of them quite substantial, despite working zero hours.  General economic and social knowledge suggests that divisions into wage-earners, profit-receivers, and social security receivers probably constitute three quite different populations, while still being a significant simplification of the actual heterogeneity.&lt;/li&gt;
+  &lt;li&gt;On the original scale the data are expected to show &lt;a href=&quot;https://en.wikipedia.org/wiki/Heteroscedasticity&quot;&gt;heteroscedasticity&lt;/a&gt; (in this case, higher variance for higher expected income), making classical inference invalid&lt;/li&gt;
+  &lt;li&gt;There are a number of outliers on both the x and y axes; and a cluster of individuals with negative income that appear to form yet another group in the mixture.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;comparing-robust-methods&quot;&gt;Comparing robust methods&lt;/h2&gt;
+
+&lt;p&gt;To reflect one of the key features of the data which is the unusual distribution of income when working hours are zero, the models fit in this post are all of the structure:&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;income ~ hours + (hours == 0)&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;The graphics show just the relationship between income and hours for when a non-zero amount of hours is worked.  In effect, (just for the graphics), this is like fitting the model after removing all the individuals that performed zero hours of work in the surveyed week.&lt;/p&gt;
+
+&lt;p&gt;The animation shown above was the germ idea for this post and already illustrates the key points.  In particular, it shows how the randomness associated with a small sample of thirty points leads to a different result for any particular sample; and once you have that sample, different estimation methods can give you materially differing results.  In some frames of the animation, we see a sample of thirty where slopes from the different estimation methods point in different directions, suggesting that if that particular small sample was the only one available, one might conclude that working more hours leads to decreased income.&lt;/p&gt;
+
+&lt;p&gt;The animation is nice for reminding us of the randomness associated with small samples, but actually isn’t a particularly effective method of looking at how the different robust estimation methods are doing.  Here’s a better way of doing that; a plot of the actual regression lines fit to 10,000 different samples of thirty.  Each line is semi-transparent, to give a better visual impression of where the bulk of fit lines end up:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://ellisp.github.io/img/0041-compare-lqs-rlm.png&quot; alt=&quot;comparison&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;This makes it graphically clear that the &lt;code&gt;lqs&lt;/code&gt; method (least trimmed squares) gives a noticeably wider range of results than does the Huber M-estimator.  This is an expected result; least trimmed squares is highly resistant to outliers, but this comes at the cost of &lt;a href=&quot;https://en.wikipedia.org/wiki/Sufficient_statistic&quot;&gt;sufficiency&lt;/a&gt; (effectively, a significant part of the data has very little impact on the slope, so the information contained in the data is not utilised to the full).&lt;/p&gt;
+
+&lt;p&gt;Here’s another way of looking at that; the density plots of the slopes of the three estimation methods (two robust methods plus ordinary least squares fitted with &lt;code&gt;lm&lt;/code&gt;).  I am using slope because it’s the most likely parameter of interest - it represents the marginal increase in income from an extra hour of work.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://ellisp.github.io/img/0041-slope-densities.svg&quot; alt=&quot;slopes&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The density plot shows that the estimates from &lt;code&gt;lqs&lt;/code&gt; tend to be lower than for either &lt;code&gt;rlm&lt;/code&gt; or &lt;code&gt;lm&lt;/code&gt;.  This is to be expected, in a way related to the reason that trimmed mean or median income is usually less than mean income.  An estimation method that knocks out of the data the most extreme points (as done by least trimmed squares) will give differing results for samples drawn from skewed distributions.&lt;/p&gt;
+
+&lt;p&gt;Here are the mean, median and standard deviation of the slopes estimated by the three methods for the 10,000 samples of thirty:&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-r&quot; data-lang=&quot;r&quot;&gt;&lt;a name=&quot;True-1&quot;&gt;&lt;/a&gt;method  mean median    sd
+&lt;a name=&quot;True-2&quot;&gt;&lt;/a&gt;    lm  &lt;span class=&quot;m&quot;&gt;21.3&lt;/span&gt;   &lt;span class=&quot;m&quot;&gt;21.9&lt;/span&gt;  &lt;span class=&quot;m&quot;&gt;18.9&lt;/span&gt;
+&lt;a name=&quot;True-3&quot;&gt;&lt;/a&gt;   rlm  &lt;span class=&quot;m&quot;&gt;20.5&lt;/span&gt;   &lt;span class=&quot;m&quot;&gt;20.7&lt;/span&gt;  &lt;span class=&quot;m&quot;&gt;10.9&lt;/span&gt;
+&lt;a name=&quot;True-4&quot;&gt;&lt;/a&gt;   lqs  &lt;span class=&quot;m&quot;&gt;17.7&lt;/span&gt;   &lt;span class=&quot;m&quot;&gt;18.2&lt;/span&gt;  &lt;span class=&quot;m&quot;&gt;23.7&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;We see that &lt;code&gt;lm&lt;/code&gt; and &lt;code&gt;rlm&lt;/code&gt; on average give similar results, but &lt;code&gt;rlm&lt;/code&gt; is much more stable, with a noticeably lower variance in results (shown by the standard deviation).  &lt;code&gt;lqs&lt;/code&gt; on the other hand is actually quite unstable, for this small sample size.&lt;/p&gt;
+
+&lt;h2 id=&quot;preliminary-thoughts-on-robust-regression-estimators&quot;&gt;Preliminary thoughts on robust regression estimators&lt;/h2&gt;
+&lt;p&gt;This post uses Venables and Ripley’s &lt;code&gt;MASS&lt;/code&gt; package and the accompanying book &lt;a href=&quot;http://www.springer.com/us/book/9780387954578&quot;&gt;&lt;em&gt;Modern Applied Statistics with S&lt;/em&gt;&lt;/a&gt;.  Their own discussion of the issue implies (to my reading) the preferred use of the MM-estimator proposed by Yohai, Stahel &amp;amp; Zamar in 1991, which retains the outlier-resistance of the S-estimator methods related to trimmed least squares, and the greater efficiency of M-estimators.  MM-estimators are available via &lt;code&gt;rlm()&lt;/code&gt; with the &lt;code&gt;method = &#39;MM&#39;&lt;/code&gt; argument.&lt;/p&gt;
+
+&lt;p&gt;Another book that has been influential for me and I thoroughly recommend is Wilcox’ &lt;a href=&quot;http://www.amazon.com/Modern-Statistics-Social-Behavioral-Sciences/dp/1439834563&quot;&gt;&lt;em&gt;Modern Statistics for the Social and Behavioral Sciences&lt;/em&gt;&lt;/a&gt;.  His comments on the matter are so pertinent that I am going to quote two paragraphs at length:&lt;/p&gt;
+
+&lt;h3 id=&quot;comments-on-choosing-a-regression-estimator-wilcox&quot;&gt;Comments on Choosing a Regression Estimator (Wilcox)&lt;/h3&gt;
+
+&lt;p&gt;“Many regression estimators have been proposed that can &lt;strong&gt;have substantial advantages over the ordinary least squares estimator.  But no single estimator dominates&lt;/strong&gt; and there is the practical issue that the choice of estimator can make a practical difference in the conclusions reached.  One point worth stressing is that even when an estimator has a high breakdown point, only two outliers, properly placed, can have a large impact on some of the robust estimates of the slopes…. Estimators that seem to be particularly good at avoiding this problem are the Least Trimmed Squares, Least Trimmed Absolute Value and OP regression estimators.  Among these three estimators, the OP estimator seems to have an advantage in terms of achieving a relatively low standard error and so has the potential of relatively high power.  A negative feature of the OP estimator is that with large sample sizes, execution time might be an issue…&lt;/p&gt;
+
+&lt;p&gt;“In terms of achieving a relatively small standard error when dealing with heteroscedasticity, certain robust regression estimators can offer a distinct advantage compared to the least squares estimator…. Ones that perform well include Theil-Sen, the OP regression estimator and the TSTS estimator.  The MM-estimator does not perform well for the situations considered (ie heteroscedasticity)… but perhaps there are situations where it offers a practical advantage.”&lt;/p&gt;
+
+&lt;p&gt;It should be noted that earlier in the chapter Wilcox pointed out that the MM-estimator “enjoys excellent theoretical properties … but its standard error can be relatively large when there is heteroscedasticity.”&lt;/p&gt;
+
+&lt;p&gt;The “OP” estimator is a method of outlier detection and removal followed by &lt;a href=&quot;https://en.wikipedia.org/wiki/Theil%E2%80%93Sen_estimator&quot;&gt;Theil-Sen estimation&lt;/a&gt;, a method that takes the median slope between all the pairs of sample points.  Topic for a future post.&lt;/p&gt;
+
+&lt;h2 id=&quot;code&quot;&gt;Code&lt;/h2&gt;
+
+&lt;p&gt;Here’s the R code behind all this.  It won’t be immediately reproducible.  Prior work is needed to establish the database as described in my earlier post; and the animation sequence is dependent on a particular folder structure.&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-r&quot; data-lang=&quot;r&quot;&gt;&lt;a name=&quot;True-1&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;#===================setup=======================&lt;/span&gt;
+&lt;a name=&quot;True-2&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kn&quot;&gt;library&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;showtext&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-3&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kn&quot;&gt;library&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;RMySQL&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-4&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kn&quot;&gt;library&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;MASS&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; 
+&lt;a name=&quot;True-5&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kn&quot;&gt;library&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;dplyr&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-6&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kn&quot;&gt;library&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;tidyr&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-7&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kn&quot;&gt;library&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;stringr&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-8&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kn&quot;&gt;library&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;ggplot2&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-9&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kn&quot;&gt;library&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;scales&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-10&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kn&quot;&gt;library&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;directlabels&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-11&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-12&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;#================download and transform data==============&lt;/span&gt;
+&lt;a name=&quot;True-13&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;# See http://ellisp.github.io/blog/2015/08/15/importing-nzis-surf/ for&lt;/span&gt;
+&lt;a name=&quot;True-14&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;# instructions on setting up the database&lt;/span&gt;
+&lt;a name=&quot;True-15&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-16&quot;&gt;&lt;/a&gt;sql &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;SELECT hours, income FROM vw_mainheader&amp;quot;&lt;/span&gt;
+&lt;a name=&quot;True-17&quot;&gt;&lt;/a&gt;PlayPen &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; dbConnect&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;RMySQL&lt;span class=&quot;o&quot;&gt;::&lt;/span&gt;MySQL&lt;span class=&quot;p&quot;&gt;(),&lt;/span&gt; username &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;analyst&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; dbname &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;nzis11&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-18&quot;&gt;&lt;/a&gt;nzis &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; dbGetQuery&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;PlayPen&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; sql&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; 
+&lt;a name=&quot;True-19&quot;&gt;&lt;/a&gt;dbDisconnect&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;PlayPen&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-20&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-21&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;# An early version of the analysis used a cube root transform; this was dropped&lt;/span&gt;
+&lt;a name=&quot;True-22&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;# as it reduces interpretability and is not really germane to the illustration&lt;/span&gt;
+&lt;a name=&quot;True-23&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;# of robust regression methods&lt;/span&gt;
+&lt;a name=&quot;True-24&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;# cuberoot &amp;lt;- function(x){&lt;/span&gt;
+&lt;a name=&quot;True-25&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;#    sign(x) * abs(x)^(1/3)&lt;/span&gt;
+&lt;a name=&quot;True-26&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;# }&lt;/span&gt;
+&lt;a name=&quot;True-27&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;# nzis &amp;lt;- nzis %&amp;gt;%&lt;/span&gt;
+&lt;a name=&quot;True-28&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;#    mutate(income2 = cuberoot(income),&lt;/span&gt;
+&lt;a name=&quot;True-29&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;#           hours2 = cuberoot(hours))&lt;/span&gt;
+&lt;a name=&quot;True-30&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-31&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;# create the variables to be used for x and y (as finally used, this&lt;/span&gt;
+&lt;a name=&quot;True-32&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;# is just income and hours on their original scale):&lt;/span&gt;
+&lt;a name=&quot;True-33&quot;&gt;&lt;/a&gt;nzis &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; nzis &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
+&lt;a name=&quot;True-34&quot;&gt;&lt;/a&gt;   mutate&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;income2 &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; income&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+&lt;a name=&quot;True-35&quot;&gt;&lt;/a&gt;          hours2 &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; hours&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-36&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-37&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;#==================simulations of many samples and estimated models==============&lt;/span&gt;
+&lt;a name=&quot;True-38&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;# create empty lists to hold the samples and the model results&lt;/span&gt;
+&lt;a name=&quot;True-39&quot;&gt;&lt;/a&gt;points_samp &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+&lt;a name=&quot;True-40&quot;&gt;&lt;/a&gt;mod_lm &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+&lt;a name=&quot;True-41&quot;&gt;&lt;/a&gt;mod_rlm &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+&lt;a name=&quot;True-42&quot;&gt;&lt;/a&gt;mod_lqs &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+&lt;a name=&quot;True-43&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-44&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;# create the samples, estimate the models and store the results&lt;/span&gt;
+&lt;a name=&quot;True-45&quot;&gt;&lt;/a&gt;reps &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;10000&lt;/span&gt;
+&lt;a name=&quot;True-46&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kr&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;i &lt;span class=&quot;kr&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;reps&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;
+&lt;a name=&quot;True-47&quot;&gt;&lt;/a&gt;   nzis_samp &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; nzis&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;sample&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;nrow&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;nzis&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;30&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;   
+&lt;a name=&quot;True-48&quot;&gt;&lt;/a&gt;   points_samp&lt;span class=&quot;p&quot;&gt;[[&lt;/span&gt;i&lt;span class=&quot;p&quot;&gt;]]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; nzis_samp
+&lt;a name=&quot;True-49&quot;&gt;&lt;/a&gt;   mod_lm&lt;span class=&quot;p&quot;&gt;[[&lt;/span&gt;i&lt;span class=&quot;p&quot;&gt;]]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; lm&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;income2 &lt;span class=&quot;o&quot;&gt;~&lt;/span&gt; hours2 &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;hours2 &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; data &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; nzis_samp&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-50&quot;&gt;&lt;/a&gt;   mod_rlm&lt;span class=&quot;p&quot;&gt;[[&lt;/span&gt;i&lt;span class=&quot;p&quot;&gt;]]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; rlm&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;income2 &lt;span class=&quot;o&quot;&gt;~&lt;/span&gt; hours2 &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;hours2 &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; data &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; nzis_samp&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-51&quot;&gt;&lt;/a&gt;   mod_lqs&lt;span class=&quot;p&quot;&gt;[[&lt;/span&gt;i&lt;span class=&quot;p&quot;&gt;]]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; lqs&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;income2 &lt;span class=&quot;o&quot;&gt;~&lt;/span&gt; hours2 &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;hours2 &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; data &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; nzis_samp&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-52&quot;&gt;&lt;/a&gt;   
+&lt;a name=&quot;True-53&quot;&gt;&lt;/a&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;a name=&quot;True-54&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-55&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;#======================reporting results==============&lt;/span&gt;
+&lt;a name=&quot;True-56&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-57&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;#------------setup-----------------&lt;/span&gt;
+&lt;a name=&quot;True-58&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;# Fonts:&lt;/span&gt;
+&lt;a name=&quot;True-59&quot;&gt;&lt;/a&gt;font.add.google&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;Poppins&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;myfont&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-60&quot;&gt;&lt;/a&gt;showtext.auto&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+&lt;a name=&quot;True-61&quot;&gt;&lt;/a&gt;theme_set&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;theme_light&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;base_family &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;myfont&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+&lt;a name=&quot;True-62&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-63&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-64&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-65&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;# define a generic plot function that does the background pale grey&lt;/span&gt;
+&lt;a name=&quot;True-66&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;# plot of the full dataset and draws the axes:&lt;/span&gt;
+&lt;a name=&quot;True-67&quot;&gt;&lt;/a&gt;draw_plot &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(){&lt;/span&gt;
+&lt;a name=&quot;True-68&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;kp&quot;&gt;with&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;nzis&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; plot&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;hours2&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; income2&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; cex &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0.5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; col &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;grey80&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; bty &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;l&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+&lt;a name=&quot;True-69&quot;&gt;&lt;/a&gt;                   xlab &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;Hours worked&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
+&lt;a name=&quot;True-70&quot;&gt;&lt;/a&gt;                   ylab &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;Weekly income&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+&lt;a name=&quot;True-71&quot;&gt;&lt;/a&gt;                   axes &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;FALSE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+&lt;a name=&quot;True-72&quot;&gt;&lt;/a&gt;   
+&lt;a name=&quot;True-73&quot;&gt;&lt;/a&gt;   axis&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; at &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; axTicks&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; labels &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;paste0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;$&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; str_trim&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;format&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+&lt;a name=&quot;True-74&quot;&gt;&lt;/a&gt;      axTicks&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; big.mark &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;,&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))))&lt;/span&gt;
+&lt;a name=&quot;True-75&quot;&gt;&lt;/a&gt;   axis&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; at &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; axTicks&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; labels &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; axTicks&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+&lt;a name=&quot;True-76&quot;&gt;&lt;/a&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;a name=&quot;True-77&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-78&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-79&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-80&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;#-----------animation-------------&lt;/span&gt;
+&lt;a name=&quot;True-81&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;# This code is dependent on the particular folder structure.  File locations&lt;/span&gt;
+&lt;a name=&quot;True-82&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;# will need to be changed if people want to reproduce the analysis.&lt;/span&gt;
+&lt;a name=&quot;True-83&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kr&quot;&gt;for&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;i &lt;span class=&quot;kr&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;100&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;
+&lt;a name=&quot;True-84&quot;&gt;&lt;/a&gt;   
+&lt;a name=&quot;True-85&quot;&gt;&lt;/a&gt;   png&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;paste0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;_output/0041-rlm-lqs/&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; i &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;20000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;.png&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+&lt;a name=&quot;True-86&quot;&gt;&lt;/a&gt;       &lt;span class=&quot;m&quot;&gt;650&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;650&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; res &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;100&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-87&quot;&gt;&lt;/a&gt;   par&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;family &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;myfont&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-88&quot;&gt;&lt;/a&gt;   draw_plot&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+&lt;a name=&quot;True-89&quot;&gt;&lt;/a&gt;   title&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;main &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;Comparison of different estimation methods\nfor linear models on a subset of income data&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-90&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;kp&quot;&gt;with&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;points_samp&lt;span class=&quot;p&quot;&gt;[[&lt;/span&gt;i&lt;span class=&quot;p&quot;&gt;]],&lt;/span&gt; points&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;hours2&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; income2&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; cex &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+&lt;a name=&quot;True-91&quot;&gt;&lt;/a&gt;   abline&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;mod_lm&lt;span class=&quot;p&quot;&gt;[[&lt;/span&gt;i&lt;span class=&quot;p&quot;&gt;]],&lt;/span&gt; col &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;black&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-92&quot;&gt;&lt;/a&gt;   abline&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;mod_rlm&lt;span class=&quot;p&quot;&gt;[[&lt;/span&gt;i&lt;span class=&quot;p&quot;&gt;]],&lt;/span&gt; col &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;blue&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-93&quot;&gt;&lt;/a&gt;   abline&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;mod_lqs&lt;span class=&quot;p&quot;&gt;[[&lt;/span&gt;i&lt;span class=&quot;p&quot;&gt;]],&lt;/span&gt; col &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;red&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-94&quot;&gt;&lt;/a&gt;   
+&lt;a name=&quot;True-95&quot;&gt;&lt;/a&gt;   legend&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;topright&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; legend &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;lm&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;rlm&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;lts&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; lty &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
+&lt;a name=&quot;True-96&quot;&gt;&lt;/a&gt;          col &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;black&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;blue&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;red&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; text.col &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;black&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;blue&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;red&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+&lt;a name=&quot;True-97&quot;&gt;&lt;/a&gt;          bty &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;n&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-98&quot;&gt;&lt;/a&gt;   
+&lt;a name=&quot;True-99&quot;&gt;&lt;/a&gt;   legend&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;bottomright&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; legend &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;Full data&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;Sampled data&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+&lt;a name=&quot;True-100&quot;&gt;&lt;/a&gt;          pch &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; col &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;grey50&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;black&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; pt.cex &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
+&lt;a name=&quot;True-101&quot;&gt;&lt;/a&gt;          bty &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;n&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; text.col &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;grey50&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;black&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+&lt;a name=&quot;True-102&quot;&gt;&lt;/a&gt;   
+&lt;a name=&quot;True-103&quot;&gt;&lt;/a&gt;   dev.off&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+&lt;a name=&quot;True-104&quot;&gt;&lt;/a&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;a name=&quot;True-105&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-106&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;# next sequence turns the various static frames into an animated GIF&lt;/span&gt;
+&lt;a name=&quot;True-107&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;# and depends on the actual location of ImageMagick:&lt;/span&gt;
+&lt;a name=&quot;True-108&quot;&gt;&lt;/a&gt;projdir &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;setwd&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;_output/0041-rlm-lqs/&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-109&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kp&quot;&gt;system&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;#39;&amp;quot;C:\\Program Files\\ImageMagick-6.9.1-Q16\\convert&amp;quot; -loop 0 -delay 65 *.png &amp;quot;../../..http://ellisp.github.io/img/0041-rtm-lqs.gif&amp;quot;&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; 
+&lt;a name=&quot;True-110&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kp&quot;&gt;setwd&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;projdir&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-111&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-112&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-113&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;#--------------visual static comparison-----------------&lt;/span&gt;
+&lt;a name=&quot;True-114&quot;&gt;&lt;/a&gt;par&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;mfrow &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; family &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;myfont&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-115&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-116&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;# draw graph for lqs&lt;/span&gt;
+&lt;a name=&quot;True-117&quot;&gt;&lt;/a&gt;draw_plot&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+&lt;a name=&quot;True-118&quot;&gt;&lt;/a&gt;title&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;main &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;Least trimmed squares&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-119&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-120&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-121&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kr&quot;&gt;for&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;i &lt;span class=&quot;kr&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;reps&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;
+&lt;a name=&quot;True-122&quot;&gt;&lt;/a&gt;   abline&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;mod_lqs&lt;span class=&quot;p&quot;&gt;[[&lt;/span&gt;i&lt;span class=&quot;p&quot;&gt;]],&lt;/span&gt; col &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; adjustcolor&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;red&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; alpha.f &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0.02&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+&lt;a name=&quot;True-123&quot;&gt;&lt;/a&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;a name=&quot;True-124&quot;&gt;&lt;/a&gt;   
+&lt;a name=&quot;True-125&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;# draw graph for rlm&lt;/span&gt;
+&lt;a name=&quot;True-126&quot;&gt;&lt;/a&gt;draw_plot&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+&lt;a name=&quot;True-127&quot;&gt;&lt;/a&gt;title&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;main &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;M-estimator&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-128&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kr&quot;&gt;for&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;i &lt;span class=&quot;kr&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;reps&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;
+&lt;a name=&quot;True-129&quot;&gt;&lt;/a&gt;   abline&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;mod_rlm&lt;span class=&quot;p&quot;&gt;[[&lt;/span&gt;i&lt;span class=&quot;p&quot;&gt;]],&lt;/span&gt; col &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; adjustcolor&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;blue&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; alpha.f &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0.02&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+&lt;a name=&quot;True-130&quot;&gt;&lt;/a&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;a name=&quot;True-131&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-132&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-133&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;#-----------------compare estimated slopes-------------------&lt;/span&gt;
+&lt;a name=&quot;True-134&quot;&gt;&lt;/a&gt;slopes &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;data.frame&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+&lt;a name=&quot;True-135&quot;&gt;&lt;/a&gt;   lm &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;unlist&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;lapply&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;mod_lm&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;x&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;coef&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;x&lt;span class=&quot;p&quot;&gt;)[&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]})),&lt;/span&gt;
+&lt;a name=&quot;True-136&quot;&gt;&lt;/a&gt;   rlm &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;unlist&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;lapply&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;mod_rlm&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;x&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;coef&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;x&lt;span class=&quot;p&quot;&gt;)[&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]})),&lt;/span&gt;
+&lt;a name=&quot;True-137&quot;&gt;&lt;/a&gt;   lqs &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;unlist&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;lapply&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;mod_lqs&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;x&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;coef&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;x&lt;span class=&quot;p&quot;&gt;)[&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]}))&lt;/span&gt;
+&lt;a name=&quot;True-138&quot;&gt;&lt;/a&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
+&lt;a name=&quot;True-139&quot;&gt;&lt;/a&gt;   gather&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;method&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; value&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-140&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-141&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;# summary table:&lt;/span&gt;
+&lt;a name=&quot;True-142&quot;&gt;&lt;/a&gt;slopes &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
+&lt;a name=&quot;True-143&quot;&gt;&lt;/a&gt;   mutate&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;method &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;factor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;method&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; levels &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;lm&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;rlm&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;lqs&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
+&lt;a name=&quot;True-144&quot;&gt;&lt;/a&gt;   group_by&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;method&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
+&lt;a name=&quot;True-145&quot;&gt;&lt;/a&gt;   summarise&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+&lt;a name=&quot;True-146&quot;&gt;&lt;/a&gt;      mean &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;round&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;mean&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;value&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+&lt;a name=&quot;True-147&quot;&gt;&lt;/a&gt;      median &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;round&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;median&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;value&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+&lt;a name=&quot;True-148&quot;&gt;&lt;/a&gt;      sd &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;round&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;sd&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;value&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-149&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-150&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-151&quot;&gt;&lt;/a&gt;   
+&lt;a name=&quot;True-152&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;# density plot, taking care to use same colours for each method&lt;/span&gt;
+&lt;a name=&quot;True-153&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;# as in previous graphics:&lt;/span&gt;
+&lt;a name=&quot;True-154&quot;&gt;&lt;/a&gt;colours &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;lm&amp;quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;black&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;rlm&amp;quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;blue&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;lqs&amp;quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;red&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-155&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kp&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;direct.label&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+&lt;a name=&quot;True-156&quot;&gt;&lt;/a&gt;ggplot&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;slopes&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; aes&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;x &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; value&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; fill &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; method&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; colour &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; method&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-157&quot;&gt;&lt;/a&gt;   geom_density&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;alpha &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0.3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-158&quot;&gt;&lt;/a&gt;   coord_cartesian&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;xlim &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;-25&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;75&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-159&quot;&gt;&lt;/a&gt;   scale_x_continuous&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;Estimated marginal return of extra hour of work&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+&lt;a name=&quot;True-160&quot;&gt;&lt;/a&gt;                      label &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; dollar&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-161&quot;&gt;&lt;/a&gt;   labs&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;y &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;Density of estimates from\nsamples of 30 each&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-162&quot;&gt;&lt;/a&gt;   scale_fill_manual&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;values &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; colours&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-163&quot;&gt;&lt;/a&gt;   scale_colour_manual&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;values &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; colours&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-164&quot;&gt;&lt;/a&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+</description>
+				<pubDate>Sun, 22 May 2016 00:00:00 +1200</pubDate>
+				<link>http://ellisp.github.io/blog/2016/05/22/robust-regression</link>
+				<guid isPermaLink="true">http://ellisp.github.io/blog/2016/05/22/robust-regression</guid>
+			</item>
+		
+			<item>
 				<title>Minimalist Tufte-inspired axis text with Scottish-New Zealand historical material</title>
 					<description>&lt;h2 id=&quot;minimalist-axes-text-and-tick-marks&quot;&gt;Minimalist axes text and tick marks&lt;/h2&gt;
 
@@ -1617,17 +1869,6 @@
 				<pubDate>Sun, 06 Mar 2016 00:00:00 +1300</pubDate>
 				<link>http://ellisp.github.io/blog/2016/03/06/control-charts</link>
 				<guid isPermaLink="true">http://ellisp.github.io/blog/2016/03/06/control-charts</guid>
-			</item>
-		
-			<item>
-				<title>New Zealand Tourism Dashboard pushes Shiny to the max</title>
-					<description>&lt;p&gt;Just a short note that in my day job we’ve released the &lt;a href=&quot;https://mbienz.shinyapps.io/tourism_dashboard_prod/&quot;&gt;New Zealand Tourism Dashboard&lt;/a&gt;, launched by the &lt;a href=&quot;http://www.scoop.co.nz/stories/PA1602/S00350/new-tool-to-improve-tourism-data-use.htm&quot;&gt;Associate Minister for Tourism earlier today&lt;/a&gt;.  It’s built with R and Shiny and I won’t say more about it than that to avoid mixing up my work and outside-work hats.  Except that it’s really really awesome, and there’s an enormous amount of data in there to explore.  Great work by the team.&lt;/p&gt;
-
-&lt;p&gt;&lt;a href=&quot;https://mbienz.shinyapps.io/tourism_dashboard_prod/&quot;&gt;&lt;img src=&quot;http://ellisp.github.io/img/0033-tourism-dashboard.png&quot; /&gt;&lt;/a&gt;&lt;/p&gt;
-</description>
-				<pubDate>Wed, 24 Feb 2016 00:00:00 +1300</pubDate>
-				<link>http://ellisp.github.io/blog/2016/02/24/tourism-dashboard</link>
-				<guid isPermaLink="true">http://ellisp.github.io/blog/2016/02/24/tourism-dashboard</guid>
 			</item>
 		
 	</channel>
