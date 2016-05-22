@@ -6,7 +6,7 @@ image: /img/general-image.png
 
 In building this site I had to learn about Jekyll and Ruby from scratch, and HTML, CSS, JavaScript from not much more than scratch.  I've drawn on all sorts of people's contributions on the web, but here are some of the more important:
 
-* I've ripped off the [Slate Bootswatch theme](https://bootswatch.com/slate/) and made my own small modifications.  Slate gets all the credit, and me all the blame, for the results.
+* I've ripped off the [Cosmo Bootswatch theme](https://bootswatch.com/cosmo/) and made my own small modifications.  Cosmo gets all the credit, and me all the blame, for the results.
 * I use the [Poppins Google Font](https://www.google.com/fonts/specimen/Poppins).
 * The [Jekyll documentation](http://jekyllrb.com/docs/home/) is great, as are [Julian Thilo's unofficial instructions for installing Jekyll on Windows](http://jekyll-windows.juthilo.com/).
 * GitHub's help on [Using Jekyll with Pages](https://help.github.com/articles/using-jekyll-with-pages/) was extremely helpful.
