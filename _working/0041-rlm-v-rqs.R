@@ -1,7 +1,7 @@
 #===================setup=======================
 library(showtext)
 library(RMySQL)
-library(MASS) # for stepAIC.  Needs to be before dplyr to avoid "select" namespace clash
+library(MASS) 
 library(dplyr)
 library(tidyr)
 library(stringr)
@@ -28,7 +28,8 @@ dbDisconnect(PlayPen)
 #    mutate(income2 = cuberoot(income),
 #           hours2 = cuberoot(hours))
 
-# create the variables to be used for x and y
+# create the variables to be used for x and y (as finally used, this
+# is just income and hours on their original scale):
 nzis <- nzis %>%
    mutate(income2 = income,
           hours2 = hours)
@@ -102,6 +103,8 @@ for(i in 1:100){
    dev.off()
 }
 
+# next sequence turns the various static frames into an animated GIF
+# and depends on the actual location of ImageMagick:
 projdir <- setwd("_output/0041-rlm-lqs/")
 system('"C:\\Program Files\\ImageMagick-6.9.1-Q16\\convert" -loop 0 -delay 65 *.png "../../../img/0041-rtm-lqs.gif"') 
 setwd(projdir)
@@ -147,6 +150,8 @@ slopes %>%
       sd = round(sd(value), 1)
    )
 
+# density plot, taking care to use same colours for each method
+# as in previous graphics:
 colours <- c("lm" = "black", "rlm" = "blue", "lqs" = "red")
 
 svg("../img/0041-slope-densities.svg", 6, 3.5)
