@@ -7,11 +7,13 @@ library(dplyr)
 library(moments)
 library(tidyr)
 
-if(!exists("nzis")){
-   nzis <- read.csv("http://www.stats.govt.nz/~/media/Statistics/services/microdata-access/nzis11-cart-surf/nzis11-cart-surf.csv")   
-}
+# Fonts:
+font.add.google("Poppins", "myfont")
+showtext.auto()
+theme_set(theme_light(base_family = "myfont"))
 
 
+#==========Functions==================
 sampsd <- function(x, i, xbar = mean(x)){
    # function suitable for boot which returns estimated standard deviation
    # from a sample x that has been scrambled by the index i
@@ -89,14 +91,18 @@ test_boot_ci <- function(full_data,
    
    p1 <- tab %>%
       dplyr::select(-bias) %>%
-      gather(variable, value, -n) %>%
-      ggplot(aes(x = n, y = value, color = variable)) +
+      gather(Method, value, -n) %>%
+      mutate(Method = gsub("coverage_perc", "Percentile", Method),
+             Method = gsub("coverage_basic", "Basic", Method),
+             Method = factor(Method, levels = c("Percentile", "Basic"))) %>%
+      ggplot(aes(x = n, y = value, color = Method)) +
       geom_hline(yintercept = 0.95, colour = "blue") +
       geom_point() +
       geom_line() +
       scale_y_continuous("Actual coverage of 95% confidence interval", 
                          label = percent) +
       scale_x_sqrt("Sample size", label = comma, breaks = unique(ns)) +
+      labs(colour = "Bootstrap\nmethod") +
       ggtitle(title)
    
    p2 <- tab %>%
@@ -124,6 +130,13 @@ test_boot_ci <- function(full_data,
    
 }
 
+
+#===============Application==================
+if(!exists("nzis")){
+   nzis <- read.csv("http://www.stats.govt.nz/~/media/Statistics/services/microdata-access/nzis11-cart-surf/nzis11-cart-surf.csv")   
+}
+
+
 reps_per_sample_size <- 200
 reps_per_bootstrap <- 99
 
@@ -148,6 +161,7 @@ income_sd <- test_boot_ci(full_data = nzis$income,
                             reps = reps_per_sample_size, 
                             R = reps_per_bootstrap,
                             title = "Estimating standard deviation from income data")
+
 
 hours_sd <- test_boot_ci(full_data = nzis$hours, 
                          statistic = sampsd, 
@@ -178,3 +192,37 @@ hours_sd
 normal_sd
 unif_sd
 lognormal_sd
+
+
+#==================exploratory graphics======
+
+svg("../img/0042-full-data.svg", 6, 4)
+ggplot(nzis, aes(x = income)) +
+   geom_density(fill = "grey75", alpha = 0.5) +
+   geom_rug() +
+   scale_x_continuous("Weekly income", label = dollar) +
+   ggtitle("New Zealand Income Survey 2011", subtitle = "Full data")
+dev.off()
+
+set.seed(123)
+svg("../img/0042-sample-data.svg", 6, 4)
+ggplot(nzis[sample(1:nrow(nzis), 50), ], aes(x = income)) +
+   geom_density(fill = "grey75", alpha = 0.5) +
+   geom_rug() +
+   scale_x_continuous("Weekly income", label = dollar) +
+   ggtitle("New Zealand Income Survey 2011", subtitle = "Subsample of 50")
+dev.off()
+
+set.seed(123)
+sd(nzis[sample(1:nrow(nzis), 50), "income"])
+
+
+
+#================results graphics==================
+svg("../img/0042-sd-ci-coverage.svg", 8, 4)
+print(income_sd$p1)
+dev.off()
+
+png("../img/0042-sd-ci-coverage.png", 800, 400, res = 100)
+print(income_sd$p1)
+dev.off()
