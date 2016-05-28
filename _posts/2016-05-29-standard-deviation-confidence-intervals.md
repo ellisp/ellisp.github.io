@@ -37,8 +37,14 @@ A reasonably generally well-performing estimator for non-Normal variables is app
 
 ![equation](/img/0042-unbiased-sd.png)
 
+## Method
+Using the unbiased estimate of standard deviation above, I set out to test the performance of bootstrap confidence intervals in covering the true value of population standard deviation for sample sizes of 50, 100, 200, 400, ..., 12,800.  I took 200 samples of the data for each of these sample sizes; estimated the standard deviation from the sample; and use the bootstrap to estimate confidence intervals for population standard deviation from each sample, with 999 bootstrap replicates.  I tested both the [basic and the percentile bootstrap methods](https://en.wikipedia.org/wiki/Bootstrapping_(statistics)#Methods_for_bootstrap_confidence_intervals).
+
+## Results
 
 
+
+## Simpler statistics
 
 {% highlight R lang lineanchors %} 
 

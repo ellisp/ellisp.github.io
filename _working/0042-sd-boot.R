@@ -226,3 +226,13 @@ dev.off()
 png("../img/0042-sd-ci-coverage.png", 800, 400, res = 100)
 print(income_sd$p1)
 dev.off()
+
+
+svg("../img/0042-sd-bias-summary.svg", 8, 4)
+print(income_sd$p2)
+dev.off()
+
+
+svg("../img/0042-sd-bias-full.svg", 8, 8)
+print(income_sd$p3)
+dev.off()
