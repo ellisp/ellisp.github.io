@@ -72,7 +72,7 @@ test_boot_ci <- function(full_data,
    # for each repetition at each value of sample size:
    for(i in 1:nrow(results)){
    
-      this_data <- full_data[sample(1:length(full_data), results[i, "n"])]   
+      this_data <- full_data[sample(1:length(full_data), results[i, "n"], replace = TRUE)]   
       res <- boot(this_data, statistic = statistic, R = R)
       
       results[i, "point_est"] <- res$t0
@@ -104,7 +104,7 @@ test_boot_ci <- function(full_data,
       geom_hline(yintercept = 0.95, colour = "blue") +
       geom_point() +
       geom_line() +
-      scale_y_continuous("Actual coverage of 95% confidence interval", 
+      scale_y_continuous("Proportion of 95% confidence intervals\nthat include true value", 
                          label = percent) +
       scale_x_sqrt("Sample size", label = comma, breaks = unique(ns)) +
       labs(colour = "Bootstrap\nmethod") +
@@ -144,7 +144,7 @@ if(!exists("nzis")){
 }
 
 
-reps_per_sample_size <- 500
+reps_per_sample_size <- 2500
 reps_per_bootstrap <- 499
 
 #------------standard deviation of income data------------
