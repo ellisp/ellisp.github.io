@@ -4,13 +4,14 @@ library(ggplot2)
 library(scales)
 library(boot)
 library(dplyr)
-library(moments)
+library(moments) # for kurtosis()
 library(tidyr)
+library(gridExtra) # for grid.arrange()
 
 # Fonts:
 font.add.google("Poppins", "myfont")
 showtext.auto()
-theme_set(theme_light(base_family = "myfont"))
+theme_set(theme_light(10, base_family = "myfont"))
 
 
 #==========Functions==================
@@ -41,17 +42,17 @@ test_boot_ci <- function(full_data,
 
    # Function to explore the coverage of basic and percentile bootstrap 
    # 95% confidence intervals.
-   #@full_data A full population of data from which samples of various sizes
+   #' @full_data A full population of data from which samples of various sizes
    #           will be drawn without replacement, and each of those samples will
    #           be analysed with the bootstrap as though it were all that is
    #           available.
-   #@statistic a function suitable for passing to the statistic argument of boot
+   #' @statistic a function suitable for passing to the statistic argument of boot
    #           ie first argument is data, second argument is an index for 
    #           scrambling the data
-   #@truevalue true value that the statistic is trying to esimate.
-   #@reps number of repeats of each sample size to analyse
-   #@R number of bootstrap resamples for each sample
-   #@title Title for plots
+   #' @truevalue true value that the statistic is trying to esimate.
+   #' @reps number of repeats of each sample size to analyse
+   #' @R number of bootstrap resamples for each sample
+   #' @title Title for plots
    
    
    # create a data frame to hold the results, with "reps" rows for each
@@ -65,6 +66,8 @@ test_boot_ci <- function(full_data,
    )
       
    
+   # Create point estimates and two types of bootstrap confidence interval
+   # for each repetition at each value of sample size:
    for(i in 1:nrow(results)){
    
       this_data <- full_data[sample(1:length(full_data), results[i, "n"])]   
@@ -82,7 +85,7 @@ test_boot_ci <- function(full_data,
       
    }
    
-   
+   # Prepare summary table and plots for output
    tab <- results %>%
       group_by(n) %>%
       summarise(coverage_basic = round(sum(ci_basic_correct) / length(ci_basic_correct), 3),
@@ -138,24 +141,9 @@ if(!exists("nzis")){
 
 
 reps_per_sample_size <- 200
-reps_per_bootstrap <- 99
+reps_per_bootstrap <- 999
 
-income_trmean <- test_boot_ci(full_data = nzis$income,
-             statistic = function(x, i){mean(x[i], tr = 0.2)}, 
-             reps = reps_per_sample_size, 
-             R = reps_per_bootstrap,
-             title = "Estimating trimmed mean from income data")
-income_trmean
-
-
-income_mean <- test_boot_ci(full_data = nzis$income,
-                              statistic = function(x, i){mean(x[i])}, 
-                              reps = reps_per_sample_size, 
-                              R = reps_per_bootstrap,
-                              title = "Estimating trimmed mean from income data")
-income_mean
-
-
+#------------standard deviation of income data------------
 income_sd <- test_boot_ci(full_data = nzis$income, 
                             statistic = sampsd, 
                             reps = reps_per_sample_size, 
@@ -163,12 +151,8 @@ income_sd <- test_boot_ci(full_data = nzis$income,
                             title = "Estimating standard deviation from income data")
 
 
-hours_sd <- test_boot_ci(full_data = nzis$hours, 
-                         statistic = sampsd, 
-                         reps = reps_per_sample_size, 
-                           R = reps_per_bootstrap,
-                           title = "Estimating standard deviation from hours worked data")
 
+#---------standard deviation of simulated data--------------
 normal_sd <- test_boot_ci(full_data = rnorm(30000), 
                           statistic = sampsd, 
                           reps = reps_per_sample_size, 
@@ -187,15 +171,30 @@ lognormal_sd <- test_boot_ci(full_data = exp(rnorm(30000)),
                              R = reps_per_bootstrap,
                              title = "Estimating standard deviation from simulated log-normal data")
 
-income_sd
-hours_sd
-normal_sd
-unif_sd
-lognormal_sd
 
+mixture <- c(exp(rnorm(30000)), rnorm(30000), runif(30000))
+mixture_sd <- test_boot_ci(full_data = mixture, 
+                             reps = reps_per_sample_size, 
+                             statistic = sampsd, 
+                             R = reps_per_bootstrap,
+                             title = "Estimating standard deviation from simulated mixture data")
+
+
+#-------simpler statistics on income data-----------
+income_mean <- test_boot_ci(full_data = nzis$income,
+                            statistic = function(x, i){mean(x[i])}, 
+                            reps = reps_per_sample_size, 
+                            R = reps_per_bootstrap,
+                            title = "Estimating mean from income data")
+
+income_trmean <- test_boot_ci(full_data = nzis$income,
+                              statistic = function(x, i){mean(x[i], tr = 0.2)}, 
+                              reps = reps_per_sample_size, 
+                              R = reps_per_bootstrap,
+                              title = "Estimating trimmed mean from income data")
 
 #==================exploratory graphics======
-
+#------------Density of income data---------------
 svg("../img/0042-full-data.svg", 6, 4)
 ggplot(nzis, aes(x = income)) +
    geom_density(fill = "grey75", alpha = 0.5) +
@@ -219,12 +218,15 @@ sd(nzis[sample(1:nrow(nzis), 50), "income"])
 
 
 #================results graphics==================
+#-----------standard deviation of income--------------
 svg("../img/0042-sd-ci-coverage.svg", 8, 4)
-print(income_sd$p1)
+print(income_sd$p1 + 
+         labs(caption = "Source: New Zealand Income Survey 2011, Statistics New Zealand"))
 dev.off()
 
 png("../img/0042-sd-ci-coverage.png", 800, 400, res = 100)
-print(income_sd$p1)
+print(income_sd$p1 + 
+         labs(caption = "Source: New Zealand Income Survey 2011, Statistics New Zealand")))
 dev.off()
 
 
@@ -233,6 +235,41 @@ print(income_sd$p2)
 dev.off()
 
 
-svg("../img/0042-sd-bias-full.svg", 8, 8)
+svg("../img/0042-sd-bias-full.svg", 8, 6)
 print(income_sd$p3)
+dev.off()
+
+
+#----------------other distributions--------------
+svg("../img/0042-other-dists.svg", 10, 8)
+print(grid.arrange(
+   normal_sd$p1 + theme_light(8),
+   unif_sd$p1 + theme_light(8),
+   lognormal_sd$p1 + theme_light(8),
+   mixture_sd$p1 + theme_light(8)
+))
+dev.off()
+
+
+
+#----------------mean and trimmed mean-----------------
+svg("../img/0042-mean-ci-coverage.svg", 8, 4)
+print(
+   grid.arrange(
+      income_mean$p1 + theme_light(8).
+      income_trmean$p1 + theme_light(8)
+         
+   )
+)
+dev.off()
+
+
+svg("../img/0042-mean-bias.svg", 8, 4)
+print(
+   grid.arrange(
+      income_mean$p2 + theme_light(8).
+      income_trmean$p2 + theme_light(8)
+      
+   )
+)
 dev.off()
