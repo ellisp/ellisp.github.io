@@ -144,8 +144,8 @@ if(!exists("nzis")){
 }
 
 
-reps_per_sample_size <- 200
-reps_per_bootstrap <- 999
+reps_per_sample_size <- 500
+reps_per_bootstrap <- 499
 
 #------------standard deviation of income data------------
 income_sd <- test_boot_ci(full_data = nzis$income, 

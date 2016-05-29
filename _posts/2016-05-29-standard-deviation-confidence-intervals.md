@@ -20,7 +20,7 @@ In this post I explore the phenomenon shown in the first chart below; lower than
 
 ![coverage](/img/0042-sd-ci-coverage.svg)
 
-The test is admittedly a tough one, albeit realistically real world.  The population data from which my samples are drawn are the [simulated unit record file microdata](http://www.stats.govt.nz/tools_and_services/microdata-access/nzis-2011-cart-surf.aspx) from Statistics New Zealand's New Zealand Income Survey 2011, which I've written about in [numerous posts](/blog/index_by_tag.html).  The distribution of weekly income in this data set is complex; it could perhaps be described as a mixture of: 
+The test is admittedly a tough one, albeit a realistic one.  The population data from which my samples are drawn are the [simulated unit record file microdata](http://www.stats.govt.nz/tools_and_services/microdata-access/nzis-2011-cart-surf.aspx) from Statistics New Zealand's New Zealand Income Survey 2011, which I've written about in [numerous posts](/blog/index_by_tag.html).  The distribution of weekly income in this data set is complex; it could perhaps be described as a mixture of: 
 
 * individuals with positive income that is approximately log-normal distributed; 
 * individuals with negative income of some difficult-to-describe distribution; 
@@ -46,7 +46,7 @@ A reasonably generally well-performing estimator for non-Normal variables is rep
 ![equation](/img/0042-unbiased-sd.png)
 
 ## Method
-Using the unbiased estimate of standard deviation above, I set out to test the performance of bootstrap confidence intervals in covering the true value of population standard deviation for sample sizes of 50, 100, 200, 400, ..., 12800.  I took 200 samples of the data for each of these sample sizes; estimated the standard deviation from the sample; and use the bootstrap to estimate confidence intervals for population standard deviation from each sample, with 999 bootstrap replicates.  I tested both the [basic and the percentile methods for bootstrap confidence intervals](https://en.wikipedia.org/wiki/Bootstrapping_(statistics)#Methods_for_bootstrap_confidence_intervals).
+Using the unbiased estimate of standard deviation above, I set out to test the performance of bootstrap confidence intervals in covering the true value of population standard deviation for sample sizes of 50, 100, 200, 400, ..., 12800.  I took 500 samples of the data for each of these sample sizes; estimated the standard deviation from the sample; and use the bootstrap to estimate confidence intervals for population standard deviation from each sample, with 499 bootstrap replicates.  I tested both the [basic and the percentile methods for bootstrap confidence intervals](https://en.wikipedia.org/wiki/Bootstrapping_(statistics)#Methods_for_bootstrap_confidence_intervals).
 
 ## Results - income
 The unbiased estimator works ok, at least in terms of bias.  Here's the full distribution of the estimated standard deviation from all those different samples:
@@ -249,15 +249,15 @@ test_boot_ci <- function(full_data,
 
 Next I load in the data, and apply my testing program to the income data and to the various simulated datasets needed for the blog.
 
-Note that with the settings in the code below, nearly two million sets of data are analysed for each call to `test_boot_ci()`, so it takes several hours to run the whole thing.  The `reps_per_sample_size` and `reps_per_bootstrap` variables should be set to much lower values (eg 20 and 99) if you just want to give this a go, or to adapt it.
+Note that with the settings in the code below, nearly 2.5 million sets of data are analysed for each call to `test_boot_ci()`, so it takes several hours to run the whole thing.  The `reps_per_sample_size` and `reps_per_bootstrap` variables should be set to much lower values (eg 20 and 99) if you just want to give this a go, or to adapt it.
 {% highlight R lang lineanchors %} 
 if(!exists("nzis")){
    nzis <- read.csv("http://www.stats.govt.nz/~/media/Statistics/services/microdata-access/nzis11-cart-surf/nzis11-cart-surf.csv")   
 }
 
 
-reps_per_sample_size <- 200
-reps_per_bootstrap <- 999
+reps_per_sample_size <- 500
+reps_per_bootstrap <- 499
 
 #------------standard deviation of income data------------
 income_sd <- test_boot_ci(full_data = nzis$income, 
@@ -335,36 +335,26 @@ income_sd$p3
 
 #----------------other distributions--------------
 grid.arrange(
-   normal_sd$p1 + theme_light(8),
-   unif_sd$p1 + theme_light(8),
-   lognormal_sd$p1 + theme_light(8),
-   mixture_sd$p1 + theme_light(8)
+   normal_sd$p1 + theme_small,
+   unif_sd$p1 + theme_small,
+   lognormal_sd$p1 + theme_small,
+   mixture_sd$p1 + theme_small
 )
 
 #----------------mean and trimmed mean-----------------
 grid.arrange(
-   income_mean$p1 + 
-      theme_light(8, base_family = "myfont") +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1)),
-   income_trmean$p1 + 
-      theme_light(8, base_family = "myfont") +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1)),
-      ncol = 2
-)
-
-
-grid.arrange(
-   income_mean$p2 + 
-      theme_light(8, base_family = "myfont") +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-      ylim(c(-0.02, 0.02)),
-   income_trmean$p2 + 
-      theme_light(8, base_family = "myfont") +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-      ylim(c(-0.02, 0.02)),
+   income_mean$p1 + theme_small,
+   income_trmean$p1 + theme_small,
    ncol = 2
 )
 
-
-
+grid.arrange(
+   income_mean$p2 + 
+      theme_small +
+      scale_y_continuous(limits = c(-0.05, 0.05), label = percent),
+   income_trmean$p2 + 
+      theme_small +
+      scale_y_continuous(limits = c(-0.05, 0.05), label = percent),
+   ncol = 2
+)
 {% endhighlight %} 
