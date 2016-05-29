@@ -6,7 +6,7 @@ tag:
    - NZIS2011
    - RobustMethods
    - R
-description: The actual coverage of 95% confidence intervals from the bootstrap when estimating population standard deviation can be very poor for complex mixed distributions, such as real world weekly income from a modest sample size (<10,000).
+description: The success rate (proportion of times the true value is covered by the interval) of 95% confidence intervals from the bootstrap when estimating population standard deviation can be very poor for complex mixed distributions, such as real world weekly income from a modest sample size (<10,000).
 
 image: /img/0042-sd-ci-coverage.svg
 socialimage: http://ellisp.github.io/img/0042-sd-ci-coverage.png
@@ -20,7 +20,7 @@ In this post I explore the phenomenon shown in the first chart below; lower than
 
 ![coverage](/img/0042-sd-ci-coverage.svg)
 
-The test is admittedly a tough one, albeit realistically real world.  The population data from which my samples are drawn are the [simulated unit record file microdata from the New Zealand Income Survey 2011](http://www.stats.govt.nz/tools_and_services/microdata-access/nzis-2011-cart-surf.aspx), which I've written about in [numerous posts](/blog/index_by_tag.html).  The distribution of weekly income in this data set is complex; it could perhaps be described as a mixture of 
+The test is admittedly a tough one, albeit realistically real world.  The population data from which my samples are drawn are the [simulated unit record file microdata](http://www.stats.govt.nz/tools_and_services/microdata-access/nzis-2011-cart-surf.aspx) from Statistics New Zealand's New Zealand Income Survey 2011, which I've written about in [numerous posts](/blog/index_by_tag.html).  The distribution of weekly income in this data set is complex; it could perhaps be described as a mixture of: 
 
 * individuals with positive income that is approximately log-normal distributed; 
 * individuals with negative income of some difficult-to-describe distribution; 
@@ -46,7 +46,7 @@ A reasonably generally well-performing estimator for non-Normal variables is rep
 ![equation](/img/0042-unbiased-sd.png)
 
 ## Method
-Using the unbiased estimate of standard deviation above, I set out to test the performance of bootstrap confidence intervals in covering the true value of population standard deviation for sample sizes of 50, 100, 200, 400, ..., 12800.  I took 200 samples of the data for each of these sample sizes; estimated the standard deviation from the sample; and use the bootstrap to estimate confidence intervals for population standard deviation from each sample, with 999 bootstrap replicates.  I tested both the [basic and the percentile bootstrap methods](https://en.wikipedia.org/wiki/Bootstrapping_(statistics)#Methods_for_bootstrap_confidence_intervals).
+Using the unbiased estimate of standard deviation above, I set out to test the performance of bootstrap confidence intervals in covering the true value of population standard deviation for sample sizes of 50, 100, 200, 400, ..., 12800.  I took 200 samples of the data for each of these sample sizes; estimated the standard deviation from the sample; and use the bootstrap to estimate confidence intervals for population standard deviation from each sample, with 999 bootstrap replicates.  I tested both the [basic and the percentile methods for bootstrap confidence intervals](https://en.wikipedia.org/wiki/Bootstrapping_(statistics)#Methods_for_bootstrap_confidence_intervals).
 
 ## Results - income
 The unbiased estimator works ok, at least in terms of bias.  Here's the full distribution of the estimated standard deviation from all those different samples:
@@ -75,16 +75,16 @@ To get more of a feel for what was going on here, I ran the same computer progra
 * a standard log-normal distribution (e to the power of standard normal)
 * a mixture of all three
 
-The results, in terms of confidence interval coverage can be seen in this graphic:
+The results in terms of confidence interval coverage can be seen in this graphic:
 
 ![other-dists](/img/0042-other-dists.svg)
 
 Points to make from this are:
 
 * In all cases the "basic" and "percentile" methods perform similarly, with neither of the two consistently outperforming the other
-* For the two symmetrical distributions - uniform and normal - the coverage isn't bad.  Even with only 50 observations in the sample, more than 90% of the confidence intervals contain the true value, and the sample size doesn't need to be much larger than that before it gets up to the desired 95%.
-* In contrast, for the non-symmetrical, right-skewed log-normal data, not until the sample size is at least 2,000 do 90% of the confidence intervals contain the true value, and a sample of 6,400 is needed to reach 95%.
-* The hardest data for which to estimate a confidence interval for standard deviation is definitely the mixture of normal, uniform and log-normal.  In fact, even with a sample size of more than 10,000, less than 90% of the calculated confidence intervals contain the true value.
+* For the two symmetrical distributions - uniform and normal - the coverage at small sample sizes isn't bad.  Even with only 50 observations in the sample, more than 90% of the confidence intervals contain the true value, and the sample size doesn't need to be much larger than that before it gets up to the desired 95%.
+* In fact, for the two symmetrical distributions the confidence intervals at larger sample sizes consistently over-perform, which suggests that narrower confidence intervals could be reported and still contain the true value 95% of the time.
+* In contrast, for the non-symmetrical, right-skewed log-normal data and the mixture distribution, the success rate of 95% confidence intervals actually containing the true value is relatively low until the sample size is many thousands; although perform better than the real-world income data used earlier.
 
 Mixed or "contaminated" distributions are known to cause problems for statistical inference (although I don't like the word "contaminated" as too value-laden - as though it is the data's fault it doesn't live up to twentieth century simplifying assumptions!).  The bootstrap was part of the late twentieth century revolution in applied statistical methods to help address those and other problems, but the observations in this post confirm that it doesn't magically make them go away.
 
@@ -116,6 +116,12 @@ library(dplyr)
 library(moments) # for kurtosis()
 library(tidyr)
 library(gridExtra) # for grid.arrange()
+
+# themes for graphics
+theme_set(theme_light(10) )
+theme_small <- theme_light(8) +
+   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
 {% endhighlight %}    
 
 Next I create two functions.  One is unbiased standard deviation of a vector x, to be scrambled/resampled by means of the index i - the sort of function that is accepted by the `boot` function as a statistic:
@@ -241,7 +247,9 @@ test_boot_ci <- function(full_data,
 }
 {% endhighlight %}   
 
-Next I load in the data, and apply my testing program to the income data and to the various simulated datasets needed for the blog:
+Next I load in the data, and apply my testing program to the income data and to the various simulated datasets needed for the blog.
+
+Note that with the settings in the code below, nearly two million sets of data are analysed for each call to `test_boot_ci()`, so it takes several hours to run the whole thing.  The `reps_per_sample_size` and `reps_per_bootstrap` variables should be set to much lower values (eg 20 and 99) if you just want to give this a go, or to adapt it.
 {% highlight R lang lineanchors %} 
 if(!exists("nzis")){
    nzis <- read.csv("http://www.stats.govt.nz/~/media/Statistics/services/microdata-access/nzis11-cart-surf/nzis11-cart-surf.csv")   
@@ -259,26 +267,26 @@ income_sd <- test_boot_ci(full_data = nzis$income,
                             title = "Estimating standard deviation from income data")
 
 #---------standard deviation of simulated data--------------
-normal_sd <- test_boot_ci(full_data = rnorm(30000), 
+normal_sd <- test_boot_ci(full_data = rnorm(300000), 
                           statistic = sampsd, 
                           reps = reps_per_sample_size, 
                           R = reps_per_bootstrap,
                           title = "Estimating standard deviation from simulated Normal data")
 
-unif_sd <- test_boot_ci(full_data = runif(30000), 
+unif_sd <- test_boot_ci(full_data = runif(300000), 
                         statistic = sampsd, 
                         reps = reps_per_sample_size, 
                         R = reps_per_bootstrap,
                         title = "Estimating standard deviation from simulated uniform data")
 
-lognormal_sd <- test_boot_ci(full_data = exp(rnorm(30000)), 
+lognormal_sd <- test_boot_ci(full_data = exp(rnorm(300000)), 
                              reps = reps_per_sample_size, 
                              statistic = sampsd, 
                              R = reps_per_bootstrap,
                              title = "Estimating standard deviation from simulated log-normal data")
 
 
-mixture <- c(exp(rnorm(30000)), rnorm(30000), runif(30000))
+mixture <- c(exp(rnorm(100000)), rnorm(100000), runif(100000))
 mixture_sd <- test_boot_ci(full_data = mixture, 
                              reps = reps_per_sample_size, 
                              statistic = sampsd, 
@@ -335,14 +343,28 @@ grid.arrange(
 
 #----------------mean and trimmed mean-----------------
 grid.arrange(
-   income_mean$p1 + theme_light(8).
-   income_trmean$p1 + theme_light(8)
-      
+   income_mean$p1 + 
+      theme_light(8, base_family = "myfont") +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1)),
+   income_trmean$p1 + 
+      theme_light(8, base_family = "myfont") +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1)),
+      ncol = 2
 )
 
+
 grid.arrange(
-   income_mean$p2 + theme_light(8).
-   income_trmean$p2 + theme_light(8)
-   
+   income_mean$p2 + 
+      theme_light(8, base_family = "myfont") +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+      ylim(c(-0.02, 0.02)),
+   income_trmean$p2 + 
+      theme_light(8, base_family = "myfont") +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+      ylim(c(-0.02, 0.02)),
+   ncol = 2
 )
+
+
+
 {% endhighlight %} 
