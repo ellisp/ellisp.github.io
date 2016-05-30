@@ -6,7 +6,7 @@ tag:
    - NZIS2011
    - RobustMethods
    - R
-description: The success rate (proportion of times the true value is covered by the interval) of 95% confidence intervals from the bootstrap when estimating population standard deviation can be very poor for complex mixed distributions, such as real world weekly income from a modest sample size (<10,000).
+description: The success rate (proportion of times the true value is covered by the interval) of 95% confidence intervals from the bootstrap when estimating population standard deviation can be very poor for complex mixed distributions, such as real world weekly income from a modest sample size (<20,000).
 
 image: /img/0042-sd-ci-coverage.svg
 socialimage: http://ellisp.github.io/img/0042-sd-ci-coverage.png
@@ -14,7 +14,7 @@ category: R
 ---
 
 ## Overview
-How big a sample size would you think you need to get a reliable 95% confidence interval (ie one that really does contain the true value 95% of the time) for a single univariate statistic like standard deviation? 30? 50?  Turns out the answer is more like 10,000 for some not-particularly-extreme real-world data.
+How big a sample size would you think you need to get a reliable 95% confidence interval (ie one that really does contain the true value 95% of the time) for a single univariate statistic like standard deviation? 30? 50?  Turns out the answer is more like 20,000 for some not-particularly-extreme real-world data.
 
 In this post I explore the phenomenon shown in the first chart below; lower than hoped-for coverage of 95% confidence intervals calculated with the bootstrap when estimating a population standard deviation from a modest sample size.  
 
@@ -57,12 +57,12 @@ For the smaller samples, it's obvious that most of the estimates are to the left
 
 ![sd-bias-summ](/img/0042-sd-bias-summary.svg)
 
-There's a slight bias to under-estimation for smaller sample sizes, but by the time sample size is 200 or higher the estimator on average gets it pretty much right.
+There's a slight bias to under-estimation for smaller sample sizes (six percent isn't that much in the scheme of things), but by the time sample size is 800 or higher the estimator on average gets it pretty much right.
 
 It's the coverage of the bootstrapped confidence intervals that is disappointing however.  Here's a repeat of that graphic I started the post with:
 ![coverage](/img/0042-sd-ci-coverage.svg)
 
-Basically, when you have a really complex mixed and dirty variable like this one (New Zealand weekly income from survey data), not until you have a sample size 10,000 do your bootstrapped confidence intervals start to have the coverage that is planned for them.  
+Basically, when you have a really complex mixed and dirty variable like this one (New Zealand weekly income from survey data), not until you have a sample size of 20,000 or so do your bootstrapped confidence intervals start to have the coverage that is planned for them.  
 
 What's going on here?  Well, the bootstrap depends on you taking many re-samples with replacements from your original sample, in the hope that doing this mimics the behaviour of taking many samples from the whole population which isn't possible for reasons of expense or logistics.  For this to work, the original sample has to sufficiently resemble the whole population that the resamples from the sample behave similarly to samples from the population.  There's no straightforward definition of "sufficiently resemble" that I know of, but what we're seeing here is that until the sample size is really quite moderately large, for a statistic like standard deviation for a moderately complex population distribution, the sample does not "sufficiently resemble" the population for the bootstrap to work as advertised.
 
@@ -81,10 +81,9 @@ The results in terms of confidence interval coverage can be seen in this graphic
 
 Points to make from this are:
 
-* In all cases the "basic" and "percentile" methods perform similarly, with neither of the two consistently outperforming the other
+* In all cases the "basic" and "percentile" methods perform similarly, with neither of the two consistently outperforming the other for the two symmetrical distributions, but percentile performing slightly better for the two asymmetrical distributions.
 * For the two symmetrical distributions - uniform and normal - the coverage at small sample sizes isn't bad.  Even with only 50 observations in the sample, more than 90% of the confidence intervals contain the true value, and the sample size doesn't need to be much larger than that before it gets up to the desired 95%.
-* In fact, for the two symmetrical distributions the confidence intervals at larger sample sizes consistently over-perform, which suggests that narrower confidence intervals could be reported and still contain the true value 95% of the time.
-* In contrast, for the non-symmetrical, right-skewed log-normal data and the mixture distribution, the success rate of 95% confidence intervals actually containing the true value is relatively low until the sample size is many thousands; although perform better than the real-world income data used earlier.
+* In contrast, for the non-symmetrical, right-skewed log-normal data and the mixture distribution, the success rate of 95% confidence intervals actually containing the true value is relatively low until the sample size is many thousands, and it never reaches (with the sample sizes tested) the desired 95% rate.
 
 Mixed or "contaminated" distributions are known to cause problems for statistical inference (although I don't like the word "contaminated" as too value-laden - as though it is the data's fault it doesn't live up to twentieth century simplifying assumptions!).  The bootstrap was part of the late twentieth century revolution in applied statistical methods to help address those and other problems, but the observations in this post confirm that it doesn't magically make them go away.
 
@@ -102,6 +101,9 @@ The confidence interval coverage is pretty satisfactory even with small sample s
 
 And as expected from theoretical results, there's no discernable bias:
 ![bias-means](/img/0042-mean-bias.svg)
+
+## Conclusion
+The overall conclusion: standard deviation of non-normal(skewed, contaminated, or both) distributions is a really tough statistic to get a valid confidence interval for.  But a simple statistic (like mean) for an awkward distribution - or standard deviation of a simple distribution (like Normal or Uniform) - perform fine.
 
 ## Code
 Here's the computer programs, all in R.
