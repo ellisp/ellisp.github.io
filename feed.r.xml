@@ -7,6 +7,363 @@
 		<atom:link href="http://ellisp.github.io/feed.R.xml" rel="self" type="application/rss+xml" />
 		
 			<item>
+				<title>Actual coverage of confidence intervals for standard deviation</title>
+					<description>&lt;h2 id=&quot;overview&quot;&gt;Overview&lt;/h2&gt;
+&lt;p&gt;How big a sample size would you think you need to get a reliable 95% confidence interval (ie one that really does contain the true value 95% of the time) for a single univariate statistic like standard deviation? 30? 50?  Turns out the answer is more like 20,000 for some not-particularly-extreme real-world data.&lt;/p&gt;
+
+&lt;p&gt;In this post I explore the phenomenon shown in the first chart below; lower than hoped-for coverage of 95% confidence intervals calculated with the bootstrap when estimating a population standard deviation from a modest sample size.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://ellisp.github.io/img/0042-sd-ci-coverage.svg&quot; alt=&quot;coverage&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The test is admittedly a tough one, albeit realistic.  The population data from which my samples are drawn are the &lt;a href=&quot;http://www.stats.govt.nz/tools_and_services/microdata-access/nzis-2011-cart-surf.aspx&quot;&gt;simulated unit record file microdata&lt;/a&gt; from Statistics New Zealand’s New Zealand Income Survey 2011, which I’ve written about in &lt;a href=&quot;/blog/index_by_tag.html&quot;&gt;numerous posts&lt;/a&gt;.  The distribution of weekly income in this data set is complex; it could perhaps be described as a mixture of:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;individuals with positive income that is approximately log-normal distributed;&lt;/li&gt;
+  &lt;li&gt;individuals with negative income of some difficult-to-describe distribution;&lt;/li&gt;
+  &lt;li&gt;a large spike of individuals with zero income; plus a sprinkling of outliers.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;In fact, it looks like this:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://ellisp.github.io/img/0042-full-data.svg&quot; alt=&quot;fulldata&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The actual standard deviation of all 29,471 observations of income is $806.&lt;/p&gt;
+
+&lt;p&gt;The inference problem is how to estimate that value if you have only a smaller sample, eg 50?  Because if you have only 50 observations, you think the data looks like this:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://ellisp.github.io/img/0042-sample-data.svg&quot; alt=&quot;sampledata&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;In the case of this particular sample of 50, the standard deviation is $527.&lt;/p&gt;
+
+&lt;h2 id=&quot;unbiased-estimate-of-standard-deviation&quot;&gt;Unbiased estimate of standard deviation&lt;/h2&gt;
+&lt;p&gt;The first challenge - although it turns out to be a relatively small detail in terms of the challenge - is to get the best estimator for the situation when you want to estimate a population’s standard deviation from a sample.  While an unbiased estimator of variance is well known, standard deviation (the square root of variance) is complex.  Creating an &lt;a href=&quot;https://en.wikipedia.org/wiki/Unbiased_estimation_of_standard_deviation&quot;&gt;unbiased estimator of standard deviation&lt;/a&gt; turns out to depend on the vagaries of the shape of the original population, with the &lt;em&gt;fourth&lt;/em&gt; moment (expected value of the variable to the power of four) playing a role.&lt;/p&gt;
+
+&lt;p&gt;A reasonably generally well-performing estimator for non-Normal variables is reportedly (image from the Wikipedia article linked to above):&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://ellisp.github.io/img/0042-unbiased-sd.png&quot; alt=&quot;equation&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;method&quot;&gt;Method&lt;/h2&gt;
+&lt;p&gt;Using the unbiased estimate of standard deviation above, I set out to test the performance of bootstrap confidence intervals in covering the true value of population standard deviation for sample sizes of 50, 100, 200, 400, …, 12800.  I took 2,500 samples of the data for each of these sample sizes; estimated the standard deviation from each sample; and use the bootstrap to estimate confidence intervals for population standard deviation from each sample, with 499 bootstrap replicates.  I tested both the &lt;a href=&quot;https://en.wikipedia.org/wiki/Bootstrapping_(statistics)#Methods_for_bootstrap_confidence_intervals&quot;&gt;basic and the percentile methods for bootstrap confidence intervals&lt;/a&gt;.  To reduce the complications of my finite population, each of the 2,500 samples is taken with replacement from the original data set.&lt;/p&gt;
+
+&lt;h2 id=&quot;results---income&quot;&gt;Results - income&lt;/h2&gt;
+&lt;p&gt;The unbiased estimator works ok, at least in terms of bias.  Here’s the full distribution of the estimated standard deviation from all those different samples:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://ellisp.github.io/img/0042-sd-bias-full.svg&quot; alt=&quot;sd-bias-full&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;For the smaller samples, it’s obvious that most of the estimates are to the left of the blue line ie the estimated standard deviation is less than the true standard deviation from the full 29,471 observations.  However, this frequent underestimation is compensated for by the fact that when the standard deviation is &lt;em&gt;over&lt;/em&gt;-estimated, it tends to be by quite a lot - with a strong rightwards skew in the distribution of this statistic for all the smaller sample sizes.  This all sounds bad of course, but it is the sort of thing that’s needed if a statistic with a skewed sampling distribution is going to be on average unbiased.  We see how this plays out when we look at the actual average error of the estimator:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://ellisp.github.io/img/0042-sd-bias-summary.svg&quot; alt=&quot;sd-bias-summ&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;There’s a slight bias to under-estimation for smaller sample sizes (six percent isn’t that much in the scheme of things), but by the time sample size is 800 or higher the estimator on average gets it pretty much right.&lt;/p&gt;
+
+&lt;p&gt;It’s the coverage of the bootstrapped confidence intervals that is disappointing however.  Here’s a repeat of that graphic I started the post with:
+&lt;img src=&quot;http://ellisp.github.io/img/0042-sd-ci-coverage.svg&quot; alt=&quot;coverage&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Basically, when you have a really complex mixed and dirty variable like this one (New Zealand weekly income from survey data), not until you have a sample size of 20,000 or so do your bootstrapped confidence intervals start to have the coverage that is planned for them.&lt;/p&gt;
+
+&lt;p&gt;What’s going on here?  Well, the bootstrap depends on you taking many re-samples with replacements from your original sample, in the hope that doing this mimics the behaviour of taking many samples from the whole population which isn’t possible for reasons of expense or logistics.  For this to work, the original sample has to sufficiently resemble the whole population that the resamples from the sample behave similarly to samples from the population.  There’s no straightforward definition of “sufficiently resemble” that I know of, but what we’re seeing here is that until the sample size is really quite moderately large, for a statistic like standard deviation for a moderately complex population distribution, the sample does not “sufficiently resemble” the population for the bootstrap to work as advertised.&lt;/p&gt;
+
+&lt;h2 id=&quot;results---other-variables&quot;&gt;Results - other variables&lt;/h2&gt;
+
+&lt;p&gt;To get more of a feel for what was going on here, I ran the same computer program over more regular, simulated data:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;a standard normal distribution (mean zero, variance one)&lt;/li&gt;
+  &lt;li&gt;a standard uniform distribution (bounded by zero and one)&lt;/li&gt;
+  &lt;li&gt;a standard log-normal distribution (e to the power of standard normal)&lt;/li&gt;
+  &lt;li&gt;a mixture of all three&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;The results in terms of confidence interval coverage can be seen in this graphic:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://ellisp.github.io/img/0042-other-dists.svg&quot; alt=&quot;other-dists&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Points to make from this are:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;In all cases the “basic” and “percentile” methods perform similarly, with neither of the two consistently outperforming the other for the two symmetrical distributions, but percentile performing slightly better for the two asymmetrical distributions.&lt;/li&gt;
+  &lt;li&gt;For the two symmetrical distributions - uniform and normal - the coverage at small sample sizes isn’t bad.  Even with only 50 observations in the sample, more than 90% of the confidence intervals contain the true value, and the sample size doesn’t need to be much larger than that before it gets up to the desired 95%.&lt;/li&gt;
+  &lt;li&gt;In contrast, for the non-symmetrical, right-skewed log-normal data and the mixture distribution, the success rate of 95% confidence intervals actually containing the true value is relatively low until the sample size is many thousands, and it never reaches (with the sample sizes tested) the desired 95% rate.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Mixed or “contaminated” distributions are known to cause problems for statistical inference (although I don’t like the word “contaminated” as too value-laden - as though it is the data’s fault it doesn’t live up to twentieth century simplifying assumptions!).  The bootstrap was part of the late twentieth century revolution in applied statistical methods to help address those and other problems, but the observations in this post confirm that it doesn’t magically make them go away.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;“Classic, routinely used statistical methods are based on the assumptions that observations follow a normal curve.  It was once thought that violating the normality assumption rarely had a detrimental impact on these methods, but theoretical and empirical advances have made it clear that general types of non-normality cause serious practical problems in a wide range of commonly occurring situations.  Indeed, even very slight departures from normality can be a source of concern.”&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Wilcox, &lt;a href=&quot;http://www.amazon.com/Modern-Statistics-Social-Behavioral-Sciences/dp/1439834563&quot;&gt;&lt;em&gt;Modern Statistics for the Social and Behavioral Sciences&lt;/em&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;simpler-statistics&quot;&gt;Simpler statistics&lt;/h2&gt;
+
+&lt;p&gt;Finally, to round out the picture I tried the same approach on statistics that are simpler than standard deviation - mean and trimmed mean - on the same awkward weekly income data.&lt;/p&gt;
+
+&lt;p&gt;The confidence interval coverage is pretty satisfactory even with small sample sizes, hovering close to the desired 95%.
+&lt;img src=&quot;http://ellisp.github.io/img/0042-mean-ci-coverage.svg&quot; alt=&quot;ci-means&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;And as expected from theoretical results, there’s no discernable bias:
+&lt;img src=&quot;http://ellisp.github.io/img/0042-mean-bias.svg&quot; alt=&quot;bias-means&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h2&gt;
+&lt;p&gt;The overall conclusion: standard deviation of non-normal(skewed, contaminated, or both) distributions is a really tough statistic to get a valid confidence interval for.  But a simple statistic (like mean) for an awkward distribution - or standard deviation of a simple distribution (like Normal or Uniform) - perform fine.&lt;/p&gt;
+
+&lt;h2 id=&quot;code&quot;&gt;Code&lt;/h2&gt;
+&lt;p&gt;Here’s the computer programs, all in R.&lt;/p&gt;
+
+&lt;p&gt;First I load up the packages I’m using.  This is fairly straightforward.  The &lt;code&gt;moments&lt;/code&gt; package is needed because I need to estimate excess kurtosis as part of the formula for an unbiased estimate of standard deviation&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-r&quot; data-lang=&quot;r&quot;&gt;&lt;a name=&quot;True-1&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;#===================setup=======================&lt;/span&gt;
+&lt;a name=&quot;True-2&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kn&quot;&gt;library&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;ggplot2&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# using the dev version from GitHub so can have subtitles and captions&lt;/span&gt;
+&lt;a name=&quot;True-3&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kn&quot;&gt;library&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;scales&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-4&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kn&quot;&gt;library&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;boot&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-5&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kn&quot;&gt;library&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;dplyr&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-6&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kn&quot;&gt;library&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;moments&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# for kurtosis()&lt;/span&gt;
+&lt;a name=&quot;True-7&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kn&quot;&gt;library&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;tidyr&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-8&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kn&quot;&gt;library&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;gridExtra&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# for grid.arrange()&lt;/span&gt;
+&lt;a name=&quot;True-9&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-10&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;# themes for graphics&lt;/span&gt;
+&lt;a name=&quot;True-11&quot;&gt;&lt;/a&gt;theme_set&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;theme_light&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-12&quot;&gt;&lt;/a&gt;theme_small &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; theme_light&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;8&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-13&quot;&gt;&lt;/a&gt;   theme&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;axis.text.x &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; element_text&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;angle &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;45&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; hjust &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Next I create two functions.  One is unbiased standard deviation of a vector x, to be scrambled/resampled by means of the index i - the sort of function that is accepted by the &lt;code&gt;boot&lt;/code&gt; function as a statistic:&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-r&quot; data-lang=&quot;r&quot;&gt;&lt;a name=&quot;True-1&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;#==========Functions==================&lt;/span&gt;
+&lt;a name=&quot;True-2&quot;&gt;&lt;/a&gt;sampsd &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;x&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; i&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; xbar &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;mean&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;x&lt;span class=&quot;p&quot;&gt;)){&lt;/span&gt;
+&lt;a name=&quot;True-3&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;c1&quot;&gt;# function suitable for boot which returns estimated standard deviation&lt;/span&gt;
+&lt;a name=&quot;True-4&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;c1&quot;&gt;# from a sample x that has been scrambled by the index i&lt;/span&gt;
+&lt;a name=&quot;True-5&quot;&gt;&lt;/a&gt;   d &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; x&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;i&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+&lt;a name=&quot;True-6&quot;&gt;&lt;/a&gt;   n &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;d&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-7&quot;&gt;&lt;/a&gt;   
+&lt;a name=&quot;True-8&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;c1&quot;&gt;# this next formula is the best general approximation to a general  &lt;/span&gt;
+&lt;a name=&quot;True-9&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;c1&quot;&gt;# unbiased estimator of standard deviation from a non-normal distribution&lt;/span&gt;
+&lt;a name=&quot;True-10&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;c1&quot;&gt;# https://en.wikipedia.org/wiki/Unbiased_estimation_of_standard_deviation&lt;/span&gt;
+&lt;a name=&quot;True-11&quot;&gt;&lt;/a&gt;   unbiased_sd &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;sqrt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+&lt;a name=&quot;True-12&quot;&gt;&lt;/a&gt;      &lt;span class=&quot;kp&quot;&gt;sum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;((&lt;/span&gt;d &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; xbar&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;^&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt; 
+&lt;a name=&quot;True-13&quot;&gt;&lt;/a&gt;         &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;n &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;1.5&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;kurtosis&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;d&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;4&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-14&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-15&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;kr&quot;&gt;return&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;unbiased_sd&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-16&quot;&gt;&lt;/a&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Second is the main routine that performs the actual testing of the confidence interval.  This is little involved so I won’t try to explain it line by line.  Hopefully the in-function comments are adequate:&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-r&quot; data-lang=&quot;r&quot;&gt;&lt;a name=&quot;True-1&quot;&gt;&lt;/a&gt;test_boot_ci &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;full_data&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
+&lt;a name=&quot;True-2&quot;&gt;&lt;/a&gt;                         statistic&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
+&lt;a name=&quot;True-3&quot;&gt;&lt;/a&gt;                         truevalue &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; statistic&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;full_data&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; i &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;full_data&lt;span class=&quot;p&quot;&gt;)),&lt;/span&gt;
+&lt;a name=&quot;True-4&quot;&gt;&lt;/a&gt;                         reps &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;50&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
+&lt;a name=&quot;True-5&quot;&gt;&lt;/a&gt;                         R &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;499&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
+&lt;a name=&quot;True-6&quot;&gt;&lt;/a&gt;                         title &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;match.call&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()){&lt;/span&gt;
+&lt;a name=&quot;True-7&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-8&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;c1&quot;&gt;# Function to explore the coverage of basic and percentile bootstrap &lt;/span&gt;
+&lt;a name=&quot;True-9&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;c1&quot;&gt;# 95% confidence intervals.&lt;/span&gt;
+&lt;a name=&quot;True-10&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;c1&quot;&gt;#&amp;#39; @full_data A full population of data from which samples of various sizes&lt;/span&gt;
+&lt;a name=&quot;True-11&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;c1&quot;&gt;#           will be drawn without replacement, and each of those samples will&lt;/span&gt;
+&lt;a name=&quot;True-12&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;c1&quot;&gt;#           be analysed with the bootstrap as though it were all that is&lt;/span&gt;
+&lt;a name=&quot;True-13&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;c1&quot;&gt;#           available.&lt;/span&gt;
+&lt;a name=&quot;True-14&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;c1&quot;&gt;#&amp;#39; @statistic a function suitable for passing to the statistic argument of boot&lt;/span&gt;
+&lt;a name=&quot;True-15&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;c1&quot;&gt;#           ie first argument is data, second argument is an index for &lt;/span&gt;
+&lt;a name=&quot;True-16&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;c1&quot;&gt;#           scrambling the data&lt;/span&gt;
+&lt;a name=&quot;True-17&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;c1&quot;&gt;#&amp;#39; @truevalue true value that the statistic is trying to esimate.&lt;/span&gt;
+&lt;a name=&quot;True-18&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;c1&quot;&gt;#&amp;#39; @reps number of repeats of each sample size to analyse&lt;/span&gt;
+&lt;a name=&quot;True-19&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;c1&quot;&gt;#&amp;#39; @R number of bootstrap resamples for each sample&lt;/span&gt;
+&lt;a name=&quot;True-20&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;c1&quot;&gt;#&amp;#39; @title Title for plots&lt;/span&gt;
+&lt;a name=&quot;True-21&quot;&gt;&lt;/a&gt;   
+&lt;a name=&quot;True-22&quot;&gt;&lt;/a&gt;   
+&lt;a name=&quot;True-23&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;c1&quot;&gt;# create a data frame to hold the results, with &amp;quot;reps&amp;quot; rows for each&lt;/span&gt;
+&lt;a name=&quot;True-24&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;c1&quot;&gt;# sample size from 50, 100, 200, ..., 12800&lt;/span&gt;
+&lt;a name=&quot;True-25&quot;&gt;&lt;/a&gt;   ns &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;rep&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;^&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;8&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;50&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; each &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; reps&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-26&quot;&gt;&lt;/a&gt;   results &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;data.frame&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+&lt;a name=&quot;True-27&quot;&gt;&lt;/a&gt;      n &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; ns&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+&lt;a name=&quot;True-28&quot;&gt;&lt;/a&gt;      point_est &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;numeric&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;ns&lt;span class=&quot;p&quot;&gt;)),&lt;/span&gt;
+&lt;a name=&quot;True-29&quot;&gt;&lt;/a&gt;      ci_basic_correct &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;logical&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;ns&lt;span class=&quot;p&quot;&gt;)),&lt;/span&gt;
+&lt;a name=&quot;True-30&quot;&gt;&lt;/a&gt;      ci_perc_correct &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;logical&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;ns&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+&lt;a name=&quot;True-31&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-32&quot;&gt;&lt;/a&gt;      
+&lt;a name=&quot;True-33&quot;&gt;&lt;/a&gt;   
+&lt;a name=&quot;True-34&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;c1&quot;&gt;# Create point estimates and two types of bootstrap confidence interval&lt;/span&gt;
+&lt;a name=&quot;True-35&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;c1&quot;&gt;# for each repetition at each value of sample size:&lt;/span&gt;
+&lt;a name=&quot;True-36&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;kr&quot;&gt;for&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;i &lt;span class=&quot;kr&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;nrow&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;results&lt;span class=&quot;p&quot;&gt;)){&lt;/span&gt;
+&lt;a name=&quot;True-37&quot;&gt;&lt;/a&gt;   
+&lt;a name=&quot;True-38&quot;&gt;&lt;/a&gt;      this_data &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; full_data&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;sample&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;full_data&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; results&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;i&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;n&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; replace &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;TRUE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)]&lt;/span&gt;   
+&lt;a name=&quot;True-39&quot;&gt;&lt;/a&gt;      res &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; boot&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;this_data&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; statistic &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; statistic&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; R &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; R&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-40&quot;&gt;&lt;/a&gt;      
+&lt;a name=&quot;True-41&quot;&gt;&lt;/a&gt;      results&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;i&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;point_est&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; res&lt;span class=&quot;o&quot;&gt;$&lt;/span&gt;t0
+&lt;a name=&quot;True-42&quot;&gt;&lt;/a&gt;      
+&lt;a name=&quot;True-43&quot;&gt;&lt;/a&gt;      ciobj &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; boot.ci&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;res&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; type &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;basic&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-44&quot;&gt;&lt;/a&gt;      citest &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;truevalue &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; ciobj&lt;span class=&quot;o&quot;&gt;$&lt;/span&gt;basic&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;4&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt; truevalue &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; ciobj&lt;span class=&quot;o&quot;&gt;$&lt;/span&gt;basic&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt;
+&lt;a name=&quot;True-45&quot;&gt;&lt;/a&gt;      results&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;i&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;ci_basic_correct&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; citest
+&lt;a name=&quot;True-46&quot;&gt;&lt;/a&gt;      
+&lt;a name=&quot;True-47&quot;&gt;&lt;/a&gt;      ciobj &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; boot.ci&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;res&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; type &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;perc&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-48&quot;&gt;&lt;/a&gt;      citest &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;truevalue &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; ciobj&lt;span class=&quot;o&quot;&gt;$&lt;/span&gt;perc&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;4&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt; truevalue &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; ciobj&lt;span class=&quot;o&quot;&gt;$&lt;/span&gt;perc&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt;
+&lt;a name=&quot;True-49&quot;&gt;&lt;/a&gt;      results&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;i&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;ci_perc_correct&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; citest
+&lt;a name=&quot;True-50&quot;&gt;&lt;/a&gt;      
+&lt;a name=&quot;True-51&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;a name=&quot;True-52&quot;&gt;&lt;/a&gt;   
+&lt;a name=&quot;True-53&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;c1&quot;&gt;# Prepare summary table and plots for output&lt;/span&gt;
+&lt;a name=&quot;True-54&quot;&gt;&lt;/a&gt;   tab &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; results &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
+&lt;a name=&quot;True-55&quot;&gt;&lt;/a&gt;      group_by&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;n&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
+&lt;a name=&quot;True-56&quot;&gt;&lt;/a&gt;      summarise&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;coverage_basic &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;round&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;sum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;ci_basic_correct&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;ci_basic_correct&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+&lt;a name=&quot;True-57&quot;&gt;&lt;/a&gt;                coverage_perc &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;  &lt;span class=&quot;kp&quot;&gt;round&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;sum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;ci_perc_correct&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;ci_perc_correct&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+&lt;a name=&quot;True-58&quot;&gt;&lt;/a&gt;                bias &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;round&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;mean&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;point_est&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; truevalue&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt; truevalue&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+&lt;a name=&quot;True-59&quot;&gt;&lt;/a&gt;   
+&lt;a name=&quot;True-60&quot;&gt;&lt;/a&gt;   p1 &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; tab &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
+&lt;a name=&quot;True-61&quot;&gt;&lt;/a&gt;      dplyr&lt;span class=&quot;o&quot;&gt;::&lt;/span&gt;select&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;bias&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
+&lt;a name=&quot;True-62&quot;&gt;&lt;/a&gt;      gather&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;Method&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; value&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;n&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
+&lt;a name=&quot;True-63&quot;&gt;&lt;/a&gt;      mutate&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;Method &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;gsub&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;coverage_perc&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;Percentile&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; Method&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+&lt;a name=&quot;True-64&quot;&gt;&lt;/a&gt;             Method &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;gsub&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;coverage_basic&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;Basic&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; Method&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+&lt;a name=&quot;True-65&quot;&gt;&lt;/a&gt;             Method &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;factor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;Method&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; levels &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;Percentile&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;Basic&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
+&lt;a name=&quot;True-66&quot;&gt;&lt;/a&gt;      ggplot&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;aes&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;x &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; n&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; y &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; value&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; color &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; Method&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-67&quot;&gt;&lt;/a&gt;      geom_hline&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;yintercept &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0.95&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; colour &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;blue&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-68&quot;&gt;&lt;/a&gt;      geom_point&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-69&quot;&gt;&lt;/a&gt;      geom_line&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-70&quot;&gt;&lt;/a&gt;      scale_y_continuous&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;Proportion of 95% confidence intervals\nthat include true value&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
+&lt;a name=&quot;True-71&quot;&gt;&lt;/a&gt;                         label &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; percent&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-72&quot;&gt;&lt;/a&gt;      scale_x_sqrt&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;Sample size&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; label &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; comma&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; breaks &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;unique&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;ns&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-73&quot;&gt;&lt;/a&gt;      labs&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;colour &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;Bootstrap\nmethod&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-74&quot;&gt;&lt;/a&gt;      ggtitle&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;title&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-75&quot;&gt;&lt;/a&gt;      theme&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;axis.text.x &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; element_text&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;angle &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;45&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; hjust &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+&lt;a name=&quot;True-76&quot;&gt;&lt;/a&gt;   
+&lt;a name=&quot;True-77&quot;&gt;&lt;/a&gt;   p2 &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; tab &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
+&lt;a name=&quot;True-78&quot;&gt;&lt;/a&gt;      ggplot&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;aes&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;x &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; n&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; y &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; bias&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-79&quot;&gt;&lt;/a&gt;      geom_hline&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;yintercept &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; colour &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;blue&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-80&quot;&gt;&lt;/a&gt;      geom_point&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-81&quot;&gt;&lt;/a&gt;      geom_line&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-82&quot;&gt;&lt;/a&gt;      scale_y_continuous&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;Bias (as percentage of true value)&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
+&lt;a name=&quot;True-83&quot;&gt;&lt;/a&gt;                         label &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; percent&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-84&quot;&gt;&lt;/a&gt;      scale_x_sqrt&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;Sample size&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; label &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; comma&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; breaks &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;unique&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;ns&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-85&quot;&gt;&lt;/a&gt;      ggtitle&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;title&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-86&quot;&gt;&lt;/a&gt;   
+&lt;a name=&quot;True-87&quot;&gt;&lt;/a&gt;   p3 &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; results &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
+&lt;a name=&quot;True-88&quot;&gt;&lt;/a&gt;      mutate&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;n &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;paste&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;n =&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; n&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+&lt;a name=&quot;True-89&quot;&gt;&lt;/a&gt;             n &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;factor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;n&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; levels &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;paste&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;n =&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;unique&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;ns&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&amp;gt;%&lt;/span&gt;
+&lt;a name=&quot;True-90&quot;&gt;&lt;/a&gt;      ggplot&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;aes&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;x &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;point_est&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-91&quot;&gt;&lt;/a&gt;      geom_density&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;fill &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;grey75&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; alpha &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0.5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-92&quot;&gt;&lt;/a&gt;      geom_rug&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-93&quot;&gt;&lt;/a&gt;      facet_wrap&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;~&lt;/span&gt;n&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; scales &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;free_y&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-94&quot;&gt;&lt;/a&gt;      geom_vline&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;xintercept &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; truevalue&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; colour &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;blue&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-95&quot;&gt;&lt;/a&gt;      ggtitle&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;title&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-96&quot;&gt;&lt;/a&gt;      labs&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;x &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;Point estimates (blue line shows true value)&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-97&quot;&gt;&lt;/a&gt;   
+&lt;a name=&quot;True-98&quot;&gt;&lt;/a&gt;   &lt;span class=&quot;kr&quot;&gt;return&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;tab &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; tab&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; p1 &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; p1&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; p2 &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; p2&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; p3 &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; p3&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+&lt;a name=&quot;True-99&quot;&gt;&lt;/a&gt;   
+&lt;a name=&quot;True-100&quot;&gt;&lt;/a&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Next I load in the data, and apply my testing program to the income data and to the various simulated datasets needed for the blog.&lt;/p&gt;
+
+&lt;p&gt;Note that with the settings in the code below, nearly 1.25 million sets of data are analysed for each call to &lt;code&gt;test_boot_ci()&lt;/code&gt;, so it takes overnight to run the whole thing on my laptop.  The &lt;code&gt;reps_per_sample_size&lt;/code&gt; and &lt;code&gt;reps_per_bootstrap&lt;/code&gt; variables should be set to much lower values (eg 20 and 99) if you just want to give this a go, or to adapt it.&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-r&quot; data-lang=&quot;r&quot;&gt;&lt;a name=&quot;True-1&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kr&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;exists&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;nzis&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)){&lt;/span&gt;
+&lt;a name=&quot;True-2&quot;&gt;&lt;/a&gt;   nzis &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; read.csv&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;http://www.stats.govt.nz/~/media/Statistics/services/microdata-access/nzis11-cart-surf/nzis11-cart-surf.csv&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;   
+&lt;a name=&quot;True-3&quot;&gt;&lt;/a&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;a name=&quot;True-4&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-5&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-6&quot;&gt;&lt;/a&gt;reps_per_sample_size &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;2500&lt;/span&gt;
+&lt;a name=&quot;True-7&quot;&gt;&lt;/a&gt;reps_per_bootstrap &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;499&lt;/span&gt;
+&lt;a name=&quot;True-8&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-9&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;#------------standard deviation of income data------------&lt;/span&gt;
+&lt;a name=&quot;True-10&quot;&gt;&lt;/a&gt;income_sd &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; test_boot_ci&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;full_data &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; nzis&lt;span class=&quot;o&quot;&gt;$&lt;/span&gt;income&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
+&lt;a name=&quot;True-11&quot;&gt;&lt;/a&gt;                            statistic &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; sampsd&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
+&lt;a name=&quot;True-12&quot;&gt;&lt;/a&gt;                            reps &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; reps_per_sample_size&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
+&lt;a name=&quot;True-13&quot;&gt;&lt;/a&gt;                            R &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; reps_per_bootstrap&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+&lt;a name=&quot;True-14&quot;&gt;&lt;/a&gt;                            title &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;Estimating standard deviation from income data&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-15&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-16&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;#---------standard deviation of simulated data--------------&lt;/span&gt;
+&lt;a name=&quot;True-17&quot;&gt;&lt;/a&gt;normal_sd &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; test_boot_ci&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;full_data &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; rnorm&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;300000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; 
+&lt;a name=&quot;True-18&quot;&gt;&lt;/a&gt;                          statistic &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; sampsd&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
+&lt;a name=&quot;True-19&quot;&gt;&lt;/a&gt;                          reps &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; reps_per_sample_size&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
+&lt;a name=&quot;True-20&quot;&gt;&lt;/a&gt;                          R &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; reps_per_bootstrap&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+&lt;a name=&quot;True-21&quot;&gt;&lt;/a&gt;                          title &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;Estimating standard deviation from simulated Normal data&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-22&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-23&quot;&gt;&lt;/a&gt;unif_sd &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; test_boot_ci&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;full_data &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; runif&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;300000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; 
+&lt;a name=&quot;True-24&quot;&gt;&lt;/a&gt;                        statistic &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; sampsd&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
+&lt;a name=&quot;True-25&quot;&gt;&lt;/a&gt;                        reps &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; reps_per_sample_size&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
+&lt;a name=&quot;True-26&quot;&gt;&lt;/a&gt;                        R &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; reps_per_bootstrap&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+&lt;a name=&quot;True-27&quot;&gt;&lt;/a&gt;                        title &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;Estimating standard deviation from simulated uniform data&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-28&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-29&quot;&gt;&lt;/a&gt;lognormal_sd &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; test_boot_ci&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;full_data &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;exp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;rnorm&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;300000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)),&lt;/span&gt; 
+&lt;a name=&quot;True-30&quot;&gt;&lt;/a&gt;                             reps &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; reps_per_sample_size&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
+&lt;a name=&quot;True-31&quot;&gt;&lt;/a&gt;                             statistic &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; sampsd&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
+&lt;a name=&quot;True-32&quot;&gt;&lt;/a&gt;                             R &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; reps_per_bootstrap&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+&lt;a name=&quot;True-33&quot;&gt;&lt;/a&gt;                             title &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;Estimating standard deviation from simulated log-normal data&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-34&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-35&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-36&quot;&gt;&lt;/a&gt;mixture &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;exp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;rnorm&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;100000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)),&lt;/span&gt; rnorm&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;100000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; runif&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;100000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+&lt;a name=&quot;True-37&quot;&gt;&lt;/a&gt;mixture_sd &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; test_boot_ci&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;full_data &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; mixture&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
+&lt;a name=&quot;True-38&quot;&gt;&lt;/a&gt;                             reps &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; reps_per_sample_size&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
+&lt;a name=&quot;True-39&quot;&gt;&lt;/a&gt;                             statistic &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; sampsd&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
+&lt;a name=&quot;True-40&quot;&gt;&lt;/a&gt;                             R &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; reps_per_bootstrap&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+&lt;a name=&quot;True-41&quot;&gt;&lt;/a&gt;                             title &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;Estimating standard deviation from simulated mixture data&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-42&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-43&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-44&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;#-------simpler statistics on income data-----------&lt;/span&gt;
+&lt;a name=&quot;True-45&quot;&gt;&lt;/a&gt;income_mean &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; test_boot_ci&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;full_data &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; nzis&lt;span class=&quot;o&quot;&gt;$&lt;/span&gt;income&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+&lt;a name=&quot;True-46&quot;&gt;&lt;/a&gt;                            statistic &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;x&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; i&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;mean&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;x&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;i&lt;span class=&quot;p&quot;&gt;])},&lt;/span&gt; 
+&lt;a name=&quot;True-47&quot;&gt;&lt;/a&gt;                            reps &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; reps_per_sample_size&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
+&lt;a name=&quot;True-48&quot;&gt;&lt;/a&gt;                            R &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; reps_per_bootstrap&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+&lt;a name=&quot;True-49&quot;&gt;&lt;/a&gt;                            title &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;Estimating mean from income data&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-50&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-51&quot;&gt;&lt;/a&gt;income_trmean &lt;span class=&quot;o&quot;&gt;&amp;lt;-&lt;/span&gt; test_boot_ci&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;full_data &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; nzis&lt;span class=&quot;o&quot;&gt;$&lt;/span&gt;income&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+&lt;a name=&quot;True-52&quot;&gt;&lt;/a&gt;                              statistic &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;x&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; i&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;mean&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;x&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;i&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; tr &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0.2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)},&lt;/span&gt; 
+&lt;a name=&quot;True-53&quot;&gt;&lt;/a&gt;                              reps &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; reps_per_sample_size&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
+&lt;a name=&quot;True-54&quot;&gt;&lt;/a&gt;                              R &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; reps_per_bootstrap&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+&lt;a name=&quot;True-55&quot;&gt;&lt;/a&gt;                              title &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;Estimating trimmed mean from income data&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Finally, I present the results in the graphics used in this post:&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-r&quot; data-lang=&quot;r&quot;&gt;&lt;a name=&quot;True-1&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;#------------Density of income data---------------&lt;/span&gt;
+&lt;a name=&quot;True-2&quot;&gt;&lt;/a&gt;ggplot&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;nzis&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; aes&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;x &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; income&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-3&quot;&gt;&lt;/a&gt;   geom_density&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;fill &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;grey75&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; alpha &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0.5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-4&quot;&gt;&lt;/a&gt;   geom_rug&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-5&quot;&gt;&lt;/a&gt;   scale_x_continuous&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;Weekly income&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; label &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; dollar&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-6&quot;&gt;&lt;/a&gt;   ggtitle&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;New Zealand Income Survey 2011&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; subtitle &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;Full data&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-7&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-8&quot;&gt;&lt;/a&gt;&lt;span class=&quot;kp&quot;&gt;set.seed&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;123&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-9&quot;&gt;&lt;/a&gt;ggplot&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;nzis&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;sample&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;nrow&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;nzis&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;50&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; aes&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;x &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; income&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-10&quot;&gt;&lt;/a&gt;   geom_density&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;fill &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;grey75&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; alpha &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0.5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-11&quot;&gt;&lt;/a&gt;   geom_rug&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-12&quot;&gt;&lt;/a&gt;   scale_x_continuous&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;Weekly income&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; label &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; dollar&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-13&quot;&gt;&lt;/a&gt;   ggtitle&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;New Zealand Income Survey 2011&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; subtitle &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;Subsample of 50&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-14&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-15&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;#-----------standard deviation of income--------------&lt;/span&gt;
+&lt;a name=&quot;True-16&quot;&gt;&lt;/a&gt;income_sd&lt;span class=&quot;o&quot;&gt;$&lt;/span&gt;p1  &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; 
+&lt;a name=&quot;True-17&quot;&gt;&lt;/a&gt;   labs&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;caption &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;Source: New Zealand Income Survey 2011, Statistics New Zealand&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+&lt;a name=&quot;True-18&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-19&quot;&gt;&lt;/a&gt;income_sd&lt;span class=&quot;o&quot;&gt;$&lt;/span&gt;p2
+&lt;a name=&quot;True-20&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-21&quot;&gt;&lt;/a&gt;income_sd&lt;span class=&quot;o&quot;&gt;$&lt;/span&gt;p3
+&lt;a name=&quot;True-22&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-23&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;#----------------other distributions--------------&lt;/span&gt;
+&lt;a name=&quot;True-24&quot;&gt;&lt;/a&gt;grid.arrange&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+&lt;a name=&quot;True-25&quot;&gt;&lt;/a&gt;   normal_sd&lt;span class=&quot;o&quot;&gt;$&lt;/span&gt;p1 &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; theme_small&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+&lt;a name=&quot;True-26&quot;&gt;&lt;/a&gt;   unif_sd&lt;span class=&quot;o&quot;&gt;$&lt;/span&gt;p1 &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; theme_small&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+&lt;a name=&quot;True-27&quot;&gt;&lt;/a&gt;   lognormal_sd&lt;span class=&quot;o&quot;&gt;$&lt;/span&gt;p1 &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; theme_small&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+&lt;a name=&quot;True-28&quot;&gt;&lt;/a&gt;   mixture_sd&lt;span class=&quot;o&quot;&gt;$&lt;/span&gt;p1 &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; theme_small
+&lt;a name=&quot;True-29&quot;&gt;&lt;/a&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-30&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-31&quot;&gt;&lt;/a&gt;&lt;span class=&quot;c1&quot;&gt;#----------------mean and trimmed mean-----------------&lt;/span&gt;
+&lt;a name=&quot;True-32&quot;&gt;&lt;/a&gt;grid.arrange&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+&lt;a name=&quot;True-33&quot;&gt;&lt;/a&gt;   income_mean&lt;span class=&quot;o&quot;&gt;$&lt;/span&gt;p1 &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; theme_small&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+&lt;a name=&quot;True-34&quot;&gt;&lt;/a&gt;   income_trmean&lt;span class=&quot;o&quot;&gt;$&lt;/span&gt;p1 &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; theme_small&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+&lt;a name=&quot;True-35&quot;&gt;&lt;/a&gt;   ncol &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;2&lt;/span&gt;
+&lt;a name=&quot;True-36&quot;&gt;&lt;/a&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;a name=&quot;True-37&quot;&gt;&lt;/a&gt;
+&lt;a name=&quot;True-38&quot;&gt;&lt;/a&gt;grid.arrange&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+&lt;a name=&quot;True-39&quot;&gt;&lt;/a&gt;   income_mean&lt;span class=&quot;o&quot;&gt;$&lt;/span&gt;p2 &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; 
+&lt;a name=&quot;True-40&quot;&gt;&lt;/a&gt;      theme_small &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-41&quot;&gt;&lt;/a&gt;      scale_y_continuous&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;limits &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;-0.05&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0.05&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; label &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; percent&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+&lt;a name=&quot;True-42&quot;&gt;&lt;/a&gt;   income_trmean&lt;span class=&quot;o&quot;&gt;$&lt;/span&gt;p2 &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; 
+&lt;a name=&quot;True-43&quot;&gt;&lt;/a&gt;      theme_small &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;
+&lt;a name=&quot;True-44&quot;&gt;&lt;/a&gt;      scale_y_continuous&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;limits &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;-0.05&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0.05&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; label &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; percent&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+&lt;a name=&quot;True-45&quot;&gt;&lt;/a&gt;   ncol &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;2&lt;/span&gt;
+&lt;a name=&quot;True-46&quot;&gt;&lt;/a&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+</description>
+				<pubDate>Sun, 29 May 2016 00:00:00 +1200</pubDate>
+				<link>http://ellisp.github.io/blog/2016/05/29/standard-deviation-confidence-intervals</link>
+				<guid isPermaLink="true">http://ellisp.github.io/blog/2016/05/29/standard-deviation-confidence-intervals</guid>
+			</item>
+		
+			<item>
 				<title>Visual contrast of two robust regression methods</title>
 					<description>&lt;h2 id=&quot;robust-regression&quot;&gt;Robust regression&lt;/h2&gt;
 
@@ -1834,41 +2191,6 @@
 				<pubDate>Sat, 19 Mar 2016 00:00:00 +1300</pubDate>
 				<link>http://ellisp.github.io/blog/2016/03/19/elo-pr-luck</link>
 				<guid isPermaLink="true">http://ellisp.github.io/blog/2016/03/19/elo-pr-luck</guid>
-			</item>
-		
-			<item>
-				<title>Explore  with Shiny the impact of sample size on &quot;p-charts&quot;</title>
-					<description>&lt;h2 id=&quot;control-charts&quot;&gt;Control charts&lt;/h2&gt;
-&lt;p&gt;I wanted to help explore the implications of changing sample size for a quality control process aimed at determining the defect rate in multiple sites.  Defect in this particular case is binary ie the products are either good or not.  &lt;a href=&quot;http://www.isixsigma.com/tools-templates/sampling-data/how-determine-sample-size-determining-sample-size/&quot;&gt;Much of the advice on this&lt;/a&gt; in the quality control literature strikes me as rather abstract and technical, while still not sufficiently detailed on what really needs to be done for power calculations.  My idea was to instead let an end user see in advance what &lt;em&gt;sort&lt;/em&gt; of thing they would see if they went into the exercise with different sample sizes.&lt;/p&gt;
-
-&lt;p&gt;The result was this interactive R/Shiny/ggvis web app:
-&lt;a href=&quot;https://ellisp.shinyapps.io/control-charts/&quot;&gt;
-   &lt;img src=&quot;http://ellisp.github.io/img/0033_control_charts.png&quot; alt=&quot;screenshot&quot; /&gt;
-&lt;/a&gt;&lt;/p&gt;
-
-&lt;p&gt;I’m not an expert in statistical quality control by any means, but the statistics are straightforward.  The &lt;a href=&quot;https://en.wikipedia.org/wiki/p-chart&quot;&gt;“p-chart”&lt;/a&gt; is simply a time series of the proportion of recorded defects in samples taken over time, compared to horizontal lines for the central tendency of the process “under control” and upper and lower limits of acceptability before being seen as “our of control”.  When they exceed some margin - typically three standard deviations, but see below -  beyond some central acceptable target you conclude there’s strong evidence of something going wrong in that particular process at that particular point of time.  Of course, about 3 times in 1,000 if the true defect rate is bang on the target you’ll still get that “three standard deviations too big” threshold, but that’s deemed an acceptable false positive rate.&lt;/p&gt;
-
-&lt;h3 id=&quot;x-sigma-versus-exact-binomial&quot;&gt;3 x sigma versus exact binomial&lt;/h3&gt;
-&lt;p&gt;Coming to this for the first time from a more general statistics backgroun, I raised an eyebrow at the “Six Sigma” approach of just making an Upper Control Limit (UCL) of 3 standard deviations away from the general population.  This rule of thumb comes from a judgement of what an acceptable false positive / false negative rate is when the observations have a Gaussian (‘Normal’) distribution.  It turns out that in &lt;a href=&quot;http://www.stat.unipg.it/luca/Rnews_2004-1-pag11-17.pdf&quot;&gt;some quarters&lt;/a&gt; this is known as “American practice”; and the “British practice”, in contrast, is to specify  a given confidence level calculated on the basis of the actual distribution of the observed variable (in this case, binomial) and set the UCL on that basis.  The results are pretty much equivalent so long as you choose the correct confidence level if using the ‘British’ approach; in my Shiny app I’ve given the option to use either.  I think the Six Sigma simplification is fully justified if it gets the core concepts out to a wider audience than mathematical statisticians.&lt;/p&gt;
-
-&lt;h3 id=&quot;a-stable-upper-control-limit&quot;&gt;A stable Upper Control Limit&lt;/h3&gt;
-&lt;p&gt;The example p control charts I found (eg Figure 12 on &lt;a href=&quot;http://www.isixsigma.com/tools-templates/control-charts/a-guide-to-control-charts/&quot;&gt;this iSixSigma site&lt;/a&gt;) look to calculate the standard deviation independently at each time point.  Instead, I’ve taken the approach of treating the idea “the true rate is at the target rate” as my null hypothesis, and calculating the standard deviation on the assumption that the null hypothesis is true.  This is consistent with a big stream of statistical practice and has the advantage of making a neater graph (a horizontal line for the upper control limit rather than a wobbly one - my approach only introduces wobbles when the sample size changes, not the observed rate at a particular point in time).  The standard p-chart practice, from what I can tell, calculates the standard deviation for each time period based on the observed defect rate and has the counter-intuitive result that the higher the observed defect rate in any particular sample, the higher the Upper Control Limit and hence it becomes easier to be officially noted as officially “in control”.  In practice, this doesn’t matter much.&lt;/p&gt;
-
-&lt;h3 id=&quot;an-alternative-to-the-p-chart-for-a-slightly-different-purpose&quot;&gt;An alternative to the P chart for a slightly different purpose&lt;/h3&gt;
-&lt;p&gt;For some purposes, I’m not happy with the approach the P chart takes of treating each sample in each time period as independent.  This makes sense in a context where you’ve got a process you’re happy with, and you just want to get warning when it starts going out of control - in fact, the classic stable QC process question such as “are 99.99% of memory chips we product going to work, as they have over the past two years of production?”.  But in many real world situations, one isn’t yet “happy” with the process and just watching for change over time - we might instead want to find out if the overall process is good or bad, from a position of basic ignorance.  For this purpose it makes sense to cumulatively pool the data as it comes in and create an estimate of the overall defect rate, over the full time period, for a particular site or process.  Hence the second graphic in the Shiny app, at bottom right of the screen, lets a user see how the confidence interval for the defect rate narrows over time.&lt;/p&gt;
-
-&lt;p&gt;Check it out:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;The &lt;a href=&quot;https://ellisp.shinyapps.io/control-charts/&quot;&gt;Shiny app&lt;/a&gt; itself&lt;/li&gt;
-  &lt;li&gt;The &lt;a href=&quot;https://github.com/ellisp/control-charts&quot;&gt;source code&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;Suggestions welcomed.  This was done in a bit of a rush and I may well have gotten something muddled up.&lt;/p&gt;
-</description>
-				<pubDate>Sun, 06 Mar 2016 00:00:00 +1300</pubDate>
-				<link>http://ellisp.github.io/blog/2016/03/06/control-charts</link>
-				<guid isPermaLink="true">http://ellisp.github.io/blog/2016/03/06/control-charts</guid>
 			</item>
 		
 	</channel>
