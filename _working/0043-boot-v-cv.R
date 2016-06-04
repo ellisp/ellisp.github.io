@@ -1,8 +1,9 @@
+
 #===================setup=======================
+library(MASS) # must be loaded before dplyr
 library(showtext)
 library(ggplot2)
 library(scales)
-library(MASS)
 library(boot)
 library(caret)
 library(dplyr)
@@ -74,7 +75,7 @@ compare <- function(orig_data, i){
    
    # fit the three modelling processes
    model_step <- model_process_step(train_data)
-   model_vif  <- model_process_full(train_data)
+   model_vif  <- model_process_vif(train_data)
    model_full <- lm(MedianIncome ~ ., data = train_data)
    
    # predict the values on the original, unresampled data
@@ -95,8 +96,8 @@ compare <- function(orig_data, i){
 }
 
 # perform bootstrap
-R <- 50
-res <- boot(au, statistic = compare, R = R)
+Repeats <- 100
+res <- boot(au, statistic = compare, R = Repeats)
 
 # restructure results for a graphic showing root mean square error, and for
 # later combination with the other results.  I chose just to focus on RMSE;
@@ -105,7 +106,7 @@ RMSE_res <- as.data.frame(res$t[ , 4:6])
 names(RMSE_res) <- c("AIC stepwise selection", "Remove collinear variables", "Use all variables")
 
 p1 <- RMSE_res %>%
-   mutate(trial = 1:R) %>%
+   mutate(trial = 1:Repeats) %>%
    gather(variable, value, -trial) %>% 
    # re-order levels:
    mutate(variable = factor(variable, levels = c(
@@ -146,7 +147,7 @@ compare_opt <- function(orig_data, i){
 
    # fit the three modelling processes
    model_step <- model_process_step(train_data)
-   model_vif  <- model_process_full(train_data)
+   model_vif  <- model_process_vif(train_data)
    model_full <- lm(MedianIncome ~ ., data = train_data)
    
    # predict the values on the original, unresampled data
@@ -167,8 +168,7 @@ compare_opt <- function(orig_data, i){
 }
 
 # perform bootstrap
-R <- 50
-res_opt <- boot(au, statistic = compare_opt, R = R)
+res_opt <- boot(au, statistic = compare_opt, R = Repeats)
 
 # calculate and store the results for later
 original <- c(
@@ -182,15 +182,17 @@ enhanced <- original - optimism
 
 
 #------------------repeated cross-validation------------------
+# The number of cross validation repeats is the number of bootstrap repeats / 10:
+cv_repeat_num <- Repeats / 10
 
 # use caret::train for the two standard models:
-the_control <- trainControl(method = "repeatedcv", number = 10, repeats = 5)
+the_control <- trainControl(method = "repeatedcv", number = 10, repeats = cv_repeat_num)
 cv_full <- train(MedianIncome ~ ., data = au, method = "lm", trControl = the_control)
 cv_step <- train(MedianIncome ~ ., data = au, method = "lmStepAIC", trControl = the_control, trace = 0)
 
 # do it by hand for the VIF model:
-results <- numeric(10 * 5)
-for(j in 0:4){
+results <- numeric(10 * cv_repeat_num)
+for(j in 0:(cv_repeat_num - 1)){
    cv_group <- sample(1:10, nrow(au), replace = TRUE)
    for(i in 1:10){
       train_data <- au[cv_group != i, ]
@@ -201,6 +203,12 @@ for(j in 0:4){
    }
 }
 cv_vif <- mean(results)
+
+cv_vif_results <- data.frame(
+   results = results,
+   trial = rep(1:10, cv_repeat_num),
+   cv_repeat = rep(1:cv_repeat_num, each = 10)
+)
 
 
 #===============reporting results===============
@@ -215,7 +223,7 @@ summary_results <- data.frame(rbind(
      )
    ), check.names = FALSE) %>%
    mutate(method = c("Simple bootstrap", "Enhanced bootstrap", 
-                     "5 repeats 10-fold\ncross-validation")) %>%
+                     paste(cv_repeat_num, "repeats 10-fold\ncross-validation"))) %>%
    gather(variable, value, -method)
 
 # Draw a plot summarising the results

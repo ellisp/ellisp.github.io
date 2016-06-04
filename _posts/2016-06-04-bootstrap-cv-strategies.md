@@ -1,7 +1,7 @@
 ---
 layout: post
 title: Bootstrap and cross-validation for evaluating modelling strategies
-date: 2016-06-04
+date: 2016-06-05
 tag: 
    - NZIS2011
    - RobustMethods
@@ -29,7 +29,7 @@ The main purpose of the exercise was actually to ensure I had my head around dif
 
 There are many methods of validating models, although I think k-fold cross-validation has market dominance (not with Harrell though, who prefers varieties of the bootstrap).  The three validation methods I've used for this post are:
 
-1. 'simple' bootstrap.  This involves creating resamples with replacement from the original data, of the same size; applying the modelling strategy to the resample; using the model to predict the values of the full set of original data and calculating a goodness of fit statistic (eg either R-squared or root mean squared error) comparing the predicted value to the actual value.
+1. 'simple' bootstrap.  This involves creating resamples with replacement from the original data, of the same size; applying the modelling strategy to the resample; using the model to predict the values of the full set of original data and calculating a goodness of fit statistic (eg either R-squared or root mean squared error) comparing the predicted value to the actual value.  *Note - Following Efron, Harrell calls this the "simple bootstrap", but other authors and the useful `caret` package use "simple bootstrap" to mean the resample model is used to predict the out-of-bag values at each resample point, rather than the full original sample.*
 2. 'enhanced' bootstrap.  This is a little more involved and is basically a method of estimating the 'optimism' of the goodness of fit statistic.  There's a nice step by step explanation by [thestatsgeek](http://thestatsgeek.com/2014/10/04/adjusting-for-optimismoverfitting-in-measures-of-predictive-ability-using-bootstrapping/) which I won't try to improve on.
 3. repeated 10-fold cross-validation.  10-fold cross-validation involves dividing your data into ten parts, then taking turns to fit the model on 90% of the data and using that model to predict the remaining 10%.  The average of the 10 goodness of fit statistics becomes your estimate of the actual goodness of fit.  One of the problems with k-fold cross-validation is that it has a high variance ie doing it different times you get different results based on the luck of you k-way split; so repeated k-fold cross-validation addresses this by performing the whole process a number of times and taking the average.
 
@@ -39,17 +39,17 @@ It's critical that the re-sampling in the process envelopes the entire model-bui
 
 ## Results
 
-One nice feature of statistics since the revolution of the 1980s is that the bootstrap helps you conceptualise what might have happened but didn't.  Here's the root mean squared error from the 50 different bootstrap resamples when the three different modelling strategies (including variable selection) were applied:
+One nice feature of statistics since the revolution of the 1980s is that the bootstrap helps you conceptualise what might have happened but didn't.  Here's the root mean squared error from the 100 different bootstrap resamples when the three different modelling strategies (including variable selection) were applied:
 
 ![boot-results](/img/0043-boot-results.svg)
 
-Notice anything?  Not only does it seem to be generally a bad idea to drop variables just because they are collinear with others, but occasionally it turns out to be a *really* bad idea - like in resamples #4, #6  and seven others.  Those nine spikes are in resamples where random chance led to one of the more important variables being dumped before it had a chance to contribute to the model.
+Notice anything?  Not only does it seem to be generally a bad idea to drop variables just because they are collinear with others, but occasionally it turns out to be a *really* bad idea - like in resamples #4, #6  and around thirty others.  Those thirty or so spikes are in resamples where random chance led to one of the more important variables being dumped before it had a chance to contribute to the model.
 
 The thing that surprised me here was that the generally maligned step-wise selection strategy performed nearly as well as the full model, judged by the simple bootstrap.  That result comes through for the other two validation methods as well:
 
 ![boot-v-cv](/img/0043-boot-v-cv.svg)
 
-In fact, according to the cross-validation it might even be slightly better than the full model.  However, in all three validation methods there's really nothing to choose between the "full model" and "stepwise" strategies.  
+In all three validation methods there's really nothing substantive to choose between the "full model" and "stepwise" strategies, based purely on results.  
 
 ## Reflections
 The full model is much easier to fit, interpret, estimate confidence intervals and perform tests on than stepwise.  All the standard statistics for a final model chosen by stepwise methods are misleading and careful recalculations are needed based on elaborate bootstrapping.  So the full model wins hands-down as a general strategy in this case.
@@ -60,7 +60,9 @@ With this data, we have a bit of freedom from the generous sample size.  If appr
 
 The census data are ultimately from Statistics New Zealand of course, but are tidied up and available in my [`nzelect`](https://github.com/ellisp/nzelect) R package, which is still very much under development and may change without notice.  It's only available from GitHub at the moment (installation code below).
 
-I do the bootstrapping with the aid of the `boot` package, which is the recommended approach in R.  For the two straightforward strategies (full model and stepwise variable selection) I use the `caret` package, in combination with `stepAIC` which is in the Venables and Ripley `MASS` package.  For the more complex strategy that involved dropping variables with high variance inflation factors I found it easiest to do the repeated cross-validation old-school with my own `for` loops.
+I do the bootstrapping with the aid of the `boot` package, which is generally the recommended approach in R.  For repeated cross-validation of the two straightforward strategies (full model and stepwise variable selection) I use the `caret` package, in combination with `stepAIC` which is in the Venables and Ripley `MASS` package.  For the more complex strategy that involved dropping variables with high variance inflation factors I found it easiest to do the repeated cross-validation old-school with my own `for` loops.
+
+This exercise was a bit complex and I won't be astonished if someone points out an error.  If you see a problem, or have any suggestions or questions, please leave a comment.
 
 Here's the code:
 
@@ -74,6 +76,8 @@ library(caret)
 library(dplyr)
 library(tidyr)
 library(directlabels)
+
+set.seed(123)
 
 # install nzelect package that has census data
 devtools::install_github("ellisp/nzelect/pkg")
@@ -134,7 +138,7 @@ compare <- function(orig_data, i){
    
    # fit the three modelling processes
    model_step <- model_process_step(train_data)
-   model_vif  <- model_process_full(train_data)
+   model_vif  <- model_process_vif(train_data)
    model_full <- lm(MedianIncome ~ ., data = train_data)
    
    # predict the values on the original, unresampled data
@@ -155,8 +159,8 @@ compare <- function(orig_data, i){
 }
 
 # perform bootstrap
-R <- 50
-res <- boot(au, statistic = compare, R = R)
+Repeats <- 100
+res <- boot(au, statistic = compare, R = Repeats)
 
 # restructure results for a graphic showing root mean square error, and for
 # later combination with the other results.  I chose just to focus on RMSE;
@@ -165,7 +169,7 @@ RMSE_res <- as.data.frame(res$t[ , 4:6])
 names(RMSE_res) <- c("AIC stepwise selection", "Remove collinear variables", "Use all variables")
 
 RMSE_res %>%
-   mutate(trial = 1:R) %>%
+   mutate(trial = 1:Repeats) %>%
    gather(variable, value, -trial) %>% 
    # re-order levels:
    mutate(variable = factor(variable, levels = c(
@@ -198,7 +202,7 @@ compare_opt <- function(orig_data, i){
 
    # fit the three modelling processes
    model_step <- model_process_step(train_data)
-   model_vif  <- model_process_full(train_data)
+   model_vif  <- model_process_vif(train_data)
    model_full <- lm(MedianIncome ~ ., data = train_data)
    
    # predict the values on the original, unresampled data
@@ -219,8 +223,7 @@ compare_opt <- function(orig_data, i){
 }
 
 # perform bootstrap
-R <- 50
-res_opt <- boot(au, statistic = compare_opt, R = R)
+res_opt <- boot(au, statistic = compare_opt, R = Repeats)
 
 # calculate and store the results for later
 original <- c(
@@ -234,15 +237,17 @@ enhanced <- original - optimism
 
 
 #------------------repeated cross-validation------------------
+# The number of cross validation repeats is the number of bootstrap repeats / 10:
+cv_repeat_num <- Repeats / 10
 
 # use caret::train for the two standard models:
-the_control <- trainControl(method = "repeatedcv", number = 10, repeats = 5)
+the_control <- trainControl(method = "repeatedcv", number = 10, repeats = cv_repeat_num)
 cv_full <- train(MedianIncome ~ ., data = au, method = "lm", trControl = the_control)
 cv_step <- train(MedianIncome ~ ., data = au, method = "lmStepAIC", trControl = the_control, trace = 0)
 
 # do it by hand for the VIF model:
-results <- numeric(10 * 5)
-for(j in 0:4){
+results <- numeric(10 * cv_repeat_num)
+for(j in 0:(cv_repeat_num - 1)){
    cv_group <- sample(1:10, nrow(au), replace = TRUE)
    for(i in 1:10){
       train_data <- au[cv_group != i, ]
@@ -253,6 +258,12 @@ for(j in 0:4){
    }
 }
 cv_vif <- mean(results)
+
+cv_vif_results <- data.frame(
+   results = results,
+   trial = rep(1:10, cv_repeat_num),
+   cv_repeat = rep(1:cv_repeat_num, each = 10)
+)
 
 
 #===============reporting results===============
@@ -267,7 +278,7 @@ summary_results <- data.frame(rbind(
      )
    ), check.names = FALSE) %>%
    mutate(method = c("Simple bootstrap", "Enhanced bootstrap", 
-                     "5 repeats 10-fold\ncross-validation")) %>%
+                     paste(cv_repeat_num, "repeats 10-fold\ncross-validation"))) %>%
    gather(variable, value, -method)
 
 # Draw a plot summarising the results
@@ -282,9 +293,8 @@ summary_results %>%
         colour = "Modelling\nstrategy",
         y = "Method of estimating model fit\n",
         caption = "Data from New Zealand Census 2013") +
-   ggtitle("'Simple' bootstrap of model fit of three different regression strategies",
+   ggtitle("Three different validation methods of three different regression strategies",
            subtitle = "Predicting areas' median income based on census variables")
    
 )
-
 {% endhighlight %} 
