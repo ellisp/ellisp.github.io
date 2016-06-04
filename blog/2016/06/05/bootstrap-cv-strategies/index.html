@@ -1,0 +1,491 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Bootstrap and cross-validation for evaluating modelling strategies</title>
+      	
+         
+         
+            <meta name ="description" content ="I compare 'simple' bootstrap, 'enhanced' (optimism-correcting) bootstrap, and repeated k-fold cross-validation as methods for estimating fit of three example modelling strategies.">
+            <meta property="og:description" content ="I compare 'simple' bootstrap, 'enhanced' (optimism-correcting) bootstrap, and repeated k-fold cross-validation as methods for estimating fit of three example modelling strategies.">
+         
+         <meta property="og:site_name" content="Peter's stats stuff" />
+         <meta property="og:title" content="Bootstrap and cross-validation for evaluating modelling strategies" />
+         
+            <meta property="og:image" content="http://ellisp.github.io/img/0043-boot-results.png" />
+         
+         <meta property="og:url" content="http://ellisp.github.io/blog/2016/06/05/bootstrap-cv-strategies/" />
+         <meta property="og:author" content= "https://www.facebook.com/peter.ellis.353" />
+         <meta property="og:type" content="article" />
+           
+          <link href="/css/bootstrap.min.css" rel ="stylesheet">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet">
+            <link href="/css/custom.css" rel ="stylesheet">       
+     <link rel="stylesheet" href="/css/Pygments/autumn.css">      
+     <link rel="stylesheet" href="/css/Pygments/custom.css">      
+            
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="Peter's stats stuff by Peter Ellis"
+      href="/feed.xml">
+
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+         <script src="/js/bootstrap.min.js"></script>
+         
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Peter's stats stuff</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">All blog posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">Ordered by date</a></li>
+                  <li><a href="/blog/index_by_tag.html">Grouped by subject matter</a></li>
+                  <li><a href = /blog/2016/06/05/bootstrap-cv-strategies>Most recent post</a></li>
+                 </ul>
+            </li>
+              <li><a href="/blog/showcase.html">Showcase</a></li>
+              <li><a href="/presentations/index.html">Presentations</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			    <div class="jumbotron">
+      <div class="container">
+        <h1>Bootstrap and cross-validation for evaluating modelling strategies</h1>
+         <p class="meta">05 Jun 2016</p>
+        
+      </div>
+    </div>
+
+
+
+
+<div class = "post-summary">
+<h2>TL;DR Summary:</h2>
+   I compare 'simple' bootstrap, 'enhanced' (optimism-correcting) bootstrap, and repeated k-fold cross-validation as methods for estimating fit of three example modelling strategies.
+   <hr></hr>
+</div>
+
+<div class="post">
+<div class="col-md-2">
+
+</div>
+  <div class="col-md-8">
+
+  <h2 id="modelling-strategies">Modelling strategies</h2>
+<p>I’ve been re-reading Frank Harrell’s <a href="http://www.springer.com/us/book/9781441929181">Regression Modelling Strategies</a>, a must read for anyone who ever fits a regression model, although be prepared - depending on your background, you might get 30 pages in and suddenly become convinced you’ve been doing nearly everything wrong before, which can be disturbing.</p>
+
+<p>I wanted to evaluate three simple modelling strategies in dealing with data with many variables.  Using data with 54 variables on 1,785 area units from New Zealand’s 2013 census, I’m looking to predict median income on the basis of the other 53 variables.  The features are all continuous and are variables like “mean number of bedrooms”, “proportion of individuals with no religion” and “proportion of individuals who are smokers”.   Restricting myself to traditional linear regression with a normally distributed response, my three alternative strategies were:</p>
+
+<ul>
+  <li>use all 53 variables;</li>
+  <li>eliminate the variables that can be predicted easily from the other variables (defined by having a <a href="https://en.wikipedia.org/wiki/Variance_inflation_factor">variance inflation factor</a> greater than ten), one by one until the main collinearity problems are gone; or</li>
+  <li>eliminate variables one at a time from the full model on the basis of comparing <a href="https://en.wikipedia.org/wiki/Akaike_information_criterion">Akaike’s Information Criterion</a> of models with and without each variable.</li>
+</ul>
+
+<p>None of these is exactly what I would use for real, but they serve the purpose of setting up a competition of strategies that I can test with a variety of model validation techniques.</p>
+
+<h2 id="validating-models">Validating models</h2>
+<p>The main purpose of the exercise was actually to ensure I had my head around different ways of estimating the validity of a model, loosely definable as how well it would perform at predicting new data.  As there is no possibility of new areas in New Zealand from 2013 that need to have their income predicted, the “prediction” is a thought-exercise which we need to find a plausible way of simulating.  Confidence in hypothetical predictions gives us confidence in the insights the model gives into relationships between variables.</p>
+
+<p>There are many methods of validating models, although I think k-fold cross-validation has market dominance (not with Harrell though, who prefers varieties of the bootstrap).  The three validation methods I’ve used for this post are:</p>
+
+<ol>
+  <li>‘simple’ bootstrap.  This involves creating resamples with replacement from the original data, of the same size; applying the modelling strategy to the resample; using the model to predict the values of the full set of original data and calculating a goodness of fit statistic (eg either R-squared or root mean squared error) comparing the predicted value to the actual value.  <em>Note - Following Efron, Harrell calls this the “simple bootstrap”, but other authors and the useful <code>caret</code> package use “simple bootstrap” to mean the resample model is used to predict the out-of-bag values at each resample point, rather than the full original sample.</em></li>
+  <li>‘enhanced’ bootstrap.  This is a little more involved and is basically a method of estimating the ‘optimism’ of the goodness of fit statistic.  There’s a nice step by step explanation by <a href="http://thestatsgeek.com/2014/10/04/adjusting-for-optimismoverfitting-in-measures-of-predictive-ability-using-bootstrapping/">thestatsgeek</a> which I won’t try to improve on.</li>
+  <li>repeated 10-fold cross-validation.  10-fold cross-validation involves dividing your data into ten parts, then taking turns to fit the model on 90% of the data and using that model to predict the remaining 10%.  The average of the 10 goodness of fit statistics becomes your estimate of the actual goodness of fit.  One of the problems with k-fold cross-validation is that it has a high variance ie doing it different times you get different results based on the luck of you k-way split; so repeated k-fold cross-validation addresses this by performing the whole process a number of times and taking the average.</li>
+</ol>
+
+<p>As the sample sizes get bigger relative to the number of variables in the model the methods should converge.  The bootstrap methods can give over-optimistic estimates of model validity compared to cross-validation; there are various other methods available to address this issue although none seem to me to provide all-purpose solution.</p>
+
+<p>It’s critical that the re-sampling in the process envelopes the entire model-building strategy, not just the final fit.  In particular, if the strategy involves variable selection (as two of my candidate strategies do), you have to automate that selection process and run it on each different resample.  That’s because one of the highest risk parts of the modelling process is that variable selection.  Running cross-validation or the bootstrap on a final model after you’ve eliminated a bunch of variables is missing the point, and will give materially misleading statistics (biased towards things being more “significant” than there really is evidence for).  Of course, that doesn’t stop this being common misguided practice.</p>
+
+<h2 id="results">Results</h2>
+
+<p>One nice feature of statistics since the revolution of the 1980s is that the bootstrap helps you conceptualise what might have happened but didn’t.  Here’s the root mean squared error from the 100 different bootstrap resamples when the three different modelling strategies (including variable selection) were applied:</p>
+
+<p><img src="/img/0043-boot-results.svg" alt="boot-results" /></p>
+
+<p>Notice anything?  Not only does it seem to be generally a bad idea to drop variables just because they are collinear with others, but occasionally it turns out to be a <em>really</em> bad idea - like in resamples #4, #6  and around thirty others.  Those thirty or so spikes are in resamples where random chance led to one of the more important variables being dumped before it had a chance to contribute to the model.</p>
+
+<p>The thing that surprised me here was that the generally maligned step-wise selection strategy performed nearly as well as the full model, judged by the simple bootstrap.  That result comes through for the other two validation methods as well:</p>
+
+<p><img src="/img/0043-boot-v-cv.svg" alt="boot-v-cv" /></p>
+
+<p>In all three validation methods there’s really nothing substantive to choose between the “full model” and “stepwise” strategies, based purely on results.</p>
+
+<h2 id="reflections">Reflections</h2>
+<p>The full model is much easier to fit, interpret, estimate confidence intervals and perform tests on than stepwise.  All the standard statistics for a final model chosen by stepwise methods are misleading and careful recalculations are needed based on elaborate bootstrapping.  So the full model wins hands-down as a general strategy in this case.</p>
+
+<p>With this data, we have a bit of freedom from the generous sample size.  If approaching this for real I wouldn’t eliminate any variables unless there were theoretical / subject matter reasons to do so.  I have made the mistake of eliminating the co-linear variables before from this dataset but will try not to do it again.  The rule of thumb is to have 20 observations for each parameter (this is one of the most asked and most dodged questions in statistics education; see Table 4.1 of <em>Regression Modelling Strategies</em> for this particular answer), which suggests we can have up to 80 parameters with a bit to spare.  This gives us 30 parameters to use for non-linear relationships and/or interactions, which is the direction I might go in a subsequent post.  Bearing that in mind, I’m not bothering to report here the actual substantive results (eg which factors are related to income and how); that can wait for a better model down the track.</p>
+
+<h2 id="data-and-computing">Data and computing</h2>
+
+<p>The census data are ultimately from Statistics New Zealand of course, but are tidied up and available in my <a href="https://github.com/ellisp/nzelect"><code>nzelect</code></a> R package, which is still very much under development and may change without notice.  It’s only available from GitHub at the moment (installation code below).</p>
+
+<p>I do the bootstrapping with the aid of the <code>boot</code> package, which is generally the recommended approach in R.  For repeated cross-validation of the two straightforward strategies (full model and stepwise variable selection) I use the <code>caret</code> package, in combination with <code>stepAIC</code> which is in the Venables and Ripley <code>MASS</code> package.  For the more complex strategy that involved dropping variables with high variance inflation factors I found it easiest to do the repeated cross-validation old-school with my own <code>for</code> loops.</p>
+
+<p>This exercise was a bit complex and I won’t be astonished if someone points out an error.  If you see a problem, or have any suggestions or questions, please leave a comment.</p>
+
+<p>Here’s the code:</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a><span class="c1">#===================setup=======================</span>
+<a name="True-2"></a><span class="kn">library</span><span class="p">(</span>ggplot2<span class="p">)</span>
+<a name="True-3"></a><span class="kn">library</span><span class="p">(</span>scales<span class="p">)</span>
+<a name="True-4"></a><span class="kn">library</span><span class="p">(</span>MASS<span class="p">)</span>
+<a name="True-5"></a><span class="kn">library</span><span class="p">(</span>boot<span class="p">)</span>
+<a name="True-6"></a><span class="kn">library</span><span class="p">(</span>caret<span class="p">)</span>
+<a name="True-7"></a><span class="kn">library</span><span class="p">(</span>dplyr<span class="p">)</span>
+<a name="True-8"></a><span class="kn">library</span><span class="p">(</span>tidyr<span class="p">)</span>
+<a name="True-9"></a><span class="kn">library</span><span class="p">(</span>directlabels<span class="p">)</span>
+<a name="True-10"></a>
+<a name="True-11"></a><span class="kp">set.seed</span><span class="p">(</span><span class="m">123</span><span class="p">)</span>
+<a name="True-12"></a>
+<a name="True-13"></a><span class="c1"># install nzelect package that has census data</span>
+<a name="True-14"></a>devtools<span class="o">::</span>install_github<span class="p">(</span><span class="s">&quot;ellisp/nzelect/pkg&quot;</span><span class="p">)</span>
+<a name="True-15"></a><span class="kn">library</span><span class="p">(</span>nzelect<span class="p">)</span>
+<a name="True-16"></a>
+<a name="True-17"></a><span class="c1"># drop the columns with areas&#39; code and name</span>
+<a name="True-18"></a>au <span class="o">&lt;-</span> AreaUnits2013 <span class="o">%&gt;%</span>
+<a name="True-19"></a>   select<span class="p">(</span><span class="o">-</span>AU2014<span class="p">,</span> <span class="o">-</span>Area_Code_and_Description<span class="p">)</span>
+<a name="True-20"></a>
+<a name="True-21"></a><span class="c1"># give meaningful rownames, helpful for some diagnostic plots later</span>
+<a name="True-22"></a><span class="kp">row.names</span><span class="p">(</span>au<span class="p">)</span> <span class="o">&lt;-</span> AreaUnits2013<span class="o">$</span>Area_Code_and_Description
+<a name="True-23"></a>
+<a name="True-24"></a><span class="c1"># remove some repetition from the variable names</span>
+<a name="True-25"></a><span class="kp">names</span><span class="p">(</span>au<span class="p">)</span> <span class="o">&lt;-</span> <span class="kp">gsub</span><span class="p">(</span><span class="s">&quot;2013&quot;</span><span class="p">,</span> <span class="s">&quot;&quot;</span><span class="p">,</span> <span class="kp">names</span><span class="p">(</span>au<span class="p">))</span>
+<a name="True-26"></a>
+<a name="True-27"></a><span class="c1"># restrict to areas with no missing data.  If this was any more complicated (eg</span>
+<a name="True-28"></a><span class="c1"># imputation),it would need to be part of the validation resampling too; but</span>
+<a name="True-29"></a><span class="c1"># just dropping them all at the beginning doesn&#39;t need to be resampled; the only</span>
+<a name="True-30"></a><span class="c1"># implication would be sample size which would be small impact and complicating.</span>
+<a name="True-31"></a>au <span class="o">&lt;-</span> au<span class="p">[</span>complete.cases<span class="p">(</span>au<span class="p">),</span> <span class="p">]</span>
+<a name="True-32"></a>
+<a name="True-33"></a><span class="c1">#==================functions for two of the modelling strategies=====================</span>
+<a name="True-34"></a><span class="c1"># The stepwise variable selection:</span>
+<a name="True-35"></a>model_process_step <span class="o">&lt;-</span> <span class="kr">function</span><span class="p">(</span>the_data<span class="p">){</span>
+<a name="True-36"></a>   model_full <span class="o">&lt;-</span> lm<span class="p">(</span>MedianIncome <span class="o">~</span> <span class="m">.</span><span class="p">,</span> data <span class="o">=</span> the_data<span class="p">)</span>
+<a name="True-37"></a>   model_final <span class="o">&lt;-</span> stepAIC<span class="p">(</span>model_full<span class="p">,</span> direction <span class="o">=</span> <span class="s">&quot;both&quot;</span><span class="p">,</span> trace <span class="o">=</span> <span class="m">0</span><span class="p">)</span>
+<a name="True-38"></a>   <span class="kr">return</span><span class="p">(</span>model_final<span class="p">)</span>
+<a name="True-39"></a><span class="p">}</span>
+<a name="True-40"></a>
+<a name="True-41"></a><span class="c1"># The dropping of highly collinear variables, based on Variance Inflation Factor:</span>
+<a name="True-42"></a>model_process_vif <span class="o">&lt;-</span> <span class="kr">function</span><span class="p">(</span>the_data<span class="p">){</span>
+<a name="True-43"></a>   <span class="c1"># remove the collinear variables based on vif</span>
+<a name="True-44"></a>   x <span class="o">&lt;-</span> <span class="m">20</span>
+<a name="True-45"></a>   
+<a name="True-46"></a>   <span class="kr">while</span><span class="p">(</span><span class="kp">max</span><span class="p">(</span>x<span class="p">)</span> <span class="o">&gt;</span> <span class="m">10</span><span class="p">){</span>
+<a name="True-47"></a>      mod1 <span class="o">&lt;-</span> lm<span class="p">(</span>MedianIncome <span class="o">~</span> <span class="m">.</span> <span class="p">,</span> data <span class="o">=</span> the_data<span class="p">)</span>
+<a name="True-48"></a>      x <span class="o">&lt;-</span> <span class="kp">sort</span><span class="p">(</span>car<span class="o">::</span>vif<span class="p">(</span>mod1<span class="p">)</span> <span class="p">,</span> decreasing <span class="o">=</span> <span class="kc">TRUE</span><span class="p">)</span>
+<a name="True-49"></a>      the_data <span class="o">&lt;-</span> the_data<span class="p">[</span> <span class="p">,</span> <span class="kp">names</span><span class="p">(</span>the_data<span class="p">)</span> <span class="o">!=</span> <span class="kp">names</span><span class="p">(</span>x<span class="p">)[</span><span class="m">1</span><span class="p">]]</span>
+<a name="True-50"></a>      <span class="c1"># message(paste(&quot;dropping&quot;, names(x)[1]))</span>
+<a name="True-51"></a>   <span class="p">}</span>
+<a name="True-52"></a>   
+<a name="True-53"></a>   model_vif <span class="o">&lt;-</span> lm<span class="p">(</span>MedianIncome <span class="o">~</span> <span class="m">.</span><span class="p">,</span> data <span class="o">=</span> the_data<span class="p">)</span>
+<a name="True-54"></a>   <span class="kr">return</span><span class="p">(</span>model_vif<span class="p">)</span>
+<a name="True-55"></a><span class="p">}</span>
+<a name="True-56"></a>
+<a name="True-57"></a><span class="c1"># The third strategy, full model, is only a one-liner with standard functions</span>
+<a name="True-58"></a><span class="c1"># so I don&#39;t need to define a function separately for it.</span>
+<a name="True-59"></a>
+<a name="True-60"></a><span class="c1">#==================Different validation methods=================</span>
+<a name="True-61"></a>
+<a name="True-62"></a><span class="c1">#------------------simple bootstrap comparison-------------------------</span>
+<a name="True-63"></a><span class="c1"># create a function suitable for boot that will return the goodness of fit</span>
+<a name="True-64"></a><span class="c1"># statistics testing models against the full original sample.</span>
+<a name="True-65"></a>compare <span class="o">&lt;-</span> <span class="kr">function</span><span class="p">(</span>orig_data<span class="p">,</span> i<span class="p">){</span>
+<a name="True-66"></a>   <span class="c1"># create the resampled data</span>
+<a name="True-67"></a>   train_data <span class="o">&lt;-</span> orig_data<span class="p">[</span>i<span class="p">,</span> <span class="p">]</span>
+<a name="True-68"></a>   test_data <span class="o">&lt;-</span> orig_data <span class="c1"># ie the full original sample</span>
+<a name="True-69"></a>   
+<a name="True-70"></a>   <span class="c1"># fit the three modelling processes</span>
+<a name="True-71"></a>   model_step <span class="o">&lt;-</span> model_process_step<span class="p">(</span>train_data<span class="p">)</span>
+<a name="True-72"></a>   model_vif  <span class="o">&lt;-</span> model_process_vif<span class="p">(</span>train_data<span class="p">)</span>
+<a name="True-73"></a>   model_full <span class="o">&lt;-</span> lm<span class="p">(</span>MedianIncome <span class="o">~</span> <span class="m">.</span><span class="p">,</span> data <span class="o">=</span> train_data<span class="p">)</span>
+<a name="True-74"></a>   
+<a name="True-75"></a>   <span class="c1"># predict the values on the original, unresampled data</span>
+<a name="True-76"></a>   predict_step <span class="o">&lt;-</span> predict<span class="p">(</span>model_step<span class="p">,</span> newdata <span class="o">=</span> test_data<span class="p">)</span>
+<a name="True-77"></a>   predict_vif  <span class="o">&lt;-</span> predict<span class="p">(</span>model_vif<span class="p">,</span> newdata <span class="o">=</span> test_data<span class="p">)</span>
+<a name="True-78"></a>   predict_full  <span class="o">&lt;-</span> predict<span class="p">(</span>model_full<span class="p">,</span> newdata <span class="o">=</span> test_data<span class="p">)</span>
+<a name="True-79"></a>   
+<a name="True-80"></a>   <span class="c1"># return a vector of 6 summary results</span>
+<a name="True-81"></a>   results <span class="o">&lt;-</span> <span class="kt">c</span><span class="p">(</span>
+<a name="True-82"></a>      step_R2 <span class="o">=</span> R2<span class="p">(</span>predict_step<span class="p">,</span> test_data<span class="o">$</span>MedianIncome<span class="p">),</span>
+<a name="True-83"></a>      vif_R2  <span class="o">=</span> R2<span class="p">(</span>predict_vif<span class="p">,</span> test_data<span class="o">$</span>MedianIncome<span class="p">),</span>
+<a name="True-84"></a>      full_R2  <span class="o">=</span> R2<span class="p">(</span>predict_full<span class="p">,</span> test_data<span class="o">$</span>MedianIncome<span class="p">),</span>
+<a name="True-85"></a>      step_RMSE <span class="o">=</span> RMSE<span class="p">(</span>predict_step<span class="p">,</span> test_data<span class="o">$</span>MedianIncome<span class="p">),</span>
+<a name="True-86"></a>      vif_RMSE  <span class="o">=</span> RMSE<span class="p">(</span>predict_vif<span class="p">,</span> test_data<span class="o">$</span>MedianIncome<span class="p">),</span>
+<a name="True-87"></a>      full_RMSE  <span class="o">=</span> RMSE<span class="p">(</span>predict_full<span class="p">,</span> test_data<span class="o">$</span>MedianIncome<span class="p">)</span>
+<a name="True-88"></a>   <span class="p">)</span>
+<a name="True-89"></a>   <span class="kr">return</span><span class="p">(</span>results<span class="p">)</span>
+<a name="True-90"></a><span class="p">}</span>
+<a name="True-91"></a>
+<a name="True-92"></a><span class="c1"># perform bootstrap</span>
+<a name="True-93"></a>Repeats <span class="o">&lt;-</span> <span class="m">100</span>
+<a name="True-94"></a>res <span class="o">&lt;-</span> boot<span class="p">(</span>au<span class="p">,</span> statistic <span class="o">=</span> compare<span class="p">,</span> R <span class="o">=</span> Repeats<span class="p">)</span>
+<a name="True-95"></a>
+<a name="True-96"></a><span class="c1"># restructure results for a graphic showing root mean square error, and for</span>
+<a name="True-97"></a><span class="c1"># later combination with the other results.  I chose just to focus on RMSE;</span>
+<a name="True-98"></a><span class="c1"># the messages are similar if R squared is used.</span>
+<a name="True-99"></a>RMSE_res <span class="o">&lt;-</span> <span class="kp">as.data.frame</span><span class="p">(</span>res<span class="o">$</span><span class="kp">t</span><span class="p">[</span> <span class="p">,</span> <span class="m">4</span><span class="o">:</span><span class="m">6</span><span class="p">])</span>
+<a name="True-100"></a><span class="kp">names</span><span class="p">(</span>RMSE_res<span class="p">)</span> <span class="o">&lt;-</span> <span class="kt">c</span><span class="p">(</span><span class="s">&quot;AIC stepwise selection&quot;</span><span class="p">,</span> <span class="s">&quot;Remove collinear variables&quot;</span><span class="p">,</span> <span class="s">&quot;Use all variables&quot;</span><span class="p">)</span>
+<a name="True-101"></a>
+<a name="True-102"></a>RMSE_res <span class="o">%&gt;%</span>
+<a name="True-103"></a>   mutate<span class="p">(</span>trial <span class="o">=</span> <span class="m">1</span><span class="o">:</span>Repeats<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-104"></a>   gather<span class="p">(</span>variable<span class="p">,</span> value<span class="p">,</span> <span class="o">-</span>trial<span class="p">)</span> <span class="o">%&gt;%</span> 
+<a name="True-105"></a>   <span class="c1"># re-order levels:</span>
+<a name="True-106"></a>   mutate<span class="p">(</span>variable <span class="o">=</span> <span class="kp">factor</span><span class="p">(</span>variable<span class="p">,</span> levels <span class="o">=</span> <span class="kt">c</span><span class="p">(</span>
+<a name="True-107"></a>      <span class="s">&quot;Remove collinear variables&quot;</span><span class="p">,</span> <span class="s">&quot;AIC stepwise selection&quot;</span><span class="p">,</span> <span class="s">&quot;Use all variables&quot;</span>
+<a name="True-108"></a>   <span class="p">)))</span> <span class="o">%&gt;%</span>
+<a name="True-109"></a>   ggplot<span class="p">(</span>aes<span class="p">(</span>x <span class="o">=</span> trial<span class="p">,</span> y <span class="o">=</span> value<span class="p">,</span> colour <span class="o">=</span> variable<span class="p">))</span> <span class="o">+</span>
+<a name="True-110"></a>   geom_line<span class="p">()</span> <span class="o">+</span>
+<a name="True-111"></a>   geom_point<span class="p">()</span> <span class="o">+</span>
+<a name="True-112"></a>   ggtitle<span class="p">(</span><span class="s">&quot;&#39;Simple&#39; bootstrap of model fit of three different regression strategies&quot;</span><span class="p">,</span>
+<a name="True-113"></a>           subtitle <span class="o">=</span> <span class="s">&quot;Predicting areas&#39; median income based on census variables&quot;</span><span class="p">)</span> <span class="o">+</span>
+<a name="True-114"></a>   labs<span class="p">(</span>x <span class="o">=</span> <span class="s">&quot;Resample id (there no meaning in the order of resamples)\n&quot;</span><span class="p">,</span>
+<a name="True-115"></a>        y <span class="o">=</span> <span class="s">&quot;Root Mean Square Error (higher is worse)\n&quot;</span><span class="p">,</span>
+<a name="True-116"></a>        colour <span class="o">=</span> <span class="s">&quot;Strategy&quot;</span><span class="p">,</span>
+<a name="True-117"></a>        caption <span class="o">=</span> <span class="s">&quot;Data from New Zealand Census 2013&quot;</span><span class="p">)</span>
+<a name="True-118"></a>
+<a name="True-119"></a><span class="c1"># store the three &quot;simple bootstrap&quot; RMSE results for later</span>
+<a name="True-120"></a>simple <span class="o">&lt;-</span> <span class="kp">apply</span><span class="p">(</span>RMSE_res<span class="p">,</span> <span class="m">2</span><span class="p">,</span> <span class="kp">mean</span><span class="p">)</span>
+<a name="True-121"></a>
+<a name="True-122"></a><span class="c1">#-----------------------enhanced (optimism) bootstrap comparison-------------------</span>
+<a name="True-123"></a><span class="c1"># for convenience, estimate the models on the original sample of data</span>
+<a name="True-124"></a>orig_step <span class="o">&lt;-</span> model_process_step<span class="p">(</span>au<span class="p">)</span>
+<a name="True-125"></a>orig_vif <span class="o">&lt;-</span> model_process_vif<span class="p">(</span>au<span class="p">)</span>
+<a name="True-126"></a>orig_full <span class="o">&lt;-</span> lm<span class="p">(</span>MedianIncome <span class="o">~</span> <span class="m">.</span><span class="p">,</span> data <span class="o">=</span> au<span class="p">)</span>
+<a name="True-127"></a>
+<a name="True-128"></a><span class="c1"># create a function suitable for boot that will return the optimism estimates for</span>
+<a name="True-129"></a><span class="c1"># statistics testing models against the full original sample.</span>
+<a name="True-130"></a>compare_opt <span class="o">&lt;-</span> <span class="kr">function</span><span class="p">(</span>orig_data<span class="p">,</span> i<span class="p">){</span>
+<a name="True-131"></a>   <span class="c1"># create the resampled data</span>
+<a name="True-132"></a>   train_data <span class="o">&lt;-</span> orig_data<span class="p">[</span>i<span class="p">,</span> <span class="p">]</span>
+<a name="True-133"></a>
+<a name="True-134"></a>   <span class="c1"># fit the three modelling processes</span>
+<a name="True-135"></a>   model_step <span class="o">&lt;-</span> model_process_step<span class="p">(</span>train_data<span class="p">)</span>
+<a name="True-136"></a>   model_vif  <span class="o">&lt;-</span> model_process_vif<span class="p">(</span>train_data<span class="p">)</span>
+<a name="True-137"></a>   model_full <span class="o">&lt;-</span> lm<span class="p">(</span>MedianIncome <span class="o">~</span> <span class="m">.</span><span class="p">,</span> data <span class="o">=</span> train_data<span class="p">)</span>
+<a name="True-138"></a>   
+<a name="True-139"></a>   <span class="c1"># predict the values on the original, unresampled data</span>
+<a name="True-140"></a>   predict_step <span class="o">&lt;-</span> predict<span class="p">(</span>model_step<span class="p">,</span> newdata <span class="o">=</span> orig_data<span class="p">)</span>
+<a name="True-141"></a>   predict_vif  <span class="o">&lt;-</span> predict<span class="p">(</span>model_vif<span class="p">,</span> newdata <span class="o">=</span> orig_data<span class="p">)</span>
+<a name="True-142"></a>   predict_full  <span class="o">&lt;-</span> predict<span class="p">(</span>model_full<span class="p">,</span> newdata <span class="o">=</span> orig_data<span class="p">)</span>
+<a name="True-143"></a>   
+<a name="True-144"></a>   <span class="c1"># return a vector of 6 summary optimism results</span>
+<a name="True-145"></a>   results <span class="o">&lt;-</span> <span class="kt">c</span><span class="p">(</span>
+<a name="True-146"></a>      step_R2 <span class="o">=</span> R2<span class="p">(</span>fitted<span class="p">(</span>model_step<span class="p">),</span> train_data<span class="o">$</span>MedianIncome<span class="p">)</span> <span class="o">-</span> R2<span class="p">(</span>predict_step<span class="p">,</span> orig_data<span class="o">$</span>MedianIncome<span class="p">),</span>
+<a name="True-147"></a>      vif_R2  <span class="o">=</span> R2<span class="p">(</span>fitted<span class="p">(</span>model_vif<span class="p">),</span> train_data<span class="o">$</span>MedianIncome<span class="p">)</span> <span class="o">-</span> R2<span class="p">(</span>predict_vif<span class="p">,</span> orig_data<span class="o">$</span>MedianIncome<span class="p">),</span>
+<a name="True-148"></a>      full_R2  <span class="o">=</span> R2<span class="p">(</span>fitted<span class="p">(</span>model_full<span class="p">),</span> train_data<span class="o">$</span>MedianIncome<span class="p">)</span> <span class="o">-</span> R2<span class="p">(</span>predict_full<span class="p">,</span> orig_data<span class="o">$</span>MedianIncome<span class="p">),</span>
+<a name="True-149"></a>      step_RMSE <span class="o">=</span> RMSE<span class="p">(</span>fitted<span class="p">(</span>model_step<span class="p">),</span> train_data<span class="o">$</span>MedianIncome<span class="p">)</span> <span class="o">-</span> RMSE<span class="p">(</span>predict_step<span class="p">,</span> orig_data<span class="o">$</span>MedianIncome<span class="p">),</span>
+<a name="True-150"></a>      vif_RMSE  <span class="o">=</span> RMSE<span class="p">(</span>fitted<span class="p">(</span>model_vif<span class="p">),</span> train_data<span class="o">$</span>MedianIncome<span class="p">)</span> <span class="o">-</span> RMSE<span class="p">(</span>predict_vif<span class="p">,</span> orig_data<span class="o">$</span>MedianIncome<span class="p">),</span>
+<a name="True-151"></a>      full_RMSE  <span class="o">=</span> RMSE<span class="p">(</span>fitted<span class="p">(</span>model_full<span class="p">),</span> train_data<span class="o">$</span>MedianIncome<span class="p">)</span> <span class="o">-</span> RMSE<span class="p">(</span>predict_full<span class="p">,</span> orig_data<span class="o">$</span>MedianIncome<span class="p">)</span>
+<a name="True-152"></a>   <span class="p">)</span>
+<a name="True-153"></a>   <span class="kr">return</span><span class="p">(</span>results<span class="p">)</span>
+<a name="True-154"></a><span class="p">}</span>
+<a name="True-155"></a>
+<a name="True-156"></a><span class="c1"># perform bootstrap</span>
+<a name="True-157"></a>res_opt <span class="o">&lt;-</span> boot<span class="p">(</span>au<span class="p">,</span> statistic <span class="o">=</span> compare_opt<span class="p">,</span> R <span class="o">=</span> Repeats<span class="p">)</span>
+<a name="True-158"></a>
+<a name="True-159"></a><span class="c1"># calculate and store the results for later</span>
+<a name="True-160"></a>original <span class="o">&lt;-</span> <span class="kt">c</span><span class="p">(</span>
+<a name="True-161"></a>   RMSE<span class="p">(</span>fitted<span class="p">(</span>orig_step<span class="p">),</span> au<span class="o">$</span>MedianIncome<span class="p">),</span> 
+<a name="True-162"></a>   RMSE<span class="p">(</span>fitted<span class="p">(</span>orig_vif<span class="p">),</span> au<span class="o">$</span>MedianIncome<span class="p">),</span>
+<a name="True-163"></a>   RMSE<span class="p">(</span>fitted<span class="p">(</span>orig_full<span class="p">),</span> au<span class="o">$</span>MedianIncome<span class="p">)</span>
+<a name="True-164"></a><span class="p">)</span>
+<a name="True-165"></a>
+<a name="True-166"></a>optimism <span class="o">&lt;-</span> <span class="kp">apply</span><span class="p">(</span>res_opt<span class="o">$</span><span class="kp">t</span><span class="p">[</span> <span class="p">,</span> <span class="m">4</span><span class="o">:</span><span class="m">6</span><span class="p">],</span> <span class="m">2</span><span class="p">,</span> <span class="kp">mean</span><span class="p">)</span>
+<a name="True-167"></a>enhanced <span class="o">&lt;-</span> original <span class="o">-</span> optimism
+<a name="True-168"></a>
+<a name="True-169"></a>
+<a name="True-170"></a><span class="c1">#------------------repeated cross-validation------------------</span>
+<a name="True-171"></a><span class="c1"># The number of cross validation repeats is the number of bootstrap repeats / 10:</span>
+<a name="True-172"></a>cv_repeat_num <span class="o">&lt;-</span> Repeats <span class="o">/</span> <span class="m">10</span>
+<a name="True-173"></a>
+<a name="True-174"></a><span class="c1"># use caret::train for the two standard models:</span>
+<a name="True-175"></a>the_control <span class="o">&lt;-</span> trainControl<span class="p">(</span>method <span class="o">=</span> <span class="s">&quot;repeatedcv&quot;</span><span class="p">,</span> number <span class="o">=</span> <span class="m">10</span><span class="p">,</span> repeats <span class="o">=</span> cv_repeat_num<span class="p">)</span>
+<a name="True-176"></a>cv_full <span class="o">&lt;-</span> train<span class="p">(</span>MedianIncome <span class="o">~</span> <span class="m">.</span><span class="p">,</span> data <span class="o">=</span> au<span class="p">,</span> method <span class="o">=</span> <span class="s">&quot;lm&quot;</span><span class="p">,</span> trControl <span class="o">=</span> the_control<span class="p">)</span>
+<a name="True-177"></a>cv_step <span class="o">&lt;-</span> train<span class="p">(</span>MedianIncome <span class="o">~</span> <span class="m">.</span><span class="p">,</span> data <span class="o">=</span> au<span class="p">,</span> method <span class="o">=</span> <span class="s">&quot;lmStepAIC&quot;</span><span class="p">,</span> trControl <span class="o">=</span> the_control<span class="p">,</span> trace <span class="o">=</span> <span class="m">0</span><span class="p">)</span>
+<a name="True-178"></a>
+<a name="True-179"></a><span class="c1"># do it by hand for the VIF model:</span>
+<a name="True-180"></a>results <span class="o">&lt;-</span> <span class="kt">numeric</span><span class="p">(</span><span class="m">10</span> <span class="o">*</span> cv_repeat_num<span class="p">)</span>
+<a name="True-181"></a><span class="kr">for</span><span class="p">(</span>j <span class="kr">in</span> <span class="m">0</span><span class="o">:</span><span class="p">(</span>cv_repeat_num <span class="o">-</span> <span class="m">1</span><span class="p">)){</span>
+<a name="True-182"></a>   cv_group <span class="o">&lt;-</span> <span class="kp">sample</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">10</span><span class="p">,</span> <span class="kp">nrow</span><span class="p">(</span>au<span class="p">),</span> replace <span class="o">=</span> <span class="kc">TRUE</span><span class="p">)</span>
+<a name="True-183"></a>   <span class="kr">for</span><span class="p">(</span>i <span class="kr">in</span> <span class="m">1</span><span class="o">:</span><span class="m">10</span><span class="p">){</span>
+<a name="True-184"></a>      train_data <span class="o">&lt;-</span> au<span class="p">[</span>cv_group <span class="o">!=</span> i<span class="p">,</span> <span class="p">]</span>
+<a name="True-185"></a>      test_data <span class="o">&lt;-</span> au<span class="p">[</span>cv_group <span class="o">==</span> i<span class="p">,</span> <span class="p">]</span>
+<a name="True-186"></a>      results<span class="p">[</span>j <span class="o">*</span> <span class="m">10</span> <span class="o">+</span> i<span class="p">]</span> <span class="o">&lt;-</span> RMSE<span class="p">(</span>
+<a name="True-187"></a>         predict<span class="p">(</span>model_process_vif<span class="p">(</span>train_data<span class="p">),</span> newdata <span class="o">=</span> test_data<span class="p">),</span>
+<a name="True-188"></a>         test_data<span class="o">$</span>MedianIncome<span class="p">)</span>
+<a name="True-189"></a>   <span class="p">}</span>
+<a name="True-190"></a><span class="p">}</span>
+<a name="True-191"></a>cv_vif <span class="o">&lt;-</span> <span class="kp">mean</span><span class="p">(</span>results<span class="p">)</span>
+<a name="True-192"></a>
+<a name="True-193"></a>cv_vif_results <span class="o">&lt;-</span> <span class="kt">data.frame</span><span class="p">(</span>
+<a name="True-194"></a>   results <span class="o">=</span> results<span class="p">,</span>
+<a name="True-195"></a>   trial <span class="o">=</span> <span class="kp">rep</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">10</span><span class="p">,</span> cv_repeat_num<span class="p">),</span>
+<a name="True-196"></a>   cv_repeat <span class="o">=</span> <span class="kp">rep</span><span class="p">(</span><span class="m">1</span><span class="o">:</span>cv_repeat_num<span class="p">,</span> each <span class="o">=</span> <span class="m">10</span><span class="p">)</span>
+<a name="True-197"></a><span class="p">)</span>
+<a name="True-198"></a>
+<a name="True-199"></a>
+<a name="True-200"></a><span class="c1">#===============reporting results===============</span>
+<a name="True-201"></a><span class="c1"># combine the three cross-validation results together and combined with</span>
+<a name="True-202"></a><span class="c1"># the bootstrap results from earlier</span>
+<a name="True-203"></a>summary_results <span class="o">&lt;-</span> <span class="kt">data.frame</span><span class="p">(</span><span class="kp">rbind</span><span class="p">(</span>
+<a name="True-204"></a>   simple<span class="p">,</span> 
+<a name="True-205"></a>   enhanced<span class="p">,</span>
+<a name="True-206"></a>   <span class="kt">c</span><span class="p">(</span><span class="kp">mean</span><span class="p">(</span>cv_step<span class="o">$</span>resample<span class="o">$</span>RMSE<span class="p">),</span> 
+<a name="True-207"></a>     cv_vif<span class="p">,</span>
+<a name="True-208"></a>     <span class="kp">mean</span><span class="p">(</span>cv_full<span class="o">$</span>resample<span class="o">$</span>RMSE<span class="p">)</span>
+<a name="True-209"></a>     <span class="p">)</span>
+<a name="True-210"></a>   <span class="p">),</span> check.names <span class="o">=</span> <span class="kc">FALSE</span><span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-211"></a>   mutate<span class="p">(</span>method <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="s">&quot;Simple bootstrap&quot;</span><span class="p">,</span> <span class="s">&quot;Enhanced bootstrap&quot;</span><span class="p">,</span> 
+<a name="True-212"></a>                     <span class="kp">paste</span><span class="p">(</span>cv_repeat_num<span class="p">,</span> <span class="s">&quot;repeats 10-fold\ncross-validation&quot;</span><span class="p">)))</span> <span class="o">%&gt;%</span>
+<a name="True-213"></a>   gather<span class="p">(</span>variable<span class="p">,</span> value<span class="p">,</span> <span class="o">-</span>method<span class="p">)</span>
+<a name="True-214"></a>
+<a name="True-215"></a><span class="c1"># Draw a plot summarising the results</span>
+<a name="True-216"></a>direct.label<span class="p">(</span>
+<a name="True-217"></a>summary_results <span class="o">%&gt;%</span>
+<a name="True-218"></a>   mutate<span class="p">(</span>variable <span class="o">=</span> <span class="kp">factor</span><span class="p">(</span>variable<span class="p">,</span> levels <span class="o">=</span> <span class="kt">c</span><span class="p">(</span>
+<a name="True-219"></a>      <span class="s">&quot;Use all variables&quot;</span><span class="p">,</span> <span class="s">&quot;AIC stepwise selection&quot;</span><span class="p">,</span> <span class="s">&quot;Remove collinear variables&quot;</span>
+<a name="True-220"></a>   <span class="p">)))</span> <span class="o">%&gt;%</span>
+<a name="True-221"></a>   ggplot<span class="p">(</span>aes<span class="p">(</span>y <span class="o">=</span> method<span class="p">,</span> x <span class="o">=</span> value<span class="p">,</span> colour <span class="o">=</span> variable<span class="p">))</span> <span class="o">+</span>
+<a name="True-222"></a>   geom_point<span class="p">(</span>size <span class="o">=</span> <span class="m">3</span><span class="p">)</span> <span class="o">+</span>
+<a name="True-223"></a>   labs<span class="p">(</span>x <span class="o">=</span> <span class="s">&quot;Estimated Root Mean Square Error (higher is worse)\n&quot;</span><span class="p">,</span>
+<a name="True-224"></a>        colour <span class="o">=</span> <span class="s">&quot;Modelling\nstrategy&quot;</span><span class="p">,</span>
+<a name="True-225"></a>        y <span class="o">=</span> <span class="s">&quot;Method of estimating model fit\n&quot;</span><span class="p">,</span>
+<a name="True-226"></a>        caption <span class="o">=</span> <span class="s">&quot;Data from New Zealand Census 2013&quot;</span><span class="p">)</span> <span class="o">+</span>
+<a name="True-227"></a>   ggtitle<span class="p">(</span><span class="s">&quot;Three different validation methods of three different regression strategies&quot;</span><span class="p">,</span>
+<a name="True-228"></a>           subtitle <span class="o">=</span> <span class="s">&quot;Predicting areas&#39; median income based on census variables&quot;</span><span class="p">)</span>
+<a name="True-229"></a>   
+<a name="True-230"></a><span class="p">)</span></code></pre></div>
+
+
+
+</div>
+
+<div class = "container">
+   <div class="col-md-4">
+    
+        <a rel="prev" href="/blog/2016/05/29/standard-deviation-confidence-intervals">
+        <p>&larr; Older</p>
+        <p>Actual coverage of confidence intervals for standard deviation</p>
+        
+        </a>
+    
+    </div>
+    <div class="col-md-4">
+    </div>
+    <div class="col-md-4" style="text-align: right;">
+    
+      </div>
+      </div>
+      
+      
+      
+</div>
+
+
+   
+    <div id="disqus_thread"></div>
+
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+    
+    
+   
+			
+			</div><!-- /.container -->
+
+         
+
+   <div class = "container footer">
+			<footer>
+	    		
+            <p>Follow <a href = "/feed.xml">this blog with RSS</a>.  Or follow <a href = "/feed.r.xml">posts in this blog featuring R with RSS</a>.</p>
+	
+            <p>This blog is built with <a href = "http://jekyllrb.com/">Jekyll</a>, <a href = "http://getbootstrap.com/">Bootstrap</a>, <a href = "https://www.ruby-lang.org/en/">Ruby</a> and <a href = "https://cran.r-project.org/">R</a>.  Read my <a href="/about/acknowledgements.html">acknowledgements</a> for a little more on how.  I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Peter's stats stuff</span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+
+
+			</footer>
+    </div>
+
+
+
+  
+</body>
+</html>
+   
+
+
+
+
+         
