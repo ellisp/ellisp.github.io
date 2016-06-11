@@ -1,0 +1,347 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Announcing new forecastHybrid package</title>
+      	
+         
+         
+            <meta name ="description" content ="The new forecastHybrid package for R by David Shaub and myself provides convenient access to ensemble time series forecasting methods, in any combination of up to five of the modelling approaches from Hyndman's forecast package.  These are auto-selected autoregressive integrated moving average; exponential smoothing state space (both ets and tbats); feed forward neural network with a single hidden layer and lagged inputs; and forecasts of loess-based seasonal decomposition.">
+            <meta property="og:description" content ="The new forecastHybrid package for R by David Shaub and myself provides convenient access to ensemble time series forecasting methods, in any combination of up to five of the modelling approaches from Hyndman's forecast package.  These are auto-selected autoregressive integrated moving average; exponential smoothing state space (both ets and tbats); feed forward neural network with a single hidden layer and lagged inputs; and forecasts of loess-based seasonal decomposition.">
+         
+         <meta property="og:site_name" content="Peter's stats stuff" />
+         <meta property="og:title" content="Announcing new forecastHybrid package" />
+         
+            <meta property="og:image" content="http://ellisp.github.io/img/0039-unemployment.png" />
+         
+         <meta property="og:url" content="http://ellisp.github.io/blog/2016/05/07/forecastHybrid/" />
+         <meta property="og:author" content= "https://www.facebook.com/peter.ellis.353" />
+         <meta property="og:type" content="article" />
+           
+          <link href="/css/bootstrap.min.css" rel ="stylesheet">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet">
+            <link href="/css/custom.css" rel ="stylesheet">       
+     <link rel="stylesheet" href="/css/Pygments/autumn.css">      
+     <link rel="stylesheet" href="/css/Pygments/custom.css">      
+            
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="Peter's stats stuff by Peter Ellis"
+      href="/feed.xml">
+
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+         <script src="/js/bootstrap.min.js"></script>
+         
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Peter's stats stuff</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">All blog posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">Ordered by date</a></li>
+                  <li><a href="/blog/index_by_tag.html">Grouped by subject matter</a></li>
+                  <li><a href = /blog/2016/06/05/bootstrap-cv-strategies>Most recent post</a></li>
+                 </ul>
+            </li>
+              <li><a href="/blog/showcase.html">Showcase</a></li>
+              <li><a href="/presentations/index.html">Presentations</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			    <div class="jumbotron">
+      <div class="container">
+        <h1>Announcing new forecastHybrid package</h1>
+         <p class="meta">07 May 2016</p>
+        
+      </div>
+    </div>
+
+
+
+
+<div class = "post-summary">
+<h2>TL;DR Summary:</h2>
+   The new forecastHybrid package for R by David Shaub and myself provides convenient access to ensemble time series forecasting methods, in any combination of up to five of the modelling approaches from Hyndman's forecast package.  These are auto-selected autoregressive integrated moving average; exponential smoothing state space (both ets and tbats); feed forward neural network with a single hidden layer and lagged inputs; and forecasts of loess-based seasonal decomposition.
+   <hr></hr>
+</div>
+
+<div class="post">
+<div class="col-md-2">
+
+</div>
+  <div class="col-md-8">
+
+  <h2 id="background-and-motivation">Background and motivation</h2>
+<p>In an <a href="/blog/2016/01/30/hybrid-forecasts/">earlier post</a> I explored ways that might improve on standard methods for prediction intervals from univariate time series forecasting.  One of the tools I used was a convenience function to combine forecasts from Rob Hyndman’s <code class="highlighter-rouge">ets</code> and <code class="highlighter-rouge">auto.arima</code> functions.  David Shaub (with a small contribution from myself) has now built and published an R package <code class="highlighter-rouge">forecastHybrid</code> that expands on this idea to create ensembles from other forecasting methods from Hyndman’s <code class="highlighter-rouge">forecast</code> package.</p>
+
+<p>The motivation is to make it easy to improve forecasts, both their point estimates and their prediction intervals.  It has been well known for many years that taking the average of rival forecast methods improves the performance of forecasts.  This new R package aims to make it as easy for people to do this as to fit the individual models in the first place.</p>
+
+<h2 id="installation">Installation</h2>
+<p>The stable version of the <code class="highlighter-rouge">forecastHybrid</code> package is on CRAN, and is installed the usual way:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="w"> 
+</span><span class="n">install.packages</span><span class="p">(</span><span class="s2">"forecastHybrid"</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">forecastHybrid</span><span class="p">)</span><span class="w">   </span></code></pre></figure>
+
+<p>It requires at least version 7.1 of Rob Hyndman’s <code class="highlighter-rouge">forecast</code> package, which is a recent upgrade.</p>
+
+<h2 id="usage">Usage</h2>
+
+<h3 id="basic">Basic</h3>
+<p>Usage is a two step process:</p>
+
+<ul>
+  <li>fitting the required time series models</li>
+  <li>forecasting them and taking a weighted average</li>
+</ul>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="w"> 
+</span><span class="n">mod1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">hybridModel</span><span class="p">(</span><span class="n">AirPassengers</span><span class="p">)</span><span class="w">
+</span><span class="n">fc1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">forecast</span><span class="p">(</span><span class="n">mod1</span><span class="p">)</span><span class="w">
+</span><span class="n">fc1</span><span class="w">
+
+         </span><span class="n">Point</span><span class="w"> </span><span class="n">Forecast</span><span class="w">    </span><span class="n">Lo</span><span class="w"> </span><span class="m">80</span><span class="w">    </span><span class="n">Hi</span><span class="w"> </span><span class="m">80</span><span class="w">    </span><span class="n">Lo</span><span class="w"> </span><span class="m">95</span><span class="w">    </span><span class="n">Hi</span><span class="w"> </span><span class="m">95</span><span class="w">
+</span><span class="n">Jan</span><span class="w"> </span><span class="m">1961</span><span class="w">       </span><span class="m">449.0761</span><span class="w"> </span><span class="m">420.9284</span><span class="w"> </span><span class="m">474.4528</span><span class="w"> </span><span class="m">409.9071</span><span class="w"> </span><span class="m">486.2105</span><span class="w">
+</span><span class="n">Feb</span><span class="w"> </span><span class="m">1961</span><span class="w">       </span><span class="m">430.5014</span><span class="w"> </span><span class="m">402.5180</span><span class="w"> </span><span class="m">463.4376</span><span class="w"> </span><span class="m">392.8622</span><span class="w"> </span><span class="m">477.7219</span><span class="w">
+</span><span class="n">Mar</span><span class="w"> </span><span class="m">1961</span><span class="w">       </span><span class="m">476.6044</span><span class="w"> </span><span class="m">427.8241</span><span class="w"> </span><span class="m">541.2952</span><span class="w"> </span><span class="m">416.7423</span><span class="w"> </span><span class="m">560.7848</span><span class="w">
+</span><span class="n">Apr</span><span class="w"> </span><span class="m">1961</span><span class="w">       </span><span class="m">489.6462</span><span class="w"> </span><span class="m">445.6985</span><span class="w"> </span><span class="m">533.1953</span><span class="w"> </span><span class="m">425.6737</span><span class="w"> </span><span class="m">554.8180</span><span class="w">
+</span><span class="n">May</span><span class="w"> </span><span class="m">1961</span><span class="w">       </span><span class="m">499.3256</span><span class="w"> </span><span class="m">443.0128</span><span class="w"> </span><span class="m">546.2434</span><span class="w"> </span><span class="m">420.7317</span><span class="w"> </span><span class="m">570.5889</span><span class="w">
+</span><span class="n">Jun</span><span class="w"> </span><span class="m">1961</span><span class="w">       </span><span class="m">565.3663</span><span class="w"> </span><span class="m">498.8558</span><span class="w"> </span><span class="m">624.6220</span><span class="w"> </span><span class="m">471.1949</span><span class="w"> </span><span class="m">654.7751</span><span class="w">
+</span><span class="n">Jul</span><span class="w"> </span><span class="m">1961</span><span class="w">       </span><span class="m">642.3351</span><span class="w"> </span><span class="m">550.5136</span><span class="w"> </span><span class="m">710.4620</span><span class="w"> </span><span class="m">517.2336</span><span class="w"> </span><span class="m">747.2133</span><span class="w">
+</span><span class="o">&lt;</span><span class="n">truncated</span><span class="o">&gt;</span></code></pre></figure>
+
+<p>Prediction intervals are based on the conservative (and accurate, at least for the auto.arima / ets combination and the M3 competition data) method I set out in my <a href="/blog/2016/01/30/hybrid-forecasts/">earlier post</a> on hybrid methods.  That is, at each time period of the forecast, the points of the prediction intervals of all the component models in the ensemble that are highest in absolute magnitude are used for the boundaries of the ensemble prediction interval.  This method seems to give truer prediction intervals than any individual model’s prediction intervals, which are usually too narrow (ie give a false sense of precision) because they don’t take model uncertainty into account.  This is an active area of investigation; <a href="https://github.com/ellisp/forecastHybrid/issues/19">we’re not sure we’re going to keep them calculated this way</a>.</p>
+
+<p>The object created by the above procedure is of class <code class="highlighter-rouge">forecast</code> and the base graphics plotting method from Hyndman’s <code class="highlighter-rouge">forecast</code> package applies:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="w"> 
+</span><span class="n">par</span><span class="p">(</span><span class="n">mar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="m">4</span><span class="p">,</span><span class="w"> </span><span class="m">8</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">))</span><span class="w">
+</span><span class="n">plot</span><span class="p">(</span><span class="n">fc1</span><span class="p">,</span><span class="w"> </span><span class="n">ylab</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"International airline passengers"</span><span class="p">)</span></code></pre></figure>
+
+<p><img src="/img/0039-airpassengers1.svg" alt="basic" /></p>
+
+<h3 id="custom-combinations-and-weights">Custom combinations and weights</h3>
+<p>Controlling which of the five types of available models are used in the ensemble is done via the <code class="highlighter-rouge">models</code> argument of <code class="highlighter-rouge">hybridModel</code>.  <code class="highlighter-rouge">models</code> is a character string of any combination of <code class="highlighter-rouge">a</code>, <code class="highlighter-rouge">e</code>, <code class="highlighter-rouge">n</code>, <code class="highlighter-rouge">s</code>, and <code class="highlighter-rouge">t</code> for <code class="highlighter-rouge">auto.arima</code>, <code class="highlighter-rouge">ets</code>, <code class="highlighter-rouge">nnetar</code>, <code class="highlighter-rouge">stlm</code> and <code class="highlighter-rouge">tbats</code> respectively.  In the code below I combine just <code class="highlighter-rouge">auto.arima</code> and <code class="highlighter-rouge">ets</code> (exponential state space smoothing) models, two component models that make up a high-performing (on average) forecasting method.</p>
+
+<p>I also use this example to show how, instead of weighting the models equally, we can specify greater weight to be given to the model that fits the historical data better.  This procedure isn’t recommended - it seems better just to give the models a priori weights, usually equal, rather than let the data dictate them.  Why this is the case is out of my scope just here.  Here’s the example:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="w"> 
+</span><span class="n">mod2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">hybridModel</span><span class="p">(</span><span class="n">AirPassengers</span><span class="p">,</span><span class="w"> </span><span class="n">models</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"ae"</span><span class="p">,</span><span class="w">
+                    </span><span class="n">weights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"insample.errors"</span><span class="p">)</span><span class="w">
+</span><span class="n">fc2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">forecast</span><span class="p">(</span><span class="n">mod2</span><span class="p">)</span><span class="w">
+</span><span class="n">par</span><span class="p">(</span><span class="n">mar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="m">4</span><span class="p">,</span><span class="w"> </span><span class="m">8</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">))</span><span class="w">
+</span><span class="n">plot</span><span class="p">(</span><span class="n">fc2</span><span class="p">,</span><span class="w"> </span><span class="n">ylab</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"International airline passengers"</span><span class="p">)</span></code></pre></figure>
+
+<p><img src="/img/0039-airpassengers2.svg" alt="ae" /></p>
+
+<h3 id="external-regressors">External regressors</h3>
+<p>While most of the candidate models for an ensemble are univariate methods, <code class="highlighter-rouge">auto.arima</code> and <code class="highlighter-rouge">nnetar</code> models can incorporate an <code class="highlighter-rouge">xreg</code> argument.  If you have actual values for the forecast period of external regressors, it’s often useful to use them in the forecasting process.  The forecastHybrid approach lets you do this with the component models that support <code class="highlighter-rouge">xreg</code>, while ignoring it and fitting univariate time series models with other component models (eg <code class="highlighter-rouge">ets</code>).</p>
+
+<p>To pass <code class="highlighter-rouge">xreg</code> or other parameters through to the model-fitting functions, the user passes up to five lists of parameters (<code class="highlighter-rouge">a.arg</code>, <code class="highlighter-rouge">e.arg</code>, <code class="highlighter-rouge">n.arg</code>, <code class="highlighter-rouge">s.arg</code> and <code class="highlighter-rouge">t.arg</code>).  Here’s an example showing how to pass through xreg parameters to <code class="highlighter-rouge">auto.arima</code> for automated ARIMA modelling and <code class="highlighter-rouge">nnetar</code> for the feed-forward neural network model.  This example tries to forecast 12 months of unemployment in Wisconsin, given known values of unemployment in surrounding states and for the USA as a whole (this isn’t a particularly realistic example in itself, but is of a type of forecast that does occur in reality, for example when one economic time series is only available after a much longer delay than other more timely measures).</p>
+
+<p>The data management and forecast question below has been pinched from <a href="http://biba.etsii.upm.es/web/tiki-view_blog_post.php?postId=26">an example on the BIBA blog by joaquin</a></p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="w"> 
+</span><span class="c1"># adapted from http://biba.etsii.upm.es/web/tiki-view_blog_post.php?postId=26 
+# donwload individual datasets from QUANDL
+</span><span class="n">wi</span><span class="o">&lt;-</span><span class="n">read.csv</span><span class="p">(</span><span class="s1">'http://www.quandl.com/api/v1/datasets/FRED/WIUR.csv?&amp;auth_token=gigXwpxd6Ex91cjgz1B7&amp;trim_start=1976-01-01&amp;trim_end=2013-04-01&amp;sort_order=desc'</span><span class="p">,</span><span class="w"> </span><span class="n">colClasses</span><span class="o">=</span><span class="nf">c</span><span class="p">(</span><span class="s1">'Date'</span><span class="o">=</span><span class="s1">'Date'</span><span class="p">))</span><span class="w">
+</span><span class="n">us</span><span class="o">&lt;-</span><span class="n">read.csv</span><span class="p">(</span><span class="s1">'http://www.quandl.com/api/v1/datasets/FRED/UNRATE.csv?&amp;auth_token=gigXwpxd6Ex91cjgz1B7&amp;trim_start=1976-01-01&amp;trim_end=2013-04-01&amp;sort_order=desc'</span><span class="p">,</span><span class="w"> </span><span class="n">colClasses</span><span class="o">=</span><span class="nf">c</span><span class="p">(</span><span class="s1">'Date'</span><span class="o">=</span><span class="s1">'Date'</span><span class="p">))</span><span class="w">
+</span><span class="n">il</span><span class="o">&lt;-</span><span class="n">read.csv</span><span class="p">(</span><span class="s1">'http://www.quandl.com/api/v1/datasets/FRED/ILUR.csv?&amp;auth_token=gigXwpxd6Ex91cjgz1B7&amp;trim_start=1976-01-01&amp;trim_end=2013-04-01&amp;sort_order=desc'</span><span class="p">,</span><span class="w"> </span><span class="n">colClasses</span><span class="o">=</span><span class="nf">c</span><span class="p">(</span><span class="s1">'Date'</span><span class="o">=</span><span class="s1">'Date'</span><span class="p">))</span><span class="w">
+</span><span class="n">mi</span><span class="o">&lt;-</span><span class="n">read.csv</span><span class="p">(</span><span class="s1">'http://www.quandl.com/api/v1/datasets/FRED/MIUR.csv?&amp;auth_token=gigXwpxd6Ex91cjgz1B7&amp;trim_start=1976-01-01&amp;trim_end=2013-04-01&amp;sort_order=desc'</span><span class="p">,</span><span class="w"> </span><span class="n">colClasses</span><span class="o">=</span><span class="nf">c</span><span class="p">(</span><span class="s1">'Date'</span><span class="o">=</span><span class="s1">'Date'</span><span class="p">))</span><span class="w">
+</span><span class="n">mn</span><span class="o">&lt;-</span><span class="n">read.csv</span><span class="p">(</span><span class="s1">'http://www.quandl.com/api/v1/datasets/FRED/MNUR.csv?&amp;auth_token=gigXwpxd6Ex91cjgz1B7&amp;trim_start=1976-01-01&amp;trim_end=2013-04-01&amp;sort_order=desc'</span><span class="p">,</span><span class="w"> </span><span class="n">colClasses</span><span class="o">=</span><span class="nf">c</span><span class="p">(</span><span class="s1">'Date'</span><span class="o">=</span><span class="s1">'Date'</span><span class="p">))</span><span class="w">
+</span><span class="n">io</span><span class="o">&lt;-</span><span class="n">read.csv</span><span class="p">(</span><span class="s1">'http://www.quandl.com/api/v1/datasets/FRED/IAUR.csv?&amp;auth_token=gigXwpxd6Ex91cjgz1B7&amp;trim_start=1976-01-01&amp;trim_end=2013-04-01&amp;sort_order=desc'</span><span class="p">,</span><span class="w"> </span><span class="n">colClasses</span><span class="o">=</span><span class="nf">c</span><span class="p">(</span><span class="s1">'Date'</span><span class="o">=</span><span class="s1">'Date'</span><span class="p">))</span><span class="w">
+
+</span><span class="c1">#merging the data into one dataframe
+</span><span class="n">unemp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">merge</span><span class="p">(</span><span class="n">wi</span><span class="p">,</span><span class="w"> </span><span class="n">io</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'DATE'</span><span class="p">);</span><span class="w"> </span><span class="n">colnames</span><span class="p">(</span><span class="n">unemp</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s1">'DATE'</span><span class="p">,</span><span class="w"> </span><span class="s1">'wi'</span><span class="p">,</span><span class="w"> </span><span class="s1">'io'</span><span class="p">)</span><span class="w">
+</span><span class="n">unemp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">merge</span><span class="p">(</span><span class="n">unemp</span><span class="p">,</span><span class="w"> </span><span class="n">mi</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'DATE'</span><span class="p">);</span><span class="w"> </span><span class="n">colnames</span><span class="p">(</span><span class="n">unemp</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s1">'DATE'</span><span class="p">,</span><span class="w"> </span><span class="s1">'wi'</span><span class="p">,</span><span class="w"> </span><span class="s1">'io'</span><span class="p">,</span><span class="w"> </span><span class="s1">'mi'</span><span class="p">)</span><span class="w">
+</span><span class="n">unemp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">merge</span><span class="p">(</span><span class="n">unemp</span><span class="p">,</span><span class="w"> </span><span class="n">mn</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'DATE'</span><span class="p">);</span><span class="w"> </span><span class="n">colnames</span><span class="p">(</span><span class="n">unemp</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s1">'DATE'</span><span class="p">,</span><span class="w"> </span><span class="s1">'wi'</span><span class="p">,</span><span class="w"> </span><span class="s1">'io'</span><span class="p">,</span><span class="w"> </span><span class="s1">'mi'</span><span class="p">,</span><span class="w"> </span><span class="s1">'mn'</span><span class="p">)</span><span class="w">
+</span><span class="n">unemp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">merge</span><span class="p">(</span><span class="n">unemp</span><span class="p">,</span><span class="w"> </span><span class="n">us</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'DATE'</span><span class="p">);</span><span class="w"> </span><span class="n">colnames</span><span class="p">(</span><span class="n">unemp</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s1">'DATE'</span><span class="p">,</span><span class="w"> </span><span class="s1">'wi'</span><span class="p">,</span><span class="w"> </span><span class="s1">'io'</span><span class="p">,</span><span class="w"> </span><span class="s1">'mi'</span><span class="p">,</span><span class="w"> </span><span class="s1">'mn'</span><span class="p">,</span><span class="w"> </span><span class="s1">'us'</span><span class="p">)</span><span class="w">
+</span><span class="n">unemp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">merge</span><span class="p">(</span><span class="n">unemp</span><span class="p">,</span><span class="w"> </span><span class="n">il</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'DATE'</span><span class="p">);</span><span class="w"> </span><span class="n">colnames</span><span class="p">(</span><span class="n">unemp</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s1">'DATE'</span><span class="p">,</span><span class="w"> </span><span class="s1">'wi'</span><span class="p">,</span><span class="w"> </span><span class="s1">'io'</span><span class="p">,</span><span class="w"> </span><span class="s1">'mi'</span><span class="p">,</span><span class="w"> </span><span class="s1">'mn'</span><span class="p">,</span><span class="w"> </span><span class="s1">'us'</span><span class="p">,</span><span class="w"> </span><span class="s1">'il'</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># break into historical and forecast periods
+</span><span class="n">n</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">unemp</span><span class="p">)</span><span class="w">
+</span><span class="n">unemp_hist</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">unemp</span><span class="p">[</span><span class="m">1</span><span class="o">:</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">12</span><span class="p">),</span><span class="w"> </span><span class="p">]</span><span class="w">
+</span><span class="n">unemp_fc</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">unemp</span><span class="p">[(</span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">11</span><span class="p">)</span><span class="o">:</span><span class="m">448</span><span class="p">,]</span><span class="w">
+</span><span class="n">unemp_hist_ts</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ts</span><span class="p">(</span><span class="n">unemp_hist</span><span class="o">$</span><span class="n">wi</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1976</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">),</span><span class="w"> </span><span class="n">frequency</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">12</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># fit hybrid model, passing arguments to auto.arima with a.args and to
+# nnetar with n.args
+</span><span class="n">mod4</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">hybridModel</span><span class="p">(</span><span class="n">unemp_hist_ts</span><span class="p">,</span><span class="w"> </span><span class="n">models</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"aen"</span><span class="p">,</span><span class="w"> 
+                    </span><span class="n">a.args</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="n">xreg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">unemp_hist</span><span class="p">[</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="o">:</span><span class="m">7</span><span class="p">]),</span><span class="w">
+                    </span><span class="n">n.args</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="n">xreg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">unemp_hist</span><span class="p">[</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="o">:</span><span class="m">7</span><span class="p">]))</span><span class="w">
+
+</span><span class="c1"># fit the forecast - note that you have to supply the future xreg values,
+# but you only need to do it once (both nnetar and auto.arima use the same 
+# ones):                    
+</span><span class="n">par</span><span class="p">(</span><span class="n">mar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="m">4</span><span class="p">,</span><span class="w"> </span><span class="m">6</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">))</span><span class="w">
+</span><span class="n">plot</span><span class="p">(</span><span class="n">fc4</span><span class="p">,</span><span class="w"> </span><span class="n">ylab</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Unemployment in Wisonsin"</span><span class="p">,</span><span class="w"> 
+     </span><span class="n">sub</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Forecasts based on unemployment in\nUSA, Iowa, Michigan, Minnesota, and Illinois"</span><span class="p">)</span></code></pre></figure>
+
+<p><img src="/img/0039-unemployment.svg" alt="unemp" /></p>
+
+<p>There’s a lot more functionality in this package, mostly just inherited from Hyndman’s <code class="highlighter-rouge">forecast</code> package.  So <a href="https://cran.rstudio.com/web/packages/forecastHybrid/">check it out on CRAN</a>.</p>
+
+<h2 id="future-work">Future work</h2>
+<p>Future work on the package, if / when we get around to it, is likely to include:</p>
+
+<ul>
+  <li>Allowing the weights between the models to be set based on cross-validation performance of the component models</li>
+  <li>Allowing weights between the models to change over different forecast horizons (eg some models are known to be generally better at predicting long term than short term, so could be given extra weight as the forecast horizon increase)</li>
+  <li><code class="highlighter-rouge">ggplot2</code> graphics integration</li>
+  <li>More models</li>
+  <li>Improved parallelization (it already works with parallel processing, but this could be improved between models)</li>
+  <li>Automating model selection</li>
+  <li>Various under the hood things</li>
+</ul>
+
+<p>I also hope to do some more work <em>with</em> the package, eg more systematic tests of the performance of these hybrid model forecasts both as point forecasters and prediction intervals.</p>
+
+<p>Bugs, issues and enhancement requests can be <a href="https://github.com/ellisp/forecastHybrid/issues">filed at GitHub</a>.</p>
+
+<p>Nearly all the credit for this package goes to David Shaub; although it’s hosted on my GitHub account, my contribution has been small.  So thanks David for a great convenient set of functionality for forecasters using R.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="w"> 
+  </span><span class="o">@</span><span class="n">Manual</span><span class="p">{,</span><span class="w">
+    </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="n">forecastHybrid</span><span class="o">:</span><span class="w"> </span><span class="n">Convenient</span><span class="w"> </span><span class="n">Functions</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">Ensemble</span><span class="w"> </span><span class="n">Time</span><span class="w"> </span><span class="n">Series</span><span class="w"> </span><span class="n">Forecasts</span><span class="p">},</span><span class="w">
+    </span><span class="n">author</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="n">David</span><span class="w"> </span><span class="n">Shaub</span><span class="p">},</span><span class="w">
+    </span><span class="n">year</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="m">2016</span><span class="p">},</span><span class="w">
+    </span><span class="n">note</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="n">R</span><span class="w"> </span><span class="n">package</span><span class="w"> </span><span class="n">version</span><span class="w"> </span><span class="m">0.1.5</span><span class="p">},</span><span class="w">
+    </span><span class="n">url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="n">https</span><span class="o">://</span><span class="n">CRAN.R</span><span class="o">-</span><span class="n">project.org</span><span class="o">/</span><span class="n">package</span><span class="o">=</span><span class="n">forecastHybrid</span><span class="p">},</span><span class="w">
+  </span><span class="p">}</span></code></pre></figure>
+
+
+
+</div>
+
+<div class = "container">
+   <div class="col-md-4">
+    
+        <a rel="prev" href="/blog/2016/04/16/nzelect4">
+        <p>&larr; Older</p>
+        <p>Election analysis contest entry part 4 - drivers of preference for Green over Labour party</p>
+        
+        </a>
+    
+    </div>
+    <div class="col-md-4">
+    </div>
+    <div class="col-md-4" style="text-align: right;">
+     
+        <a rel="next" href="/blog/2016/05/14/scots-female-ratio">
+        <p>Newer &rarr;</p>
+        <p>Minimalist Tufte-inspired axis text with Scottish-New Zealand historical material</p>
+        
+        </a>
+    
+      </div>
+      </div>
+      
+      
+      
+</div>
+
+
+   
+    <div id="disqus_thread"></div>
+
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+    
+    
+   
+			
+			</div><!-- /.container -->
+
+         
+
+   <div class = "container footer">
+			<footer>
+	    		
+            <p>Follow <a href = "/feed.xml">this blog with RSS</a>.  Or follow <a href = "/feed.r.xml">posts in this blog featuring R with RSS</a>.</p>
+	
+            <p>This blog is built with <a href = "http://jekyllrb.com/">Jekyll</a>, <a href = "http://getbootstrap.com/">Bootstrap</a>, <a href = "https://www.ruby-lang.org/en/">Ruby</a> and <a href = "https://cran.r-project.org/">R</a>.  Read my <a href="/about/acknowledgements.html">acknowledgements</a> for a little more on how.  I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Peter's stats stuff</span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+
+
+			</footer>
+    </div>
+
+
+
+  
+</body>
+</html>
+   
+
+
+
+
+         

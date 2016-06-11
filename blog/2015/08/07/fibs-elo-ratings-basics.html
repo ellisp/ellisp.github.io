@@ -1,0 +1,392 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Simulating backgammon players' Elo ratings</title>
+      	
+         
+         
+            <meta name ="description" content ="I show how to convert from the Elo ratings of a backgammon player and their opponent and match length to the theoretical probability of winning.  I simulate a simple two player backgammon forum to show how Elo ratings vary at random around players 'true' skill level.  Along the way, I demonstrate making animated graphics for a webpage.">
+            <meta property="og:description" content ="I show how to convert from the Elo ratings of a backgammon player and their opponent and match length to the theoretical probability of winning.  I simulate a simple two player backgammon forum to show how Elo ratings vary at random around players 'true' skill level.  Along the way, I demonstrate making animated graphics for a webpage.">
+         
+         <meta property="og:site_name" content="Peter's stats stuff" />
+         <meta property="og:title" content="Simulating backgammon players' Elo ratings" />
+         
+            <meta property="og:image" content="/img/0002-EloProbs.gif" />
+         
+         <meta property="og:url" content="http://ellisp.github.io/blog/2015/08/07/fibs-elo-ratings-basics/" />
+         <meta property="og:author" content= "https://www.facebook.com/peter.ellis.353" />
+         <meta property="og:type" content="article" />
+           
+          <link href="/css/bootstrap.min.css" rel ="stylesheet">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet">
+            <link href="/css/custom.css" rel ="stylesheet">       
+     <link rel="stylesheet" href="/css/Pygments/autumn.css">      
+     <link rel="stylesheet" href="/css/Pygments/custom.css">      
+            
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="Peter's stats stuff by Peter Ellis"
+      href="/feed.xml">
+
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+         <script src="/js/bootstrap.min.js"></script>
+         
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Peter's stats stuff</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">All blog posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">Ordered by date</a></li>
+                  <li><a href="/blog/index_by_tag.html">Grouped by subject matter</a></li>
+                  <li><a href = /blog/2016/06/05/bootstrap-cv-strategies>Most recent post</a></li>
+                 </ul>
+            </li>
+              <li><a href="/blog/showcase.html">Showcase</a></li>
+              <li><a href="/presentations/index.html">Presentations</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			    <div class="jumbotron">
+      <div class="container">
+        <h1>Simulating backgammon players' Elo ratings</h1>
+         <p class="meta">07 Aug 2015</p>
+        
+      </div>
+    </div>
+
+
+
+
+<div class = "post-summary">
+<h2>TL;DR Summary:</h2>
+   I show how to convert from the Elo ratings of a backgammon player and their opponent and match length to the theoretical probability of winning.  I simulate a simple two player backgammon forum to show how Elo ratings vary at random around players 'true' skill level.  Along the way, I demonstrate making animated graphics for a webpage.
+   <hr></hr>
+</div>
+
+<div class="post">
+<div class="col-md-2">
+
+</div>
+  <div class="col-md-8">
+
+  <p>##Probabilities of winning with a given rating
+Backgammon clubs and on-line forums use a modified form of the <a href="https://en.wikipedia.org/wiki/Elo_rating_system">Elo rating system</a> to keep track of how well individuals have played and draw inferences about their underlying strength.  The higher the rating, the stronger the player.  Players with higher ratings are inferred to be stronger than those with lower ratings and hence are expected to win; and the longer the match, the more likely the greater skill level will overcome the random chance of the dice.  The animated plot below shows the expected probabilities of two players in the <a href="http://www.fibs.com/">FIBS (First Internet Backgammon Server)</a> internet forum, where players start at 1500 and the very best reach over 2000.</p>
+
+<p><img src="/img/0002-EloProbs.gif" alt="Animated heatmap of player probabilities of winning" style="width: 500px;" /></p>
+
+<p>When the two players have the same rating, they are expected to have a 50/50 chance of winning, and this causes the constant diagonal line in the animation above.  When one player is better than the other they have a higher chance of winning, represented for Player A by the increasingly blue space in the bottom right of the plot and the numbers (which are estimated probabilities) labelling the contour lines.  The actual formula used on FIBS and illustrated above is <a href="http://www.fibs.com/ratings.html">defined by on the FIBS site</a> as:</p>
+
+<p><code class="highlighter-rouge">Winning prob. = 1 - (1 / (10 ^ ((YOU - HIM) * SQRT(ML) / 2000) + 1))</code></p>
+
+<p>(As an aside, I don’t think there is a strong theoretical reason for the <code class="highlighter-rouge">SQRT(ML)</code> in that formula.  With the complications of the doubling cube I very much doubt that the relationship of the probability winning to match length is as simple as that.  But it’s a reasonable empirical approximation; I might blog more about that another time.)</p>
+
+<p>Now, here’s how I made that animation.  In the R code below, first, I load up some functionality and the Google font I use for this blog.  Then I define a function that estimates the probability of a player winning using the FIBS formula above.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">dplyr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">showtext</span><span class="p">)</span><span class="w"> </span><span class="c1"># for fonts
+</span><span class="n">library</span><span class="p">(</span><span class="n">RColorBrewer</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">directlabels</span><span class="p">)</span><span class="w"> </span><span class="c1"># for labels on contour lines
+</span><span class="n">library</span><span class="p">(</span><span class="n">ggplot2</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">forecast</span><span class="p">)</span><span class="w"> </span><span class="c1"># for auto.arima later on
+</span><span class="w">
+</span><span class="n">font.add.google</span><span class="p">(</span><span class="s2">"Poppins"</span><span class="p">,</span><span class="w"> </span><span class="s2">"myfont"</span><span class="p">)</span><span class="w">
+</span><span class="n">showtext.auto</span><span class="p">()</span><span class="w">
+</span><span class="c1">#==================helper functions=====================
+</span><span class="w">
+</span><span class="n">fibs_p</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="n">ml</span><span class="p">){</span><span class="w">
+   </span><span class="c1"># function to determine the expected probability of player a winning a bachgammon match
+</span><span class="w">   </span><span class="c1"># against player b of length ml, with a and b representing their FIBS Elo ratings
+</span><span class="w">   </span><span class="n">tmp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="p">(</span><span class="m">1</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="m">10</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="p">((</span><span class="n">a</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nf">sqrt</span><span class="p">(</span><span class="n">ml</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">2000</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">1</span><span class="p">))</span><span class="w">
+   </span><span class="nf">return</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">   </span></code></pre></figure>
+
+<p>The strategy to create the animation is simple:</p>
+
+<ul>
+  <li>Create all the combinations of two players’ Elo ratings.</li>
+  <li>Loop through 23 possible match lengths, calculating the probabilities of A winning for each combination of Elo ratings at that match length</li>
+  <li>Draw a still image heatmap for each of those 23 match lengths using <code class="highlighter-rouge">ggplot2</code></li>
+  <li>Compile the images into a single animated Gif using <a href="http://studio.imagemagick.org/script/index.php">ImageMagick</a>.</li>
+</ul>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#================heat maps showing probability of winning
+</span><span class="w">
+</span><span class="c1"># create a matrix of players A and B's possible Elo ratings
+</span><span class="n">a</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">seq</span><span class="p">(</span><span class="n">from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1000</span><span class="p">,</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2000</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="p">)</span><span class="w">
+</span><span class="n">mat</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">expand.grid</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">rename</span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Var1</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Var2</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># create a folder to hold the images and navigate to it
+</span><span class="n">dir.create</span><span class="p">(</span><span class="s2">"tmp0002"</span><span class="p">)</span><span class="w">
+</span><span class="n">owd</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">setwd</span><span class="p">(</span><span class="s2">"tmp0002"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># cycle through a range of possible match lengths, drawing a plot for each
+</span><span class="n">matchlengths</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">seq</span><span class="p">(</span><span class="n">from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">23</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+</span><span class="n">res</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">150</span><span class="w">
+
+</span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="nf">length</span><span class="p">(</span><span class="n">matchlengths</span><span class="p">)){</span><span class="w">
+   </span><span class="n">df1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">mat</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="n">mutate</span><span class="p">(</span><span class="n">probs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fibs_p</span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="n">ml</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">matchlengths</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span><span class="w">
+   
+   </span><span class="n">p</span><span class="m">1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ggplot</span><span class="p">(</span><span class="n">df1</span><span class="p">,</span><span class="w">  </span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="n">z</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">probs</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">geom_tile</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">probs</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">theme_minimal</span><span class="p">(</span><span class="n">base_family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"myfont"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">scale_fill_gradientn</span><span class="p">(</span><span class="n">colours</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">brewer.pal</span><span class="p">(</span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="s2">"Spectral"</span><span class="p">),</span><span class="w"> </span><span class="n">limits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">scale_colour_gradientn</span><span class="p">(</span><span class="n">colours</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"black"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">stat_contour</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">..level..</span><span class="p">),</span><span class="w"> </span><span class="n">binwidth</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">.1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="c1"># force contours to be same distance each image
+</span><span class="w">      </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Player A Elo rating"</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Player B Elo rating"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">theme</span><span class="p">(</span><span class="n">legend.position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"none"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">coord_equal</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">ggtitle</span><span class="p">(</span><span class="n">paste0</span><span class="p">(</span><span class="s2">"Probability of Player A winning a match to "</span><span class="p">,</span><span class="w"> </span><span class="n">matchlengths</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span><span class="w">
+   
+   </span><span class="n">png</span><span class="p">(</span><span class="n">paste0</span><span class="p">(</span><span class="nb">letters</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="w"> </span><span class="s2">".png"</span><span class="p">),</span><span class="w"> </span><span class="n">res</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="n">res</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">res</span><span class="p">,</span><span class="w"> </span><span class="n">bg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"white"</span><span class="p">)</span><span class="w">
+      </span><span class="n">print</span><span class="p">(</span><span class="n">direct.label</span><span class="p">(</span><span class="n">p</span><span class="m">1</span><span class="p">))</span><span class="w"> </span><span class="c1"># direct labels used to label the contour points
+</span><span class="w">   </span><span class="n">dev.off</span><span class="p">()</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="c1"># compile the images into a single animated Gif with ImageMagick.  Note that
+# the {animation} package provides R wrappers to do this but they often get
+# confused (eg clashes with Windows' convert) and it's easier to do it explicitly
+# yourself by sending an instruction to the system:
+</span><span class="n">system</span><span class="p">(</span><span class="s1">'"C:\\Program Files\\ImageMagick-6.9.1-Q16\\convert" -loop 0 -delay 150 *.png "EloProbs.gif"'</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># move the asset over to where needed for the blog
+</span><span class="n">file.copy</span><span class="p">(</span><span class="s2">"EloProbs.gif"</span><span class="p">,</span><span class="w"> </span><span class="s2">"../../img/0002-EloProbs.gif"</span><span class="p">,</span><span class="w"> </span><span class="n">overwrite</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># clean up
+</span><span class="n">setwd</span><span class="p">(</span><span class="n">owd</span><span class="p">)</span><span class="w">
+</span><span class="n">unlink</span><span class="p">(</span><span class="s2">"tmp0002"</span><span class="p">,</span><span class="w"> </span><span class="n">recursive</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span></code></pre></figure>
+
+<p>##Actual ratings varying, “true” rating constant
+The estimated probability of winning against a certain opponent at a given match length might be of interest to backgammon players (I’m surprised it’s not referred to more often), but its most common use is embedded in the calculation of how much each player’s Elo rating changes after a match is decided.  That formula is well explained by FIBS and a little involved so I won’t spell it out here, but you can see it in action in the function I provide later in this post.  A key point for our purposes is that as the win/loss of a match is a random event, players’ Elo ratings which are based on those events are random variables.  Even if we grant the existence of a “real” value for each player, it is unobservable, and can only be estimated by their actual Elo rating in a tournament or internet forum.</p>
+
+<p>In fact, my original motivation for this blog post was to see how much Elo ratings fluctuate due to randomness of individual games.  In a later post I’ll have a more complex and realistic simulation, but the chart below shows what happens to a player’s Elo ratings over time in the following situation:</p>
+
+<ul>
+  <li>Only two players</li>
+  <li>They only ever play 5 point matches, and they play 10,000 of them</li>
+  <li>Player A’s chance of winning the 5 point match is 0.6, and this does not change over time (ie no player is improving in skill relative to the other)</li>
+</ul>
+
+<p>The results are shown in the chart below, and in this unrealistically simple scenario there’s more variation than I’d realised there would be.  Player A’s actual Elo rating fluctuates fairly wildly around the true value (which can be calculated as 1578.75), hitting 1650 several times and dropping nearly all the way to 1500 at one point.</p>
+
+<p><img src="/img/0002-elo-rating.svg" alt="Ratings of Player A in 2 player simulation" /></p>
+
+<p>Here’s the code for that simulation, including my R function that provides FIBS-style Elo ratings, adjusted for experience as set out by FIBS.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#=================determine change of Elo rating ================
+</span><span class="n">fibs_scores</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="n">winner</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"a"</span><span class="p">,</span><span class="w"> </span><span class="n">ml</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">axp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">500</span><span class="p">,</span><span class="w"> </span><span class="n">bxp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">500</span><span class="p">){</span><span class="w">
+   </span><span class="c1"># a is Elo rating of player A before match
+</span><span class="w">   </span><span class="c1"># b is Elo rating of player B before match
+</span><span class="w">   </span><span class="c1"># ml is match length
+</span><span class="w">   </span><span class="c1"># axp is total match lengths (experience) of player a until this match
+</span><span class="w">   </span><span class="c1"># bxp is total match lengths (experience) of player b until this match
+</span><span class="w">   </span><span class="c1"># see http://www.fibs.com/ratings.html for formulae
+</span><span class="w">   
+   </span><span class="c1"># calculate experience-correction multipliers:
+</span><span class="w">   </span><span class="n">multa</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">axp</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">400</span><span class="p">,</span><span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="p">((</span><span class="n">axp</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">ml</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">100</span><span class="p">),</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+   </span><span class="n">multb</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">bxp</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">400</span><span class="p">,</span><span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="p">((</span><span class="n">axp</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">ml</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">100</span><span class="p">),</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+   
+   </span><span class="c1"># probability of A winning, using fibs_p function defined earlier:
+</span><span class="w">   </span><span class="n">winproba</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">fibs_p</span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="n">ml</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ml</span><span class="p">)</span><span class="w">
+   
+   </span><span class="c1"># match value (points to be distributed between the two players):
+</span><span class="w">   </span><span class="n">matchvalue</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nf">sqrt</span><span class="p">(</span><span class="n">ml</span><span class="p">)</span><span class="w">
+   
+   </span><span class="c1"># who gets them?:
+</span><span class="w">   </span><span class="k">if</span><span class="p">(</span><span class="n">winner</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"b"</span><span class="p">){</span><span class="w">
+      </span><span class="n">a</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">matchvalue</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">winproba</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">multa</span><span class="w">
+      </span><span class="n">b</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">matchvalue</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">winproba</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">multb</span><span class="w">
+   </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">
+      </span><span class="n">a</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">matchvalue</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="m">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">winproba</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">multa</span><span class="w"> 
+      </span><span class="n">b</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">matchvalue</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="m">1</span><span class="o">-</span><span class="w"> </span><span class="n">winproba</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">multb</span><span class="w">
+   </span><span class="p">}</span><span class="w">
+   
+   </span><span class="nf">return</span><span class="p">(</span><span class="nf">list</span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="n">axp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">axp</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">ml</span><span class="p">,</span><span class="w"> </span><span class="n">bxp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bxp</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">ml</span><span class="p">))</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="c1"># test against "baptism by fire" example at http://www.fibs.com/ratings.html
+# should be 1540.95:
+</span><span class="nf">round</span><span class="p">(</span><span class="n">fibs_scores</span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1500</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1925</span><span class="p">,</span><span class="w"> </span><span class="n">ml</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">7</span><span class="p">,</span><span class="w"> </span><span class="n">axp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">bxp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10000</span><span class="p">,</span><span class="w"> </span><span class="n">winner</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"a"</span><span class="p">)</span><span class="o">$</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#================simulations of how long it takes for scores to stablise================
+# two people playing eachother 5 point games with 0.6 chance of winning
+</span><span class="w">
+
+</span><span class="n">A</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">B</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data_frame</span><span class="p">(</span><span class="n">rating</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1500</span><span class="p">,</span><span class="w"> </span><span class="n">exp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w">
+
+</span><span class="n">timeseries</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data_frame</span><span class="p">(</span><span class="n">A</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">A</span><span class="o">$</span><span class="n">rating</span><span class="p">,</span><span class="w"> </span><span class="n">B</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">B</span><span class="o">$</span><span class="n">rating</span><span class="p">)</span><span class="w">
+
+</span><span class="n">set.seed</span><span class="p">(</span><span class="m">123</span><span class="p">)</span><span class="w"> </span><span class="c1"># for reproducibility
+</span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">10000</span><span class="p">){</span><span class="w">
+   </span><span class="n">result</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">fibs_scores</span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">A</span><span class="o">$</span><span class="n">rating</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">B</span><span class="o">$</span><span class="n">rating</span><span class="p">,</span><span class="w"> 
+               </span><span class="n">winner</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">runif</span><span class="p">(</span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0.4</span><span class="p">,</span><span class="w"> </span><span class="s2">"a"</span><span class="p">,</span><span class="w"> </span><span class="s2">"b"</span><span class="p">),</span><span class="w">
+               </span><span class="n">axp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">A</span><span class="o">$</span><span class="n">exp</span><span class="p">,</span><span class="w"> </span><span class="n">bxp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">B</span><span class="o">$</span><span class="n">exp</span><span class="p">,</span><span class="w"> </span><span class="n">ml</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="p">)</span><span class="w">
+   </span><span class="n">timeseries</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">"A"</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">A</span><span class="o">$</span><span class="n">rating</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">result</span><span class="o">$</span><span class="n">a</span><span class="w">
+   </span><span class="n">timeseries</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">"B"</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w">    </span><span class="n">B</span><span class="o">$</span><span class="n">rating</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">result</span><span class="o">$</span><span class="n">b</span><span class="w">
+   </span><span class="n">A</span><span class="o">$</span><span class="n">exp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">result</span><span class="o">$</span><span class="n">axp</span><span class="w">
+   </span><span class="n">B</span><span class="o">$</span><span class="n">exp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">result</span><span class="o">$</span><span class="n">bxp</span><span class="w">
+   
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">timeseries</span><span class="o">$</span><span class="n">A</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ts</span><span class="p">(</span><span class="n">timeseries</span><span class="o">$</span><span class="n">A</span><span class="p">)</span><span class="w">
+</span><span class="n">timeseries</span><span class="o">$</span><span class="n">B</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ts</span><span class="p">(</span><span class="n">timeseries</span><span class="o">$</span><span class="n">B</span><span class="p">)</span><span class="w">
+</span><span class="n">timeseries</span><span class="o">$</span><span class="n">time</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">nrow</span><span class="p">(</span><span class="n">timeseries</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># theoretical value:
+</span><span class="n">tv</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="p">(</span><span class="nf">log</span><span class="p">(</span><span class="m">1</span><span class="o">/</span><span class="w"> </span><span class="m">0.4</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">log</span><span class="p">(</span><span class="m">10</span><span class="p">)</span><span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="m">2000</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">sqrt</span><span class="p">(</span><span class="m">5</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">3000</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">2</span><span class="w">
+
+
+</span><span class="n">svg</span><span class="p">(</span><span class="s2">"../img/0002-elo-rating.svg"</span><span class="p">,</span><span class="w"> </span><span class="m">8</span><span class="p">,</span><span class="w"> </span><span class="m">5</span><span class="p">)</span><span class="w">
+</span><span class="n">ggplot</span><span class="p">(</span><span class="n">timeseries</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">time</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">A</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_line</span><span class="p">(</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey50"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">theme_minimal</span><span class="p">(</span><span class="n">base_family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"myfont"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="s2">"Player A's Elo rating"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_hline</span><span class="p">(</span><span class="n">yintercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tv</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"blue"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Elo rating of Player A in two player, constant skill simulation"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_x_continuous</span><span class="p">(</span><span class="s2">"\nNumber of matches played"</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">comma</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">annotate</span><span class="p">(</span><span class="s2">"text"</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tv</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">max</span><span class="p">(</span><span class="n">timeseries</span><span class="o">$</span><span class="n">time</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w"> 
+            </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="s2">"Theoretical\nvalue"</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="s2">"blue"</span><span class="p">,</span><span class="w"> 
+            </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"myfont"</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="p">)</span><span class="w">
+</span><span class="n">dev.off</span><span class="p">()</span></code></pre></figure>
+
+<p>In this situation, the resulting player’s Elo rating bouncing around at random is quite well modelled by an autoregressive AR(1) time series model with an intercept at the “true” level of the player’s skill.  With an autoregression parameter of around 0.98, the rating at any point in time is obviously very closely related to the previous rating; almost but not quite a random walk. Showing how and why would make this post too long, but it’s a useful factoid to note for future work when we come to more realistic and complex simulations of Elo ratings on FIBS.</p>
+
+
+
+</div>
+
+<div class = "container">
+   <div class="col-md-4">
+    
+        <a rel="prev" href="/blog/2015/08/01/new-zealand-data-on-github">
+        <p>&larr; Older</p>
+        <p>New Zealand Data & APIs on GitHub</p>
+        
+        </a>
+    
+    </div>
+    <div class="col-md-4">
+    </div>
+    <div class="col-md-4" style="text-align: right;">
+     
+        <a rel="next" href="/blog/2015/08/15/importing-nzis-surf">
+        <p>Newer &rarr;</p>
+        <p>Importing the New Zealand Income Survey SURF</p>
+        
+        </a>
+    
+      </div>
+      </div>
+      
+      
+      
+</div>
+
+
+   
+    <div id="disqus_thread"></div>
+
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+    
+    
+   
+			
+			</div><!-- /.container -->
+
+         
+
+   <div class = "container footer">
+			<footer>
+	    		
+            <p>Follow <a href = "/feed.xml">this blog with RSS</a>.  Or follow <a href = "/feed.r.xml">posts in this blog featuring R with RSS</a>.</p>
+	
+            <p>This blog is built with <a href = "http://jekyllrb.com/">Jekyll</a>, <a href = "http://getbootstrap.com/">Bootstrap</a>, <a href = "https://www.ruby-lang.org/en/">Ruby</a> and <a href = "https://cran.r-project.org/">R</a>.  Read my <a href="/about/acknowledgements.html">acknowledgements</a> for a little more on how.  I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Peter's stats stuff</span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+
+
+			</footer>
+    </div>
+
+
+
+  
+</body>
+</html>
+   
+
+
+
+
+         

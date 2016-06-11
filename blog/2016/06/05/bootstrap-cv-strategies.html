@@ -1,0 +1,492 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Bootstrap and cross-validation for evaluating modelling strategies</title>
+      	
+         
+         
+            <meta name ="description" content ="I compare 'simple' bootstrap, 'enhanced' (optimism-correcting) bootstrap, and repeated k-fold cross-validation as methods for estimating fit of three example modelling strategies.">
+            <meta property="og:description" content ="I compare 'simple' bootstrap, 'enhanced' (optimism-correcting) bootstrap, and repeated k-fold cross-validation as methods for estimating fit of three example modelling strategies.">
+         
+         <meta property="og:site_name" content="Peter's stats stuff" />
+         <meta property="og:title" content="Bootstrap and cross-validation for evaluating modelling strategies" />
+         
+            <meta property="og:image" content="http://ellisp.github.io/img/0043-boot-results.png" />
+         
+         <meta property="og:url" content="http://ellisp.github.io/blog/2016/06/05/bootstrap-cv-strategies/" />
+         <meta property="og:author" content= "https://www.facebook.com/peter.ellis.353" />
+         <meta property="og:type" content="article" />
+           
+          <link href="/css/bootstrap.min.css" rel ="stylesheet">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet">
+            <link href="/css/custom.css" rel ="stylesheet">       
+     <link rel="stylesheet" href="/css/Pygments/autumn.css">      
+     <link rel="stylesheet" href="/css/Pygments/custom.css">      
+            
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="Peter's stats stuff by Peter Ellis"
+      href="/feed.xml">
+
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+         <script src="/js/bootstrap.min.js"></script>
+         
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Peter's stats stuff</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">All blog posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">Ordered by date</a></li>
+                  <li><a href="/blog/index_by_tag.html">Grouped by subject matter</a></li>
+                  <li><a href = /blog/2016/06/05/bootstrap-cv-strategies>Most recent post</a></li>
+                 </ul>
+            </li>
+              <li><a href="/blog/showcase.html">Showcase</a></li>
+              <li><a href="/presentations/index.html">Presentations</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			    <div class="jumbotron">
+      <div class="container">
+        <h1>Bootstrap and cross-validation for evaluating modelling strategies</h1>
+         <p class="meta">05 Jun 2016</p>
+        
+      </div>
+    </div>
+
+
+
+
+<div class = "post-summary">
+<h2>TL;DR Summary:</h2>
+   I compare 'simple' bootstrap, 'enhanced' (optimism-correcting) bootstrap, and repeated k-fold cross-validation as methods for estimating fit of three example modelling strategies.
+   <hr></hr>
+</div>
+
+<div class="post">
+<div class="col-md-2">
+
+</div>
+  <div class="col-md-8">
+
+  <h2 id="modelling-strategies">Modelling strategies</h2>
+<p>I’ve been re-reading Frank Harrell’s <a href="http://www.springer.com/us/book/9781441929181">Regression Modelling Strategies</a>, a must read for anyone who ever fits a regression model, although be prepared - depending on your background, you might get 30 pages in and suddenly become convinced you’ve been doing nearly everything wrong before, which can be disturbing.</p>
+
+<p>I wanted to evaluate three simple modelling strategies in dealing with data with many variables.  Using data with 54 variables on 1,785 area units from New Zealand’s 2013 census, I’m looking to predict median income on the basis of the other 53 variables.  The features are all continuous and are variables like “mean number of bedrooms”, “proportion of individuals with no religion” and “proportion of individuals who are smokers”.   Restricting myself to traditional linear regression with a normally distributed response, my three alternative strategies were:</p>
+
+<ul>
+  <li>use all 53 variables;</li>
+  <li>eliminate the variables that can be predicted easily from the other variables (defined by having a <a href="https://en.wikipedia.org/wiki/Variance_inflation_factor">variance inflation factor</a> greater than ten), one by one until the main collinearity problems are gone; or</li>
+  <li>eliminate variables one at a time from the full model on the basis of comparing <a href="https://en.wikipedia.org/wiki/Akaike_information_criterion">Akaike’s Information Criterion</a> of models with and without each variable.</li>
+</ul>
+
+<p>None of these is exactly what I would use for real, but they serve the purpose of setting up a competition of strategies that I can test with a variety of model validation techniques.</p>
+
+<h2 id="validating-models">Validating models</h2>
+<p>The main purpose of the exercise was actually to ensure I had my head around different ways of estimating the validity of a model, loosely definable as how well it would perform at predicting new data.  As there is no possibility of new areas in New Zealand from 2013 that need to have their income predicted, the “prediction” is a thought-exercise which we need to find a plausible way of simulating.  Confidence in hypothetical predictions gives us confidence in the insights the model gives into relationships between variables.</p>
+
+<p>There are many methods of validating models, although I think k-fold cross-validation has market dominance (not with Harrell though, who prefers varieties of the bootstrap).  The three validation methods I’ve used for this post are:</p>
+
+<ol>
+  <li>‘simple’ bootstrap.  This involves creating resamples with replacement from the original data, of the same size; applying the modelling strategy to the resample; using the model to predict the values of the full set of original data and calculating a goodness of fit statistic (eg either R-squared or root mean squared error) comparing the predicted value to the actual value.  <em>Note - Following Efron, Harrell calls this the “simple bootstrap”, but other authors and the useful <code class="highlighter-rouge">caret</code> package use “simple bootstrap” to mean the resample model is used to predict the out-of-bag values at each resample point, rather than the full original sample.</em></li>
+  <li>‘enhanced’ bootstrap.  This is a little more involved and is basically a method of estimating the ‘optimism’ of the goodness of fit statistic.  There’s a nice step by step explanation by <a href="http://thestatsgeek.com/2014/10/04/adjusting-for-optimismoverfitting-in-measures-of-predictive-ability-using-bootstrapping/">thestatsgeek</a> which I won’t try to improve on.</li>
+  <li>repeated 10-fold cross-validation.  10-fold cross-validation involves dividing your data into ten parts, then taking turns to fit the model on 90% of the data and using that model to predict the remaining 10%.  The average of the 10 goodness of fit statistics becomes your estimate of the actual goodness of fit.  One of the problems with k-fold cross-validation is that it has a high variance ie doing it different times you get different results based on the luck of you k-way split; so repeated k-fold cross-validation addresses this by performing the whole process a number of times and taking the average.</li>
+</ol>
+
+<p>As the sample sizes get bigger relative to the number of variables in the model the methods should converge.  The bootstrap methods can give over-optimistic estimates of model validity compared to cross-validation; there are various other methods available to address this issue although none seem to me to provide all-purpose solution.</p>
+
+<p>It’s critical that the re-sampling in the process envelopes the entire model-building strategy, not just the final fit.  In particular, if the strategy involves variable selection (as two of my candidate strategies do), you have to automate that selection process and run it on each different resample.  That’s because one of the highest risk parts of the modelling process is that variable selection.  Running cross-validation or the bootstrap on a final model after you’ve eliminated a bunch of variables is missing the point, and will give materially misleading statistics (biased towards things being more “significant” than there really is evidence for).  Of course, that doesn’t stop this being common misguided practice.</p>
+
+<h2 id="results">Results</h2>
+
+<p>One nice feature of statistics since the revolution of the 1980s is that the bootstrap helps you conceptualise what might have happened but didn’t.  Here’s the root mean squared error from the 100 different bootstrap resamples when the three different modelling strategies (including variable selection) were applied:</p>
+
+<p><img src="/img/0043-boot-results.svg" alt="boot-results" /></p>
+
+<p>Notice anything?  Not only does it seem to be generally a bad idea to drop variables just because they are collinear with others, but occasionally it turns out to be a <em>really</em> bad idea - like in resamples #4, #6  and around thirty others.  Those thirty or so spikes are in resamples where random chance led to one of the more important variables being dumped before it had a chance to contribute to the model.</p>
+
+<p>The thing that surprised me here was that the generally maligned step-wise selection strategy performed nearly as well as the full model, judged by the simple bootstrap.  That result comes through for the other two validation methods as well:</p>
+
+<p><img src="/img/0043-boot-v-cv.svg" alt="boot-v-cv" /></p>
+
+<p>In all three validation methods there’s really nothing substantive to choose between the “full model” and “stepwise” strategies, based purely on results.</p>
+
+<h2 id="reflections">Reflections</h2>
+<p>The full model is much easier to fit, interpret, estimate confidence intervals and perform tests on than stepwise.  All the standard statistics for a final model chosen by stepwise methods are misleading and careful recalculations are needed based on elaborate bootstrapping.  So the full model wins hands-down as a general strategy in this case.</p>
+
+<p>With this data, we have a bit of freedom from the generous sample size.  If approaching this for real I wouldn’t eliminate any variables unless there were theoretical / subject matter reasons to do so.  I have made the mistake of eliminating the co-linear variables before from this dataset but will try not to do it again.  The rule of thumb is to have 20 observations for each parameter (this is one of the most asked and most dodged questions in statistics education; see Table 4.1 of <em>Regression Modelling Strategies</em> for this particular answer), which suggests we can have up to 80 parameters with a bit to spare.  This gives us 30 parameters to use for non-linear relationships and/or interactions, which is the direction I might go in a subsequent post.  Bearing that in mind, I’m not bothering to report here the actual substantive results (eg which factors are related to income and how); that can wait for a better model down the track.</p>
+
+<h2 id="data-and-computing">Data and computing</h2>
+
+<p>The census data are ultimately from Statistics New Zealand of course, but are tidied up and available in my <a href="https://github.com/ellisp/nzelect"><code class="highlighter-rouge">nzelect</code></a> R package, which is still very much under development and may change without notice.  It’s only available from GitHub at the moment (installation code below).</p>
+
+<p>I do the bootstrapping with the aid of the <code class="highlighter-rouge">boot</code> package, which is generally the recommended approach in R.  For repeated cross-validation of the two straightforward strategies (full model and stepwise variable selection) I use the <code class="highlighter-rouge">caret</code> package, in combination with <code class="highlighter-rouge">stepAIC</code> which is in the Venables and Ripley <code class="highlighter-rouge">MASS</code> package.  For the more complex strategy that involved dropping variables with high variance inflation factors I found it easiest to do the repeated cross-validation old-school with my own <code class="highlighter-rouge">for</code> loops.</p>
+
+<p>This exercise was a bit complex and I won’t be astonished if someone points out an error.  If you see a problem, or have any suggestions or questions, please leave a comment.</p>
+
+<p>Here’s the code:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="w"> 
+</span><span class="c1">#===================setup=======================
+</span><span class="n">library</span><span class="p">(</span><span class="n">ggplot2</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">MASS</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">boot</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">caret</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">dplyr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">tidyr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">directlabels</span><span class="p">)</span><span class="w">
+
+</span><span class="n">set.seed</span><span class="p">(</span><span class="m">123</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># install nzelect package that has census data
+</span><span class="n">devtools</span><span class="o">::</span><span class="n">install_github</span><span class="p">(</span><span class="s2">"ellisp/nzelect/pkg"</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">nzelect</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># drop the columns with areas' code and name
+</span><span class="n">au</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">AreaUnits2013</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">select</span><span class="p">(</span><span class="o">-</span><span class="n">AU2014</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">Area_Code_and_Description</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># give meaningful rownames, helpful for some diagnostic plots later
+</span><span class="n">row.names</span><span class="p">(</span><span class="n">au</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">AreaUnits2013</span><span class="o">$</span><span class="n">Area_Code_and_Description</span><span class="w">
+
+</span><span class="c1"># remove some repetition from the variable names
+</span><span class="nf">names</span><span class="p">(</span><span class="n">au</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"2013"</span><span class="p">,</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="nf">names</span><span class="p">(</span><span class="n">au</span><span class="p">))</span><span class="w">
+
+</span><span class="c1"># restrict to areas with no missing data.  If this was any more complicated (eg
+# imputation),it would need to be part of the validation resampling too; but
+# just dropping them all at the beginning doesn't need to be resampled; the only
+# implication would be sample size which would be small impact and complicating.
+</span><span class="n">au</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">au</span><span class="p">[</span><span class="n">complete.cases</span><span class="p">(</span><span class="n">au</span><span class="p">),</span><span class="w"> </span><span class="p">]</span><span class="w">
+
+</span><span class="c1">#==================functions for two of the modelling strategies=====================
+# The stepwise variable selection:
+</span><span class="n">model_process_step</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">the_data</span><span class="p">){</span><span class="w">
+   </span><span class="n">model_full</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lm</span><span class="p">(</span><span class="n">MedianIncome</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">.</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_data</span><span class="p">)</span><span class="w">
+   </span><span class="n">model_final</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">stepAIC</span><span class="p">(</span><span class="n">model_full</span><span class="p">,</span><span class="w"> </span><span class="n">direction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"both"</span><span class="p">,</span><span class="w"> </span><span class="n">trace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w">
+   </span><span class="nf">return</span><span class="p">(</span><span class="n">model_final</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="c1"># The dropping of highly collinear variables, based on Variance Inflation Factor:
+</span><span class="n">model_process_vif</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">the_data</span><span class="p">){</span><span class="w">
+   </span><span class="c1"># remove the collinear variables based on vif
+</span><span class="w">   </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">20</span><span class="w">
+   
+   </span><span class="k">while</span><span class="p">(</span><span class="nf">max</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">10</span><span class="p">){</span><span class="w">
+      </span><span class="n">mod1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lm</span><span class="p">(</span><span class="n">MedianIncome</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">.</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_data</span><span class="p">)</span><span class="w">
+      </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sort</span><span class="p">(</span><span class="n">car</span><span class="o">::</span><span class="n">vif</span><span class="p">(</span><span class="n">mod1</span><span class="p">)</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="n">decreasing</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w">
+      </span><span class="n">the_data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">the_data</span><span class="p">[</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="nf">names</span><span class="p">(</span><span class="n">the_data</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nf">names</span><span class="p">(</span><span class="n">x</span><span class="p">)[</span><span class="m">1</span><span class="p">]]</span><span class="w">
+      </span><span class="c1"># message(paste("dropping", names(x)[1]))
+</span><span class="w">   </span><span class="p">}</span><span class="w">
+   
+   </span><span class="n">model_vif</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lm</span><span class="p">(</span><span class="n">MedianIncome</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">.</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_data</span><span class="p">)</span><span class="w">
+   </span><span class="nf">return</span><span class="p">(</span><span class="n">model_vif</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="c1"># The third strategy, full model, is only a one-liner with standard functions
+# so I don't need to define a function separately for it.
+</span><span class="w">
+</span><span class="c1">#==================Different validation methods=================
+</span><span class="w">
+</span><span class="c1">#------------------simple bootstrap comparison-------------------------
+# create a function suitable for boot that will return the goodness of fit
+# statistics testing models against the full original sample.
+</span><span class="n">compare</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">orig_data</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">){</span><span class="w">
+   </span><span class="c1"># create the resampled data
+</span><span class="w">   </span><span class="n">train_data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">orig_data</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="w">
+   </span><span class="n">test_data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">orig_data</span><span class="w"> </span><span class="c1"># ie the full original sample
+</span><span class="w">   
+   </span><span class="c1"># fit the three modelling processes
+</span><span class="w">   </span><span class="n">model_step</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">model_process_step</span><span class="p">(</span><span class="n">train_data</span><span class="p">)</span><span class="w">
+   </span><span class="n">model_vif</span><span class="w">  </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">model_process_vif</span><span class="p">(</span><span class="n">train_data</span><span class="p">)</span><span class="w">
+   </span><span class="n">model_full</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lm</span><span class="p">(</span><span class="n">MedianIncome</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">.</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">train_data</span><span class="p">)</span><span class="w">
+   
+   </span><span class="c1"># predict the values on the original, unresampled data
+</span><span class="w">   </span><span class="n">predict_step</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">predict</span><span class="p">(</span><span class="n">model_step</span><span class="p">,</span><span class="w"> </span><span class="n">newdata</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">test_data</span><span class="p">)</span><span class="w">
+   </span><span class="n">predict_vif</span><span class="w">  </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">predict</span><span class="p">(</span><span class="n">model_vif</span><span class="p">,</span><span class="w"> </span><span class="n">newdata</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">test_data</span><span class="p">)</span><span class="w">
+   </span><span class="n">predict_full</span><span class="w">  </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">predict</span><span class="p">(</span><span class="n">model_full</span><span class="p">,</span><span class="w"> </span><span class="n">newdata</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">test_data</span><span class="p">)</span><span class="w">
+   
+   </span><span class="c1"># return a vector of 6 summary results
+</span><span class="w">   </span><span class="n">results</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="w">
+      </span><span class="n">step_R2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">R</span><span class="m">2</span><span class="p">(</span><span class="n">predict_step</span><span class="p">,</span><span class="w"> </span><span class="n">test_data</span><span class="o">$</span><span class="n">MedianIncome</span><span class="p">),</span><span class="w">
+      </span><span class="n">vif_R2</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">R</span><span class="m">2</span><span class="p">(</span><span class="n">predict_vif</span><span class="p">,</span><span class="w"> </span><span class="n">test_data</span><span class="o">$</span><span class="n">MedianIncome</span><span class="p">),</span><span class="w">
+      </span><span class="n">full_R2</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">R</span><span class="m">2</span><span class="p">(</span><span class="n">predict_full</span><span class="p">,</span><span class="w"> </span><span class="n">test_data</span><span class="o">$</span><span class="n">MedianIncome</span><span class="p">),</span><span class="w">
+      </span><span class="n">step_RMSE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">RMSE</span><span class="p">(</span><span class="n">predict_step</span><span class="p">,</span><span class="w"> </span><span class="n">test_data</span><span class="o">$</span><span class="n">MedianIncome</span><span class="p">),</span><span class="w">
+      </span><span class="n">vif_RMSE</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">RMSE</span><span class="p">(</span><span class="n">predict_vif</span><span class="p">,</span><span class="w"> </span><span class="n">test_data</span><span class="o">$</span><span class="n">MedianIncome</span><span class="p">),</span><span class="w">
+      </span><span class="n">full_RMSE</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">RMSE</span><span class="p">(</span><span class="n">predict_full</span><span class="p">,</span><span class="w"> </span><span class="n">test_data</span><span class="o">$</span><span class="n">MedianIncome</span><span class="p">)</span><span class="w">
+   </span><span class="p">)</span><span class="w">
+   </span><span class="nf">return</span><span class="p">(</span><span class="n">results</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="c1"># perform bootstrap
+</span><span class="n">Repeats</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">100</span><span class="w">
+</span><span class="n">res</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">boot</span><span class="p">(</span><span class="n">au</span><span class="p">,</span><span class="w"> </span><span class="n">statistic</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">compare</span><span class="p">,</span><span class="w"> </span><span class="n">R</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Repeats</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># restructure results for a graphic showing root mean square error, and for
+# later combination with the other results.  I chose just to focus on RMSE;
+# the messages are similar if R squared is used.
+</span><span class="n">RMSE_res</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.data.frame</span><span class="p">(</span><span class="n">res</span><span class="o">$</span><span class="n">t</span><span class="p">[</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="m">4</span><span class="o">:</span><span class="m">6</span><span class="p">])</span><span class="w">
+</span><span class="nf">names</span><span class="p">(</span><span class="n">RMSE_res</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"AIC stepwise selection"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Remove collinear variables"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Use all variables"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">RMSE_res</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">trial</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">Repeats</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">gather</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">trial</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> 
+   </span><span class="c1"># re-order levels:
+</span><span class="w">   </span><span class="n">mutate</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">factor</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">levels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="w">
+      </span><span class="s2">"Remove collinear variables"</span><span class="p">,</span><span class="w"> </span><span class="s2">"AIC stepwise selection"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Use all variables"</span><span class="w">
+   </span><span class="p">)))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">trial</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">variable</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_line</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_point</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"'Simple' bootstrap of model fit of three different regression strategies"</span><span class="p">,</span><span class="w">
+           </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Predicting areas' median income based on census variables"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Resample id (there no meaning in the order of resamples)\n"</span><span class="p">,</span><span class="w">
+        </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Root Mean Square Error (higher is worse)\n"</span><span class="p">,</span><span class="w">
+        </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Strategy"</span><span class="p">,</span><span class="w">
+        </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Data from New Zealand Census 2013"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># store the three "simple bootstrap" RMSE results for later
+</span><span class="n">simple</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">apply</span><span class="p">(</span><span class="n">RMSE_res</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">mean</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#-----------------------enhanced (optimism) bootstrap comparison-------------------
+# for convenience, estimate the models on the original sample of data
+</span><span class="n">orig_step</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">model_process_step</span><span class="p">(</span><span class="n">au</span><span class="p">)</span><span class="w">
+</span><span class="n">orig_vif</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">model_process_vif</span><span class="p">(</span><span class="n">au</span><span class="p">)</span><span class="w">
+</span><span class="n">orig_full</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lm</span><span class="p">(</span><span class="n">MedianIncome</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">.</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">au</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># create a function suitable for boot that will return the optimism estimates for
+# statistics testing models against the full original sample.
+</span><span class="n">compare_opt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">orig_data</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">){</span><span class="w">
+   </span><span class="c1"># create the resampled data
+</span><span class="w">   </span><span class="n">train_data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">orig_data</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="w">
+
+   </span><span class="c1"># fit the three modelling processes
+</span><span class="w">   </span><span class="n">model_step</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">model_process_step</span><span class="p">(</span><span class="n">train_data</span><span class="p">)</span><span class="w">
+   </span><span class="n">model_vif</span><span class="w">  </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">model_process_vif</span><span class="p">(</span><span class="n">train_data</span><span class="p">)</span><span class="w">
+   </span><span class="n">model_full</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lm</span><span class="p">(</span><span class="n">MedianIncome</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">.</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">train_data</span><span class="p">)</span><span class="w">
+   
+   </span><span class="c1"># predict the values on the original, unresampled data
+</span><span class="w">   </span><span class="n">predict_step</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">predict</span><span class="p">(</span><span class="n">model_step</span><span class="p">,</span><span class="w"> </span><span class="n">newdata</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">orig_data</span><span class="p">)</span><span class="w">
+   </span><span class="n">predict_vif</span><span class="w">  </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">predict</span><span class="p">(</span><span class="n">model_vif</span><span class="p">,</span><span class="w"> </span><span class="n">newdata</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">orig_data</span><span class="p">)</span><span class="w">
+   </span><span class="n">predict_full</span><span class="w">  </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">predict</span><span class="p">(</span><span class="n">model_full</span><span class="p">,</span><span class="w"> </span><span class="n">newdata</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">orig_data</span><span class="p">)</span><span class="w">
+   
+   </span><span class="c1"># return a vector of 6 summary optimism results
+</span><span class="w">   </span><span class="n">results</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="w">
+      </span><span class="n">step_R2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">R</span><span class="m">2</span><span class="p">(</span><span class="n">fitted</span><span class="p">(</span><span class="n">model_step</span><span class="p">),</span><span class="w"> </span><span class="n">train_data</span><span class="o">$</span><span class="n">MedianIncome</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">R</span><span class="m">2</span><span class="p">(</span><span class="n">predict_step</span><span class="p">,</span><span class="w"> </span><span class="n">orig_data</span><span class="o">$</span><span class="n">MedianIncome</span><span class="p">),</span><span class="w">
+      </span><span class="n">vif_R2</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">R</span><span class="m">2</span><span class="p">(</span><span class="n">fitted</span><span class="p">(</span><span class="n">model_vif</span><span class="p">),</span><span class="w"> </span><span class="n">train_data</span><span class="o">$</span><span class="n">MedianIncome</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">R</span><span class="m">2</span><span class="p">(</span><span class="n">predict_vif</span><span class="p">,</span><span class="w"> </span><span class="n">orig_data</span><span class="o">$</span><span class="n">MedianIncome</span><span class="p">),</span><span class="w">
+      </span><span class="n">full_R2</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">R</span><span class="m">2</span><span class="p">(</span><span class="n">fitted</span><span class="p">(</span><span class="n">model_full</span><span class="p">),</span><span class="w"> </span><span class="n">train_data</span><span class="o">$</span><span class="n">MedianIncome</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">R</span><span class="m">2</span><span class="p">(</span><span class="n">predict_full</span><span class="p">,</span><span class="w"> </span><span class="n">orig_data</span><span class="o">$</span><span class="n">MedianIncome</span><span class="p">),</span><span class="w">
+      </span><span class="n">step_RMSE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">RMSE</span><span class="p">(</span><span class="n">fitted</span><span class="p">(</span><span class="n">model_step</span><span class="p">),</span><span class="w"> </span><span class="n">train_data</span><span class="o">$</span><span class="n">MedianIncome</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">RMSE</span><span class="p">(</span><span class="n">predict_step</span><span class="p">,</span><span class="w"> </span><span class="n">orig_data</span><span class="o">$</span><span class="n">MedianIncome</span><span class="p">),</span><span class="w">
+      </span><span class="n">vif_RMSE</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">RMSE</span><span class="p">(</span><span class="n">fitted</span><span class="p">(</span><span class="n">model_vif</span><span class="p">),</span><span class="w"> </span><span class="n">train_data</span><span class="o">$</span><span class="n">MedianIncome</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">RMSE</span><span class="p">(</span><span class="n">predict_vif</span><span class="p">,</span><span class="w"> </span><span class="n">orig_data</span><span class="o">$</span><span class="n">MedianIncome</span><span class="p">),</span><span class="w">
+      </span><span class="n">full_RMSE</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">RMSE</span><span class="p">(</span><span class="n">fitted</span><span class="p">(</span><span class="n">model_full</span><span class="p">),</span><span class="w"> </span><span class="n">train_data</span><span class="o">$</span><span class="n">MedianIncome</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">RMSE</span><span class="p">(</span><span class="n">predict_full</span><span class="p">,</span><span class="w"> </span><span class="n">orig_data</span><span class="o">$</span><span class="n">MedianIncome</span><span class="p">)</span><span class="w">
+   </span><span class="p">)</span><span class="w">
+   </span><span class="nf">return</span><span class="p">(</span><span class="n">results</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="c1"># perform bootstrap
+</span><span class="n">res_opt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">boot</span><span class="p">(</span><span class="n">au</span><span class="p">,</span><span class="w"> </span><span class="n">statistic</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">compare_opt</span><span class="p">,</span><span class="w"> </span><span class="n">R</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Repeats</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># calculate and store the results for later
+</span><span class="n">original</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="w">
+   </span><span class="n">RMSE</span><span class="p">(</span><span class="n">fitted</span><span class="p">(</span><span class="n">orig_step</span><span class="p">),</span><span class="w"> </span><span class="n">au</span><span class="o">$</span><span class="n">MedianIncome</span><span class="p">),</span><span class="w"> 
+   </span><span class="n">RMSE</span><span class="p">(</span><span class="n">fitted</span><span class="p">(</span><span class="n">orig_vif</span><span class="p">),</span><span class="w"> </span><span class="n">au</span><span class="o">$</span><span class="n">MedianIncome</span><span class="p">),</span><span class="w">
+   </span><span class="n">RMSE</span><span class="p">(</span><span class="n">fitted</span><span class="p">(</span><span class="n">orig_full</span><span class="p">),</span><span class="w"> </span><span class="n">au</span><span class="o">$</span><span class="n">MedianIncome</span><span class="p">)</span><span class="w">
+</span><span class="p">)</span><span class="w">
+
+</span><span class="n">optimism</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">apply</span><span class="p">(</span><span class="n">res_opt</span><span class="o">$</span><span class="n">t</span><span class="p">[</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="m">4</span><span class="o">:</span><span class="m">6</span><span class="p">],</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">mean</span><span class="p">)</span><span class="w">
+</span><span class="n">enhanced</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">original</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">optimism</span><span class="w">
+
+
+</span><span class="c1">#------------------repeated cross-validation------------------
+# The number of cross validation repeats is the number of bootstrap repeats / 10:
+</span><span class="n">cv_repeat_num</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">Repeats</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">10</span><span class="w">
+
+</span><span class="c1"># use caret::train for the two standard models:
+</span><span class="n">the_control</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">trainControl</span><span class="p">(</span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"repeatedcv"</span><span class="p">,</span><span class="w"> </span><span class="n">number</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="n">repeats</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cv_repeat_num</span><span class="p">)</span><span class="w">
+</span><span class="n">cv_full</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">train</span><span class="p">(</span><span class="n">MedianIncome</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">.</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">au</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"lm"</span><span class="p">,</span><span class="w"> </span><span class="n">trControl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_control</span><span class="p">)</span><span class="w">
+</span><span class="n">cv_step</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">train</span><span class="p">(</span><span class="n">MedianIncome</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">.</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">au</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"lmStepAIC"</span><span class="p">,</span><span class="w"> </span><span class="n">trControl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_control</span><span class="p">,</span><span class="w"> </span><span class="n">trace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># do it by hand for the VIF model:
+</span><span class="n">results</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">numeric</span><span class="p">(</span><span class="m">10</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">cv_repeat_num</span><span class="p">)</span><span class="w">
+</span><span class="k">for</span><span class="p">(</span><span class="n">j</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">0</span><span class="o">:</span><span class="p">(</span><span class="n">cv_repeat_num</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">1</span><span class="p">)){</span><span class="w">
+   </span><span class="n">cv_group</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sample</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">au</span><span class="p">),</span><span class="w"> </span><span class="n">replace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w">
+   </span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">10</span><span class="p">){</span><span class="w">
+      </span><span class="n">train_data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">au</span><span class="p">[</span><span class="n">cv_group</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="w">
+      </span><span class="n">test_data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">au</span><span class="p">[</span><span class="n">cv_group</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="w">
+      </span><span class="n">results</span><span class="p">[</span><span class="n">j</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">RMSE</span><span class="p">(</span><span class="w">
+         </span><span class="n">predict</span><span class="p">(</span><span class="n">model_process_vif</span><span class="p">(</span><span class="n">train_data</span><span class="p">),</span><span class="w"> </span><span class="n">newdata</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">test_data</span><span class="p">),</span><span class="w">
+         </span><span class="n">test_data</span><span class="o">$</span><span class="n">MedianIncome</span><span class="p">)</span><span class="w">
+   </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span><span class="n">cv_vif</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">results</span><span class="p">)</span><span class="w">
+
+</span><span class="n">cv_vif_results</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.frame</span><span class="p">(</span><span class="w">
+   </span><span class="n">results</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">results</span><span class="p">,</span><span class="w">
+   </span><span class="n">trial</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="n">cv_repeat_num</span><span class="p">),</span><span class="w">
+   </span><span class="n">cv_repeat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="n">cv_repeat_num</span><span class="p">,</span><span class="w"> </span><span class="n">each</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10</span><span class="p">)</span><span class="w">
+</span><span class="p">)</span><span class="w">
+
+
+</span><span class="c1">#===============reporting results===============
+# combine the three cross-validation results together and combined with
+# the bootstrap results from earlier
+</span><span class="n">summary_results</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.frame</span><span class="p">(</span><span class="n">rbind</span><span class="p">(</span><span class="w">
+   </span><span class="n">simple</span><span class="p">,</span><span class="w"> 
+   </span><span class="n">enhanced</span><span class="p">,</span><span class="w">
+   </span><span class="nf">c</span><span class="p">(</span><span class="n">mean</span><span class="p">(</span><span class="n">cv_step</span><span class="o">$</span><span class="n">resample</span><span class="o">$</span><span class="n">RMSE</span><span class="p">),</span><span class="w"> 
+     </span><span class="n">cv_vif</span><span class="p">,</span><span class="w">
+     </span><span class="n">mean</span><span class="p">(</span><span class="n">cv_full</span><span class="o">$</span><span class="n">resample</span><span class="o">$</span><span class="n">RMSE</span><span class="p">)</span><span class="w">
+     </span><span class="p">)</span><span class="w">
+   </span><span class="p">),</span><span class="w"> </span><span class="n">check.names</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Simple bootstrap"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Enhanced bootstrap"</span><span class="p">,</span><span class="w"> 
+                     </span><span class="n">paste</span><span class="p">(</span><span class="n">cv_repeat_num</span><span class="p">,</span><span class="w"> </span><span class="s2">"repeats 10-fold\ncross-validation"</span><span class="p">)))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">gather</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">method</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># Draw a plot summarising the results
+</span><span class="n">direct.label</span><span class="p">(</span><span class="w">
+</span><span class="n">summary_results</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">factor</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">levels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="w">
+      </span><span class="s2">"Use all variables"</span><span class="p">,</span><span class="w"> </span><span class="s2">"AIC stepwise selection"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Remove collinear variables"</span><span class="w">
+   </span><span class="p">)))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">variable</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_point</span><span class="p">(</span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Estimated Root Mean Square Error (higher is worse)\n"</span><span class="p">,</span><span class="w">
+        </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Modelling\nstrategy"</span><span class="p">,</span><span class="w">
+        </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Method of estimating model fit\n"</span><span class="p">,</span><span class="w">
+        </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Data from New Zealand Census 2013"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Three different validation methods of three different regression strategies"</span><span class="p">,</span><span class="w">
+           </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Predicting areas' median income based on census variables"</span><span class="p">)</span><span class="w">
+   
+</span><span class="p">)</span></code></pre></figure>
+
+
+
+</div>
+
+<div class = "container">
+   <div class="col-md-4">
+    
+        <a rel="prev" href="/blog/2016/05/29/standard-deviation-confidence-intervals">
+        <p>&larr; Older</p>
+        <p>Actual coverage of confidence intervals for standard deviation</p>
+        
+        </a>
+    
+    </div>
+    <div class="col-md-4">
+    </div>
+    <div class="col-md-4" style="text-align: right;">
+    
+      </div>
+      </div>
+      
+      
+      
+</div>
+
+
+   
+    <div id="disqus_thread"></div>
+
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+    
+    
+   
+			
+			</div><!-- /.container -->
+
+         
+
+   <div class = "container footer">
+			<footer>
+	    		
+            <p>Follow <a href = "/feed.xml">this blog with RSS</a>.  Or follow <a href = "/feed.r.xml">posts in this blog featuring R with RSS</a>.</p>
+	
+            <p>This blog is built with <a href = "http://jekyllrb.com/">Jekyll</a>, <a href = "http://getbootstrap.com/">Bootstrap</a>, <a href = "https://www.ruby-lang.org/en/">Ruby</a> and <a href = "https://cran.r-project.org/">R</a>.  Read my <a href="/about/acknowledgements.html">acknowledgements</a> for a little more on how.  I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Peter's stats stuff</span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+
+
+			</footer>
+    </div>
+
+
+
+  
+</body>
+</html>
+   
+
+
+
+
+         

@@ -1,0 +1,435 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Deaths from assault over time in 40 relatively rich countries</title>
+      	
+         
+         
+            <meta name ="description" content ="Simple but effective graphics showing relative country standings with regard to deaths from assault, and trends over time.  Most countries in this group are seeing a decline in deaths from assault, from peaks in the 1970s, '80s or '90s.  Data are downloaded from OECD.Stat via their API and SDMX and this post shows how to do this, and also demos screen scraping with {rvest} - not that it needs any demo-ing, it's so user-friendly.">
+            <meta property="og:description" content ="Simple but effective graphics showing relative country standings with regard to deaths from assault, and trends over time.  Most countries in this group are seeing a decline in deaths from assault, from peaks in the 1970s, '80s or '90s.  Data are downloaded from OECD.Stat via their API and SDMX and this post shows how to do this, and also demos screen scraping with {rvest} - not that it needs any demo-ing, it's so user-friendly.">
+         
+         <meta property="og:site_name" content="Peter's stats stuff" />
+         <meta property="og:title" content="Deaths from assault over time in 40 relatively rich countries" />
+         
+            <meta property="og:image" content="http://ellisp.github.io/img/0020-assault-average.png" />
+         
+         <meta property="og:url" content="http://ellisp.github.io/blog/2015/11/26/violent-deaths/" />
+         <meta property="og:author" content= "https://www.facebook.com/peter.ellis.353" />
+         <meta property="og:type" content="article" />
+           
+          <link href="/css/bootstrap.min.css" rel ="stylesheet">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet">
+            <link href="/css/custom.css" rel ="stylesheet">       
+     <link rel="stylesheet" href="/css/Pygments/autumn.css">      
+     <link rel="stylesheet" href="/css/Pygments/custom.css">      
+            
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="Peter's stats stuff by Peter Ellis"
+      href="/feed.xml">
+
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+         <script src="/js/bootstrap.min.js"></script>
+         
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Peter's stats stuff</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">All blog posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">Ordered by date</a></li>
+                  <li><a href="/blog/index_by_tag.html">Grouped by subject matter</a></li>
+                  <li><a href = /blog/2016/06/05/bootstrap-cv-strategies>Most recent post</a></li>
+                 </ul>
+            </li>
+              <li><a href="/blog/showcase.html">Showcase</a></li>
+              <li><a href="/presentations/index.html">Presentations</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			    <div class="jumbotron">
+      <div class="container">
+        <h1>Deaths from assault over time in 40 relatively rich countries</h1>
+         <p class="meta">26 Nov 2015</p>
+        
+      </div>
+    </div>
+
+
+
+
+<div class = "post-summary">
+<h2>TL;DR Summary:</h2>
+   Simple but effective graphics showing relative country standings with regard to deaths from assault, and trends over time.  Most countries in this group are seeing a decline in deaths from assault, from peaks in the 1970s, '80s or '90s.  Data are downloaded from OECD.Stat via their API and SDMX and this post shows how to do this, and also demos screen scraping with {rvest} - not that it needs any demo-ing, it's so user-friendly.
+   <hr></hr>
+</div>
+
+<div class="post">
+<div class="col-md-2">
+
+</div>
+  <div class="col-md-8">
+
+  <h2 id="deaths-from-assault">Deaths from assault</h2>
+<p>A friend was looking at comparative data on violent deaths in a range of countries and I couldn’t resist the chance to turn out some graphics.  The data come from the <a href="http://stats.oecd.org/">OECD</a>, who compiles them from contributions by member and associated country governments - effectively, wealthier countries - and makes them available via a web Application Programming Interface in the SDMX format.  I ended up with some graphics that I think tell a powerful story.</p>
+
+<p>The data in this post are age-standardised deaths per 100,000 for whole population, male population, and female population; the OECD variables coded as TXCMILTX, TXCMHOTH and TXCMFETF.  I’m not an expert in this area - if they mean something else (I’m a little unsure on the age-standardisation) don’t just curse me, let me know.</p>
+
+<p>###Compare across countries and sex
+Looking at snapshot cross-sectional average data since 1990 (for which there is more comparable data across countries, with a number of countries such as Germany and Czech Republic only coming into existence at or around that period) we see two things that met the “intra-ocular impact test” ie they hit you between the eyes:</p>
+
+<ul>
+  <li>For nearly all the listed countries, males are much more likely to killed in a assault than are females</li>
+  <li>The Americas and the former Soviet Socialist Republics (Russia, Estonia, Latvia, Lithuania) dominate the list of most violent places to live (or rather, to die).  Other than countries of these two types, only South Africa makes the top 11 countries.  The safer countries include those in eastern Europe (other than former USSR, but including countries that were in its political orbit), Asia, Australasia and western Europe.</li>
+</ul>
+
+<p>Remember that this only shows relatively weathly countries - for a more complete list (but less complete data) check out this <a href="https://en.wikipedia.org/wiki/List_of_countries_by_intentional_homicide_rate">Wikipedia list of countries that can be ranked by intentional homicide rates</a> (not quite the same as our data, which includes all deaths from assault, intentional or otherwise) or this <a href="https://www.unodc.org/documents/data-and-analysis/Crime-statistics/International_Statistics_on_Crime_and_Justice.pdf">report from the UN Office on Drugs and Crime</a>.</p>
+
+<p>In the chart below, the label for each country is centred at the overall population rate of deaths from assault and the red and blue vertical strokes mark the female and male rates respectively.  Beware that the scale is logarithmic - this was necessary to stop everywhere except Colombia being squashed into the left of the chart.
+<img src="/img/0020-assault-average.svg" alt="snapshot" /></p>
+
+<p>###Compare across time
+Looking at trends across time we see an encouraging sign.  Most countries’ violent death rates peaked in the 1980s or 90s and have been declining, in some cases dramatically, in recent years.</p>
+
+<p>In the chart below the vertical axis for each country has been set to make most use of the plot area and draw attention to trends rather than absolute levels, so you can’t compare the absolute levels of violence across countries.  That’s what the first chart was for, so the two charts complement eachother.  The facets in the trend chart below have been <em>ordered</em> from lowest to highest rates (1990+ averages), so there is still some visual indicator of absolute size of the problem.</p>
+
+<p>The recent declines are particularly strong in the  Eastern Europe and USSR region - Russia, Estonia, Latvia, Lithuania, Poland, Slovak Republic, Slovenia, Czech Republic, and Germany have all seen dramatic drops in rates of death from assault after rapid growth in the early 1990s, associated with the magnitude of the transition in economic and political systems that took place at that time.  There’s also the possibility of changing official statistical practice with the changing political system, but there’s no particular reason I know of (I’m not an expert in former and post Soviet statistics systems, either…) to think of that, and the general curve looks plausible given an outsider’s view of the recent history there.
+<img src="/img/0020-deaths-trends.svg" alt="over-time" /></p>
+
+<p>Tragically, Norway’s <a href="https://en.wikipedia.org/wiki/2011_Norway_attacks">spike in 2011</a> is really noticeable to a close viewer, even in a chart like this with 40 countries covering 50 years.</p>
+
+<h3 id="secondary-point---catholic-countries-and-gender-more-men-getting-killed-violence-patterns">Secondary point - Catholic countries and gender (more men getting killed) violence patterns?</h3>
+<p>Looking into the imbalance between the sexes, we see that the countries with consistently high male to female ratios of rates of violent death are Colombia, Brazil, Mexico, Chile, Costa Rica and South Africa, in all of which males are at least 5 times more likely to be killed violently than are females.</p>
+
+<p><img src="/img/0020-gender-ratios.svg" alt="gender-plot" /></p>
+
+<p>At first glance there looks to be a possible correlation between being predominantly Catholic and a high ratio of male to female violent death rates (as well as the Latin American countries leading the pool, Italy and Ireland are also fairly high up on the list).  In an early draft of this post I had a casual mention of this and just a warning against slack inference, but I decided it was irresponsible to leave it at that.  To be more professional, I followed up my hunch with data on the proportion of a country that was Catholic in 2005 courtesy of <a href="http://www.catholic-hierarchy.org/country/sc1.html">data published by David M. Cheney</a>, a Catholic enthusiast (not sanctioned by any Catholic church authority but good enough for our purposes).</p>
+
+<p>As often proves to be the case, the answer is <a href="http://www.goodreads.com/book/show/23132200-i-think-you-ll-find-it-s-a-bit-more-complicated-than-that">“I think you’ll find it’s a bit more complicated than that”</a> and in fact there isn’t an easy way to draw a conclusion about whether females are protected, or males picked on, particularly in Catholic countries, just from this aggregated data.</p>
+
+<p>The challenge is that we’ve made up our hypothesis - relationship between Catholicism and males being disproportionately killed in assaults - after peeking at the data.  This generally renders post-peek model building difficult if not impossible, at least as a basis of hypothesis testing.</p>
+
+<p>The nub of the issue is that the apparent relationship with Catholicism might be an artefact of the high male murder by assault rates in five specific countries - Colmbia, Brazil, Mexico, etc - where the high Catholicism is highly correlated with other factors, specifically “Latin Americanism”.  Any decent model should take this into account - it’s just wrong to treat these five countries as independent observations (as is implicitly done in fitting a simple regression).  The image below illustrates the conundrum:</p>
+
+<p><img src="/img/0020-gender-catholic.svg" alt="catholics-gender" /></p>
+
+<ul>
+  <li>The top plot ignores the Latin Americanism of those five countries and fits a simple linear regression, which finds (illusory) statistically significant evidence of a link between Catholicism and a higher ratio of male to female death-from-assault rates.  As mentioned above, this approach is unsound because it ignores the grouping of the five prominent countries that drag up the slope of the line.</li>
+  <li>The second plot controls for this by adding a dummy variable for “Americas”.  The result is still statistically significant evidence of a Catholic effect, but interacting with the continent effect ie only in the Americas does it seem to matter being an increasingly Catholic country when wondering if males are more likely to be killed in an assault than females.</li>
+  <li>The third plot (which I think is my preferred) adds a dummy variable for “Latin American” and finds no statistically significant relationship between Catholicism and male-female death ratios after that effect is accounted for.</li>
+</ul>
+
+<p>There’s no simple way to solve the correlation of our two explnatory variables - Americanism and Catholicism - and picking which of the second or third model above is best, and the essentially arbitrary nature of our continent-classification variable.  There’s no possibility of creating a test-set of data, for example.  Even if we brought in what data are available on poorer countries and used them as a test set, the confounding relationship between Latin America and Catholicism would pertain to that dataset too.  So until more data or ideas come out (and I’m not claiming to have looked for them, either way) I prefer to stick to the third plot, and say only that male/female assault death ratios are much higher in Latin American countries, we don’t know why from just this dataset, and after we’ve taken that into account there’s no real further evidence in this particular dataset of an additional Catholic effect.</p>
+
+<h2 id="arranging-the-data">Arranging the data</h2>
+<p>Here’s how I import the data into R.  If you know exactly what you’re looking for, you can import data directly from OECD.Stat with the <a href="https://cran.r-project.org/web/packages/rsdmx/index.html"><code class="highlighter-rouge">rsdmx</code></a> package by sending an appropriately structured URL (line 18 below) to their website.  However, to work out that URL you’ll probably need to navigate <a href="http://stats.oecd.org/">their site</a> by hand and choose your particular ‘customising’, then choose the “export” and “SDMX” options, then copy the URL it generates for you.  It’s useful for reproducibility purposes (for example, it meant I didn’t need to save a copy of the data anywhere to make the code below reproducible for others).</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">ggplot2</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">grid</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">gridExtra</span><span class="p">)</span><span class="w"> </span><span class="c1"># added 27/11/2015, for grid.arrange() to work!
+</span><span class="n">library</span><span class="p">(</span><span class="n">dplyr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">tidyr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">showtext</span><span class="p">)</span><span class="w"> </span><span class="c1"># for fonts
+</span><span class="n">library</span><span class="p">(</span><span class="n">rsdmx</span><span class="p">)</span><span class="w">    </span><span class="c1"># for importing OECD data
+</span><span class="n">library</span><span class="p">(</span><span class="n">ISOcodes</span><span class="p">)</span><span class="w"> </span><span class="c1"># for merging country codes with names
+</span><span class="n">library</span><span class="p">(</span><span class="n">rvest</span><span class="p">)</span><span class="w">    </span><span class="c1"># for screen scraping data about Catholicism
+</span><span class="w">
+</span><span class="n">font.add.google</span><span class="p">(</span><span class="s2">"Poppins"</span><span class="p">,</span><span class="w"> </span><span class="s2">"myfont"</span><span class="p">)</span><span class="w">
+</span><span class="n">showtext.auto</span><span class="p">()</span><span class="w">
+</span><span class="n">theme_set</span><span class="p">(</span><span class="n">theme_grey</span><span class="p">(</span><span class="n">base_family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"myfont"</span><span class="p">))</span><span class="w">
+
+</span><span class="c1">#----------Import and mung the death from assault data---------------
+# load deaths by assault from OECD.Stat
+</span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">exists</span><span class="p">(</span><span class="s2">"viol_sdmx"</span><span class="p">)){</span><span class="w">
+   </span><span class="n">myUrl</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"http://stats.oecd.org/restsdmx/sdmx.ashx/GetData/HEALTH_STAT/CICDHOCD.TXCMFETF+TXCMHOTH+TXCMILTX.AUS+AUT+BEL+CAN+CHL+CZE+DNK+EST+FIN+FRA+DEU+GRC+HUN+ISL+IRL+ISR+ITA+JPN+KOR+LUX+MEX+NLD+NZL+NOR+POL+PRT+SVK+SVN+ESP+SWE+CHE+TUR+GBR+USA+NMEC+BRA+CHN+COL+CRI+IND+IDN+LVA+LTU+RUS+ZAF/all?startTime=1960&amp;endTime=2014"</span><span class="w">
+   </span><span class="n">dataset</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">readSDMX</span><span class="p">(</span><span class="n">myUrl</span><span class="p">)</span><span class="w"> </span><span class="c1"># takes about 30 seconds on a slow hotel internet connection
+</span><span class="w">   </span><span class="n">viol_sdmx</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.data.frame</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span><span class="w"> </span><span class="c1"># takes about 10 seconds on an i5
+</span><span class="p">}</span></code></pre></figure>
+
+<p>The country codes provided by the OECD are ISO 3166 three digit country codes and we want to turn them into something more friendly for presentation purposes.  We also want to rename the levels of our units (“TXCMILTX” is less friendly than “Deaths per 100 000 population”), order some factor levels for future graphics purposes, and knock out Turkey which only has a few year’s data.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># load Country codes from ISOcodes R package
+</span><span class="n">data</span><span class="p">(</span><span class="s2">"ISO_3166_1"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># mung:
+</span><span class="n">viol</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">viol_sdmx</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="c1"># match country codes to country names:
+</span><span class="w">   </span><span class="n">left_join</span><span class="p">(</span><span class="n">ISO_3166_1</span><span class="p">[</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Alpha_3"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Name"</span><span class="p">)],</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"COU"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Alpha_3"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="c1"># more friendly names:
+</span><span class="w">   </span><span class="n">rename</span><span class="p">(</span><span class="n">Country</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Name</span><span class="p">,</span><span class="w">
+          </span><span class="n">Year</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">obsTime</span><span class="p">,</span><span class="w">
+          </span><span class="n">Value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">obsValue</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="c1"># limit to columns we want:
+</span><span class="w">   </span><span class="n">select</span><span class="p">(</span><span class="n">UNIT</span><span class="p">,</span><span class="w"> </span><span class="n">Country</span><span class="p">,</span><span class="w"> </span><span class="n">Year</span><span class="p">,</span><span class="w"> </span><span class="n">Value</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="c1"># make graphics-friendly versions of Unit and Year variables:
+</span><span class="w">   </span><span class="n">mutate</span><span class="p">(</span><span class="n">Unit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">UNIT</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"TXCMILTX"</span><span class="p">,</span><span class="w"> 
+                        </span><span class="s2">"Deaths per 100 000 population"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Deaths per 100 000 males"</span><span class="p">),</span><span class="w">
+          </span><span class="n">Unit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">UNIT</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"TXCMFETF"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Deaths per 100 000 females"</span><span class="p">,</span><span class="w"> </span><span class="n">Unit</span><span class="p">),</span><span class="w">
+          </span><span class="n">Unit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">factor</span><span class="p">(</span><span class="n">Unit</span><span class="p">,</span><span class="w"> </span><span class="n">levels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">unique</span><span class="p">(</span><span class="n">Unit</span><span class="p">)[</span><span class="nf">c</span><span class="p">(</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">)]),</span><span class="w">
+          </span><span class="n">Year</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">Year</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="c1"># not enough data for Turkey to be useful so we knock it out:
+</span><span class="w">   </span><span class="n">filter</span><span class="p">(</span><span class="n">Country</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">"Turkey"</span><span class="p">)</span></code></pre></figure>
+
+<p>Having created the original object <code class="highlighter-rouge">viol</code> I make a few summary and total objects to help with structuring my graphics.  In particular, I need a data frame that provides average rates since 1990 for the first chart, and a data frame of totals so I can arrange the plots in order of increasing rates of death from assault.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># create country x Unit summaries   
+</span><span class="n">viol_sum</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">viol</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">filter</span><span class="p">(</span><span class="n">Year</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">1990</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">group_by</span><span class="p">(</span><span class="n">Country</span><span class="p">,</span><span class="w"> </span><span class="n">Unit</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">summarise</span><span class="p">(</span><span class="n">Value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">Value</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">ungroup</span><span class="p">()</span><span class="w">
+
+</span><span class="c1"># create country totals (for ordering in charts)
+</span><span class="n">totals</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">viol_sum</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">group_by</span><span class="p">(</span><span class="n">Country</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">summarise</span><span class="p">(</span><span class="n">Value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">Value</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">arrange</span><span class="p">(</span><span class="n">Value</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># create wider version, with one column per variable:
+</span><span class="n">viol_spread</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">viol_sum</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">Unit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.character</span><span class="p">(</span><span class="n">Unit</span><span class="p">),</span><span class="w">
+          </span><span class="n">Unit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">grepl</span><span class="p">(</span><span class="s2">"female"</span><span class="p">,</span><span class="w"> </span><span class="n">Unit</span><span class="p">),</span><span class="w"> </span><span class="s2">"Female"</span><span class="p">,</span><span class="w"> </span><span class="n">Unit</span><span class="p">),</span><span class="w">
+          </span><span class="n">Unit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">grepl</span><span class="p">(</span><span class="s2">" males"</span><span class="p">,</span><span class="w"> </span><span class="n">Unit</span><span class="p">),</span><span class="w"> </span><span class="s2">"Male"</span><span class="p">,</span><span class="w"> </span><span class="n">Unit</span><span class="p">),</span><span class="w">
+          </span><span class="n">Unit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">grepl</span><span class="p">(</span><span class="s2">"population"</span><span class="p">,</span><span class="w"> </span><span class="n">Unit</span><span class="p">),</span><span class="w"> </span><span class="s2">"Population"</span><span class="p">,</span><span class="w"> </span><span class="n">Unit</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">spread</span><span class="p">(</span><span class="n">Unit</span><span class="p">,</span><span class="w"> </span><span class="n">Value</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">Country</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">factor</span><span class="p">(</span><span class="n">Country</span><span class="p">,</span><span class="w"> </span><span class="n">levels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">totals</span><span class="o">$</span><span class="n">Country</span><span class="p">))</span></code></pre></figure>
+
+<h2 id="the-actual-plots">The actual plots</h2>
+<p>Now we’re ready to draw some plots.  Here’s the code that makes the main two plots:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">viol_sum</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">Country</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">factor</span><span class="p">(</span><span class="n">Country</span><span class="p">,</span><span class="w"> </span><span class="n">levels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">totals</span><span class="o">$</span><span class="n">Country</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">Label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">grepl</span><span class="p">(</span><span class="s2">"population"</span><span class="p">,</span><span class="w"> </span><span class="n">Unit</span><span class="p">),</span><span class="w"> </span><span class="nf">as.character</span><span class="p">(</span><span class="n">Country</span><span class="p">),</span><span class="w"> </span><span class="s2">"|"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Value</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Country</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_segment</span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">viol_spread</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Country</span><span class="p">,</span><span class="w"> </span><span class="n">yend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Country</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Male</span><span class="p">,</span><span class="w"> </span><span class="n">xend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Female</span><span class="p">),</span><span class="w">
+                </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"white"</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_text</span><span class="p">(</span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Label</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Unit</span><span class="p">),</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.8</span><span class="p">,</span><span class="w">
+             </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"myfont"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">labs</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_x_log10</span><span class="p">((</span><span class="s2">"Deaths per 100,000 (logarithmic scale)"</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">theme</span><span class="p">(</span><span class="n">legend.position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"bottom"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_colour_manual</span><span class="p">(</span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"red"</span><span class="p">,</span><span class="w"> </span><span class="s2">"grey10"</span><span class="p">,</span><span class="w"> </span><span class="s2">"blue"</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">labs</span><span class="p">(</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Mean annual deaths from assault 1990 to 2013"</span><span class="p">)</span><span class="w"> 
+
+</span><span class="n">viol</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">Country</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">factor</span><span class="p">(</span><span class="n">Country</span><span class="p">,</span><span class="w"> </span><span class="n">levels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">totals</span><span class="o">$</span><span class="n">Country</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Year</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Value</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Unit</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">Country</span><span class="p">,</span><span class="w"> </span><span class="n">scales</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"free_y"</span><span class="p">,</span><span class="w"> </span><span class="n">ncol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_smooth</span><span class="p">(</span><span class="n">se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"loess"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_point</span><span class="p">(</span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.8</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_colour_manual</span><span class="p">(</span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"red"</span><span class="p">,</span><span class="w"> </span><span class="s2">"grey10"</span><span class="p">,</span><span class="w"> </span><span class="s2">"blue"</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">theme</span><span class="p">(</span><span class="n">legend.position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"bottom"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">labs</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Deaths per 100,000 per year - note changing vertical scale"</span><span class="p">,</span><span class="w"> 
+        </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Deaths from assault"</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span></code></pre></figure>
+
+<p>To investigate the Catholicism and gender ratio issues in the second set of plots, I had to pull down some data from the web using <a href="https://cran.r-project.org/web/packages/rvest/index.html">Hadley Wickham’s amazing <code class="highlighter-rouge">rvest</code> package</a>.  It’s inspired by Python’s wonderful <a href="http://www.crummy.com/software/BeautifulSoup/"><code class="highlighter-rouge">Beautiful Soup</code></a> but I have to say is <em>astonishingly</em> user friendly.</p>
+
+<p>Here’s my complete set of code for the gender dot plot, downloading the Catholicism data, and the resulting scatter plot.  The web-scraping part occupies a total of two lines of code (21 and 22 in the code below) - amazing:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># create a gender summary:
+</span><span class="n">viol_gender</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">viol</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">filter</span><span class="p">(</span><span class="o">!</span><span class="n">grepl</span><span class="p">(</span><span class="s2">"population"</span><span class="p">,</span><span class="w"> </span><span class="n">Unit</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">select</span><span class="p">(</span><span class="n">UNIT</span><span class="p">,</span><span class="w"> </span><span class="n">Value</span><span class="p">,</span><span class="w"> </span><span class="n">Year</span><span class="p">,</span><span class="w"> </span><span class="n">Country</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">spread</span><span class="p">(</span><span class="n">UNIT</span><span class="p">,</span><span class="w"> </span><span class="n">Value</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> 
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">ratio</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TXCMHOTH</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">TXCMFETF</span><span class="p">)</span><span class="w">  </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">group_by</span><span class="p">(</span><span class="n">Country</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">summarise</span><span class="p">(</span><span class="n">ratio</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">ratio</span><span class="p">,</span><span class="w"> </span><span class="n">tr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.2</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">arrange</span><span class="p">(</span><span class="n">ratio</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="c1"># knock out Luxembourg and Iceland, too many NAs:
+</span><span class="w">   </span><span class="n">filter</span><span class="p">(</span><span class="o">!</span><span class="nf">is.na</span><span class="p">(</span><span class="n">ratio</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">Country</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">factor</span><span class="p">(</span><span class="n">Country</span><span class="p">,</span><span class="w"> </span><span class="n">levels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Country</span><span class="p">))</span><span class="w">
+
+</span><span class="c1"># plot it:   
+</span><span class="n">viol_gender</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ratio</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Country</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_point</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Trimmed mean annual ratio of male to female rates\nof deaths from assault over whole period"</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># download catholic proportion data
+</span><span class="n">cath_page</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">read_html</span><span class="p">(</span><span class="s2">"http://www.catholic-hierarchy.org/country/sc1.html"</span><span class="p">)</span><span class="w">
+</span><span class="n">cath_data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">html_table</span><span class="p">(</span><span class="n">cath_page</span><span class="p">)[[</span><span class="m">1</span><span class="p">]]</span><span class="w"> 
+</span><span class="nf">names</span><span class="p">(</span><span class="n">cath_data</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">" "</span><span class="p">,</span><span class="w"> </span><span class="s2">"_"</span><span class="p">,</span><span class="w"> </span><span class="nf">names</span><span class="p">(</span><span class="n">cath_data</span><span class="p">))</span><span class="w">
+
+</span><span class="c1"># create vectors of country names for use in creating dummy variables:
+</span><span class="n">lat_american</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Colombia"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Brazil"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Mexico"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Chile"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Costa Rica"</span><span class="p">)</span><span class="w">
+</span><span class="n">american</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">lat_american</span><span class="p">,</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Canada"</span><span class="p">,</span><span class="w"> </span><span class="s2">"United States"</span><span class="p">))</span><span class="w">
+
+</span><span class="c1"># mung:
+</span><span class="n">cath_data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">cath_data</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">Country</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"M.+xico"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Mexico"</span><span class="p">,</span><span class="w"> </span><span class="n">Country</span><span class="p">),</span><span class="w">
+          </span><span class="n">Country</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">Country</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"USA"</span><span class="p">,</span><span class="w"> </span><span class="s2">"United States"</span><span class="p">,</span><span class="w"> </span><span class="n">Country</span><span class="p">),</span><span class="w">
+          </span><span class="n">Country</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">Country</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Great Britain"</span><span class="p">,</span><span class="w"> </span><span class="s2">"United Kingdom"</span><span class="p">,</span><span class="w"> </span><span class="n">Country</span><span class="p">),</span><span class="w">
+          </span><span class="n">Country</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">Country</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Korea (South)"</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="s2">"Korea, Republic of"</span><span class="p">,</span><span class="w"> </span><span class="n">Country</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">select</span><span class="p">(</span><span class="n">Country</span><span class="p">,</span><span class="w"> </span><span class="n">Percent_Catholic</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">Percent_Catholic</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">gsub</span><span class="p">(</span><span class="s2">"%"</span><span class="p">,</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">Percent_Catholic</span><span class="p">)),</span><span class="w">
+          </span><span class="n">Continent1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">Country</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="n">american</span><span class="p">,</span><span class="w"> </span><span class="s2">"Americas"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Other"</span><span class="p">),</span><span class="w">
+          </span><span class="n">Continent2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">Country</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="n">lat_american</span><span class="p">,</span><span class="w"> </span><span class="s2">"Latin American"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Other"</span><span class="p">))</span><span class="w">
+
+</span><span class="c1"># join the Catholic data to the assault data:          
+</span><span class="n">viol_gender_cath</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">viol_gender</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">left_join</span><span class="p">(</span><span class="n">cath_data</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Country"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># set up base plot:   
+</span><span class="n">cath1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w">    </span><span class="n">viol_gender_cath</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Percent_Catholic</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ratio</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Country</span><span class="p">))</span><span class="w">  </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_smooth</span><span class="p">(</span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"lm"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_text</span><span class="p">(</span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"myfont"</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.8</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Percentage of country reported to be Catholic"</span><span class="p">,</span><span class="w"> 
+        </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Ratio of female to male\nassault death rates"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">xlim</span><span class="p">(</span><span class="m">-5</span><span class="p">,</span><span class="w"> </span><span class="m">110</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># and the other two types of plots:      
+</span><span class="n">cath2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">cath1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Continent1</span><span class="p">)</span><span class="w">
+</span><span class="n">cath3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">cath1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Continent2</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># draw plots:
+</span><span class="n">grid.arrange</span><span class="p">(</span><span class="n">cath1</span><span class="p">,</span><span class="w"> </span><span class="n">cath2</span><span class="p">,</span><span class="w"> </span><span class="n">cath3</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># for reference, look explicitly at the underlying statistical models:
+</span><span class="n">mod1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lm</span><span class="p">(</span><span class="n">ratio</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">Percent_Catholic</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">viol_gender_cath</span><span class="p">)</span><span class="w">
+</span><span class="n">mod2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lm</span><span class="p">(</span><span class="n">ratio</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">Percent_Catholic</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">Continent1</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">viol_gender_cath</span><span class="p">)</span><span class="w">
+</span><span class="n">mod3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lm</span><span class="p">(</span><span class="n">ratio</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">Percent_Catholic</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">Continent2</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">viol_gender_cath</span><span class="p">)</span><span class="w">
+
+</span><span class="n">summary</span><span class="p">(</span><span class="n">mod1</span><span class="p">)</span><span class="w">
+</span><span class="n">summary</span><span class="p">(</span><span class="n">mod2</span><span class="p">)</span><span class="w">
+</span><span class="n">summary</span><span class="p">(</span><span class="n">mod3</span><span class="p">)</span></code></pre></figure>
+
+
+
+</div>
+
+<div class = "container">
+   <div class="col-md-4">
+    
+        <a rel="prev" href="/blog/2015/11/21/arima-sims">
+        <p>&larr; Older</p>
+        <p>Create ARIMA time series from bottom up</p>
+        
+        </a>
+    
+    </div>
+    <div class="col-md-4">
+    </div>
+    <div class="col-md-4" style="text-align: right;">
+     
+        <a rel="next" href="/blog/2015/12/05/wdi-inequality">
+        <p>Newer &rarr;</p>
+        <p>Inequality measures in the World Development Indicators</p>
+        
+        </a>
+    
+      </div>
+      </div>
+      
+      
+      
+</div>
+
+
+   
+    <div id="disqus_thread"></div>
+
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+    
+    
+   
+			
+			</div><!-- /.container -->
+
+         
+
+   <div class = "container footer">
+			<footer>
+	    		
+            <p>Follow <a href = "/feed.xml">this blog with RSS</a>.  Or follow <a href = "/feed.r.xml">posts in this blog featuring R with RSS</a>.</p>
+	
+            <p>This blog is built with <a href = "http://jekyllrb.com/">Jekyll</a>, <a href = "http://getbootstrap.com/">Bootstrap</a>, <a href = "https://www.ruby-lang.org/en/">Ruby</a> and <a href = "https://cran.r-project.org/">R</a>.  Read my <a href="/about/acknowledgements.html">acknowledgements</a> for a little more on how.  I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Peter's stats stuff</span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+
+
+			</footer>
+    </div>
+
+
+
+  
+</body>
+</html>
+   
+
+
+
+
+         

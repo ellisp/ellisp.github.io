@@ -1,0 +1,590 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Importing the New Zealand Income Survey SURF</title>
+      	
+         
+         
+            <meta name ="description" content ="I tidy up the publicly available simulated unit record file (SURF) of the New Zealand Income Survey 2011, import into a database, and explore income distributions, visualising the lower distribution of weekly incomes New Zealanders of Maori and Pacific Islander ethnicity.  Along the way I create a function to identify modes in a multi-modal distribution.">
+            <meta property="og:description" content ="I tidy up the publicly available simulated unit record file (SURF) of the New Zealand Income Survey 2011, import into a database, and explore income distributions, visualising the lower distribution of weekly incomes New Zealanders of Maori and Pacific Islander ethnicity.  Along the way I create a function to identify modes in a multi-modal distribution.">
+         
+         <meta property="og:site_name" content="Peter's stats stuff" />
+         <meta property="og:title" content="Importing the New Zealand Income Survey SURF" />
+         
+            <meta property="og:image" content="http://ellisp.github.io/img/0003-nzis-ethnicity-density.png" />
+         
+         <meta property="og:url" content="http://ellisp.github.io/blog/2015/08/15/importing-nzis-surf/" />
+         <meta property="og:author" content= "https://www.facebook.com/peter.ellis.353" />
+         <meta property="og:type" content="article" />
+           
+          <link href="/css/bootstrap.min.css" rel ="stylesheet">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet">
+            <link href="/css/custom.css" rel ="stylesheet">       
+     <link rel="stylesheet" href="/css/Pygments/autumn.css">      
+     <link rel="stylesheet" href="/css/Pygments/custom.css">      
+            
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="Peter's stats stuff by Peter Ellis"
+      href="/feed.xml">
+
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+         <script src="/js/bootstrap.min.js"></script>
+         
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Peter's stats stuff</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">All blog posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">Ordered by date</a></li>
+                  <li><a href="/blog/index_by_tag.html">Grouped by subject matter</a></li>
+                  <li><a href = /blog/2016/06/05/bootstrap-cv-strategies>Most recent post</a></li>
+                 </ul>
+            </li>
+              <li><a href="/blog/showcase.html">Showcase</a></li>
+              <li><a href="/presentations/index.html">Presentations</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			    <div class="jumbotron">
+      <div class="container">
+        <h1>Importing the New Zealand Income Survey SURF</h1>
+         <p class="meta">15 Aug 2015</p>
+        
+      </div>
+    </div>
+
+
+
+
+<div class = "post-summary">
+<h2>TL;DR Summary:</h2>
+   I tidy up the publicly available simulated unit record file (SURF) of the New Zealand Income Survey 2011, import into a database, and explore income distributions, visualising the lower distribution of weekly incomes New Zealanders of Maori and Pacific Islander ethnicity.  Along the way I create a function to identify modes in a multi-modal distribution.
+   <hr></hr>
+</div>
+
+<div class="post">
+<div class="col-md-2">
+
+</div>
+  <div class="col-md-8">
+
+  <h2>The quest for income microdata</h2>
+<p>For a separate project, I've been looking for source data on income and wealth inequality.  Not aggregate data like Gini coefficients or the percentage of income earned by the bottom 20% or top 1%, but the sources used to calculate those things.  Because it's sensitve personal financial data either from surveys or tax data, it's not easy to get hold of, particularly if you want to do it in the comfort of your own home and don't have time / motivation to fill in application forms.  So far, what I've got is a <a href = "http://www.stats.govt.nz/tools_and_services/microdata-access/nzis-2011-cart-surf.aspx">simulated unit record file (SURF) from the New Zealand Income Survey,</a> published by Statistics New Zealand for educational and instructional purposes. It's a simplified, simulated version of the original survey and it lets me make graphics like this one:</p>
+
+<div class ="img-container"><img src = "/img/0003-nzis-ethnicity-density.svg"></div>
+ <p>
+ This plot shows the density of income from all sources for four of the most prominent ethnicity types in New Zealand.  New Zealand official statistics allow people to identify with more than one ethnicity, which means there is some double counting (more on that below).  Three things leap out at me from this chart:
+ <ol>
+ <li>The density curves of the different ethnic groups are very similar visually
+ <li>People of Maori and Pacific Peoples ethnicity have proportionately more $300-$400 per week earners than Europeans and Asians, leading to an overall noticeable lean to the lower numbers
+ <li>Weekly income is bimodal, bunching up at $345 per week and $820 per week.  Actually, this image is misleading in that respect; in reality it is trimodal, with a huge bunch of people with zero income (and some negative), who aren't shown on this plot because of the logarithmic scale.  So you could say that, for New Zealanders getting any income at all, there is a bimodal distribution.
+ </ol>
+  </p>
+<p>
+Where's that bimodal distribution coming from?  The obvious candidate is part time workers, and this is seen when we plot income versus hours worked in the next image:
+</p>
+<div class ="img-container"><img src = "/img/0003-nzis-scatter.svg"></div>
+<p>(That interesting diagonal line below which there are very few points is the minimum wage per hour)</p>
+  <p>
+  Statistics New Zealand warn that while this simulated data is an accurate representation of the actual New Zealand population, it shouldn't be used for precise statistics, so for now I won't draw particularly strong conclusions on anything.  A simulated unit record file is a great way of solving confidentiality purposes, but in the end it has been created by a statistical model.  There's a risk that interesting inferences might be just picking up something implicit in the model that wasn't taken into account when it was first put together.  That's not likely to be the case for the basic distribution of the income values, but we'll note the exploratory finding for now and move on.</p>
+  
+  <p>A box plot is better for examining the full range of reported ethnicities but not so good for picking up the bi-modal subtlety.  It should also be noted that both these graphs delete people who made losses (negative income) in a given week - the data show income from all sources:
+  </p>
+
+<div class = "img-container"><img src = "/img/0003-nzis-ethnicity-boxplot.svg"></div>
+
+<h2>Loading the NZIS SURF into a database</h2>
+Here's how I drew the graphs, and estimated the two modes.  I think I'll want to re-use this data quite often, so it's worth while putting in a database that's accessible from different projects without having to move a bunch of data files around in Windows Explorer.  The way Statistics New Zealand have released the file, with codings rather than values for dimensions like ethnicity and region, also makes a database a good way to make the data analysis ready.</p>
+
+<p>After importing the data, the first significant job is to deal with that pesky ethnicity variable.  In the released version of the data respondents with two ethnicities have both code numbers joined together eg 12 means both European (1) and Maori (2).  To get around this I split the data into two fact tables, one with a single row per respondent with most of the data; and a second just for ethnicity with either one or two rows for each respondent.  Here's how I do that with a combination of {dplyr} and {tidyr}:</p>
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">dplyr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">RODBC</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">tidyr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">mbie</span><span class="p">)</span><span class="w"> </span><span class="c1"># for AskCreds, which is alternatively directly available 
+</span><span class="w">              </span><span class="c1"># https://github.com/nz-mbie/mbie-r-package/blob/master/pkg/R/Creds.R 
+</span><span class="w">
+</span><span class="c1"># imports, clean up, and save to database the data from
+# http://www.stats.govt.nz/tools_and_services/microdata-access/nzis-2011-cart-surf.aspx
+</span><span class="w">
+</span><span class="n">url</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"http://www.stats.govt.nz/~/media/Statistics/services/microdata-access/nzis11-cart-surf/nzis11-cart-surf.csv"</span><span class="w">
+</span><span class="n">nzis</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">read.csv</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="w">
+
+
+</span><span class="c1">#-----------------fact tables------------------
+# Create a main table with a primary key
+</span><span class="w">
+</span><span class="n">f_mainheader</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">nzis</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">survey_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">nrow</span><span class="p">(</span><span class="n">nzis</span><span class="p">))</span><span class="w">
+
+</span><span class="c1"># we need to normalise the multiple ethnicities, currently concatenated into a single variable
+</span><span class="n">cat</span><span class="p">(</span><span class="s2">"max number of ethnicities is"</span><span class="p">,</span><span class="w"> </span><span class="nf">max</span><span class="p">(</span><span class="n">nchar</span><span class="p">(</span><span class="n">nzis</span><span class="o">$</span><span class="n">ethnicity</span><span class="p">)),</span><span class="w"> </span><span class="s2">"\n"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">f_ethnicity</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">f_mainheader</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">select</span><span class="p">(</span><span class="n">ethnicity</span><span class="p">,</span><span class="w"> </span><span class="n">survey_id</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">First</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">substring</span><span class="p">(</span><span class="n">ethnicity</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">),</span><span class="w">
+          </span><span class="n">Second</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">substring</span><span class="p">(</span><span class="n">ethnicity</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">select</span><span class="p">(</span><span class="o">-</span><span class="n">ethnicity</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">gather</span><span class="p">(</span><span class="n">ethnicity_type</span><span class="p">,</span><span class="w"> </span><span class="n">ethnicity_id</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">survey_id</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">filter</span><span class="p">(</span><span class="n">ethnicity_id</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span><span class="w"> 
+   
+</span><span class="c1"># drop the original messy ethnicity variable and tidy up names on main header
+</span><span class="n">f_mainheader</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">f_mainheader</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">select</span><span class="p">(</span><span class="o">-</span><span class="n">ethnicity</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">rename</span><span class="p">(</span><span class="n">region_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lgr</span><span class="p">,</span><span class="w">
+          </span><span class="n">sex_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sex</span><span class="p">,</span><span class="w">
+          </span><span class="n">agegrp_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">agegrp</span><span class="p">,</span><span class="w">
+          </span><span class="n">qualification_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">qualification</span><span class="p">,</span><span class="w">
+          </span><span class="n">occupation_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">occupation</span><span class="p">)</span></code></pre></figure>
+
+<p>Second step is to re-create the dimension tables that turn the codes (eg 1 and 2) into meaningful values (European and Maori).  Statistics New Zealand provide these, but unfortunately in an Excel workbook that's easier for humans than computers to link up to the data.  There's not too many of so it's easy enough to code them by hand, which the next set of code does:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#-----------------dimension tables------------------
+# all drawn from the data dictionary available at the first link given above
+</span><span class="n">d_sex</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data_frame</span><span class="p">(</span><span class="n">sex_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">sex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"male"</span><span class="p">,</span><span class="w"> </span><span class="s2">"female"</span><span class="p">))</span><span class="w">
+
+</span><span class="n">d_agegrp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data_frame</span><span class="p">(</span><span class="w">
+   </span><span class="n">agegrp_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">seq</span><span class="p">(</span><span class="n">from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">15</span><span class="p">,</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">65</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">agegrp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">agegrp_id</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">65</span><span class="p">,</span><span class="w"> </span><span class="s2">"65+"</span><span class="p">,</span><span class="w"> </span><span class="n">paste0</span><span class="p">(</span><span class="n">agegrp_id</span><span class="p">,</span><span class="w"> </span><span class="s2">"-"</span><span class="p">,</span><span class="w"> </span><span class="n">agegrp_id</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">4</span><span class="p">)))</span><span class="w">
+
+</span><span class="n">d_ethnicity</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data_frame</span><span class="p">(</span><span class="n">ethnicity_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">3</span><span class="p">,</span><span class="m">4</span><span class="p">,</span><span class="m">5</span><span class="p">,</span><span class="m">6</span><span class="p">,</span><span class="m">9</span><span class="p">),</span><span class="w">
+                          </span><span class="n">ethnicity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="w">
+                             </span><span class="s2">"European"</span><span class="p">,</span><span class="w">
+                             </span><span class="s2">"Maori"</span><span class="p">,</span><span class="w">
+                             </span><span class="s2">"Pacific Peoples"</span><span class="p">,</span><span class="w">
+                             </span><span class="s2">"Asian"</span><span class="p">,</span><span class="w">
+                             </span><span class="s2">"Middle Eastern/Latin American/African"</span><span class="p">,</span><span class="w">
+                             </span><span class="s2">"Other Ethnicity"</span><span class="p">,</span><span class="w">
+                             </span><span class="s2">"Residual Categories"</span><span class="p">))</span><span class="w">
+
+
+</span><span class="n">d_occupation</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data_frame</span><span class="p">(</span><span class="n">occupation_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">10</span><span class="p">,</span><span class="w">
+                       </span><span class="n">occupation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="w">
+                          </span><span class="s2">"Managers"</span><span class="p">,</span><span class="w">
+                          </span><span class="s2">"Professionals"</span><span class="p">,</span><span class="w">
+                          </span><span class="s2">"Technicians and Trades Workers"</span><span class="p">,</span><span class="w">
+                          </span><span class="s2">"Community and Personal Service Workers"</span><span class="p">,</span><span class="w">
+                          </span><span class="s2">"Clerical and Adminsitrative Workers"</span><span class="p">,</span><span class="w">
+                          </span><span class="s2">"Sales Workers"</span><span class="p">,</span><span class="w">
+                          </span><span class="s2">"Machinery Operators and Drivers"</span><span class="p">,</span><span class="w">
+                          </span><span class="s2">"Labourers"</span><span class="p">,</span><span class="w">
+                          </span><span class="s2">"Residual Categories"</span><span class="p">,</span><span class="w">
+                          </span><span class="s2">"No occupation"</span><span class="w">                          
+                       </span><span class="p">))</span><span class="w">
+
+
+</span><span class="n">d_qualification</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data_frame</span><span class="p">(</span><span class="n">qualification_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">5</span><span class="p">,</span><span class="w">
+                        </span><span class="n">qualification</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="w">
+                           </span><span class="s2">"None"</span><span class="p">,</span><span class="w">
+                           </span><span class="s2">"School"</span><span class="p">,</span><span class="w">
+                           </span><span class="s2">"Vocational/Trade"</span><span class="p">,</span><span class="w">
+                           </span><span class="s2">"Bachelor or Higher"</span><span class="p">,</span><span class="w">
+                           </span><span class="s2">"Other"</span><span class="w">
+                        </span><span class="p">))</span><span class="w">
+
+</span><span class="n">d_region</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data_frame</span><span class="p">(</span><span class="n">region_id</span><span class="w"> </span><span class="o">=</span><span class="m">1</span><span class="o">:</span><span class="m">12</span><span class="p">,</span><span class="w">
+                       </span><span class="n">region</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Northland"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Auckland"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Waikato"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Bay of Plenty"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Gisborne / Hawke's Bay"</span><span class="p">,</span><span class="w">
+                                  </span><span class="s2">"Taranaki"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Manawatu-Wanganui"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Wellington"</span><span class="p">,</span><span class="w"> 
+                                  </span><span class="s2">"Nelson/Tasman/Marlborough/West Coast"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Canterbury"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Otago"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Southland"</span><span class="p">))</span></code></pre></figure>
+
+<p>The final step in the data cleaning is to save all of our tables to a database, create some indexes so they work nice and fast, and join them up in an analysis-ready view.  In the below I use an ODBC (open database connectivity) connection to a MySQL server called "PlayPen".  R plays nicely with databases; set it up and forget about it.<p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#---------------save to database---------------
+</span><span class="n">creds</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">AskCreds</span><span class="p">(</span><span class="s2">"Credentials for someone who can create databases"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">PlayPen</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">odbcConnect</span><span class="p">(</span><span class="s2">"PlayPen_prod"</span><span class="p">,</span><span class="w"> </span><span class="n">uid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">creds</span><span class="o">$</span><span class="n">uid</span><span class="p">,</span><span class="w"> </span><span class="n">pwd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">creds</span><span class="o">$</span><span class="n">pwd</span><span class="p">)</span><span class="w">
+</span><span class="n">try</span><span class="p">(</span><span class="n">sqlQuery</span><span class="p">(</span><span class="n">PlayPen</span><span class="p">,</span><span class="w"> </span><span class="s2">"create database nzis11"</span><span class="p">)</span><span class="w"> </span><span class="p">)</span><span class="w">
+</span><span class="n">sqlQuery</span><span class="p">(</span><span class="n">PlayPen</span><span class="p">,</span><span class="w"> </span><span class="s2">"use nzis11"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># fact tables.  These take a long time to load up with sqlSave (which adds one row at a time)
+# but it's easier (quick and dirty) than creating a table and doing a bulk upload from a temp 
+# file.  Any bigger than this you'd want to bulk upload though - took 20 minutes or more.
+</span><span class="n">sqlSave</span><span class="p">(</span><span class="n">PlayPen</span><span class="p">,</span><span class="w"> </span><span class="n">f_mainheader</span><span class="p">,</span><span class="w"> </span><span class="n">addPK</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">rownames</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w">
+</span><span class="n">sqlSave</span><span class="p">(</span><span class="n">PlayPen</span><span class="p">,</span><span class="w"> </span><span class="n">f_ethnicity</span><span class="p">,</span><span class="w"> </span><span class="n">addPK</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> </span><span class="n">rownames</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w"> 
+                                            </span><span class="c1"># add a primary key on the fly in this case.  All other tables
+</span><span class="w">                                            </span><span class="c1"># have their own already created by R.
+</span><span class="w">
+</span><span class="c1"># dimension tables
+</span><span class="n">sqlSave</span><span class="p">(</span><span class="n">PlayPen</span><span class="p">,</span><span class="w"> </span><span class="n">d_sex</span><span class="p">,</span><span class="w"> </span><span class="n">addPK</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">rownames</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w">
+</span><span class="n">sqlSave</span><span class="p">(</span><span class="n">PlayPen</span><span class="p">,</span><span class="w"> </span><span class="n">d_agegrp</span><span class="p">,</span><span class="w"> </span><span class="n">addPK</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">rownames</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w">
+</span><span class="n">sqlSave</span><span class="p">(</span><span class="n">PlayPen</span><span class="p">,</span><span class="w"> </span><span class="n">d_ethnicity</span><span class="p">,</span><span class="w"> </span><span class="n">addPK</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">rownames</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w">
+</span><span class="n">sqlSave</span><span class="p">(</span><span class="n">PlayPen</span><span class="p">,</span><span class="w"> </span><span class="n">d_occupation</span><span class="p">,</span><span class="w"> </span><span class="n">addPK</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">rownames</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w">
+</span><span class="n">sqlSave</span><span class="p">(</span><span class="n">PlayPen</span><span class="p">,</span><span class="w"> </span><span class="n">d_qualification</span><span class="p">,</span><span class="w"> </span><span class="n">addPK</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">rownames</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w">
+</span><span class="n">sqlSave</span><span class="p">(</span><span class="n">PlayPen</span><span class="p">,</span><span class="w"> </span><span class="n">d_region</span><span class="p">,</span><span class="w"> </span><span class="n">addPK</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">rownames</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#----------------indexing----------------------
+</span><span class="w">
+</span><span class="n">sqlQuery</span><span class="p">(</span><span class="n">PlayPen</span><span class="p">,</span><span class="w"> </span><span class="s2">"ALTER TABLE f_mainheader ADD PRIMARY KEY(survey_id)"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">sqlQuery</span><span class="p">(</span><span class="n">PlayPen</span><span class="p">,</span><span class="w"> </span><span class="s2">"ALTER TABLE d_sex ADD PRIMARY KEY(sex_id)"</span><span class="p">)</span><span class="w">
+</span><span class="n">sqlQuery</span><span class="p">(</span><span class="n">PlayPen</span><span class="p">,</span><span class="w"> </span><span class="s2">"ALTER TABLE d_agegrp ADD PRIMARY KEY(agegrp_id)"</span><span class="p">)</span><span class="w">
+</span><span class="n">sqlQuery</span><span class="p">(</span><span class="n">PlayPen</span><span class="p">,</span><span class="w"> </span><span class="s2">"ALTER TABLE d_ethnicity ADD PRIMARY KEY(ethnicity_id)"</span><span class="p">)</span><span class="w">
+</span><span class="n">sqlQuery</span><span class="p">(</span><span class="n">PlayPen</span><span class="p">,</span><span class="w"> </span><span class="s2">"ALTER TABLE d_occupation ADD PRIMARY KEY(occupation_id)"</span><span class="p">)</span><span class="w">
+</span><span class="n">sqlQuery</span><span class="p">(</span><span class="n">PlayPen</span><span class="p">,</span><span class="w"> </span><span class="s2">"ALTER TABLE d_qualification ADD PRIMARY KEY(qualification_id)"</span><span class="p">)</span><span class="w">
+</span><span class="n">sqlQuery</span><span class="p">(</span><span class="n">PlayPen</span><span class="p">,</span><span class="w"> </span><span class="s2">"ALTER TABLE d_region ADD PRIMARY KEY(region_id)"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#---------------create an analysis-ready view-------------------
+# In Oracle we'd use a materialized view, which MySQL can't do.  But
+# the below is fast enough anyway:
+</span><span class="w">
+</span><span class="n">sql1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w">
+   </span><span class="s2">"CREATE VIEW vw_mainheader AS SELECT sex, agegrp, occupation, qualification, region, hours, income FROM
+      f_mainheader a   JOIN
+      d_sex b          on a.sex_id = b.sex_id JOIN
+      d_agegrp c       on a.agegrp_id = c.agegrp_id JOIN
+      d_occupation e   on a.occupation_id = e.occupation_id JOIN
+      d_qualification f on a.qualification_id = f.qualification_id JOIN
+      d_region g       on a.region_id = g.region_id"</span><span class="w">
+
+</span><span class="n">sqlQuery</span><span class="p">(</span><span class="n">PlayPen</span><span class="p">,</span><span class="w"> </span><span class="n">sql1</span><span class="p">)</span></code></pre></figure>
+
+<h2>Average weekly income in NZ 2011 by various slices and dices</h2>
+<p>Whew, that's out of the way.  Next post that I use this data I can go straight to the database.  We're now in a position to check our data matches the summary totals provided by Statistics New Zealand.  Statistics New Zealand say this SURF can be treated as a simple random sample, which means each point can get an identical individual weight, which we can estimate from the summary tables in their data dictionary.  Each person in the sample represents 117.4 in the population (in the below I have population figures in thousands, to match the Statistics New Zealand summaries.<p>
+
+<p>Statistics New Zealand doesn't provide region and occupation summary statistics, and the qualification summaries they provide use a more detailed classification than is in the actual SURF.  But for the other categories - sex, age group, and the trick ethnicity - my results match theirs, so I know I haven't munched the data.<p>
+<!-- html table generated in R 3.1.2 by xtable 1.7-4 package -->
+<!-- Sat Aug 15 12:13:30 2015 -->
+<table border=1>
+<tr> <th> sex </th> <th> Mean </th> <th> Sample </th> <th> Population </th>  </tr>
+  <tr> <td> female </td> <td align="right"> 611 </td> <td align="right"> 15217 </td> <td align="right"> 1787.10 </td> </tr>
+  <tr> <td> male </td> <td align="right"> 779 </td> <td align="right"> 14254 </td> <td align="right"> 1674.00 </td> </tr>
+   </table>
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">tab1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sqlQuery</span><span class="p">(</span><span class="n">PlayPen</span><span class="p">,</span><span class="w"> 
+</span><span class="s2">"SELECT 
+                              sex,
+                              ROUND(AVG(income))          as Mean, 
+                              COUNT(1)                    as Sample,
+                              ROUND(COUNT(1) * .11744, 1) as Population
+                           FROM vw_mainheader
+                           GROUP BY sex"</span><span class="p">)</span></code></pre></figure>
+<!-- html table generated in R 3.1.2 by xtable 1.7-4 package -->
+<!-- Sat Aug 15 12:13:30 2015 -->
+<table border=1>
+<tr> <th> agegrp </th> <th> Mean </th> <th> Sample </th> <th> Population </th>  </tr>
+  <tr> <td> 15-19 </td> <td align="right"> 198 </td> <td align="right"> 2632 </td> <td align="right"> 309.10 </td> </tr>
+  <tr> <td> 20-24 </td> <td align="right"> 567 </td> <td align="right"> 2739 </td> <td align="right"> 321.70 </td> </tr>
+  <tr> <td> 25-29 </td> <td align="right"> 715 </td> <td align="right"> 2564 </td> <td align="right"> 301.10 </td> </tr>
+  <tr> <td> 30-34 </td> <td align="right"> 796 </td> <td align="right"> 2349 </td> <td align="right"> 275.90 </td> </tr>
+  <tr> <td> 35-39 </td> <td align="right"> 899 </td> <td align="right"> 2442 </td> <td align="right"> 286.80 </td> </tr>
+  <tr> <td> 40-44 </td> <td align="right"> 883 </td> <td align="right"> 2625 </td> <td align="right"> 308.30 </td> </tr>
+  <tr> <td> 45-49 </td> <td align="right"> 871 </td> <td align="right"> 2745 </td> <td align="right"> 322.40 </td> </tr>
+  <tr> <td> 50-54 </td> <td align="right"> 911 </td> <td align="right"> 2522 </td> <td align="right"> 296.20 </td> </tr>
+  <tr> <td> 55-59 </td> <td align="right"> 844 </td> <td align="right"> 2140 </td> <td align="right"> 251.30 </td> </tr>
+  <tr> <td> 60-64 </td> <td align="right"> 816 </td> <td align="right"> 1994 </td> <td align="right"> 234.20 </td> </tr>
+  <tr> <td> 65+ </td> <td align="right"> 421 </td> <td align="right"> 4719 </td> <td align="right"> 554.20 </td> </tr>
+   </table>
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">tab2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sqlQuery</span><span class="p">(</span><span class="n">PlayPen</span><span class="p">,</span><span class="w"> 
+</span><span class="s2">"SELECT 
+                              agegrp,
+                              ROUND(AVG(income))          as Mean, 
+                              COUNT(1)                    as Sample,
+                              ROUND(COUNT(1) * .11744, 1) as Population
+                           FROM vw_mainheader
+                           GROUP BY agegrp"</span><span class="p">)</span></code></pre></figure>
+<!-- html table generated in R 3.1.2 by xtable 1.7-4 package -->
+<!-- Sat Aug 15 12:13:30 2015 -->
+<table border=1>
+<tr> <th> qualification </th> <th> Mean </th> <th> Sample </th> <th> Population </th>  </tr>
+  <tr> <td> School </td> <td align="right"> 564 </td> <td align="right"> 7064 </td> <td align="right"> 829.60 </td> </tr>
+  <tr> <td> None </td> <td align="right"> 565 </td> <td align="right"> 6891 </td> <td align="right"> 809.30 </td> </tr>
+  <tr> <td> Other </td> <td align="right"> 725 </td> <td align="right"> 1858 </td> <td align="right"> 218.20 </td> </tr>
+  <tr> <td> Vocational/Trade </td> <td align="right"> 734 </td> <td align="right"> 8435 </td> <td align="right"> 990.60 </td> </tr>
+  <tr> <td> Bachelor or Higher </td> <td align="right"> 955 </td> <td align="right"> 5223 </td> <td align="right"> 613.40 </td> </tr>
+   </table>
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># qualification summary in data dictionary uses a different classification to that in data
+</span><span class="n">tab3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sqlQuery</span><span class="p">(</span><span class="n">PlayPen</span><span class="p">,</span><span class="w"> 
+</span><span class="s2">"SELECT 
+                              qualification,
+                              ROUND(AVG(income))          as Mean, 
+                              COUNT(1)                    as Sample,
+                              ROUND(COUNT(1) * .11744, 1) as Population
+                           FROM vw_mainheader
+                           GROUP BY qualification
+                           ORDER BY Mean"</span><span class="p">)</span></code></pre></figure>
+<!-- html table generated in R 3.1.2 by xtable 1.7-4 package -->
+<!-- Sat Aug 15 12:13:30 2015 -->
+<table border=1>
+<tr> <th> occupation </th> <th> Mean </th> <th> Sample </th> <th> Population </th>  </tr>
+  <tr> <td> No occupation </td> <td align="right"> 257 </td> <td align="right"> 10617 </td> <td align="right"> 1246.90 </td> </tr>
+  <tr> <td> Labourers </td> <td align="right"> 705 </td> <td align="right"> 2154 </td> <td align="right"> 253.00 </td> </tr>
+  <tr> <td> Residual Categories </td> <td align="right"> 726 </td> <td align="right">  24 </td> <td align="right"> 2.80 </td> </tr>
+  <tr> <td> Community and Personal Service Workers </td> <td align="right"> 745 </td> <td align="right"> 1734 </td> <td align="right"> 203.60 </td> </tr>
+  <tr> <td> Sales Workers </td> <td align="right"> 800 </td> <td align="right"> 1688 </td> <td align="right"> 198.20 </td> </tr>
+  <tr> <td> Clerical and Adminsitrative Workers </td> <td align="right"> 811 </td> <td align="right"> 2126 </td> <td align="right"> 249.70 </td> </tr>
+  <tr> <td> Technicians and Trades Workers </td> <td align="right"> 886 </td> <td align="right"> 2377 </td> <td align="right"> 279.20 </td> </tr>
+  <tr> <td> Machinery Operators and Drivers </td> <td align="right"> 917 </td> <td align="right"> 1049 </td> <td align="right"> 123.20 </td> </tr>
+  <tr> <td> Professionals </td> <td align="right"> 1105 </td> <td align="right"> 4540 </td> <td align="right"> 533.20 </td> </tr>
+  <tr> <td> Managers </td> <td align="right"> 1164 </td> <td align="right"> 3162 </td> <td align="right"> 371.30 </td> </tr>
+   </table>
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># occupation summary not given in data dictionary
+</span><span class="n">tab4</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sqlQuery</span><span class="p">(</span><span class="n">PlayPen</span><span class="p">,</span><span class="w"> 
+</span><span class="s2">"SELECT 
+                             occupation,
+                             ROUND(AVG(income))          as Mean, 
+                             COUNT(1)                    as Sample,
+                             ROUND(COUNT(1) * .11744, 1) as Population
+                           FROM vw_mainheader
+                           GROUP BY occupation
+                           ORDER BY Mean"</span><span class="p">)</span></code></pre></figure>
+<!-- html table generated in R 3.1.2 by xtable 1.7-4 package -->
+<!-- Sat Aug 15 12:13:30 2015 -->
+<table border=1>
+<tr> <th> region </th> <th> Mean </th> <th> Sample </th> <th> Population </th>  </tr>
+  <tr> <td> Bay of Plenty </td> <td align="right"> 620 </td> <td align="right"> 1701 </td> <td align="right"> 199.80 </td> </tr>
+  <tr> <td> Taranaki </td> <td align="right"> 634 </td> <td align="right"> 728 </td> <td align="right"> 85.50 </td> </tr>
+  <tr> <td> Waikato </td> <td align="right"> 648 </td> <td align="right"> 2619 </td> <td align="right"> 307.60 </td> </tr>
+  <tr> <td> Southland </td> <td align="right"> 648 </td> <td align="right"> 637 </td> <td align="right"> 74.80 </td> </tr>
+  <tr> <td> Manawatu-Wanganui </td> <td align="right"> 656 </td> <td align="right"> 1564 </td> <td align="right"> 183.70 </td> </tr>
+  <tr> <td> Northland </td> <td align="right"> 667 </td> <td align="right"> 1095 </td> <td align="right"> 128.60 </td> </tr>
+  <tr> <td> Nelson/Tasman/Marlborough/West Coast </td> <td align="right"> 680 </td> <td align="right"> 1253 </td> <td align="right"> 147.20 </td> </tr>
+  <tr> <td> Otago </td> <td align="right"> 686 </td> <td align="right"> 1556 </td> <td align="right"> 182.70 </td> </tr>
+  <tr> <td> Gisborne / Hawke's Bay </td> <td align="right"> 693 </td> <td align="right"> 1418 </td> <td align="right"> 166.50 </td> </tr>
+  <tr> <td> Canterbury </td> <td align="right"> 701 </td> <td align="right"> 4373 </td> <td align="right"> 513.60 </td> </tr>
+  <tr> <td> Auckland </td> <td align="right"> 720 </td> <td align="right"> 9063 </td> <td align="right"> 1064.40 </td> </tr>
+  <tr> <td> Wellington </td> <td align="right"> 729 </td> <td align="right"> 3464 </td> <td align="right"> 406.80 </td> </tr>
+   </table>
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># region summary not given in data dictionary
+</span><span class="n">tab5</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sqlQuery</span><span class="p">(</span><span class="n">PlayPen</span><span class="p">,</span><span class="w"> 
+</span><span class="s2">"SELECT 
+                             region,
+                             ROUND(AVG(income))          as Mean, 
+                             COUNT(1)                    as Sample,
+                             ROUND(COUNT(1) * .11744, 1) as Population
+                           FROM vw_mainheader
+                           GROUP BY region
+                           ORDER BY Mean "</span><span class="p">)</span></code></pre></figure>
+<!-- html table generated in R 3.1.2 by xtable 1.7-4 package -->
+<!-- Sat Aug 15 12:13:30 2015 -->
+<table border=1>
+<tr> <th> ethnicity </th> <th> Mean </th> <th> Sample </th> <th> Population </th>  </tr>
+  <tr> <td> Residual Categories </td> <td align="right"> 555 </td> <td align="right">  85 </td> <td align="right"> 10.00 </td> </tr>
+  <tr> <td> Maori </td> <td align="right"> 590 </td> <td align="right"> 3652 </td> <td align="right"> 428.90 </td> </tr>
+  <tr> <td> Pacific Peoples </td> <td align="right"> 606 </td> <td align="right"> 1566 </td> <td align="right"> 183.90 </td> </tr>
+  <tr> <td> Middle Eastern/Latin American/African </td> <td align="right"> 658 </td> <td align="right"> 343 </td> <td align="right"> 40.30 </td> </tr>
+  <tr> <td> Asian </td> <td align="right"> 678 </td> <td align="right"> 3110 </td> <td align="right"> 365.20 </td> </tr>
+  <tr> <td> European </td> <td align="right"> 706 </td> <td align="right"> 22011 </td> <td align="right"> 2585.00 </td> </tr>
+  <tr> <td> Other Ethnicity </td> <td align="right"> 756 </td> <td align="right"> 611 </td> <td align="right"> 71.80 </td> </tr>
+   </table>
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">tab6</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sqlQuery</span><span class="p">(</span><span class="n">PlayPen</span><span class="p">,</span><span class="w">
+</span><span class="s2">"SELECT
+                     ethnicity,
+                     ROUND(AVG(income))          as Mean,
+                     COUNT(1)                    as Sample,
+                     ROUND(COUNT(1) * .11744, 1) as Population
+                  FROM f_mainheader m
+                  JOIN f_ethnicity e ON m.survey_id = e.survey_id
+                  JOIN d_ethnicity d ON e.ethnicity_id = d.ethnicity_id
+                  GROUP BY ethnicity
+                  ORDER BY Mean"</span><span class="p">)</span></code></pre></figure>
+
+<h2>Graphics showing density of income</h2>
+<p>Finally, here's the code that drew the charts we started with, showing the distribution of the weekly income New Zealanders of different ethnicity.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">showtext</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">RODBC</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">ggplot2</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">dplyr</span><span class="p">)</span><span class="w">
+</span><span class="n">font.add.google</span><span class="p">(</span><span class="s2">"Poppins"</span><span class="p">,</span><span class="w"> </span><span class="s2">"myfont"</span><span class="p">)</span><span class="w">
+</span><span class="n">showtext.auto</span><span class="p">()</span><span class="w">
+
+</span><span class="c1"># download individual level data from database including ethnicity join
+</span><span class="n">dtf</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sqlQuery</span><span class="p">(</span><span class="n">PlayPen</span><span class="p">,</span><span class="w">
+</span><span class="s2">"SELECT
+                   ethnicity,
+                   income
+                FROM f_mainheader m
+                JOIN f_ethnicity e ON m.survey_id = e.survey_id
+                JOIN d_ethnicity d ON e.ethnicity_id = d.ethnicity_id"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># density plot of income by density                
+</span><span class="n">dtf</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">filter</span><span class="p">(</span><span class="n">ethnicity</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Asian"</span><span class="p">,</span><span class="w"> </span><span class="s2">"European"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Maori"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Pacific Peoples"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">income</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ethnicity</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_density</span><span class="p">(</span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1.1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_x_log10</span><span class="p">(</span><span class="s2">"Weekly income from all sources"</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dollar</span><span class="p">,</span><span class="w"> </span><span class="n">breaks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w"> </span><span class="m">345</span><span class="p">,</span><span class="w"> </span><span class="m">825</span><span class="p">,</span><span class="w"> </span><span class="m">10000</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">theme_minimal</span><span class="p">(</span><span class="n">base_family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"myfont"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">theme</span><span class="p">(</span><span class="n">legend.position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"bottom"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_colour_brewer</span><span class="p">(</span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">palette</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Set1"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># boxplot of income by ethnicity
+</span><span class="n">dtf</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">income</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ethnicity</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ethnicity</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_boxplot</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_rug</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_y_log10</span><span class="p">(</span><span class="s2">"Weekly income from all sources"</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dollar</span><span class="p">,</span><span class="w"> </span><span class="n">breaks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w"> </span><span class="m">1000</span><span class="p">,</span><span class="w"> </span><span class="m">10000</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">theme_minimal</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">coord_flip</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_colour_brewer</span><span class="p">(</span><span class="n">palette</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Set2"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">theme</span><span class="p">(</span><span class="n">legend.position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"none"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># scatter plot of joint density of hours and income
+</span><span class="n">dtf2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sqlQuery</span><span class="p">(</span><span class="n">PlayPen</span><span class="p">,</span><span class="w"> </span><span class="s2">"select hours, income from vw_mainheader"</span><span class="p">)</span><span class="w">
+</span><span class="n">ggplot</span><span class="p">(</span><span class="n">dtf2</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hours</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">income</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_jitter</span><span class="p">(</span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.05</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_x_log10</span><span class="p">(</span><span class="s2">"Hours worked"</span><span class="p">,</span><span class="w"> </span><span class="n">breaks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="m">20</span><span class="p">,</span><span class="w"> </span><span class="m">40</span><span class="p">,</span><span class="w"> </span><span class="m">80</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_y_log10</span><span class="p">(</span><span class="s2">"Weekly income from all sources"</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dollar</span><span class="p">,</span><span class="w"> </span><span class="n">breaks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w"> </span><span class="m">345</span><span class="p">,</span><span class="w"> </span><span class="m">825</span><span class="p">,</span><span class="w"> </span><span class="m">10000</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">theme_minimal</span><span class="p">(</span><span class="n">base_family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"myfont"</span><span class="p">)</span><span class="w">   
+   
+   
+</span><span class="c1"># how did I choose to mark $345 and $825 on the scale?
+# ripped off (and improved) from http://stackoverflow.com/questions/27418461/calculate-the-modes-in-a-multimodal-distribution-in-r
+</span><span class="n">find_modes</span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+   </span><span class="n">dens</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">density</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p">)</span><span class="w">
+   </span><span class="n">y</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dens</span><span class="o">$</span><span class="n">y</span><span class="w">
+   </span><span class="n">modes</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="kc">NULL</span><span class="w">
+   </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">2</span><span class="o">:</span><span class="p">(</span><span class="nf">length</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="p">){</span><span class="w">
+      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="w"> </span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">1</span><span class="p">])</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">1</span><span class="p">])</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+         </span><span class="n">modes</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">modes</span><span class="p">,</span><span class="n">i</span><span class="p">)</span><span class="w">
+      </span><span class="p">}</span><span class="w">
+   </span><span class="p">}</span><span class="w">
+   </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">modes</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+      </span><span class="n">modes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'This is a monotonic distribution'</span><span class="w">
+   </span><span class="p">}</span><span class="w">
+   </span><span class="nf">return</span><span class="p">(</span><span class="n">dens</span><span class="o">$</span><span class="n">x</span><span class="p">[</span><span class="n">modes</span><span class="p">])</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dtf</span><span class="o">$</span><span class="n">income</span><span class="w">
+</span><span class="n">x</span><span class="p">[</span><span class="n">x</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">1</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="c1"># not interested in negative income just now
+</span><span class="w">
+</span><span class="c1"># where are those modes?
+</span><span class="nf">exp</span><span class="p">(</span><span class="n">find_modes</span><span class="p">(</span><span class="nf">log</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span></code></pre></figure>
+
+<p>Edited 18 August 2015 to add the scatter plot of the joint density of hours and income.</p>
+
+</div>
+
+<div class = "container">
+   <div class="col-md-4">
+    
+        <a rel="prev" href="/blog/2015/08/07/fibs-elo-ratings-basics">
+        <p>&larr; Older</p>
+        <p>Simulating backgammon players' Elo ratings</p>
+        
+        </a>
+    
+    </div>
+    <div class="col-md-4">
+    </div>
+    <div class="col-md-4" style="text-align: right;">
+     
+        <a rel="next" href="/blog/2015/08/21/visualising-distributions">
+        <p>Newer &rarr;</p>
+        <p>A better way of visualising income distributions with zeroes and negatives</p>
+        
+        </a>
+    
+      </div>
+      </div>
+      
+      
+      
+</div>
+
+
+   
+    <div id="disqus_thread"></div>
+
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+    
+    
+   
+			
+			</div><!-- /.container -->
+
+         
+
+   <div class = "container footer">
+			<footer>
+	    		
+            <p>Follow <a href = "/feed.xml">this blog with RSS</a>.  Or follow <a href = "/feed.r.xml">posts in this blog featuring R with RSS</a>.</p>
+	
+            <p>This blog is built with <a href = "http://jekyllrb.com/">Jekyll</a>, <a href = "http://getbootstrap.com/">Bootstrap</a>, <a href = "https://www.ruby-lang.org/en/">Ruby</a> and <a href = "https://cran.r-project.org/">R</a>.  Read my <a href="/about/acknowledgements.html">acknowledgements</a> for a little more on how.  I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Peter's stats stuff</span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+
+
+			</footer>
+    </div>
+
+
+
+  
+</body>
+</html>
+   
+
+
+
+
+         

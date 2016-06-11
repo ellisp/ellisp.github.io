@@ -1,0 +1,455 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Visual contrast of two robust regression methods</title>
+      	
+         
+         
+            <meta name ="description" content ="I use animations to show some of the properties of least trimmed squares compared to a Huber M estimator as alternative robust regression estimation methods for a simple linear models.">
+            <meta property="og:description" content ="I use animations to show some of the properties of least trimmed squares compared to a Huber M estimator as alternative robust regression estimation methods for a simple linear models.">
+         
+         <meta property="og:site_name" content="Peter's stats stuff" />
+         <meta property="og:title" content="Visual contrast of two robust regression methods" />
+         
+            <meta property="og:image" content="http://ellisp.github.io/img/0041-rtm-lqs.gif" />
+         
+         <meta property="og:url" content="http://ellisp.github.io/blog/2016/05/22/robust-regression/" />
+         <meta property="og:author" content= "https://www.facebook.com/peter.ellis.353" />
+         <meta property="og:type" content="article" />
+           
+          <link href="/css/bootstrap.min.css" rel ="stylesheet">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet">
+            <link href="/css/custom.css" rel ="stylesheet">       
+     <link rel="stylesheet" href="/css/Pygments/autumn.css">      
+     <link rel="stylesheet" href="/css/Pygments/custom.css">      
+            
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="Peter's stats stuff by Peter Ellis"
+      href="/feed.xml">
+
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+         <script src="/js/bootstrap.min.js"></script>
+         
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Peter's stats stuff</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">All blog posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">Ordered by date</a></li>
+                  <li><a href="/blog/index_by_tag.html">Grouped by subject matter</a></li>
+                  <li><a href = /blog/2016/06/05/bootstrap-cv-strategies>Most recent post</a></li>
+                 </ul>
+            </li>
+              <li><a href="/blog/showcase.html">Showcase</a></li>
+              <li><a href="/presentations/index.html">Presentations</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			    <div class="jumbotron">
+      <div class="container">
+        <h1>Visual contrast of two robust regression methods</h1>
+         <p class="meta">22 May 2016</p>
+        
+      </div>
+    </div>
+
+
+
+
+<div class = "post-summary">
+<h2>TL;DR Summary:</h2>
+   I use animations to show some of the properties of least trimmed squares compared to a Huber M estimator as alternative robust regression estimation methods for a simple linear models.
+   <hr></hr>
+</div>
+
+<div class="post">
+<div class="col-md-2">
+
+</div>
+  <div class="col-md-8">
+
+  <h2 id="robust-regression">Robust regression</h2>
+
+<p>For training purposes, I was looking for a way to illustrate some of the different properties of two different <a href="https://en.wikipedia.org/wiki/Robust_regression">robust estimation methods</a> for linear regression models.  The two methods I’m looking at are:</p>
+
+<ul>
+  <li><a href="https://en.wikipedia.org/wiki/Least_trimmed_squares">least trimmed squares</a>, implemented as the default option in <code class="highlighter-rouge">lqs()</code></li>
+  <li>a <a href="https://en.wikipedia.org/wiki/M-estimator">Huber M-estimator</a>, implemented as the default option in <code class="highlighter-rouge">rlm()</code></li>
+</ul>
+
+<p>Both functions are in Venables and Ripley’s <code class="highlighter-rouge">MASS</code> R package which comes with the standard distribution of R.</p>
+
+<p>These methods are alternatives to ordinary least squares that can provide estimates with superior qualities when the classical assumptions of linear regression aren’t met.  M-estimators are effective in dealing with various breakdowns in the classical linear model assumptions, while still giving excellent results if the assumptions happen to be valid after all.  Least trimmed squares is very resistant to outliers, at a cost to efficiency.  Unfortunately, neither of these (or any other) robust estimation methods is the best in all situations, although they generally out-perform ordinary least squares in most real-life situations (my own, non-systematic observation).</p>
+
+<h2 id="new-zealand-income-survey-2011">New Zealand Income Survey 2011</h2>
+
+<p>To explore this I use the simulated unit record file from the New Zealand Income Survey 2011 that I’ve used in a lot of blog posts in the past year.  My <a href="http://ellisp.github.io/blog/2015/08/15/importing-nzis-surf/">first post on this dataset</a> sets out how to import this data and tidy it up into a database.  The data shows weekly individual income from all sources for New Zealanders aged over 15, as well as hours worked and a range of demographic information I won’t be using today.  For looking at robust regression estimation methods, I’m going to pretend that I only ever have a sample of thirty observations from this dataset.</p>
+
+<p>To illustrate the data, here’s an animation showing the full dataset (in grey) and repeated different samples of thirty data points, as well as lines representing linear models fit to those small samples with ordinary least squares (<code class="highlighter-rouge">lm</code>) and the two robust regression methods I’m investigating today.
+<img src="/img/0041-rtm-lqs.gif" alt="animation" /></p>
+
+<p>Some characteristics of this data that make it a useful illustration for robust regression include:</p>
+
+<ul>
+  <li>It’s reasonable to postulate the underlying relationship between hours worked and income as linear for much of the population.  So a linear model on the original scale is likely to be appropriate.</li>
+  <li>However, the population seems likely to be made up of a number of diverse groups, making assumptions of homogeneity implausible. For example, a large number of people have incomes, some of them quite substantial, despite working zero hours.  General economic and social knowledge suggests that divisions into wage-earners, profit-receivers, and social security receivers probably constitute three quite different populations, while still being a significant simplification of the actual heterogeneity.</li>
+  <li>On the original scale the data are expected to show <a href="https://en.wikipedia.org/wiki/Heteroscedasticity">heteroscedasticity</a> (in this case, higher variance for higher expected income), making classical inference invalid</li>
+  <li>There are a number of outliers on both the x and y axes; and a cluster of individuals with negative income that appear to form yet another group in the mixture.</li>
+</ul>
+
+<h2 id="comparing-robust-methods">Comparing robust methods</h2>
+
+<p>To reflect one of the key features of the data which is the unusual distribution of income when working hours are zero, the models fit in this post are all of the structure:</p>
+
+<p><code class="highlighter-rouge">income ~ hours + (hours == 0)</code></p>
+
+<p>The graphics show just the relationship between income and hours for when a non-zero amount of hours is worked.  In effect, (just for the graphics), this is like fitting the model after removing all the individuals that performed zero hours of work in the surveyed week.</p>
+
+<p>The animation shown above was the germ idea for this post and already illustrates the key points.  In particular, it shows how the randomness associated with a small sample of thirty points leads to a different result for any particular sample; and once you have that sample, different estimation methods can give you materially differing results.  In some frames of the animation, we see a sample of thirty where slopes from the different estimation methods point in different directions, suggesting that if that particular small sample was the only one available, one might conclude that working more hours leads to decreased income.</p>
+
+<p>The animation is nice for reminding us of the randomness associated with small samples, but actually isn’t a particularly effective method of looking at how the different robust estimation methods are doing.  Here’s a better way of doing that; a plot of the actual regression lines fit to 10,000 different samples of thirty.  Each line is semi-transparent, to give a better visual impression of where the bulk of fit lines end up:</p>
+
+<p><img src="/img/0041-compare-lqs-rlm.png" alt="comparison" /></p>
+
+<p>This makes it graphically clear that the <code class="highlighter-rouge">lqs</code> method (least trimmed squares) gives a noticeably wider range of results than does the Huber M-estimator.  This is an expected result; least trimmed squares is highly resistant to outliers, but this comes at the cost of <a href="https://en.wikipedia.org/wiki/Sufficient_statistic">sufficiency</a> (effectively, a significant part of the data has very little impact on the slope, so the information contained in the data is not utilised to the full).</p>
+
+<p>Here’s another way of looking at that; the density plots of the slopes of the three estimation methods (two robust methods plus ordinary least squares fitted with <code class="highlighter-rouge">lm</code>).  I am using slope because it’s the most likely parameter of interest - it represents the marginal increase in income from an extra hour of work.</p>
+
+<p><img src="/img/0041-slope-densities.svg" alt="slopes" /></p>
+
+<p>The density plot shows that the estimates from <code class="highlighter-rouge">lqs</code> tend to be lower than for either <code class="highlighter-rouge">rlm</code> or <code class="highlighter-rouge">lm</code>.  This is to be expected, in a way related to the reason that trimmed mean or median income is usually less than mean income.  An estimation method that knocks out of the data the most extreme points (as done by least trimmed squares) will give differing results for samples drawn from skewed distributions.</p>
+
+<p>Here are the mean, median and standard deviation of the slopes estimated by the three methods for the 10,000 samples of thirty:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="w"> 
+</span><span class="n">method</span><span class="w">  </span><span class="n">mean</span><span class="w"> </span><span class="n">median</span><span class="w">    </span><span class="n">sd</span><span class="w">
+    </span><span class="n">lm</span><span class="w">  </span><span class="m">21.3</span><span class="w">   </span><span class="m">21.9</span><span class="w">  </span><span class="m">18.9</span><span class="w">
+   </span><span class="n">rlm</span><span class="w">  </span><span class="m">20.5</span><span class="w">   </span><span class="m">20.7</span><span class="w">  </span><span class="m">10.9</span><span class="w">
+   </span><span class="n">lqs</span><span class="w">  </span><span class="m">17.7</span><span class="w">   </span><span class="m">18.2</span><span class="w">  </span><span class="m">23.7</span></code></pre></figure>
+
+<p>We see that <code class="highlighter-rouge">lm</code> and <code class="highlighter-rouge">rlm</code> on average give similar results, but <code class="highlighter-rouge">rlm</code> is much more stable, with a noticeably lower variance in results (shown by the standard deviation).  <code class="highlighter-rouge">lqs</code> on the other hand is actually quite unstable, for this small sample size.</p>
+
+<h2 id="preliminary-thoughts-on-robust-regression-estimators">Preliminary thoughts on robust regression estimators</h2>
+<p>This post uses Venables and Ripley’s <code class="highlighter-rouge">MASS</code> package and the accompanying book <a href="http://www.springer.com/us/book/9780387954578"><em>Modern Applied Statistics with S</em></a>.  Their own discussion of the issue implies (to my reading) the preferred use of the MM-estimator proposed by Yohai, Stahel &amp; Zamar in 1991, which retains the outlier-resistance of the S-estimator methods related to trimmed least squares, and the greater efficiency of M-estimators.  MM-estimators are available via <code class="highlighter-rouge">rlm()</code> with the <code class="highlighter-rouge">method = 'MM'</code> argument.</p>
+
+<p>Another book that has been influential for me and I thoroughly recommend is Wilcox’ <a href="http://www.amazon.com/Modern-Statistics-Social-Behavioral-Sciences/dp/1439834563"><em>Modern Statistics for the Social and Behavioral Sciences</em></a>.  His comments on the matter are so pertinent that I am going to quote two paragraphs at length:</p>
+
+<h3 id="comments-on-choosing-a-regression-estimator-wilcox">Comments on Choosing a Regression Estimator (Wilcox)</h3>
+
+<p>“Many regression estimators have been proposed that can <strong>have substantial advantages over the ordinary least squares estimator.  But no single estimator dominates</strong> and there is the practical issue that the choice of estimator can make a practical difference in the conclusions reached.  One point worth stressing is that even when an estimator has a high breakdown point, only two outliers, properly placed, can have a large impact on some of the robust estimates of the slopes…. Estimators that seem to be particularly good at avoiding this problem are the Least Trimmed Squares, Least Trimmed Absolute Value and OP regression estimators.  Among these three estimators, the OP estimator seems to have an advantage in terms of achieving a relatively low standard error and so has the potential of relatively high power.  A negative feature of the OP estimator is that with large sample sizes, execution time might be an issue…</p>
+
+<p>“In terms of achieving a relatively small standard error when dealing with heteroscedasticity, certain robust regression estimators can offer a distinct advantage compared to the least squares estimator…. Ones that perform well include Theil-Sen, the OP regression estimator and the TSTS estimator.  The MM-estimator does not perform well for the situations considered (ie heteroscedasticity)… but perhaps there are situations where it offers a practical advantage.”</p>
+
+<p>It should be noted that earlier in the chapter Wilcox pointed out that the MM-estimator “enjoys excellent theoretical properties … but its standard error can be relatively large when there is heteroscedasticity.”</p>
+
+<p>The “OP” estimator is a method of outlier detection and removal followed by <a href="https://en.wikipedia.org/wiki/Theil%E2%80%93Sen_estimator">Theil-Sen estimation</a>, a method that takes the median slope between all the pairs of sample points.  Topic for a future post.</p>
+
+<h2 id="code">Code</h2>
+
+<p>Here’s the R code behind all this.  It won’t be immediately reproducible.  Prior work is needed to establish the database as described in my earlier post; and the animation sequence is dependent on a particular folder structure.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="w"> 
+</span><span class="c1">#===================setup=======================
+</span><span class="n">library</span><span class="p">(</span><span class="n">showtext</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">RMySQL</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">MASS</span><span class="p">)</span><span class="w"> 
+</span><span class="n">library</span><span class="p">(</span><span class="n">dplyr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">tidyr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">stringr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">ggplot2</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">directlabels</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#================download and transform data==============
+# See http://ellisp.github.io/blog/2015/08/15/importing-nzis-surf/ for
+# instructions on setting up the database
+</span><span class="w">
+</span><span class="n">sql</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"SELECT hours, income FROM vw_mainheader"</span><span class="w">
+</span><span class="n">PlayPen</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dbConnect</span><span class="p">(</span><span class="n">RMySQL</span><span class="o">::</span><span class="n">MySQL</span><span class="p">(),</span><span class="w"> </span><span class="n">username</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"analyst"</span><span class="p">,</span><span class="w"> </span><span class="n">dbname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"nzis11"</span><span class="p">)</span><span class="w">
+</span><span class="n">nzis</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dbGetQuery</span><span class="p">(</span><span class="n">PlayPen</span><span class="p">,</span><span class="w"> </span><span class="n">sql</span><span class="p">)</span><span class="w"> 
+</span><span class="n">dbDisconnect</span><span class="p">(</span><span class="n">PlayPen</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># An early version of the analysis used a cube root transform; this was dropped
+# as it reduces interpretability and is not really germane to the illustration
+# of robust regression methods
+# cuberoot &lt;- function(x){
+#    sign(x) * abs(x)^(1/3)
+# }
+# nzis &lt;- nzis %&gt;%
+#    mutate(income2 = cuberoot(income),
+#           hours2 = cuberoot(hours))
+</span><span class="w">
+</span><span class="c1"># create the variables to be used for x and y (as finally used, this
+# is just income and hours on their original scale):
+</span><span class="n">nzis</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">nzis</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">income2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">income</span><span class="p">,</span><span class="w">
+          </span><span class="n">hours2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hours</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#==================simulations of many samples and estimated models==============
+# create empty lists to hold the samples and the model results
+</span><span class="n">points_samp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">list</span><span class="p">()</span><span class="w">
+</span><span class="n">mod_lm</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">list</span><span class="p">()</span><span class="w">
+</span><span class="n">mod_rlm</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">list</span><span class="p">()</span><span class="w">
+</span><span class="n">mod_lqs</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">list</span><span class="p">()</span><span class="w">
+
+</span><span class="c1"># create the samples, estimate the models and store the results
+</span><span class="n">reps</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">10000</span><span class="w">
+</span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">reps</span><span class="p">){</span><span class="w">
+   </span><span class="n">nzis_samp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">nzis</span><span class="p">[</span><span class="n">sample</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="n">nrow</span><span class="p">(</span><span class="n">nzis</span><span class="p">),</span><span class="w"> </span><span class="m">30</span><span class="p">),</span><span class="w"> </span><span class="p">]</span><span class="w">   
+   </span><span class="n">points_samp</span><span class="p">[[</span><span class="n">i</span><span class="p">]]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">nzis_samp</span><span class="w">
+   </span><span class="n">mod_lm</span><span class="p">[[</span><span class="n">i</span><span class="p">]]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lm</span><span class="p">(</span><span class="n">income2</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">hours2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">hours2</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">0</span><span class="p">),</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nzis_samp</span><span class="p">)</span><span class="w">
+   </span><span class="n">mod_rlm</span><span class="p">[[</span><span class="n">i</span><span class="p">]]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">rlm</span><span class="p">(</span><span class="n">income2</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">hours2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">hours2</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">0</span><span class="p">),</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nzis_samp</span><span class="p">)</span><span class="w">
+   </span><span class="n">mod_lqs</span><span class="p">[[</span><span class="n">i</span><span class="p">]]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lqs</span><span class="p">(</span><span class="n">income2</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">hours2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">hours2</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">0</span><span class="p">),</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nzis_samp</span><span class="p">)</span><span class="w">
+   
+</span><span class="p">}</span><span class="w">
+
+</span><span class="c1">#======================reporting results==============
+</span><span class="w">
+</span><span class="c1">#------------setup-----------------
+# Fonts:
+</span><span class="n">font.add.google</span><span class="p">(</span><span class="s2">"Poppins"</span><span class="p">,</span><span class="w"> </span><span class="s2">"myfont"</span><span class="p">)</span><span class="w">
+</span><span class="n">showtext.auto</span><span class="p">()</span><span class="w">
+</span><span class="n">theme_set</span><span class="p">(</span><span class="n">theme_light</span><span class="p">(</span><span class="n">base_family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"myfont"</span><span class="p">))</span><span class="w">
+
+
+
+</span><span class="c1"># define a generic plot function that does the background pale grey
+# plot of the full dataset and draws the axes:
+</span><span class="n">draw_plot</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(){</span><span class="w">
+   </span><span class="n">with</span><span class="p">(</span><span class="n">nzis</span><span class="p">,</span><span class="w"> </span><span class="n">plot</span><span class="p">(</span><span class="n">hours2</span><span class="p">,</span><span class="w"> </span><span class="n">income2</span><span class="p">,</span><span class="w"> </span><span class="n">cex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">,</span><span class="w"> </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey80"</span><span class="p">,</span><span class="w"> </span><span class="n">bty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"l"</span><span class="p">,</span><span class="w">
+                   </span><span class="n">xlab</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Hours worked"</span><span class="p">,</span><span class="w"> 
+                   </span><span class="n">ylab</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Weekly income"</span><span class="p">,</span><span class="w">
+                   </span><span class="n">axes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">))</span><span class="w">
+   
+   </span><span class="n">axis</span><span class="p">(</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">at</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">axTicks</span><span class="p">(</span><span class="m">2</span><span class="p">),</span><span class="w"> </span><span class="n">labels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">paste0</span><span class="p">(</span><span class="s2">"$"</span><span class="p">,</span><span class="w"> </span><span class="n">str_trim</span><span class="p">(</span><span class="n">format</span><span class="p">(</span><span class="w">
+      </span><span class="n">axTicks</span><span class="p">(</span><span class="m">2</span><span class="p">),</span><span class="w"> </span><span class="n">big.mark</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">","</span><span class="p">))))</span><span class="w">
+   </span><span class="n">axis</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">at</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">axTicks</span><span class="p">(</span><span class="m">1</span><span class="p">),</span><span class="w"> </span><span class="n">labels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">axTicks</span><span class="p">(</span><span class="m">1</span><span class="p">))</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+
+
+</span><span class="c1">#-----------animation-------------
+# This code is dependent on the particular folder structure.  File locations
+# will need to be changed if people want to reproduce the analysis.
+</span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">100</span><span class="p">){</span><span class="w">
+   
+   </span><span class="n">png</span><span class="p">(</span><span class="n">paste0</span><span class="p">(</span><span class="s2">"_output/0041-rlm-lqs/"</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">20000</span><span class="p">,</span><span class="w"> </span><span class="s2">".png"</span><span class="p">),</span><span class="w">
+       </span><span class="m">650</span><span class="p">,</span><span class="w"> </span><span class="m">650</span><span class="p">,</span><span class="w"> </span><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">100</span><span class="p">)</span><span class="w">
+   </span><span class="n">par</span><span class="p">(</span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"myfont"</span><span class="p">)</span><span class="w">
+   </span><span class="n">draw_plot</span><span class="p">()</span><span class="w">
+   </span><span class="n">title</span><span class="p">(</span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Comparison of different estimation methods\nfor linear models on a subset of income data"</span><span class="p">)</span><span class="w">
+   </span><span class="n">with</span><span class="p">(</span><span class="n">points_samp</span><span class="p">[[</span><span class="n">i</span><span class="p">]],</span><span class="w"> </span><span class="n">points</span><span class="p">(</span><span class="n">hours2</span><span class="p">,</span><span class="w"> </span><span class="n">income2</span><span class="p">,</span><span class="w"> </span><span class="n">cex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">))</span><span class="w">
+   </span><span class="n">abline</span><span class="p">(</span><span class="n">mod_lm</span><span class="p">[[</span><span class="n">i</span><span class="p">]],</span><span class="w"> </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"black"</span><span class="p">)</span><span class="w">
+   </span><span class="n">abline</span><span class="p">(</span><span class="n">mod_rlm</span><span class="p">[[</span><span class="n">i</span><span class="p">]],</span><span class="w"> </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"blue"</span><span class="p">)</span><span class="w">
+   </span><span class="n">abline</span><span class="p">(</span><span class="n">mod_lqs</span><span class="p">[[</span><span class="n">i</span><span class="p">]],</span><span class="w"> </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"red"</span><span class="p">)</span><span class="w">
+   
+   </span><span class="n">legend</span><span class="p">(</span><span class="s2">"topright"</span><span class="p">,</span><span class="w"> </span><span class="n">legend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"lm"</span><span class="p">,</span><span class="w"> </span><span class="s2">"rlm"</span><span class="p">,</span><span class="w"> </span><span class="s2">"lts"</span><span class="p">),</span><span class="w"> </span><span class="n">lty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> 
+          </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"black"</span><span class="p">,</span><span class="w"> </span><span class="s2">"blue"</span><span class="p">,</span><span class="w"> </span><span class="s2">"red"</span><span class="p">),</span><span class="w"> </span><span class="n">text.col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"black"</span><span class="p">,</span><span class="w"> </span><span class="s2">"blue"</span><span class="p">,</span><span class="w"> </span><span class="s2">"red"</span><span class="p">),</span><span class="w">
+          </span><span class="n">bty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"n"</span><span class="p">)</span><span class="w">
+   
+   </span><span class="n">legend</span><span class="p">(</span><span class="s2">"bottomright"</span><span class="p">,</span><span class="w"> </span><span class="n">legend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Full data"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Sampled data"</span><span class="p">),</span><span class="w">
+          </span><span class="n">pch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"grey50"</span><span class="p">,</span><span class="w"> </span><span class="s2">"black"</span><span class="p">),</span><span class="w"> </span><span class="n">pt.cex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">2</span><span class="p">,</span><span class="w"> 
+          </span><span class="n">bty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"n"</span><span class="p">,</span><span class="w"> </span><span class="n">text.col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"grey50"</span><span class="p">,</span><span class="w"> </span><span class="s2">"black"</span><span class="p">))</span><span class="w">
+   
+   </span><span class="n">dev.off</span><span class="p">()</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="c1"># next sequence turns the various static frames into an animated GIF
+# and depends on the actual location of ImageMagick:
+</span><span class="n">projdir</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">setwd</span><span class="p">(</span><span class="s2">"_output/0041-rlm-lqs/"</span><span class="p">)</span><span class="w">
+</span><span class="n">system</span><span class="p">(</span><span class="s1">'"C:\\Program Files\\ImageMagick-6.9.1-Q16\\convert" -loop 0 -delay 65 *.png "../../../img/0041-rtm-lqs.gif"'</span><span class="p">)</span><span class="w"> 
+</span><span class="n">setwd</span><span class="p">(</span><span class="n">projdir</span><span class="p">)</span><span class="w">
+
+
+</span><span class="c1">#--------------visual static comparison-----------------
+</span><span class="n">par</span><span class="p">(</span><span class="n">mfrow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">),</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"myfont"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># draw graph for lqs
+</span><span class="n">draw_plot</span><span class="p">()</span><span class="w">
+</span><span class="n">title</span><span class="p">(</span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Least trimmed squares"</span><span class="p">)</span><span class="w">
+
+
+</span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">reps</span><span class="p">){</span><span class="w">
+   </span><span class="n">abline</span><span class="p">(</span><span class="n">mod_lqs</span><span class="p">[[</span><span class="n">i</span><span class="p">]],</span><span class="w"> </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">adjustcolor</span><span class="p">(</span><span class="s2">"red"</span><span class="p">,</span><span class="w"> </span><span class="n">alpha.f</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.02</span><span class="p">))</span><span class="w">
+</span><span class="p">}</span><span class="w">
+   
+</span><span class="c1"># draw graph for rlm
+</span><span class="n">draw_plot</span><span class="p">()</span><span class="w">
+</span><span class="n">title</span><span class="p">(</span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"M-estimator"</span><span class="p">)</span><span class="w">
+</span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">reps</span><span class="p">){</span><span class="w">
+   </span><span class="n">abline</span><span class="p">(</span><span class="n">mod_rlm</span><span class="p">[[</span><span class="n">i</span><span class="p">]],</span><span class="w"> </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">adjustcolor</span><span class="p">(</span><span class="s2">"blue"</span><span class="p">,</span><span class="w"> </span><span class="n">alpha.f</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.02</span><span class="p">))</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+
+</span><span class="c1">#-----------------compare estimated slopes-------------------
+</span><span class="n">slopes</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.frame</span><span class="p">(</span><span class="w">
+   </span><span class="n">lm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">unlist</span><span class="p">(</span><span class="n">lapply</span><span class="p">(</span><span class="n">mod_lm</span><span class="p">,</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">){</span><span class="n">coef</span><span class="p">(</span><span class="n">x</span><span class="p">)[</span><span class="m">2</span><span class="p">]})),</span><span class="w">
+   </span><span class="n">rlm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">unlist</span><span class="p">(</span><span class="n">lapply</span><span class="p">(</span><span class="n">mod_rlm</span><span class="p">,</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">){</span><span class="n">coef</span><span class="p">(</span><span class="n">x</span><span class="p">)[</span><span class="m">2</span><span class="p">]})),</span><span class="w">
+   </span><span class="n">lqs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">unlist</span><span class="p">(</span><span class="n">lapply</span><span class="p">(</span><span class="n">mod_lqs</span><span class="p">,</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">){</span><span class="n">coef</span><span class="p">(</span><span class="n">x</span><span class="p">)[</span><span class="m">2</span><span class="p">]}))</span><span class="w">
+</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">gather</span><span class="p">(</span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># summary table:
+</span><span class="n">slopes</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">factor</span><span class="p">(</span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">levels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"lm"</span><span class="p">,</span><span class="w"> </span><span class="s2">"rlm"</span><span class="p">,</span><span class="w"> </span><span class="s2">"lqs"</span><span class="p">)))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">group_by</span><span class="p">(</span><span class="n">method</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">summarise</span><span class="p">(</span><span class="w">
+      </span><span class="n">mean</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="n">mean</span><span class="p">(</span><span class="n">value</span><span class="p">),</span><span class="w"> </span><span class="m">1</span><span class="p">),</span><span class="w">
+      </span><span class="n">median</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="n">median</span><span class="p">(</span><span class="n">value</span><span class="p">),</span><span class="w"> </span><span class="m">1</span><span class="p">),</span><span class="w">
+      </span><span class="n">sd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="n">sd</span><span class="p">(</span><span class="n">value</span><span class="p">),</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+   </span><span class="p">)</span><span class="w">
+
+   
+</span><span class="c1"># density plot, taking care to use same colours for each method
+# as in previous graphics:
+</span><span class="n">colours</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"lm"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"black"</span><span class="p">,</span><span class="w"> </span><span class="s2">"rlm"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"blue"</span><span class="p">,</span><span class="w"> </span><span class="s2">"lqs"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"red"</span><span class="p">)</span><span class="w">
+</span><span class="n">print</span><span class="p">(</span><span class="n">direct.label</span><span class="p">(</span><span class="w">
+</span><span class="n">ggplot</span><span class="p">(</span><span class="n">slopes</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">method</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_density</span><span class="p">(</span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.3</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">coord_cartesian</span><span class="p">(</span><span class="n">xlim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">-25</span><span class="p">,</span><span class="w"> </span><span class="m">75</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_x_continuous</span><span class="p">(</span><span class="s2">"Estimated marginal return of extra hour of work"</span><span class="p">,</span><span class="w">
+                      </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dollar</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">labs</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Density of estimates from\nsamples of 30 each"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_fill_manual</span><span class="p">(</span><span class="n">values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">colours</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_colour_manual</span><span class="p">(</span><span class="n">values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">colours</span><span class="p">)</span><span class="w">
+</span><span class="p">))</span></code></pre></figure>
+
+
+
+</div>
+
+<div class = "container">
+   <div class="col-md-4">
+    
+        <a rel="prev" href="/blog/2016/05/14/scots-female-ratio">
+        <p>&larr; Older</p>
+        <p>Minimalist Tufte-inspired axis text with Scottish-New Zealand historical material</p>
+        
+        </a>
+    
+    </div>
+    <div class="col-md-4">
+    </div>
+    <div class="col-md-4" style="text-align: right;">
+     
+        <a rel="next" href="/blog/2016/05/29/standard-deviation-confidence-intervals">
+        <p>Newer &rarr;</p>
+        <p>Actual coverage of confidence intervals for standard deviation</p>
+        
+        </a>
+    
+      </div>
+      </div>
+      
+      
+      
+</div>
+
+
+   
+    <div id="disqus_thread"></div>
+
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+    
+    
+   
+			
+			</div><!-- /.container -->
+
+         
+
+   <div class = "container footer">
+			<footer>
+	    		
+            <p>Follow <a href = "/feed.xml">this blog with RSS</a>.  Or follow <a href = "/feed.r.xml">posts in this blog featuring R with RSS</a>.</p>
+	
+            <p>This blog is built with <a href = "http://jekyllrb.com/">Jekyll</a>, <a href = "http://getbootstrap.com/">Bootstrap</a>, <a href = "https://www.ruby-lang.org/en/">Ruby</a> and <a href = "https://cran.r-project.org/">R</a>.  Read my <a href="/about/acknowledgements.html">acknowledgements</a> for a little more on how.  I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Peter's stats stuff</span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+
+
+			</footer>
+    </div>
+
+
+
+  
+</body>
+</html>
+   
+
+
+
+
+         

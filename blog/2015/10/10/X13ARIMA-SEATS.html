@@ -1,0 +1,421 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Seasonal adjusment on the fly with X-13ARIMA-SEATS, seasonal and ggplot2</title>
+      	
+         
+         
+            <meta name ="description" content ="I show how to seasonally adjust published electronic card transactions spend in New Zealand using the US Census Bureau's excellent X-13ARIMA-SEATS software, the Spanish SEATS algorithm and Christoph Sax's seasonal R package; and how to build a new "stat" for ggplot2 to make it easy to do seasonal adjustment on the fly for a graphic of a time series split by various grouping dimensions.">
+            <meta property="og:description" content ="I show how to seasonally adjust published electronic card transactions spend in New Zealand using the US Census Bureau's excellent X-13ARIMA-SEATS software, the Spanish SEATS algorithm and Christoph Sax's seasonal R package; and how to build a new "stat" for ggplot2 to make it easy to do seasonal adjustment on the fly for a graphic of a time series split by various grouping dimensions.">
+         
+         <meta property="og:site_name" content="Peter's stats stuff" />
+         <meta property="og:title" content="Seasonal adjusment on the fly with X-13ARIMA-SEATS, seasonal and ggplot2" />
+         
+            <meta property="og:image" content="http://ellisp.github.io/img/0014-faceted.png" />
+         
+         <meta property="og:url" content="http://ellisp.github.io/blog/2015/10/10/X13ARIMA-SEATS/" />
+         <meta property="og:author" content= "https://www.facebook.com/peter.ellis.353" />
+         <meta property="og:type" content="article" />
+           
+          <link href="/css/bootstrap.min.css" rel ="stylesheet">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet">
+            <link href="/css/custom.css" rel ="stylesheet">       
+     <link rel="stylesheet" href="/css/Pygments/autumn.css">      
+     <link rel="stylesheet" href="/css/Pygments/custom.css">      
+            
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="Peter's stats stuff by Peter Ellis"
+      href="/feed.xml">
+
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+         <script src="/js/bootstrap.min.js"></script>
+         
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Peter's stats stuff</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">All blog posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">Ordered by date</a></li>
+                  <li><a href="/blog/index_by_tag.html">Grouped by subject matter</a></li>
+                  <li><a href = /blog/2016/06/05/bootstrap-cv-strategies>Most recent post</a></li>
+                 </ul>
+            </li>
+              <li><a href="/blog/showcase.html">Showcase</a></li>
+              <li><a href="/presentations/index.html">Presentations</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			    <div class="jumbotron">
+      <div class="container">
+        <h1>Seasonal adjusment on the fly with X-13ARIMA-SEATS, seasonal and ggplot2</h1>
+         <p class="meta">10 Oct 2015</p>
+        
+      </div>
+    </div>
+
+
+
+
+<div class = "post-summary">
+<h2>TL;DR Summary:</h2>
+   I show how to seasonally adjust published electronic card transactions spend in New Zealand using the US Census Bureau's excellent X-13ARIMA-SEATS software, the Spanish SEATS algorithm and Christoph Sax's seasonal R package; and how to build a new "stat" for ggplot2 to make it easy to do seasonal adjustment on the fly for a graphic of a time series split by various grouping dimensions.
+   <hr></hr>
+</div>
+
+<div class="post">
+<div class="col-md-2">
+
+</div>
+  <div class="col-md-8">
+
+  <h2 id="calling-seasonal-adjustment-software-from-r">Calling seasonal adjustment software from R</h2>
+<p>I recently explored for the first time (having languished on the “check this out later” list) <a href="http://www.christophsax.com/">Christoph Sax</a>’s excellent <a href="https://cran.r-project.org/web/packages/seasonal/index.html"><code class="highlighter-rouge">seasonal</code> R package</a>.  It makes it super easy for R users to engage with X-13ARIMA-SEATS, the latest industry standard software for time series analysis and in particular seasonal adjustment of official statistics series.  It’s a huge step forward in ease of use from the <code class="highlighter-rouge">x12</code> package which was a good interface to X-12ARIMA but never felt to me as R-native as <code class="highlighter-rouge">seasonal</code> does; I was always conscious of X-12ARIMA in the background.  For example, to control for Chinese New Year (important at my work), you had to save a text file with the relevant dates encoded in it, rather than pass it directly to the function in an R-native way.</p>
+
+<p><code class="highlighter-rouge">seasonal</code> calls on the latest US Census Bureau software X-13ARIMA-SEATS which has an <a href="https://www.census.gov/srd/www/x13as/">excellently informative website</a> and free downloads.  See the definitive <a href="https://www.census.gov/ts/x13as/docX13ASHTML.pdf">reference manual</a>.</p>
+
+<p>To avoid confusion, some terminology:</p>
+
+<ul>
+  <li>ARIMA stands for “autoregressive integrated moving average” and is one of a class of models for time series</li>
+  <li>X11, originally the name of software by the US Census Bureau and taken up by Statistics Canada, now usually refers to the X11 <em>method</em> for seasonal adjustment (or other inference) via ARIMA modelling first developed in the 1960s (Shiskin, Young and Musgrave in 1967)</li>
+  <li>SEATS is Signal Extraction in ARIMA Time Series and is an alternative <em>method</em> for seasonal adjustment (or other inference) via ARIMA modelling, developed by Gomez and Maravall at Bank of Spain (various 1990s references)</li>
+  <li>X13-ARIMA-SEATS is the US Census Bureau’s latest program that implements both the X11 and SEATS methods plus some additional diagnostic and model strategy tools</li>
+  <li><code class="highlighter-rouge">seasonal</code> is an R package that acts as a front end to X13-ARIMA-SEATS and gives all the needed functionality including both the X11 and SEATS methods without leaving the R environment</li>
+</ul>
+
+<h2 id="electronic-card-transactions-in-new-zealand">Electronic card transactions in New Zealand</h2>
+<p>I’ll demonstrate this functionality generously made available by the US Census Bureau and Sax with <a href="http://www.stats.govt.nz/browse_for_stats/businesses/business_characteristics/electronic-card-transactions-info-releases.aspx">electronic card transactions spend in New Zealand, published by Statistics New Zealand</a>.  The data are published on a monthly basis from October 2002 to (at the time of writing) August 2015.</p>
+
+<p>To get started I look at a single subset of the data, spend in millions of New Zealand dollars on apparel.  Here’s the basic data, its autocorrelation function, partial autocorrelation function, and  spectrum.</p>
+
+<p><img src="/img/0014-apparel-ts-basics.svg" alt="basics" /></p>
+
+<p>Key characteristics include:</p>
+
+<ul>
+  <li>there’s an obvious and unsurprising trend upwards - it’s not a stationary time series</li>
+  <li>the variance increases as the series increases, so some form of transformation (probably logarithm, which I checked and works well) needed if we want methods where the variance doesn’t vary with the trend</li>
+  <li>there’s a strong partial autocorrelation at 1.0 (ie annual, showing spend in a particular month is correlated with spend in the same month a year before) and at 1/12 (showing spend in a particular month is also correlated with spend in the immediately previous month).</li>
+</ul>
+
+<p>Here’s the code for downloading this data from where I’ve stashed a clean version (available for you all) and producing those basics:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">seasonal</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">tidyr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">dplyr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">showtext</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">ggplot2</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># set up fonts etc
+</span><span class="n">font.add.google</span><span class="p">(</span><span class="s2">"Poppins"</span><span class="p">,</span><span class="w"> </span><span class="s2">"myfont"</span><span class="p">)</span><span class="w">
+</span><span class="n">showtext.auto</span><span class="p">()</span><span class="w">
+</span><span class="n">theme_set</span><span class="p">(</span><span class="n">theme_light</span><span class="p">(</span><span class="n">base_family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"myfont"</span><span class="p">))</span><span class="w">
+
+</span><span class="c1"># set path to X13-SEATS and check it's working
+</span><span class="n">Sys.setenv</span><span class="p">(</span><span class="n">X</span><span class="m">13</span><span class="err">_</span><span class="n">PATH</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"c:/winx13/x13as"</span><span class="p">)</span><span class="w">
+</span><span class="n">checkX13</span><span class="p">()</span><span class="w">
+
+</span><span class="c1"># download file with data ultimately from Statistics New Zealand's Infoshare, prepared 
+# earlier: "Values - Electronic card transactions A/S/T by industry group (Monthly)"
+#
+</span><span class="n">download.file</span><span class="p">(</span><span class="s2">"https://github.com/ellisp/ellisp.github.io/blob/master/data/Electronic card transactions by industry group Monthly.rda?raw=true"</span><span class="p">,</span><span class="w">
+              </span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"wb"</span><span class="p">,</span><span class="w"> </span><span class="c1"># ie binary
+</span><span class="w">              </span><span class="n">destfile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"tmp.rda"</span><span class="p">)</span><span class="w">
+</span><span class="n">load</span><span class="p">(</span><span class="s2">"tmp.rda"</span><span class="p">)</span><span class="w">
+</span><span class="n">head</span><span class="p">(</span><span class="n">ect</span><span class="p">)</span><span class="w">
+
+</span><span class="n">apparel</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ect</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">filter</span><span class="p">(</span><span class="n">group</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Apparel"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">apparel_ts</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ts</span><span class="p">(</span><span class="n">apparel</span><span class="o">$</span><span class="n">Value</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">2002</span><span class="p">,</span><span class="w"> </span><span class="m">10</span><span class="p">),</span><span class="w"> </span><span class="n">frequency</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">12</span><span class="p">)</span><span class="w">
+
+</span><span class="n">par</span><span class="p">(</span><span class="n">mfrow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">),</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"myfont"</span><span class="p">)</span><span class="w">
+</span><span class="n">plot</span><span class="p">(</span><span class="n">apparel_ts</span><span class="p">,</span><span class="w"> </span><span class="n">xlab</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span><span class="w">
+</span><span class="n">acf</span><span class="p">(</span><span class="n">apparel_ts</span><span class="p">,</span><span class="w"> </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span><span class="w">
+</span><span class="n">pacf</span><span class="p">(</span><span class="n">apparel_ts</span><span class="p">,</span><span class="w"> </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span><span class="w">
+</span><span class="n">spectrum</span><span class="p">(</span><span class="n">apparel_ts</span><span class="p">,</span><span class="w"> </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span></code></pre></figure>
+
+<p>Here’s the classic decomposition into trend, seasonal and random components that can be multiplied together to form the original series.  I use multiplicative decomposition because of the way the variance increases as the mean increases.
+<img src="/img/0014-apparel-decompose.svg" alt="decomposition" /></p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">plot</span><span class="p">(</span><span class="n">decompose</span><span class="p">(</span><span class="n">apparel_ts</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"multiplicative"</span><span class="p">))</span></code></pre></figure>
+
+<p>A simple form of seasonal adjustment can be performed by multiplying that trend value in the plot above by the random value which can be seen to hover around 1.0 (or, equivalently, dividing the original value by the seasonal values).  This is a bit simplistic however; most notably it means the multiplier for a month stays the same over time, which is unlikely to be true over longer periods (although it might be a reasonable approximation for this relatively short series).</p>
+
+<h2 id="seats-seasonal-adjustment">SEATS seasonal adjustment</h2>
+<p>To perform a more sophisticated seasonal adjustment it’s best to go to the best in breed software, which is the US Census’ X-13ARIMA-SEATS.  Sax’s seasonal package makes it super-easy to fit a model and extract the seasonally adjusted values and residuals for diagnostic purposes.  In fact it’s a one liner  - a call to <code class="highlighter-rouge">seas()</code>, which gives us very sensible defaults using the SEATS method:</p>
+
+<ul>
+  <li>automatically fits a seasonal ARIMA model based on the frequency defined in the <code class="highlighter-rouge">ts</code> object it is fed</li>
+  <li>detects outliers and in effect leaves them out of the calculation of the seasonal effects (turns out not to be important in this dataset)</li>
+  <li>detects any impact of number of trading days per month and Easter, and creates external regressors for them if necessary</li>
+  <li>detects if a transformation is necessary and chooses a good one if necessary (in this case it opts for logarithmic as we’d guessed)</li>
+</ul>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">mod</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">seas</span><span class="p">(</span><span class="n">apparel_ts</span><span class="p">)</span><span class="w">
+
+</span><span class="n">plot</span><span class="p">(</span><span class="n">mod</span><span class="p">)</span><span class="w">
+</span><span class="n">plot</span><span class="p">(</span><span class="n">resid</span><span class="p">(</span><span class="n">mod</span><span class="p">),</span><span class="w"> </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Residuals"</span><span class="p">)</span><span class="w">
+</span><span class="n">qqnorm</span><span class="p">(</span><span class="n">resid</span><span class="p">(</span><span class="n">mod</span><span class="p">),</span><span class="w"> </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Residuals compared to Normal"</span><span class="p">)</span><span class="w">
+</span><span class="n">pacf</span><span class="p">(</span><span class="n">resid</span><span class="p">(</span><span class="n">mod</span><span class="p">),</span><span class="w"> </span><span class="s2">"Partial ACF of residuals"</span><span class="p">)</span></code></pre></figure>
+
+<p><img src="/img/0014-apparel-ts-seats.svg" alt="SEATS" /></p>
+
+<p>Super simple.</p>
+
+<p>The main reasons we’re doing this from R rather than hand coding a X-13 .spc file are:</p>
+
+<ul>
+  <li>its data management ease and flexibility,</li>
+  <li>access to a wide class of analytical functions (as used in my initial explorations), and</li>
+  <li>graphics.</li>
+</ul>
+
+<p>So the basic workflow will be to take the results from our SEATS model and manipulate them in R for re-use, whether performing diagnostic statistical tests or just visuals to understand the data.  For example, the connected scatter plot below lets us see how the original values get adjusted down (those in the right bottom triangle of the plot) or up (those in the left upper triangle) in the seasonal adjustment process.</p>
+
+<p><img src="/img/0014-apparel-compare.svg" alt="compare" /></p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">apparel_sa</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data_frame</span><span class="p">(</span><span class="w">
+   </span><span class="n">Time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">time</span><span class="p">(</span><span class="n">apparel_ts</span><span class="p">),</span><span class="w">
+   </span><span class="n">Original</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">apparel_ts</span><span class="p">,</span><span class="w">
+   </span><span class="n">SA</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">final</span><span class="p">(</span><span class="n">mod</span><span class="p">))</span><span class="w">
+
+</span><span class="n">ggplot</span><span class="p">(</span><span class="n">apparel_sa</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Original</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SA</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Time</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_abline</span><span class="p">(</span><span class="n">intercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">slope</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey50"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_path</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_point</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">coord_equal</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_x_continuous</span><span class="p">(</span><span class="s2">"Original ($m)"</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dollar</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="s2">"Seasonally adjusted ($m)"</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dollar</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Comparison of original and seasonally adjusted\n electronic card transactions on apparel in New Zealand"</span><span class="p">)</span></code></pre></figure>
+
+<p>In fact, Sax provides a super-useful <code class="highlighter-rouge">inspect()</code> function that spins up a Shiny app that lets you interact with all the key settings and diagnostics.  I can’t show that here though as I don’t have access to a server with X-13ARIMA-SEATS and Shiny Server on it (couldn’t run it on shinyapps.io at this point for example, because of the requirement for the X-13ARIMA-SEATS software).</p>
+
+<p>For those interested in the actual results, the standard summary is shown below.  Months with more Fridays and Saturdays in them get increased spend on apparel (something I hadn’t expected, but I guess I hadn’t thought about it very much); months with Easter in them get less spending; and the randomness can be modelled adequately with integration of order 1 and a moving average for both the month to month change, and the year-on-year month comparison:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="o">&gt;</span><span class="w"> </span><span class="n">summary</span><span class="p">(</span><span class="n">mod</span><span class="p">)</span><span class="w">
+
+</span><span class="n">Call</span><span class="o">:</span><span class="w">
+</span><span class="n">seas</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">apparel_ts</span><span class="p">)</span><span class="w">
+
+</span><span class="n">Coefficients</span><span class="o">:</span><span class="w">
+                    </span><span class="n">Estimate</span><span class="w"> </span><span class="n">Std.</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="n">z</span><span class="w"> </span><span class="n">value</span><span class="w"> </span><span class="n">Pr</span><span class="p">(</span><span class="o">&gt;|</span><span class="n">z</span><span class="o">|</span><span class="p">)</span><span class="w">    
+</span><span class="n">Mon</span><span class="w">               </span><span class="m">-0.0042437</span><span class="w">  </span><span class="m">0.0042013</span><span class="w">  </span><span class="m">-1.010</span><span class="w"> </span><span class="m">0.312446</span><span class="w">    
+</span><span class="n">Tue</span><span class="w">               </span><span class="m">-0.0005243</span><span class="w">  </span><span class="m">0.0041054</span><span class="w">  </span><span class="m">-0.128</span><span class="w"> </span><span class="m">0.898375</span><span class="w">    
+</span><span class="n">Wed</span><span class="w">               </span><span class="m">-0.0049353</span><span class="w">  </span><span class="m">0.0040414</span><span class="w">  </span><span class="m">-1.221</span><span class="w"> </span><span class="m">0.222013</span><span class="w">    
+</span><span class="n">Thu</span><span class="w">               </span><span class="m">-0.0037071</span><span class="w">  </span><span class="m">0.0041312</span><span class="w">  </span><span class="m">-0.897</span><span class="w"> </span><span class="m">0.369540</span><span class="w">    
+</span><span class="n">Fri</span><span class="w">                </span><span class="m">0.0150563</span><span class="w">  </span><span class="m">0.0040701</span><span class="w">   </span><span class="m">3.699</span><span class="w"> </span><span class="m">0.000216</span><span class="w"> </span><span class="o">***</span><span class="w">
+</span><span class="n">Sat</span><span class="w">                </span><span class="m">0.0153981</span><span class="w">  </span><span class="m">0.0041104</span><span class="w">   </span><span class="m">3.746</span><span class="w"> </span><span class="m">0.000180</span><span class="w"> </span><span class="o">***</span><span class="w">
+</span><span class="n">Easter</span><span class="p">[</span><span class="m">1</span><span class="p">]</span><span class="w">         </span><span class="m">-0.0407969</span><span class="w">  </span><span class="m">0.0085273</span><span class="w">  </span><span class="m">-4.784</span><span class="w"> </span><span class="m">1.72e-06</span><span class="w"> </span><span class="o">***</span><span class="w">
+</span><span class="n">MA</span><span class="o">-</span><span class="n">Nonseasonal</span><span class="m">-01</span><span class="w">  </span><span class="m">0.6739188</span><span class="w">  </span><span class="m">0.0611324</span><span class="w">  </span><span class="m">11.024</span><span class="w">  </span><span class="o">&lt;</span><span class="w"> </span><span class="m">2e-16</span><span class="w"> </span><span class="o">***</span><span class="w">
+</span><span class="n">MA</span><span class="o">-</span><span class="n">Seasonal</span><span class="m">-12</span><span class="w">     </span><span class="m">0.6326280</span><span class="w">  </span><span class="m">0.0671190</span><span class="w">   </span><span class="m">9.425</span><span class="w">  </span><span class="o">&lt;</span><span class="w"> </span><span class="m">2e-16</span><span class="w"> </span><span class="o">***</span><span class="w">
+</span><span class="o">---</span><span class="w">
+</span><span class="n">Signif.</span><span class="w"> </span><span class="n">codes</span><span class="o">:</span><span class="w">  </span><span class="m">0</span><span class="w"> </span><span class="err">‘</span><span class="o">***</span><span class="err">’</span><span class="w"> </span><span class="m">0.001</span><span class="w"> </span><span class="err">‘</span><span class="o">**</span><span class="err">’</span><span class="w"> </span><span class="m">0.01</span><span class="w"> </span><span class="err">‘</span><span class="o">*</span><span class="err">’</span><span class="w"> </span><span class="m">0.05</span><span class="w"> </span><span class="err">‘</span><span class="n">.</span><span class="err">’</span><span class="w"> </span><span class="m">0.1</span><span class="w"> </span><span class="err">‘</span><span class="w"> </span><span class="err">’</span><span class="w"> </span><span class="m">1</span><span class="w">
+
+</span><span class="n">SEATS</span><span class="w"> </span><span class="n">adj.</span><span class="w">  </span><span class="n">ARIMA</span><span class="o">:</span><span class="w"> </span><span class="p">(</span><span class="m">0</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">1</span><span class="p">)(</span><span class="m">0</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">  </span><span class="n">Obs.</span><span class="o">:</span><span class="w"> </span><span class="m">155</span><span class="w">  </span><span class="n">Transform</span><span class="o">:</span><span class="w"> </span><span class="n">log</span><span class="w">
+</span><span class="n">AICc</span><span class="o">:</span><span class="w"> </span><span class="m">949.3</span><span class="p">,</span><span class="w"> </span><span class="n">BIC</span><span class="o">:</span><span class="w"> </span><span class="m">977.1</span><span class="w">  </span><span class="n">QS</span><span class="w"> </span><span class="p">(</span><span class="n">no</span><span class="w"> </span><span class="n">seasonality</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">final</span><span class="p">)</span><span class="o">:</span><span class="w">    </span><span class="m">0</span><span class="w">  
+</span><span class="n">Box</span><span class="o">-</span><span class="n">Ljung</span><span class="w"> </span><span class="p">(</span><span class="n">no</span><span class="w"> </span><span class="n">autocorr.</span><span class="p">)</span><span class="o">:</span><span class="w">  </span><span class="m">23.7</span><span class="w">   </span><span class="n">Shapiro</span><span class="w"> </span><span class="p">(</span><span class="n">normality</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="m">0.9963</span><span class="w">  </span></code></pre></figure>
+
+<p>Here’s how I turn the output into a <code class="highlighter-rouge">ggplot2</code> graphic:
+<img src="/img/0014-apparel-adjusted-ggplot.svg" alt="compare" /></p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">apparel_sa</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">gather</span><span class="p">(</span><span class="s2">"variable"</span><span class="p">,</span><span class="w"> </span><span class="s2">"value"</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">Time</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> 
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"SA"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Seasonally adjusted by SEATS"</span><span class="p">,</span><span class="w"> </span><span class="n">variable</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Time</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">variable</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_line</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">labs</span><span class="p">(</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="s2">"Value of transactions ($m)"</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dollar</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Electronic card transactions on apparel in New Zealand"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">theme</span><span class="p">(</span><span class="n">legend.position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"bottom"</span><span class="p">)</span></code></pre></figure>
+
+<h2 id="create-a-new-ggplot2-stat">Create a new ggplot2 stat</h2>
+<p>So that’s nice, but to make this feel super useful and integrate into my graphics-based data exploration workflow, I’m going to want to seasonally adjust on the fly a dataset that is sliced and diced by different dimensions.  I want something that works like <code class="highlighter-rouge">geom_smooth()</code>.  Luckily, Hadley Wickham’s amazing <code class="highlighter-rouge">ggplot2</code> package is designed to allow exactly this sort of extension.  We just need to create a new statistical transformation, with the help of the <code class="highlighter-rouge">proto</code> package which lets us briefly treat R as though it were an object-oriented programming language.</p>
+
+<p>In the code below, <code class="highlighter-rouge">StatSeas</code> is an object that creates functions, and <code class="highlighter-rouge">stat_seas(...)</code> is a function that works just like <code class="highlighter-rouge">stat_smooth()</code>, except instead of fitting a scatter plot smoother it performs a call to X-13ARIMA-SEATS with whatever arguments the user has passed through with the <code class="highlighter-rouge">...</code>.  The user has to specify the frequency and the starting point of the time series, and the approach isn’t robust to missing values (ie all the time series after slicing into groups need to begin at the same date).</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">proto</span><span class="p">)</span><span class="w">
+
+</span><span class="n">StatSeas</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">proto</span><span class="p">(</span><span class="n">ggplot2</span><span class="o">:::</span><span class="n">Stat</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w">    
+   </span><span class="n">required_aes</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"x"</span><span class="p">,</span><span class="w"> </span><span class="s2">"y"</span><span class="p">)</span><span class="w">
+   </span><span class="n">default_geom</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">.</span><span class="p">)</span><span class="w"> </span><span class="n">GeomLine</span><span class="w">
+   </span><span class="n">objname</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"seasadj"</span><span class="w">
+   </span><span class="n">calculate_groups</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">.</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">scales</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p">){</span><span class="w">
+      </span><span class="n">.super</span><span class="o">$</span><span class="n">calculate_groups</span><span class="p">(</span><span class="n">.</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">scales</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p">)</span><span class="w">
+   </span><span class="p">}</span><span class="w">
+   </span><span class="n">calculate</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">.</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">scales</span><span class="p">,</span><span class="w"> </span><span class="n">frequency</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+      </span><span class="n">y_ts</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ts</span><span class="p">(</span><span class="n">data</span><span class="o">$</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">frequency</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">frequency</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">start</span><span class="p">)</span><span class="w">
+      </span><span class="n">y_sa</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">seasonal</span><span class="o">::</span><span class="n">final</span><span class="p">(</span><span class="n">seasonal</span><span class="o">::</span><span class="n">seas</span><span class="p">(</span><span class="n">y_ts</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p">))</span><span class="w">
+      </span><span class="n">result</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.frame</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="o">$</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">y_sa</span><span class="p">))</span><span class="w">
+      </span><span class="nf">return</span><span class="p">(</span><span class="n">result</span><span class="p">)</span><span class="w">
+   </span><span class="p">}</span><span class="w">
+</span><span class="p">})</span><span class="w"> 
+</span><span class="n">stat_seas</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">StatSeas</span><span class="o">$</span><span class="n">new</span><span class="w"> </span></code></pre></figure>
+
+<p>Here’s the new function in action:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">ggplot</span><span class="p">(</span><span class="n">apparel</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TimePeriod</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Value</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="c1"># original:
+</span><span class="w">   </span><span class="n">geom_line</span><span class="p">(</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"red"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="c1"># seasonally adjusted:
+</span><span class="w">   </span><span class="n">stat_seas</span><span class="p">(</span><span class="n">frequency</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">12</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">2002</span><span class="p">,</span><span class="w"> </span><span class="m">10</span><span class="p">))</span></code></pre></figure>
+
+<p><img src="/img/0014-apparel-ts-new-stat.svg" alt="compare" /></p>
+
+<p>Nice and easy!</p>
+
+<p>But the real beauty is that we can use this on data that is grouped by aesthetics like colour or linetype, or facets.  I demo this by going back to the full set of data of which spend on apparel was just one element.  The eight lines of code below take the original data, fit SEATS models and seasonally adjust for every spend category, and produce a nicely polished plot.  Not bad!</p>
+
+<p>Thanks Hadley Wickham for <code class="highlighter-rouge">ggplot2</code>, Christoph Sax for <code class="highlighter-rouge">seasonal</code>, the US Census Bureau for X-13ARIMA-SEATS, and the Bank of Spain for the SEATS method.
+<img src="/img/0014-faceted.svg" alt="faceted" /></p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">ect</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TimePeriod</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Value</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">group</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_line</span><span class="p">(</span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.3</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">stat_seas</span><span class="p">(</span><span class="n">frequency</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">12</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1978</span><span class="p">,</span><span class="w"> </span><span class="m">4</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">facet_wrap</span><span class="p">(</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">group</span><span class="p">,</span><span class="w"> </span><span class="n">scales</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"free_y"</span><span class="p">,</span><span class="w"> </span><span class="n">ncol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"SEATS-seasonally adjusted monthly transaction value ($m)"</span><span class="p">,</span><span class="w">
+        </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Electronic card transactions in New Zealand"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">theme</span><span class="p">(</span><span class="n">legend.position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"none"</span><span class="p">)</span></code></pre></figure>
+
+<p>Note - Statistics New Zealand publish an official seasonally adjusted series from this data, making the exercise above redundant other than as a demonstration.  Where their results differ from mine (which is only in tiny details - I checked but decided too boring to include in here), use their’s not mine.</p>
+
+
+</div>
+
+<div class = "container">
+   <div class="col-md-4">
+    
+        <a rel="prev" href="/blog/2015/10/04/recruiting">
+        <p>&larr; Older</p>
+        <p>Recruiting Analysts for dynamic cutting edge public sector team</p>
+        
+        </a>
+    
+    </div>
+    <div class="col-md-4">
+    </div>
+    <div class="col-md-4" style="text-align: right;">
+     
+        <a rel="next" href="/blog/2015/10/25/silver">
+        <p>Newer &rarr;</p>
+        <p>Silver flows in the seventeenth and eighteenth centuries</p>
+        
+        </a>
+    
+      </div>
+      </div>
+      
+      
+      
+</div>
+
+
+   
+    <div id="disqus_thread"></div>
+
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+    
+    
+   
+			
+			</div><!-- /.container -->
+
+         
+
+   <div class = "container footer">
+			<footer>
+	    		
+            <p>Follow <a href = "/feed.xml">this blog with RSS</a>.  Or follow <a href = "/feed.r.xml">posts in this blog featuring R with RSS</a>.</p>
+	
+            <p>This blog is built with <a href = "http://jekyllrb.com/">Jekyll</a>, <a href = "http://getbootstrap.com/">Bootstrap</a>, <a href = "https://www.ruby-lang.org/en/">Ruby</a> and <a href = "https://cran.r-project.org/">R</a>.  Read my <a href="/about/acknowledgements.html">acknowledgements</a> for a little more on how.  I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Peter's stats stuff</span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+
+
+			</footer>
+    </div>
+
+
+
+  
+</body>
+</html>
+   
+
+
+
+
+         

@@ -1,0 +1,284 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>A better way of visualising income distributions with zeroes and negatives</title>
+      	
+         
+         
+            <meta name ="description" content ="I demonstrate a better way of visualising income distributions when they include zero and negative values rather than just putting them on a logarithmic scale and dropping the inconvenient values.  I use a modified power transformation, which applies a transformation like square root to the absolute value of the original variable and then restores the sign.  I apply the method to the New Zealand Income Survey 2011 data.">
+            <meta property="og:description" content ="I demonstrate a better way of visualising income distributions when they include zero and negative values rather than just putting them on a logarithmic scale and dropping the inconvenient values.  I use a modified power transformation, which applies a transformation like square root to the absolute value of the original variable and then restores the sign.  I apply the method to the New Zealand Income Survey 2011 data.">
+         
+         <meta property="og:site_name" content="Peter's stats stuff" />
+         <meta property="og:title" content="A better way of visualising income distributions with zeroes and negatives" />
+         
+            <meta property="og:image" content="/img/0004_better_density_plot.svg" />
+         
+         <meta property="og:url" content="http://ellisp.github.io/blog/2015/08/21/visualising-distributions/" />
+         <meta property="og:author" content= "https://www.facebook.com/peter.ellis.353" />
+         <meta property="og:type" content="article" />
+           
+          <link href="/css/bootstrap.min.css" rel ="stylesheet">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet">
+            <link href="/css/custom.css" rel ="stylesheet">       
+     <link rel="stylesheet" href="/css/Pygments/autumn.css">      
+     <link rel="stylesheet" href="/css/Pygments/custom.css">      
+            
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="Peter's stats stuff by Peter Ellis"
+      href="/feed.xml">
+
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+         <script src="/js/bootstrap.min.js"></script>
+         
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Peter's stats stuff</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">All blog posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">Ordered by date</a></li>
+                  <li><a href="/blog/index_by_tag.html">Grouped by subject matter</a></li>
+                  <li><a href = /blog/2016/06/05/bootstrap-cv-strategies>Most recent post</a></li>
+                 </ul>
+            </li>
+              <li><a href="/blog/showcase.html">Showcase</a></li>
+              <li><a href="/presentations/index.html">Presentations</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			    <div class="jumbotron">
+      <div class="container">
+        <h1>A better way of visualising income distributions with zeroes and negatives</h1>
+         <p class="meta">21 Aug 2015</p>
+        
+      </div>
+    </div>
+
+
+
+
+<div class = "post-summary">
+<h2>TL;DR Summary:</h2>
+   I demonstrate a better way of visualising income distributions when they include zero and negative values rather than just putting them on a logarithmic scale and dropping the inconvenient values.  I use a modified power transformation, which applies a transformation like square root to the absolute value of the original variable and then restores the sign.  I apply the method to the New Zealand Income Survey 2011 data.
+   <hr></hr>
+</div>
+
+<div class="post">
+<div class="col-md-2">
+
+</div>
+  <div class="col-md-8">
+
+  <p>I wasn’t happy with <a href="/blog/2015/08/15/importing-nzis-surf/">my visualisation of individual incomes from the New Zealand income survey</a>.  Because it used a logarithmic scale to improve readability, in effect all zero and negative values are excluded from the data.  Whenever I throw out data, my tail goes bushy… there has to be a better way.  Those zero and negative values are an important part of the story, and it’s too easy to forget them.  If you don’t include them in your standard graphic for exploring the distribution of the data, the next thing is you’re excluding them from your model in serious analysis.</p>
+
+<p>It turns out this is a very common problem, and the routine solutions (at least according to this <a href="http://blogs.sas.com/content/iml/2011/04/27/log-transformations-how-to-handle-negative-data-values.html">SAS blog</a>, and this <a href="http://andrewgelman.com/2005/11/10/transforming_va/">Q&amp;A on another blog</a>) seem to be either adding an arbitrary constant before taking logarithms, excluding those data points and treating them as missing values, or discretizing the data altogether.  If my tail was bushy before, now I’m really nervous - those sound like really dangerous things to do (and yes, I freely admit having done all three myself plenty of times).</p>
+
+<p>A bit of reflection shows that what’s going on here is a mixture of distributions - one of the most dangerous things for statistics based on traditional assumptions:</p>
+
+<ul>
+  <li>A large bunch of the population, which we sometimes mistake for the whole population, who earn positive incomes that are roughly log-normally distributed, with mean and variance depending on structural variables like education, location, etc.</li>
+  <li>A small subset, probably of enterpreneurs, who are making losses.  The losses have their own distribution of interest.</li>
+  <li>A medium sized subset who are not in work or owning businesses and have zero income</li>
+</ul>
+
+<p>It’s folly to think that these three groups in the data-generating process will result in a single smooth distribution, as is implied by adding a constant to the income and taking logarithms.  It’s worse to chuck out the inconvenient second and third groups altogether.</p>
+
+<p>My solution is to use a modified power transform - one that transforms the absolute value of the original data, then restores the sign (negative or positive) to the result.  I started by thinking of square roots, and I needed to handle the fact that the square root of a negative number is imaginary.  By applying the square root to the absolute value and then restoring the sign you get a transformation like this:</p>
+
+<p><img src="/img/0004_transformation.svg" alt="plot" /></p>
+
+<p>Produced by (in R):</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">power_trans</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">){</span><span class="w">
+   </span><span class="nf">sign</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nf">abs</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="n">k</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">sim</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">-5000</span><span class="o">:</span><span class="m">5000</span><span class="w">
+
+</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="p">,</span><span class="w"> </span><span class="n">power_trans</span><span class="p">(</span><span class="n">sim</span><span class="p">),</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"l"</span><span class="p">,</span><span class="w"> </span><span class="n">bty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"l"</span><span class="p">,</span><span class="w">
+     </span><span class="n">xlab</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Original value"</span><span class="p">,</span><span class="w"> </span><span class="n">ylab</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Transformed value"</span><span class="p">)</span><span class="w">
+</span><span class="n">grid</span><span class="p">()</span></code></pre></figure>
+
+<p>I’ve given myself flexibility to use powers other than 0.5 (square root).  When I apply this approach to the New Zealand Income Survey 2011 simulated unit record file provided by Statistics New Zealand, I get a much more satisfactory representation of the full range of incomes there.  Not only are the two modes at $825 and $325 per week visible that I discussed in my last post, but we can compare them to the spike at $0 per week, and observe a little bump at the mode negative income level of -$200.</p>
+
+<p><img src="/img/0004_better_density_plot.svg" alt="plot" /></p>
+
+<p>I haven’t heard of this approach being used before and would welcome comment on it.  As taking logarithms of income data is extremely common - pretty much the standard approach in fact - I would suggest that analysts are routinely losing sight of some important complexity in their data.</p>
+
+<p>Here’s the final code producing that plot.  It depends on the data being present in a database, as I described in the previous post.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">RODBC</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">ggplot2</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">showtext</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">dplyr</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># comnect to database
+</span><span class="n">PlayPen</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">odbcConnect</span><span class="p">(</span><span class="s2">"PlayPen_prod"</span><span class="p">)</span><span class="w">
+</span><span class="n">sqlQuery</span><span class="p">(</span><span class="n">PlayPen</span><span class="p">,</span><span class="w"> </span><span class="s2">"use nzis11"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># load fonts
+</span><span class="n">font.add.google</span><span class="p">(</span><span class="s2">"Poppins"</span><span class="p">,</span><span class="w"> </span><span class="s2">"myfont"</span><span class="p">)</span><span class="w">
+</span><span class="n">showtext.auto</span><span class="p">()</span><span class="w">
+
+
+
+
+</span><span class="c1"># define the power to use in the transformation
+</span><span class="n">k</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">0.2</span><span class="w">
+
+</span><span class="c1"># download the data from the database
+</span><span class="n">inc</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sqlQuery</span><span class="p">(</span><span class="n">PlayPen</span><span class="p">,</span><span class="w"> </span><span class="s2">"select income from f_mainheader"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">inc_trans</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">power_trans</span><span class="p">(</span><span class="n">income</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">))</span><span class="w">
+
+</span><span class="c1"># define where to put the gridlines and labels on the x axis
+</span><span class="n">breaks</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.frame</span><span class="p">(</span><span class="n">labels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">-5000</span><span class="p">,</span><span class="w"> </span><span class="m">-1500</span><span class="p">,</span><span class="w"> </span><span class="m">-200</span><span class="p">,</span><span class="w"> </span><span class="m">-10</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="m">345</span><span class="p">,</span><span class="w"> </span><span class="m">825</span><span class="p">,</span><span class="w"> </span><span class="m">5000</span><span class="p">)</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">points</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">power_trans</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">))</span><span class="w">
+
+</span><span class="n">inc</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">inc_trans</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_density</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_x_continuous</span><span class="p">(</span><span class="n">breaks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">breaks</span><span class="o">$</span><span class="n">points</span><span class="p">,</span><span class="w"> </span><span class="n">labels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">breaks</span><span class="o">$</span><span class="n">labels</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">theme_minimal</span><span class="p">(</span><span class="n">base_family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"myfont"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="w"> </span><span class="s2">"\nWeekly income (transformed scale, $)"</span><span class="p">,</span><span class="w">
+        </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Density\n"</span><span class="p">,</span><span class="w">
+        </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Distribution of individual income in New Zealand 2011
+showing the full range including zero and negative"</span><span class="p">)</span></code></pre></figure>
+
+
+</div>
+
+<div class = "container">
+   <div class="col-md-4">
+    
+        <a rel="prev" href="/blog/2015/08/15/importing-nzis-surf">
+        <p>&larr; Older</p>
+        <p>Importing the New Zealand Income Survey SURF</p>
+        
+        </a>
+    
+    </div>
+    <div class="col-md-4">
+    </div>
+    <div class="col-md-4" style="text-align: right;">
+     
+        <a rel="next" href="/blog/2015/08/30/starting-in-datascience">
+        <p>Newer &rarr;</p>
+        <p>Getting started in applied statistics / datascience</p>
+        
+        </a>
+    
+      </div>
+      </div>
+      
+      
+      
+</div>
+
+
+   
+    <div id="disqus_thread"></div>
+
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+    
+    
+   
+			
+			</div><!-- /.container -->
+
+         
+
+   <div class = "container footer">
+			<footer>
+	    		
+            <p>Follow <a href = "/feed.xml">this blog with RSS</a>.  Or follow <a href = "/feed.r.xml">posts in this blog featuring R with RSS</a>.</p>
+	
+            <p>This blog is built with <a href = "http://jekyllrb.com/">Jekyll</a>, <a href = "http://getbootstrap.com/">Bootstrap</a>, <a href = "https://www.ruby-lang.org/en/">Ruby</a> and <a href = "https://cran.r-project.org/">R</a>.  Read my <a href="/about/acknowledgements.html">acknowledgements</a> for a little more on how.  I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Peter's stats stuff</span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+
+
+			</footer>
+    </div>
+
+
+
+  
+</body>
+</html>
+   
+
+
+
+
+         

@@ -1,0 +1,540 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Election analysis contest entry part 1 - introducing the nzelect R package</title>
+      	
+         
+         
+            <meta name ="description" content ="I introduce a new R package, with tidy versions of New Zealand election data (so far only for the 2014 general election).  We confirm and discuss some well-known results such as the tendency for the Labour Party to apparently under-perform on party vote; and identify patterns at the Territorial Authority and Regional Council level that are not usually available due to how voting behaviour is normally classified and reported on.">
+            <meta property="og:description" content ="I introduce a new R package, with tidy versions of New Zealand election data (so far only for the 2014 general election).  We confirm and discuss some well-known results such as the tendency for the Labour Party to apparently under-perform on party vote; and identify patterns at the Territorial Authority and Regional Council level that are not usually available due to how voting behaviour is normally classified and reported on.">
+         
+         <meta property="og:site_name" content="Peter's stats stuff" />
+         <meta property="og:title" content="Election analysis contest entry part 1 - introducing the nzelect R package" />
+         
+            <meta property="og:image" content="http://ellisp.github.io/img/0035-cand-v-party.png" />
+         
+         <meta property="og:url" content="http://ellisp.github.io/blog/2016/04/03/nzelect1/" />
+         <meta property="og:author" content= "https://www.facebook.com/peter.ellis.353" />
+         <meta property="og:type" content="article" />
+           
+          <link href="/css/bootstrap.min.css" rel ="stylesheet">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet">
+            <link href="/css/custom.css" rel ="stylesheet">       
+     <link rel="stylesheet" href="/css/Pygments/autumn.css">      
+     <link rel="stylesheet" href="/css/Pygments/custom.css">      
+            
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="Peter's stats stuff by Peter Ellis"
+      href="/feed.xml">
+
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+         <script src="/js/bootstrap.min.js"></script>
+         
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Peter's stats stuff</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">All blog posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">Ordered by date</a></li>
+                  <li><a href="/blog/index_by_tag.html">Grouped by subject matter</a></li>
+                  <li><a href = /blog/2016/06/05/bootstrap-cv-strategies>Most recent post</a></li>
+                 </ul>
+            </li>
+              <li><a href="/blog/showcase.html">Showcase</a></li>
+              <li><a href="/presentations/index.html">Presentations</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			    <div class="jumbotron">
+      <div class="container">
+        <h1>Election analysis contest entry part 1 - introducing the nzelect R package</h1>
+         <p class="meta">03 Apr 2016</p>
+        
+      </div>
+    </div>
+
+
+
+
+<div class = "post-summary">
+<h2>TL;DR Summary:</h2>
+   I introduce a new R package, with tidy versions of New Zealand election data (so far only for the 2014 general election).  We confirm and discuss some well-known results such as the tendency for the Labour Party to apparently under-perform on party vote; and identify patterns at the Territorial Authority and Regional Council level that are not usually available due to how voting behaviour is normally classified and reported on.
+   <hr></hr>
+</div>
+
+<div class="post">
+<div class="col-md-2">
+
+</div>
+  <div class="col-md-8">
+
+  <h2 id="the-contest">The contest</h2>
+<p>Inspired by <a href="http://www.arilamstein.com/blog/2016/03/28/announcing-r-election-analysis-contest/">Ari Lamstein’s R Election Analysis Contest</a>, I’ve fast-tracked a project that’s been at the back of my mind for a while, to make available in a friendly, tidy R package a range of data about New Zealand elections.  My entry for the contest will involve 3 or 4 posts over the next week or so:</p>
+
+<ol>
+  <li>Today’s post, introducing the <a href="https://github.com/ellisp/nzelect"><code class="highlighter-rouge">nzelect</code></a> package from a user angle and demonstrating some basic use</li>
+  <li>A post to come on how <code class="highlighter-rouge">nzelect</code> was put together</li>
+  <li>A post on this <a href="https://ellisp.shinyapps.io/NZ-general-election-2014/">Shiny app which provides an interactive map</a> to explore the detail (down to individual voting location) of the New Zealand 2014 general election</li>
+  <li>(if I get around to it) a more formal piece of statistical modelling of some of the spatial aspects of the 2014 general election</li>
+</ol>
+
+<p>The first three posts are really about setting up infrastructure - tidying up the data for convenience, and exploring it in an interactive tool - so the four posts need to be seen as a unified whole.  Hopefully I’ll get round to that last one!</p>
+
+<h2 id="the-need-for-an-r-package">The need for an R package</h2>
+<p>Election results data in New Zealand is in pretty good shape.  The Electoral Commission publishes <a href="http://www.electionresults.govt.nz/">results in a nice nearly-there machine-readable format</a>.  However, there’s still a bit of work required to make it analysis-ready, particularly for anything that gets seriously into the spatial aspects or matching to demographic or economic data.</p>
+
+<p>For example, consider <a href="https://kiwipollguy.wordpress.com/2014/04/29/polling-place-geodata/">this blog post by kiwipollguy</a>.  He identifies that it would be useful to do a regression of voting behaviour on economic characterstics of the meshblocks (lowest geographical unit in the New Zealand census) in which they’re located, but it’s clearly a job of work to organise the data to do that.</p>
+
+<p>Statistics New Zealand publish census data at an electorate level, which is potentially useful, but not enough for those seeking to go an extra level of spatial granularity.</p>
+
+<p>By spending a couple of days in working on the <code class="highlighter-rouge">nzelect</code> package I hope to make the data that much more accessible that this sort of serious analysis will be possible.  For example, I’ve now done the work of matching voting locations to meshblocks, which means that R users don’t need to confront shapefiles and polygon overlays in order to match the data to other variables.</p>
+
+<h3 id="background">Background</h3>
+<p>A bit of background for international readers.  New Zealand has a single house of parliament (ie no equivalent of a Senate house of review as in Australia or the USA), and the Executive is drawn from the party that can command the confidence of the house (ie no independent election of a President as in the USA).</p>
+
+<p>The <a href="http://www.elections.org.nz/voting-system/mmp-voting-system">New Zealand electoral system</a> is a mixed-member proportional (MMP) system.  Each voter gets two votes.  A candidate vote is for an individual parliamentary representative of a particular electorate, defined by place of residence of the registered voter, and counting is first past the post.  The party vote counts towards proportional representation and determines the overall make up of Parliament.  That is, the number of representatives a party gets in Parliament is determined by their share of the party vote; and the gap between the number of successful individual candidates and that number is made up from a party “List”.  The system has been around since <a href="https://en.wikipedia.org/wiki/Electoral_system_of_New_Zealand">1996 (replacing a simple first past the post one electorate - one candidate system)</a>.  Many voters understand it well enough to engage in tactical voting (more on that below).</p>
+
+<h2 id="installation-and-objects-provided">Installation and objects provided</h2>
+<p>Currently {nzelect} is available on GitHub.  I’ll consider a CRAN release once it’s stable.  So far I’ve only got the 2014 General Election results in there; I’d like to have at least the 2011 election added too.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">devtools</span><span class="o">::</span><span class="n">install_github</span><span class="p">(</span><span class="s2">"ellisp/nzelect/pkg"</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">nzelect</span><span class="p">)</span></code></pre></figure>
+
+<p>So far there are just two data frames (and their helpfiles) in the package:</p>
+
+<ul>
+  <li><code class="highlighter-rouge">GE2014</code> is the results of both the candidate and party votes, for each combination of voting location and electorate.  In data modelling terms, voting location and electorate have a many-to-many relationship because people can physically vote in locations that are not in the electorate for which they are enrolled.</li>
+  <li><code class="highlighter-rouge">Locations2014</code> is information on the 2,568 individual voting locations: their coordinates in both NZTM and WGS terms, which electorate they are physically located in, and which mesh block, area unit, Territorial Authority, and Regional Council they are located in.</li>
+</ul>
+
+<p>The two datasets can be matched by the street address of the location, called <code class="highlighter-rouge">VotingPlace</code> in both dataframes.</p>
+
+<h2 id="overall-results">Overall results</h2>
+<p>Here’s how to replicate the overall election results for 2014, matching the <a href="http://www.electionresults.govt.nz/electionresults_2014/e9/html/e9_part1.html">official numbers published by the Electoral Commission</a>.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">nzelect</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">ggplot2</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">dplyr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">tidyr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">showtext</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">GGally</span><span class="p">)</span><span class="w"> </span><span class="c1"># for ggpairs
+</span><span class="n">library</span><span class="p">(</span><span class="n">RColorBrewer</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">gridExtra</span><span class="p">)</span><span class="w"> </span><span class="c1"># for grid.arrange
+</span><span class="w">
+</span><span class="n">GE2014</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">VotingType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">paste0</span><span class="p">(</span><span class="n">VotingType</span><span class="p">,</span><span class="w"> </span><span class="s2">"Vote"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">group_by</span><span class="p">(</span><span class="n">Party</span><span class="p">,</span><span class="w"> </span><span class="n">VotingType</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">summarise</span><span class="p">(</span><span class="n">Votes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">Votes</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">spread</span><span class="p">(</span><span class="n">VotingType</span><span class="p">,</span><span class="w"> </span><span class="n">Votes</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">select</span><span class="p">(</span><span class="n">Party</span><span class="p">,</span><span class="w"> </span><span class="n">PartyVote</span><span class="p">,</span><span class="w"> </span><span class="n">CandidateVote</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">ungroup</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">arrange</span><span class="p">(</span><span class="n">desc</span><span class="p">(</span><span class="n">PartyVote</span><span class="p">))</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">Source</span><span class="o">:</span><span class="w"> </span><span class="n">local</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="n">frame</span><span class="w"> </span><span class="p">[</span><span class="m">28</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="m">3</span><span class="p">]</span><span class="w">
+
+                              </span><span class="n">Party</span><span class="w"> </span><span class="n">PartyVote</span><span class="w"> </span><span class="n">CandidateVote</span><span class="w">
+                              </span><span class="p">(</span><span class="n">chr</span><span class="p">)</span><span class="w">     </span><span class="p">(</span><span class="n">dbl</span><span class="p">)</span><span class="w">         </span><span class="p">(</span><span class="n">dbl</span><span class="p">)</span><span class="w">
+</span><span class="m">1</span><span class="w">                    </span><span class="n">National</span><span class="w"> </span><span class="n">Party</span><span class="w">   </span><span class="m">1131501</span><span class="w">       </span><span class="m">1081787</span><span class="w">
+</span><span class="m">2</span><span class="w">                      </span><span class="n">Labour</span><span class="w"> </span><span class="n">Party</span><span class="w">    </span><span class="m">604535</span><span class="w">        </span><span class="m">801287</span><span class="w">
+</span><span class="m">3</span><span class="w">                       </span><span class="n">Green</span><span class="w"> </span><span class="n">Party</span><span class="w">    </span><span class="m">257359</span><span class="w">        </span><span class="m">165718</span><span class="w">
+</span><span class="m">4</span><span class="w">           </span><span class="n">New</span><span class="w"> </span><span class="n">Zealand</span><span class="w"> </span><span class="n">First</span><span class="w"> </span><span class="n">Party</span><span class="w">    </span><span class="m">208300</span><span class="w">         </span><span class="m">73384</span><span class="w">
+</span><span class="m">5</span><span class="w">                      </span><span class="n">Conservative</span><span class="w">     </span><span class="m">95598</span><span class="w">         </span><span class="m">81075</span><span class="w">
+</span><span class="m">6</span><span class="w">                     </span><span class="n">Internet</span><span class="w"> </span><span class="n">MANA</span><span class="w">     </span><span class="m">34094</span><span class="w">            </span><span class="kc">NA</span><span class="w">
+</span><span class="m">7</span><span class="w">                       </span><span class="n">Maori</span><span class="w"> </span><span class="n">Party</span><span class="w">     </span><span class="m">31849</span><span class="w">         </span><span class="m">42108</span><span class="w">
+</span><span class="m">8</span><span class="w">                   </span><span class="n">ACT</span><span class="w"> </span><span class="n">New</span><span class="w"> </span><span class="n">Zealand</span><span class="w">     </span><span class="m">16689</span><span class="w">         </span><span class="m">27778</span><span class="w">
+</span><span class="m">9</span><span class="w">  </span><span class="n">Aotearoa</span><span class="w"> </span><span class="n">Legalise</span><span class="w"> </span><span class="n">Cannabis</span><span class="w"> </span><span class="n">Party</span><span class="w">     </span><span class="m">10961</span><span class="w">          </span><span class="m">4936</span><span class="w">
+</span><span class="m">10</span><span class="w">             </span><span class="n">Informal</span><span class="w"> </span><span class="n">Party</span><span class="w"> </span><span class="n">Votes</span><span class="w">     </span><span class="m">10857</span><span class="w">            </span><span class="kc">NA</span><span class="w">
+</span><span class="n">..</span><span class="w">                              </span><span class="n">...</span><span class="w">       </span><span class="n">...</span><span class="w">           </span><span class="n">...</span></code></pre></figure>
+
+<p>Here’s how to get the results for a single electorate:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">GE2014</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">filter</span><span class="p">(</span><span class="n">VotingType</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Candidate"</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">Electorate</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Wellington Central 60"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">group_by</span><span class="p">(</span><span class="n">Candidate</span><span class="p">,</span><span class="w"> </span><span class="n">Party</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">summarise</span><span class="p">(</span><span class="n">Votes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">Votes</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">ungroup</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">Proportion</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="n">Votes</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">Votes</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">arrange</span><span class="p">(</span><span class="n">desc</span><span class="p">(</span><span class="n">Votes</span><span class="p">))</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">Source</span><span class="o">:</span><span class="w"> </span><span class="n">local</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="n">frame</span><span class="w"> </span><span class="p">[</span><span class="m">11</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="m">4</span><span class="p">]</span><span class="w">
+
+                        </span><span class="n">Candidate</span><span class="w">                            </span><span class="n">Party</span><span class="w"> </span><span class="n">Votes</span><span class="w"> </span><span class="n">Proportion</span><span class="w">
+                            </span><span class="p">(</span><span class="n">chr</span><span class="p">)</span><span class="w">                            </span><span class="p">(</span><span class="n">chr</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="n">dbl</span><span class="p">)</span><span class="w">      </span><span class="p">(</span><span class="n">dbl</span><span class="p">)</span><span class="w">
+</span><span class="m">1</span><span class="w">         </span><span class="n">ROBERTSON</span><span class="p">,</span><span class="w"> </span><span class="n">Grant</span><span class="w"> </span><span class="n">Murray</span><span class="w">                     </span><span class="n">Labour</span><span class="w"> </span><span class="n">Party</span><span class="w"> </span><span class="m">19807</span><span class="w">       </span><span class="m">51.6</span><span class="w">
+</span><span class="m">2</span><span class="w">  </span><span class="n">FOSTER</span><span class="o">-</span><span class="n">BELL</span><span class="p">,</span><span class="w"> </span><span class="n">Paul</span><span class="w"> </span><span class="n">Ayers</span><span class="w"> </span><span class="n">Robert</span><span class="w">                   </span><span class="n">National</span><span class="w"> </span><span class="n">Party</span><span class="w"> </span><span class="m">11540</span><span class="w">       </span><span class="m">30.1</span><span class="w">
+</span><span class="m">3</span><span class="w">        </span><span class="n">SHAW</span><span class="p">,</span><span class="w"> </span><span class="n">James</span><span class="w"> </span><span class="n">Peter</span><span class="w"> </span><span class="n">Edward</span><span class="w">                      </span><span class="n">Green</span><span class="w"> </span><span class="n">Party</span><span class="w">  </span><span class="m">5077</span><span class="w">       </span><span class="m">13.2</span><span class="w">
+</span><span class="m">4</span><span class="w">                      </span><span class="n">BARR</span><span class="p">,</span><span class="w"> </span><span class="n">Hugh</span><span class="w">          </span><span class="n">New</span><span class="w"> </span><span class="n">Zealand</span><span class="w"> </span><span class="n">First</span><span class="w"> </span><span class="n">Party</span><span class="w">   </span><span class="m">580</span><span class="w">        </span><span class="m">1.5</span><span class="w">
+</span><span class="m">5</span><span class="w">               </span><span class="n">GREGORY</span><span class="p">,</span><span class="w"> </span><span class="n">Alistair</span><span class="w"> </span><span class="n">Aotearoa</span><span class="w"> </span><span class="n">Legalise</span><span class="w"> </span><span class="n">Cannabis</span><span class="w"> </span><span class="n">Party</span><span class="w">   </span><span class="m">353</span><span class="w">        </span><span class="m">0.9</span><span class="w">
+</span><span class="m">6</span><span class="w">           </span><span class="n">HOOPER</span><span class="p">,</span><span class="w"> </span><span class="n">Brian</span><span class="w"> </span><span class="n">William</span><span class="w">                     </span><span class="n">Conservative</span><span class="w">   </span><span class="m">307</span><span class="w">        </span><span class="m">0.8</span><span class="w">
+</span><span class="m">7</span><span class="w">        </span><span class="n">Informal</span><span class="w"> </span><span class="n">Candidate</span><span class="w"> </span><span class="n">Votes</span><span class="w">         </span><span class="n">Informal</span><span class="w"> </span><span class="n">Candidate</span><span class="w"> </span><span class="n">Votes</span><span class="w">   </span><span class="m">273</span><span class="w">        </span><span class="m">0.7</span><span class="w">
+</span><span class="m">8</span><span class="w">      </span><span class="n">VALENTINE</span><span class="p">,</span><span class="w"> </span><span class="n">Callum</span><span class="w"> </span><span class="n">Nicholas</span><span class="w">                   </span><span class="n">Internet</span><span class="w"> </span><span class="n">Party</span><span class="w">   </span><span class="m">217</span><span class="w">        </span><span class="m">0.6</span><span class="w">
+</span><span class="m">9</span><span class="w">        </span><span class="n">ROBINSON</span><span class="p">,</span><span class="w"> </span><span class="n">Peter</span><span class="w"> </span><span class="n">Franklin</span><span class="w">                      </span><span class="n">Independent</span><span class="w">    </span><span class="m">90</span><span class="w">        </span><span class="m">0.2</span><span class="w">
+</span><span class="m">10</span><span class="w"> </span><span class="n">KNUCKEY</span><span class="p">,</span><span class="w"> </span><span class="n">James</span><span class="w"> </span><span class="n">Nicholas</span><span class="w"> </span><span class="n">Ransom</span><span class="w">      </span><span class="n">Democrats</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">Social</span><span class="w"> </span><span class="n">Credit</span><span class="w">    </span><span class="m">57</span><span class="w">        </span><span class="m">0.1</span><span class="w">
+</span><span class="m">11</span><span class="w">     </span><span class="n">KARENA</span><span class="w"> </span><span class="n">WHUIMAONO</span><span class="p">,</span><span class="w"> </span><span class="n">Geoffrey</span><span class="w">                      </span><span class="n">Independent</span><span class="w">    </span><span class="m">52</span><span class="w">        </span><span class="m">0.1</span></code></pre></figure>
+
+<h2 id="comparing-party-and-candidate-vote">Comparing party and candidate vote</h2>
+<p>The first table shown above reveals an interesting pattern, perhaps more visible in a graphic:</p>
+
+<p><img src="/img/0035-p1.svg" alt="p1" /></p>
+
+<p>The Labour Party gets more candidate votes than party votes; whereas the Green Party, New Zealand First Party and Conservatives receive more party votes than their individual candidates receive.  This is an expected feature resulting from how voters and parties treat the MMP system.  Voters who want to support a minority party’s presence in the overall makeup of Parliament cast their crucial party vote for that party; but in the absence of preferential voting for the candidate vote it often makes sense to support whichever of the top two parties (Labour and National) most closely matches their actual preference; this makes sense because of the first past the post system for the candidate vote.  The National Party might be expected to similarly lose party votes to minor parties that are in general its supporters - which would mean the Maori Party and ACT New Zealand in recent years - but this hasn’t been the case in the way it has for the Green Party and Labour.</p>
+
+<p>This feature is nicely shown in a scatterplot matrix of the proportion of Party and Candidate votes given to five parties at the Voting Place level.  In the graphic below, each point is an individual Voting Place.  We see the proportion voting Labour and that voting National is strongly negatively correlated as might be expected, reflecting this as the primary competition in the New Zealand electoral system at the moment.  The proportion voting Green in any voting place has a more complex relationship with that voting Labour.  The blue points, representing the party vote, show if anything a slightly positive relationship, until a bunch of blue dots in the bottom right corner indicate locations that vote strongly for Labour with low support for the Greens.</p>
+
+<p><img src="/img/0035-pairs.svg" alt="pairs" /></p>
+
+<p>The orange bulge in the density plot of voting places proportion for Labour indicates the on average stronger candidate vote, with the blue party vote more bunched up to the left.  This contrasts with the Nationals, who receive roughly similar densities of candidate and party votes.</p>
+
+<p>In this light, it’s useful to look one party at a time at the relationship between candidate and party vote (apologies for those with small screens):</p>
+
+<p><img src="/img/0035-cand-v-party.svg" alt="parties" /></p>
+
+<p>Interestingly, the National Party have a cluster of voting locations (shown with the red ellipse in the bottom left graphic) where the candidate seems relatively unpopular (or their rival is popular) compared to the party vote that determines the overall composition of Parliament.  Obviously these would be locations for strategists (ie not me) to identify and plan for.</p>
+
+<p>New Zealand First generally do much better on the party vote than the candidate vote, like the Green Party; but they also have a noticeable bunch of locations that do much better for individual candidates than on the party vote (also indicated by a red ellipse in the graphic above).  Again, one for the strategists identifying the success or popularity of individual candidates.</p>
+
+<p>Here’s the code that produced the three graphics above:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">br</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1000</span><span class="p">,</span><span class="w"> </span><span class="m">10000</span><span class="p">,</span><span class="w"> </span><span class="m">100000</span><span class="p">,</span><span class="w"> </span><span class="m">10</span><span class="o">^</span><span class="m">6</span><span class="p">)</span><span class="w">
+</span><span class="n">GE2014</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">VotingType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">paste0</span><span class="p">(</span><span class="n">VotingType</span><span class="p">,</span><span class="w"> </span><span class="s2">"Vote"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">group_by</span><span class="p">(</span><span class="n">Party</span><span class="p">,</span><span class="w"> </span><span class="n">VotingType</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">summarise</span><span class="p">(</span><span class="n">Votes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">Votes</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">spread</span><span class="p">(</span><span class="n">VotingType</span><span class="p">,</span><span class="w"> </span><span class="n">Votes</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">select</span><span class="p">(</span><span class="n">Party</span><span class="p">,</span><span class="w"> </span><span class="n">PartyVote</span><span class="p">,</span><span class="w"> </span><span class="n">CandidateVote</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">ungroup</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">arrange</span><span class="p">(</span><span class="n">desc</span><span class="p">(</span><span class="n">PartyVote</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CandidateVote</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PartyVote</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Party</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_abline</span><span class="p">(</span><span class="n">slope</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">intercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_text</span><span class="p">(</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"rosybrown"</span><span class="p">,</span><span class="w"> </span><span class="n">angle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">-10</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_point</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">coord_equal</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_x_log10</span><span class="p">(</span><span class="s2">"First past the post vote for candidates"</span><span class="p">,</span><span class="w"> 
+                 </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">comma</span><span class="p">,</span><span class="w"> </span><span class="n">breaks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">br</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_y_log10</span><span class="p">(</span><span class="s2">"Proportional representation vote for parties"</span><span class="p">,</span><span class="w"> 
+                 </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">comma</span><span class="p">,</span><span class="w"> </span><span class="n">breaks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">br</span><span class="p">)</span><span class="w">
+
+
+
+</span><span class="c1">#--------------proportions----------
+</span><span class="n">proportions</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">GE2014</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">group_by</span><span class="p">(</span><span class="n">VotingPlace</span><span class="p">,</span><span class="w"> </span><span class="n">VotingType</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">summarise</span><span class="p">(</span><span class="n">ProportionLabour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">Votes</span><span class="p">[</span><span class="n">Party</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Labour Party"</span><span class="p">])</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">Votes</span><span class="p">),</span><span class="w">
+             </span><span class="n">ProportionNational</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">Votes</span><span class="p">[</span><span class="n">Party</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"National Party"</span><span class="p">])</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">Votes</span><span class="p">),</span><span class="w">
+             </span><span class="n">ProportionGreens</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">Votes</span><span class="p">[</span><span class="n">Party</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Green Party"</span><span class="p">])</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">Votes</span><span class="p">),</span><span class="w">
+             </span><span class="n">ProportionNZF</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">Votes</span><span class="p">[</span><span class="n">Party</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"New Zealand First Party"</span><span class="p">])</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">Votes</span><span class="p">),</span><span class="w">
+             </span><span class="n">ProportionMaori</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">Votes</span><span class="p">[</span><span class="n">Party</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Maori Party"</span><span class="p">])</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">Votes</span><span class="p">))</span><span class="w">
+
+</span><span class="n">ggpairs</span><span class="p">(</span><span class="n">proportions</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">VotingType</span><span class="p">),</span><span class="w"> </span><span class="n">columns</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="o">:</span><span class="m">7</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#----------------------------candidate v party vote for Labour and Greens---------------
+</span><span class="n">p</span><span class="m">1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">proportions</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">select</span><span class="p">(</span><span class="n">VotingPlace</span><span class="p">,</span><span class="w"> </span><span class="n">VotingType</span><span class="p">,</span><span class="w"> </span><span class="n">ProportionLabour</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">spread</span><span class="p">(</span><span class="n">VotingType</span><span class="p">,</span><span class="w"> </span><span class="n">ProportionLabour</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Candidate</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Party</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_point</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_abline</span><span class="p">(</span><span class="n">intercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">slope</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"blue"</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_x_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+   </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"In the 2014 General Election by voting location,\nLabour candidate vote usually exceeded the party vote"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Proportion of Candidate Vote for Labour"</span><span class="p">,</span><span class="w">
+        </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Proportion of Party Vote for Labour"</span><span class="p">)</span><span class="w"> 
+
+
+
+</span><span class="n">p</span><span class="m">2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">proportions</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">select</span><span class="p">(</span><span class="n">VotingPlace</span><span class="p">,</span><span class="w"> </span><span class="n">VotingType</span><span class="p">,</span><span class="w"> </span><span class="n">ProportionGreens</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">spread</span><span class="p">(</span><span class="n">VotingType</span><span class="p">,</span><span class="w"> </span><span class="n">ProportionGreens</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Candidate</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Party</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_point</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_abline</span><span class="p">(</span><span class="n">intercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">slope</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"blue"</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_x_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+   </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"\nThe situation is reversed for Greens party"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Proportion of Candidate Vote for Greens"</span><span class="p">,</span><span class="w">
+        </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Proportion of Party Vote for Greens"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">annotate</span><span class="p">(</span><span class="s2">"text"</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.4</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.1</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Blue line shows\nequality of the two\nvoting types"</span><span class="p">,</span><span class="w">
+            </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"blue"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">tmp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">proportions</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">select</span><span class="p">(</span><span class="n">VotingPlace</span><span class="p">,</span><span class="w"> </span><span class="n">VotingType</span><span class="p">,</span><span class="w"> </span><span class="n">ProportionNational</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">spread</span><span class="p">(</span><span class="n">VotingType</span><span class="p">,</span><span class="w"> </span><span class="n">ProportionNational</span><span class="p">)</span><span class="w"> 
+</span><span class="n">p</span><span class="m">3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tmp</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Candidate</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Party</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_point</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_abline</span><span class="p">(</span><span class="n">intercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">slope</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"blue"</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_x_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+   </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"For the National Party, candidate and\nparty vote are more closely aligned, but not always"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">labs</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Proportion of Party Vote for National Party"</span><span class="p">,</span><span class="w">
+        </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Proportion of Candidate Vote for National Party"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">stat_ellipse</span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">filter</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span><span class="w"> </span><span class="n">Party</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">Candidate</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">Party</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0.5</span><span class="p">),</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"red"</span><span class="p">)</span><span class="w">  
+
+</span><span class="n">tmp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">proportions</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">select</span><span class="p">(</span><span class="n">VotingPlace</span><span class="p">,</span><span class="w"> </span><span class="n">VotingType</span><span class="p">,</span><span class="w"> </span><span class="n">ProportionNZF</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">spread</span><span class="p">(</span><span class="n">VotingType</span><span class="p">,</span><span class="w"> </span><span class="n">ProportionNZF</span><span class="p">)</span><span class="w"> 
+</span><span class="n">p</span><span class="m">4</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tmp</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Candidate</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Party</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_point</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_abline</span><span class="p">(</span><span class="n">intercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">slope</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"blue"</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_x_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+   </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"New Zealand First generally does better\nfor the party than candidates, but not always"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Proportion of Candidate Vote for New Zealand First Party"</span><span class="p">,</span><span class="w">
+        </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Proportion of Party Vote for New Zealand First Party"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">stat_ellipse</span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">filter</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span><span class="w"> </span><span class="n">Candidate</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">1.6</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">Party</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">Candidate</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0.15</span><span class="p">),</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"red"</span><span class="p">)</span><span class="w"> 
+
+</span><span class="n">grid.arrange</span><span class="p">(</span><span class="n">p</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="m">4</span><span class="p">)</span></code></pre></figure>
+
+<h2 id="voting-locations">Voting Locations</h2>
+<p><code class="highlighter-rouge">nzelect</code> does the work of matching voting results to the point locations where the votes were made, when available (noting that nearly a million votes this information is not available).  This lets us do more fine grained geographic analysis than is possible by focusing just on electorates.</p>
+
+<p>The dominant party in the 2014 election was the National Party so if we need to consider a single variable of interest without any particular research question in mind it would be the proportion of voters in any location that voted National.  The map below is a starting point for this sort of analysis.</p>
+
+<p><img src="/img/0035-map.png" alt="map" /></p>
+
+<p>Splitting the map into two facets as is done above, we can visually identify some areas that tended to support the National Party less than elsewhere: Northland (top left of north island), Bay of Plenty and Gisborne (top right), Tasman (top left of south island), and Dunedin.  This is unlikely to surprise anyone with an interest in New Zealand politics; the same conclusions could be reached from electorate-level analysis.  For now we’ll park that and perhaps come back to it in a later post.</p>
+
+<p>Code that produced the map:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># theme_map proviaged by briatte@GitHub
+</span><span class="n">source</span><span class="p">(</span><span class="s2">"https://gist.githubusercontent.com/briatte/4718656/raw/2c4e71efe6d46f37e7ea264f5c9e1610511bcb09/ggplot2-map-theme.R"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">GE2014</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">filter</span><span class="p">(</span><span class="n">VotingType</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Party"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">group_by</span><span class="p">(</span><span class="n">VotingPlace</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">summarise</span><span class="p">(</span><span class="n">ProportionNational</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">Votes</span><span class="p">[</span><span class="n">Party</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"National Party"</span><span class="p">]</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">Votes</span><span class="p">)))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">left_join</span><span class="p">(</span><span class="n">Locations2014</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"VotingPlace"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">filter</span><span class="p">(</span><span class="n">VotingPlaceSuburb</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">"Chatham Islands"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">MostlyNational</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">ProportionNational</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0.5</span><span class="p">,</span><span class="w"> 
+                                  </span><span class="s2">"Mostly voted National"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Mostly didn't vote National"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">WGS84Longitude</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">WGS84Latitude</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ProportionNational</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_point</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">MostlyNational</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">coord_map</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">borders</span><span class="p">(</span><span class="s2">"nz"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_colour_gradient2</span><span class="p">(</span><span class="s2">"Voted\nNational"</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">,</span><span class="w"> </span><span class="n">mid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey80"</span><span class="p">,</span><span class="w"> </span><span class="n">midpoint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">theme_map</span><span class="p">(</span><span class="n">base_family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"myfont"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">theme</span><span class="p">(</span><span class="n">legend.position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">0.04</span><span class="p">,</span><span class="w"> </span><span class="m">0.55</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Voting patterns in the 2014 General Election\n"</span><span class="p">)</span></code></pre></figure>
+
+<h2 id="rolling-up-to-meshblock-area-unit-territorial-authority-and-regional-council">Rolling up to meshblock, area unit, Territorial Authority and Regional Council</h2>
+<p>One of the purposes of the <code class="highlighter-rouge">nzelect</code> package is to match voting point locations to the geographical category they are part of, facilitating analysis with socio-economic variables.  This was done by overlaying the points with polygons of the area boundaries, to be discussed more in the next post.  For now, here’s how to use this feature to roll up to Regional Council, showing the proportion of party vote that went to the National Party from lowest to highest.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">GE2014</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">filter</span><span class="p">(</span><span class="n">VotingType</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Party"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">left_join</span><span class="p">(</span><span class="n">Locations2014</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"VotingPlace"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">group_by</span><span class="p">(</span><span class="n">REGC2014_N</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">summarise</span><span class="p">(</span><span class="w">
+      </span><span class="n">TotalVotes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">Votes</span><span class="p">),</span><span class="w">
+      </span><span class="n">ProportionNational</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="nf">sum</span><span class="p">(</span><span class="n">Votes</span><span class="p">[</span><span class="n">Party</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"National Party"</span><span class="p">])</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">TotalVotes</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">arrange</span><span class="p">(</span><span class="n">ProportionNational</span><span class="p">)</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">Source</span><span class="o">:</span><span class="w"> </span><span class="n">local</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="n">frame</span><span class="w"> </span><span class="p">[</span><span class="m">17</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="m">3</span><span class="p">]</span><span class="w">
+
+                 </span><span class="n">REGC2014_N</span><span class="w"> </span><span class="n">TotalVotes</span><span class="w"> </span><span class="n">ProportionNational</span><span class="w">
+                     </span><span class="p">(</span><span class="n">fctr</span><span class="p">)</span><span class="w">      </span><span class="p">(</span><span class="n">dbl</span><span class="p">)</span><span class="w">              </span><span class="p">(</span><span class="n">dbl</span><span class="p">)</span><span class="w">
+</span><span class="m">1</span><span class="w">           </span><span class="n">Gisborne</span><span class="w"> </span><span class="n">Region</span><span class="w">      </span><span class="m">14342</span><span class="w">              </span><span class="m">0.351</span><span class="w">
+</span><span class="m">2</span><span class="w">             </span><span class="n">Nelson</span><span class="w"> </span><span class="n">Region</span><span class="w">      </span><span class="m">18754</span><span class="w">              </span><span class="m">0.398</span><span class="w">
+</span><span class="m">3</span><span class="w">          </span><span class="n">Northland</span><span class="w"> </span><span class="n">Region</span><span class="w">      </span><span class="m">53688</span><span class="w">              </span><span class="m">0.427</span><span class="w">
+</span><span class="m">4</span><span class="w">         </span><span class="n">Wellington</span><span class="w"> </span><span class="n">Region</span><span class="w">     </span><span class="m">165207</span><span class="w">              </span><span class="m">0.430</span><span class="w">
+</span><span class="m">5</span><span class="w">  </span><span class="n">Manawatu</span><span class="o">-</span><span class="n">Wanganui</span><span class="w"> </span><span class="n">Region</span><span class="w">      </span><span class="m">78841</span><span class="w">              </span><span class="m">0.447</span><span class="w">
+</span><span class="m">6</span><span class="w">              </span><span class="n">Otago</span><span class="w"> </span><span class="n">Region</span><span class="w">      </span><span class="m">75933</span><span class="w">              </span><span class="m">0.447</span><span class="w">
+</span><span class="m">7</span><span class="w">                        </span><span class="kc">NA</span><span class="w">     </span><span class="m">934589</span><span class="w">              </span><span class="m">0.451</span><span class="w">
+</span><span class="m">8</span><span class="w">        </span><span class="n">Hawke</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="n">Bay</span><span class="w"> </span><span class="n">Region</span><span class="w">      </span><span class="m">53833</span><span class="w">              </span><span class="m">0.460</span><span class="w">
+</span><span class="m">9</span><span class="w">             </span><span class="n">Tasman</span><span class="w"> </span><span class="n">Region</span><span class="w">      </span><span class="m">17935</span><span class="w">              </span><span class="m">0.465</span><span class="w">
+</span><span class="m">10</span><span class="w">        </span><span class="n">West</span><span class="w"> </span><span class="n">Coast</span><span class="w"> </span><span class="n">Region</span><span class="w">      </span><span class="m">12226</span><span class="w">              </span><span class="m">0.465</span><span class="w">
+</span><span class="m">11</span><span class="w">     </span><span class="n">Bay</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">Plenty</span><span class="w"> </span><span class="n">Region</span><span class="w">      </span><span class="m">89065</span><span class="w">              </span><span class="m">0.473</span><span class="w">
+</span><span class="m">12</span><span class="w">          </span><span class="n">Auckland</span><span class="w"> </span><span class="n">Region</span><span class="w">     </span><span class="m">478760</span><span class="w">              </span><span class="m">0.486</span><span class="w">
+</span><span class="m">13</span><span class="w">           </span><span class="n">Waikato</span><span class="w"> </span><span class="n">Region</span><span class="w">     </span><span class="m">134511</span><span class="w">              </span><span class="m">0.512</span><span class="w">
+</span><span class="m">14</span><span class="w">        </span><span class="n">Canterbury</span><span class="w"> </span><span class="n">Region</span><span class="w">     </span><span class="m">192577</span><span class="w">              </span><span class="m">0.520</span><span class="w">
+</span><span class="m">15</span><span class="w">       </span><span class="n">Marlborough</span><span class="w"> </span><span class="n">Region</span><span class="w">      </span><span class="m">17474</span><span class="w">              </span><span class="m">0.520</span><span class="w">
+</span><span class="m">16</span><span class="w">         </span><span class="n">Southland</span><span class="w"> </span><span class="n">Region</span><span class="w">      </span><span class="m">36158</span><span class="w">              </span><span class="m">0.528</span><span class="w">
+</span><span class="m">17</span><span class="w">          </span><span class="n">Taranaki</span><span class="w"> </span><span class="n">Region</span><span class="w">      </span><span class="m">42586</span><span class="w">              </span><span class="m">0.552</span></code></pre></figure>
+
+<p>Note the 934,589 votes that can’t be allocated to a Regional Council.  These are mostly (630,000) ordinary votes cast before polling day and (150,000) special votes cast on polling day.  In New Zealand the election is on a Saturday but voters are encouraged to cast their vote beforehand.  Because it seems that location isn’t captured and reported on in this instance, as this behaviour becomes more prevalent analysis by voting place will become less meaningful.</p>
+
+<p>Another note - for all the above I’ve left “informal party votes” in the denominator when calculating percentages.  This gives slightly deflated figures compared to those reported by the Electoral Commission but saves a few lines of code.  The <a href="https://github.com/ellisp/nzelect/tree/master/pkg/tests/testthat">package’s unit tests</a> take care to use the correct method to exactly match the Electoral Commission results.  Of course, the Electoral Commission don’t report results by Regional Council, only by Electorate.</p>
+
+<p>Finally, here’s the voting results rolled up to Territorial Authority (a local government classification below that of Regional Council - but not neatly hierarchically classified, much to the annoyance of statisticians).</p>
+
+<p><img src="/img/0035-ta.svg" alt="ta" /></p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">GE2014</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">filter</span><span class="p">(</span><span class="n">VotingType</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Party"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">left_join</span><span class="p">(</span><span class="n">Locations2014</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"VotingPlace"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">group_by</span><span class="p">(</span><span class="n">TA2014_NAM</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">summarise</span><span class="p">(</span><span class="w">
+      </span><span class="n">TotalVotes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">Votes</span><span class="p">),</span><span class="w">
+      </span><span class="n">ProportionNational</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="nf">sum</span><span class="p">(</span><span class="n">Votes</span><span class="p">[</span><span class="n">Party</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"National Party"</span><span class="p">])</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">TotalVotes</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">arrange</span><span class="p">(</span><span class="n">desc</span><span class="p">(</span><span class="n">ProportionNational</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">TA</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="nf">is.na</span><span class="p">(</span><span class="n">TA2014_NAM</span><span class="p">),</span><span class="w"> </span><span class="s2">"Special or other"</span><span class="p">,</span><span class="w"> </span><span class="nf">as.character</span><span class="p">(</span><span class="n">TA2014_NAM</span><span class="p">)),</span><span class="w">
+          </span><span class="n">TA</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">" District"</span><span class="p">,</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">TA</span><span class="p">),</span><span class="w">
+          </span><span class="n">TA</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">" City"</span><span class="p">,</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">TA</span><span class="p">),</span><span class="w">
+          </span><span class="n">TA</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">factor</span><span class="p">(</span><span class="n">TA</span><span class="p">,</span><span class="w"> </span><span class="n">levels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TA</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ProportionNational</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TA</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TotalVotes</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_point</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_x_continuous</span><span class="p">(</span><span class="s2">"Proportion voting National Party"</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_size</span><span class="p">(</span><span class="s2">"Number of\nvotes cast"</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">comma</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">labs</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Voting in the New Zealand 2014 General Election by Territorial Authority"</span><span class="p">)</span></code></pre></figure>
+
+<h2 id="conclusion">Conclusion</h2>
+<p>Hopefully I’ve created an asset that will be used by a few people; and we can extend it to further (past and future) election results.  In this post I’ve:</p>
+
+<ul>
+  <li>demonstrated some basic analysis that’s made relatively easy with this package;</li>
+  <li>made observations about the relationship of candidate and party vote; and</li>
+  <li>touched on some the regional patterns in voting behaviour.</li>
+</ul>
+
+<p>Issues and enhancement requests can be <a href="https://github.com/ellisp/nzelect/issues">filed on GitHub</a>.</p>
+
+<h3 id="extra-disclaimer">Extra disclaimer</h3>
+<p>As always, this post is very much written in my personal capacity and should not be associated in any way with my day job.  To be absolutely explicit, I’m operating in accordance with this part of the <a href="http://www.cabinetmanual.cabinetoffice.govt.nz/3.50">Cabinet manual</a>:</p>
+
+<blockquote>
+  <p>Generally, public servants acting in a private capacity have the same rights of free speech and conduct of their private affairs as other members of the public. They should, however, ensure that their personal contribution to public discussion maintains a level of discretion appropriate to the position they hold. Senior public servants, or those working closely with Ministers, need to exercise particular care.</p>
+</blockquote>
+
+<p>For me ‘discretion’ means I’ll be very careful in drawing conclusions, and won’t be making judgements on parties’ strategies or tactics.  Any conclusions will be aiming to inform public debate and understanding of voting patterns, rather than being aimed at influencing the political process itself.  In fact, public servants have rights as political citizens and it might be acceptable to go considerably further than I am; but I’m just being clear that I’m not seeking to go into that space in these posts.</p>
+
+
+
+</div>
+
+<div class = "container">
+   <div class="col-md-4">
+    
+        <a rel="prev" href="/blog/2016/03/28/ggseas-update">
+        <p>&larr; Older</p>
+        <p>Seasonal decomposition in the ggplot2 universe with ggseas</p>
+        
+        </a>
+    
+    </div>
+    <div class="col-md-4">
+    </div>
+    <div class="col-md-4" style="text-align: right;">
+     
+        <a rel="next" href="/blog/2016/04/04/nzelect2">
+        <p>Newer &rarr;</p>
+        <p>Election analysis contest entry part 2 - building the nzelect R package</p>
+        
+        </a>
+    
+      </div>
+      </div>
+      
+      
+      
+</div>
+
+
+   
+    <div id="disqus_thread"></div>
+
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+    
+    
+   
+			
+			</div><!-- /.container -->
+
+         
+
+   <div class = "container footer">
+			<footer>
+	    		
+            <p>Follow <a href = "/feed.xml">this blog with RSS</a>.  Or follow <a href = "/feed.r.xml">posts in this blog featuring R with RSS</a>.</p>
+	
+            <p>This blog is built with <a href = "http://jekyllrb.com/">Jekyll</a>, <a href = "http://getbootstrap.com/">Bootstrap</a>, <a href = "https://www.ruby-lang.org/en/">Ruby</a> and <a href = "https://cran.r-project.org/">R</a>.  Read my <a href="/about/acknowledgements.html">acknowledgements</a> for a little more on how.  I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Peter's stats stuff</span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+
+
+			</footer>
+    </div>
+
+
+
+  
+</body>
+</html>
+   
+
+
+
+
+         

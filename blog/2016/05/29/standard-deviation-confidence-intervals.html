@@ -1,0 +1,564 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Actual coverage of confidence intervals for standard deviation</title>
+      	
+         
+         
+            <meta name ="description" content ="The success rate (proportion of times the true value is covered by the interval) of 95% confidence intervals from the bootstrap when estimating population standard deviation can be very poor for complex mixed distributions, such as real world weekly income from a modest sample size (<20,000).">
+            <meta property="og:description" content ="The success rate (proportion of times the true value is covered by the interval) of 95% confidence intervals from the bootstrap when estimating population standard deviation can be very poor for complex mixed distributions, such as real world weekly income from a modest sample size (<20,000).">
+         
+         <meta property="og:site_name" content="Peter's stats stuff" />
+         <meta property="og:title" content="Actual coverage of confidence intervals for standard deviation" />
+         
+            <meta property="og:image" content="http://ellisp.github.io/img/0042-sd-ci-coverage.png" />
+         
+         <meta property="og:url" content="http://ellisp.github.io/blog/2016/05/29/standard-deviation-confidence-intervals/" />
+         <meta property="og:author" content= "https://www.facebook.com/peter.ellis.353" />
+         <meta property="og:type" content="article" />
+           
+          <link href="/css/bootstrap.min.css" rel ="stylesheet">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet">
+            <link href="/css/custom.css" rel ="stylesheet">       
+     <link rel="stylesheet" href="/css/Pygments/autumn.css">      
+     <link rel="stylesheet" href="/css/Pygments/custom.css">      
+            
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="Peter's stats stuff by Peter Ellis"
+      href="/feed.xml">
+
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+         <script src="/js/bootstrap.min.js"></script>
+         
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Peter's stats stuff</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">All blog posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">Ordered by date</a></li>
+                  <li><a href="/blog/index_by_tag.html">Grouped by subject matter</a></li>
+                  <li><a href = /blog/2016/06/05/bootstrap-cv-strategies>Most recent post</a></li>
+                 </ul>
+            </li>
+              <li><a href="/blog/showcase.html">Showcase</a></li>
+              <li><a href="/presentations/index.html">Presentations</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			    <div class="jumbotron">
+      <div class="container">
+        <h1>Actual coverage of confidence intervals for standard deviation</h1>
+         <p class="meta">29 May 2016</p>
+        
+      </div>
+    </div>
+
+
+
+
+<div class = "post-summary">
+<h2>TL;DR Summary:</h2>
+   The success rate (proportion of times the true value is covered by the interval) of 95% confidence intervals from the bootstrap when estimating population standard deviation can be very poor for complex mixed distributions, such as real world weekly income from a modest sample size (<20,000).
+   <hr></hr>
+</div>
+
+<div class="post">
+<div class="col-md-2">
+
+</div>
+  <div class="col-md-8">
+
+  <h2 id="overview">Overview</h2>
+<p>How big a sample size would you think you need to get a reliable 95% confidence interval (ie one that really does contain the true value 95% of the time) for a single univariate statistic like standard deviation? 30? 50?  Turns out the answer is more like 20,000 for some not-particularly-extreme real-world data.</p>
+
+<p>In this post I explore the phenomenon shown in the first chart below; lower than hoped-for coverage of 95% confidence intervals calculated with the bootstrap when estimating a population standard deviation from a modest sample size.</p>
+
+<p><img src="/img/0042-sd-ci-coverage.svg" alt="coverage" /></p>
+
+<p>The test is admittedly a tough one, albeit realistic.  The population data from which my samples are drawn are the <a href="http://www.stats.govt.nz/tools_and_services/microdata-access/nzis-2011-cart-surf.aspx">simulated unit record file microdata</a> from Statistics New Zealand’s New Zealand Income Survey 2011, which I’ve written about in <a href="/blog/index_by_tag.html">numerous posts</a>.  The distribution of weekly income in this data set is complex; it could perhaps be described as a mixture of:</p>
+
+<ul>
+  <li>individuals with positive income that is approximately log-normal distributed;</li>
+  <li>individuals with negative income of some difficult-to-describe distribution;</li>
+  <li>a large spike of individuals with zero income; plus a sprinkling of outliers.</li>
+</ul>
+
+<p>In fact, it looks like this:</p>
+
+<p><img src="/img/0042-full-data.svg" alt="fulldata" /></p>
+
+<p>The actual standard deviation of all 29,471 observations of income is $806.</p>
+
+<p>The inference problem is how to estimate that value if you have only a smaller sample, eg 50?  Because if you have only 50 observations, you think the data looks like this:</p>
+
+<p><img src="/img/0042-sample-data.svg" alt="sampledata" /></p>
+
+<p>In the case of this particular sample of 50, the standard deviation is $527.</p>
+
+<h2 id="unbiased-estimate-of-standard-deviation">Unbiased estimate of standard deviation</h2>
+<p>The first challenge - although it turns out to be a relatively small detail in terms of the challenge - is to get the best estimator for the situation when you want to estimate a population’s standard deviation from a sample.  While an unbiased estimator of variance is well known, standard deviation (the square root of variance) is complex.  Creating an <a href="https://en.wikipedia.org/wiki/Unbiased_estimation_of_standard_deviation">unbiased estimator of standard deviation</a> turns out to depend on the vagaries of the shape of the original population, with the <em>fourth</em> moment (expected value of the variable to the power of four) playing a role.</p>
+
+<p>A reasonably generally well-performing estimator for non-Normal variables is reportedly (image from the Wikipedia article linked to above):</p>
+
+<p><img src="/img/0042-unbiased-sd.png" alt="equation" /></p>
+
+<h2 id="method">Method</h2>
+<p>Using the unbiased estimate of standard deviation above, I set out to test the performance of bootstrap confidence intervals in covering the true value of population standard deviation for sample sizes of 50, 100, 200, 400, …, 12800.  I took 2,500 samples of the data for each of these sample sizes; estimated the standard deviation from each sample; and use the bootstrap to estimate confidence intervals for population standard deviation from each sample, with 499 bootstrap replicates.  I tested both the <a href="https://en.wikipedia.org/wiki/Bootstrapping_(statistics)#Methods_for_bootstrap_confidence_intervals">basic and the percentile methods for bootstrap confidence intervals</a>.  To reduce the complications of my finite population, each of the 2,500 samples is taken with replacement from the original data set.</p>
+
+<h2 id="results---income">Results - income</h2>
+<p>The unbiased estimator works ok, at least in terms of bias.  Here’s the full distribution of the estimated standard deviation from all those different samples:</p>
+
+<p><img src="/img/0042-sd-bias-full.svg" alt="sd-bias-full" /></p>
+
+<p>For the smaller samples, it’s obvious that most of the estimates are to the left of the blue line ie the estimated standard deviation is less than the true standard deviation from the full 29,471 observations.  However, this frequent underestimation is compensated for by the fact that when the standard deviation is <em>over</em>-estimated, it tends to be by quite a lot - with a strong rightwards skew in the distribution of this statistic for all the smaller sample sizes.  This all sounds bad of course, but it is the sort of thing that’s needed if a statistic with a skewed sampling distribution is going to be on average unbiased.  We see how this plays out when we look at the actual average error of the estimator:</p>
+
+<p><img src="/img/0042-sd-bias-summary.svg" alt="sd-bias-summ" /></p>
+
+<p>There’s a slight bias to under-estimation for smaller sample sizes (six percent isn’t that much in the scheme of things), but by the time sample size is 800 or higher the estimator on average gets it pretty much right.</p>
+
+<p>It’s the coverage of the bootstrapped confidence intervals that is disappointing however.  Here’s a repeat of that graphic I started the post with:
+<img src="/img/0042-sd-ci-coverage.svg" alt="coverage" /></p>
+
+<p>Basically, when you have a really complex mixed and dirty variable like this one (New Zealand weekly income from survey data), not until you have a sample size of 20,000 or so do your bootstrapped confidence intervals start to have the coverage that is planned for them.</p>
+
+<p>What’s going on here?  Well, the bootstrap depends on you taking many re-samples with replacements from your original sample, in the hope that doing this mimics the behaviour of taking many samples from the whole population which isn’t possible for reasons of expense or logistics.  For this to work, the original sample has to sufficiently resemble the whole population that the resamples from the sample behave similarly to samples from the population.  There’s no straightforward definition of “sufficiently resemble” that I know of, but what we’re seeing here is that until the sample size is really quite moderately large, for a statistic like standard deviation for a moderately complex population distribution, the sample does not “sufficiently resemble” the population for the bootstrap to work as advertised.</p>
+
+<h2 id="results---other-variables">Results - other variables</h2>
+
+<p>To get more of a feel for what was going on here, I ran the same computer program over more regular, simulated data:</p>
+
+<ul>
+  <li>a standard normal distribution (mean zero, variance one)</li>
+  <li>a standard uniform distribution (bounded by zero and one)</li>
+  <li>a standard log-normal distribution (e to the power of standard normal)</li>
+  <li>a mixture of all three</li>
+</ul>
+
+<p>The results in terms of confidence interval coverage can be seen in this graphic:</p>
+
+<p><img src="/img/0042-other-dists.svg" alt="other-dists" /></p>
+
+<p>Points to make from this are:</p>
+
+<ul>
+  <li>In all cases the “basic” and “percentile” methods perform similarly, with neither of the two consistently outperforming the other for the two symmetrical distributions, but percentile performing slightly better for the two asymmetrical distributions.</li>
+  <li>For the two symmetrical distributions - uniform and normal - the coverage at small sample sizes isn’t bad.  Even with only 50 observations in the sample, more than 90% of the confidence intervals contain the true value, and the sample size doesn’t need to be much larger than that before it gets up to the desired 95%.</li>
+  <li>In contrast, for the non-symmetrical, right-skewed log-normal data and the mixture distribution, the success rate of 95% confidence intervals actually containing the true value is relatively low until the sample size is many thousands, and it never reaches (with the sample sizes tested) the desired 95% rate.</li>
+</ul>
+
+<p>Mixed or “contaminated” distributions are known to cause problems for statistical inference (although I don’t like the word “contaminated” as too value-laden - as though it is the data’s fault it doesn’t live up to twentieth century simplifying assumptions!).  The bootstrap was part of the late twentieth century revolution in applied statistical methods to help address those and other problems, but the observations in this post confirm that it doesn’t magically make them go away.</p>
+
+<blockquote>
+  <p>“Classic, routinely used statistical methods are based on the assumptions that observations follow a normal curve.  It was once thought that violating the normality assumption rarely had a detrimental impact on these methods, but theoretical and empirical advances have made it clear that general types of non-normality cause serious practical problems in a wide range of commonly occurring situations.  Indeed, even very slight departures from normality can be a source of concern.”</p>
+</blockquote>
+
+<p>Wilcox, <a href="http://www.amazon.com/Modern-Statistics-Social-Behavioral-Sciences/dp/1439834563"><em>Modern Statistics for the Social and Behavioral Sciences</em></a></p>
+
+<h2 id="simpler-statistics">Simpler statistics</h2>
+
+<p>Finally, to round out the picture I tried the same approach on statistics that are simpler than standard deviation - mean and trimmed mean - on the same awkward weekly income data.</p>
+
+<p>The confidence interval coverage is pretty satisfactory even with small sample sizes, hovering close to the desired 95%.
+<img src="/img/0042-mean-ci-coverage.svg" alt="ci-means" /></p>
+
+<p>And as expected from theoretical results, there’s no discernable bias:
+<img src="/img/0042-mean-bias.svg" alt="bias-means" /></p>
+
+<h2 id="conclusion">Conclusion</h2>
+<p>The overall conclusion: standard deviation of non-normal(skewed, contaminated, or both) distributions is a really tough statistic to get a valid confidence interval for.  But a simple statistic (like mean) for an awkward distribution - or standard deviation of a simple distribution (like Normal or Uniform) - perform fine.</p>
+
+<h2 id="code">Code</h2>
+<p>Here’s the computer programs, all in R.</p>
+
+<p>First I load up the packages I’m using.  This is fairly straightforward.  The <code class="highlighter-rouge">moments</code> package is needed because I need to estimate excess kurtosis as part of the formula for an unbiased estimate of standard deviation</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="w"> 
+</span><span class="c1">#===================setup=======================
+</span><span class="n">library</span><span class="p">(</span><span class="n">ggplot2</span><span class="p">)</span><span class="w"> </span><span class="c1"># using the dev version from GitHub so can have subtitles and captions
+</span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">boot</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">dplyr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">moments</span><span class="p">)</span><span class="w"> </span><span class="c1"># for kurtosis()
+</span><span class="n">library</span><span class="p">(</span><span class="n">tidyr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">gridExtra</span><span class="p">)</span><span class="w"> </span><span class="c1"># for grid.arrange()
+</span><span class="w">
+</span><span class="c1"># themes for graphics
+</span><span class="n">theme_set</span><span class="p">(</span><span class="n">theme_light</span><span class="p">(</span><span class="m">10</span><span class="p">)</span><span class="w"> </span><span class="p">)</span><span class="w">
+</span><span class="n">theme_small</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">theme_light</span><span class="p">(</span><span class="m">8</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">theme</span><span class="p">(</span><span class="n">axis.text.x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_text</span><span class="p">(</span><span class="n">angle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">45</span><span class="p">,</span><span class="w"> </span><span class="n">hjust</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">))</span></code></pre></figure>
+
+<p>Next I create two functions.  One is unbiased standard deviation of a vector x, to be scrambled/resampled by means of the index i - the sort of function that is accepted by the <code class="highlighter-rouge">boot</code> function as a statistic:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="w"> 
+</span><span class="c1">#==========Functions==================
+</span><span class="n">sampsd</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">xbar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">x</span><span class="p">)){</span><span class="w">
+   </span><span class="c1"># function suitable for boot which returns estimated standard deviation
+</span><span class="w">   </span><span class="c1"># from a sample x that has been scrambled by the index i
+</span><span class="w">   </span><span class="n">d</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w">
+   </span><span class="n">n</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">d</span><span class="p">)</span><span class="w">
+   
+   </span><span class="c1"># this next formula is the best general approximation to a general  
+</span><span class="w">   </span><span class="c1"># unbiased estimator of standard deviation from a non-normal distribution
+</span><span class="w">   </span><span class="c1"># https://en.wikipedia.org/wiki/Unbiased_estimation_of_standard_deviation
+</span><span class="w">   </span><span class="n">unbiased_sd</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">sqrt</span><span class="p">(</span><span class="w">
+      </span><span class="nf">sum</span><span class="p">((</span><span class="n">d</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">xbar</span><span class="p">)</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> 
+         </span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">1.5</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="p">(</span><span class="n">kurtosis</span><span class="p">(</span><span class="n">d</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">3</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">4</span><span class="p">)</span><span class="w">
+   </span><span class="p">)</span><span class="w">
+   </span><span class="nf">return</span><span class="p">(</span><span class="n">unbiased_sd</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span></code></pre></figure>
+
+<p>Second is the main routine that performs the actual testing of the confidence interval.  This is little involved so I won’t try to explain it line by line.  Hopefully the in-function comments are adequate:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="w"> 
+</span><span class="n">test_boot_ci</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">full_data</span><span class="p">,</span><span class="w"> 
+                         </span><span class="n">statistic</span><span class="p">,</span><span class="w"> 
+                         </span><span class="n">truevalue</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">statistic</span><span class="p">(</span><span class="n">full_data</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="nf">length</span><span class="p">(</span><span class="n">full_data</span><span class="p">)),</span><span class="w">
+                         </span><span class="n">reps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">50</span><span class="p">,</span><span class="w"> 
+                         </span><span class="n">R</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">499</span><span class="p">,</span><span class="w"> 
+                         </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">match.call</span><span class="p">()){</span><span class="w">
+
+   </span><span class="c1"># Function to explore the coverage of basic and percentile bootstrap 
+</span><span class="w">   </span><span class="c1"># 95% confidence intervals.
+</span><span class="w">   </span><span class="cd">#' @full_data A full population of data from which samples of various sizes
+</span><span class="w">   </span><span class="c1">#           will be drawn without replacement, and each of those samples will
+</span><span class="w">   </span><span class="c1">#           be analysed with the bootstrap as though it were all that is
+</span><span class="w">   </span><span class="c1">#           available.
+</span><span class="w">   </span><span class="cd">#' @statistic a function suitable for passing to the statistic argument of boot
+</span><span class="w">   </span><span class="c1">#           ie first argument is data, second argument is an index for 
+</span><span class="w">   </span><span class="c1">#           scrambling the data
+</span><span class="w">   </span><span class="cd">#' @truevalue true value that the statistic is trying to esimate.
+</span><span class="w">   </span><span class="cd">#' @reps number of repeats of each sample size to analyse
+</span><span class="w">   </span><span class="cd">#' @R number of bootstrap resamples for each sample
+</span><span class="w">   </span><span class="cd">#' @title Title for plots
+</span><span class="w">   
+   
+   </span><span class="c1"># create a data frame to hold the results, with "reps" rows for each
+</span><span class="w">   </span><span class="c1"># sample size from 50, 100, 200, ..., 12800
+</span><span class="w">   </span><span class="n">ns</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="m">2</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="p">(</span><span class="m">0</span><span class="o">:</span><span class="m">8</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">50</span><span class="p">,</span><span class="w"> </span><span class="n">each</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reps</span><span class="p">)</span><span class="w">
+   </span><span class="n">results</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.frame</span><span class="p">(</span><span class="w">
+      </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ns</span><span class="p">,</span><span class="w">
+      </span><span class="n">point_est</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">numeric</span><span class="p">(</span><span class="nf">length</span><span class="p">(</span><span class="n">ns</span><span class="p">)),</span><span class="w">
+      </span><span class="n">ci_basic_correct</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">logical</span><span class="p">(</span><span class="nf">length</span><span class="p">(</span><span class="n">ns</span><span class="p">)),</span><span class="w">
+      </span><span class="n">ci_perc_correct</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">logical</span><span class="p">(</span><span class="nf">length</span><span class="p">(</span><span class="n">ns</span><span class="p">))</span><span class="w">
+   </span><span class="p">)</span><span class="w">
+      
+   
+   </span><span class="c1"># Create point estimates and two types of bootstrap confidence interval
+</span><span class="w">   </span><span class="c1"># for each repetition at each value of sample size:
+</span><span class="w">   </span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">nrow</span><span class="p">(</span><span class="n">results</span><span class="p">)){</span><span class="w">
+   
+      </span><span class="n">this_data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">full_data</span><span class="p">[</span><span class="n">sample</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="nf">length</span><span class="p">(</span><span class="n">full_data</span><span class="p">),</span><span class="w"> </span><span class="n">results</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">"n"</span><span class="p">],</span><span class="w"> </span><span class="n">replace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)]</span><span class="w">   
+      </span><span class="n">res</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">boot</span><span class="p">(</span><span class="n">this_data</span><span class="p">,</span><span class="w"> </span><span class="n">statistic</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">statistic</span><span class="p">,</span><span class="w"> </span><span class="n">R</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">R</span><span class="p">)</span><span class="w">
+      
+      </span><span class="n">results</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">"point_est"</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">res</span><span class="o">$</span><span class="n">t</span><span class="m">0</span><span class="w">
+      
+      </span><span class="n">ciobj</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">boot.ci</span><span class="p">(</span><span class="n">res</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"basic"</span><span class="p">)</span><span class="w">
+      </span><span class="n">citest</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="p">(</span><span class="n">truevalue</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">ciobj</span><span class="o">$</span><span class="n">basic</span><span class="p">[</span><span class="m">4</span><span class="p">]</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">truevalue</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">ciobj</span><span class="o">$</span><span class="n">basic</span><span class="p">[</span><span class="m">5</span><span class="p">])</span><span class="w">
+      </span><span class="n">results</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">"ci_basic_correct"</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">citest</span><span class="w">
+      
+      </span><span class="n">ciobj</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">boot.ci</span><span class="p">(</span><span class="n">res</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"perc"</span><span class="p">)</span><span class="w">
+      </span><span class="n">citest</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="p">(</span><span class="n">truevalue</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">ciobj</span><span class="o">$</span><span class="n">perc</span><span class="p">[</span><span class="m">4</span><span class="p">]</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">truevalue</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">ciobj</span><span class="o">$</span><span class="n">perc</span><span class="p">[</span><span class="m">5</span><span class="p">])</span><span class="w">
+      </span><span class="n">results</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">"ci_perc_correct"</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">citest</span><span class="w">
+      
+   </span><span class="p">}</span><span class="w">
+   
+   </span><span class="c1"># Prepare summary table and plots for output
+</span><span class="w">   </span><span class="n">tab</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">results</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="n">group_by</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="n">summarise</span><span class="p">(</span><span class="n">coverage_basic</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="nf">sum</span><span class="p">(</span><span class="n">ci_basic_correct</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">ci_basic_correct</span><span class="p">),</span><span class="w"> </span><span class="m">3</span><span class="p">),</span><span class="w">
+                </span><span class="n">coverage_perc</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="nf">round</span><span class="p">(</span><span class="nf">sum</span><span class="p">(</span><span class="n">ci_perc_correct</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">ci_perc_correct</span><span class="p">),</span><span class="w"> </span><span class="m">3</span><span class="p">),</span><span class="w">
+                </span><span class="n">bias</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">round</span><span class="p">((</span><span class="n">mean</span><span class="p">(</span><span class="n">point_est</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">truevalue</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">truevalue</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">))</span><span class="w">
+   
+   </span><span class="n">p</span><span class="m">1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tab</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="n">dplyr</span><span class="o">::</span><span class="n">select</span><span class="p">(</span><span class="o">-</span><span class="n">bias</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="n">gather</span><span class="p">(</span><span class="n">Method</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="n">mutate</span><span class="p">(</span><span class="n">Method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"coverage_perc"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Percentile"</span><span class="p">,</span><span class="w"> </span><span class="n">Method</span><span class="p">),</span><span class="w">
+             </span><span class="n">Method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"coverage_basic"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Basic"</span><span class="p">,</span><span class="w"> </span><span class="n">Method</span><span class="p">),</span><span class="w">
+             </span><span class="n">Method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">factor</span><span class="p">(</span><span class="n">Method</span><span class="p">,</span><span class="w"> </span><span class="n">levels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Percentile"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Basic"</span><span class="p">)))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Method</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">geom_hline</span><span class="p">(</span><span class="n">yintercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.95</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"blue"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">geom_point</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">geom_line</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="s2">"Proportion of 95% confidence intervals\nthat include true value"</span><span class="p">,</span><span class="w"> 
+                         </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">scale_x_sqrt</span><span class="p">(</span><span class="s2">"Sample size"</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">comma</span><span class="p">,</span><span class="w"> </span><span class="n">breaks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">unique</span><span class="p">(</span><span class="n">ns</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">labs</span><span class="p">(</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Bootstrap\nmethod"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">ggtitle</span><span class="p">(</span><span class="n">title</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">theme</span><span class="p">(</span><span class="n">axis.text.x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_text</span><span class="p">(</span><span class="n">angle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">45</span><span class="p">,</span><span class="w"> </span><span class="n">hjust</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">))</span><span class="w">
+   
+   </span><span class="n">p</span><span class="m">2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tab</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bias</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">geom_hline</span><span class="p">(</span><span class="n">yintercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"blue"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">geom_point</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">geom_line</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="s2">"Bias (as percentage of true value)"</span><span class="p">,</span><span class="w"> 
+                         </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">scale_x_sqrt</span><span class="p">(</span><span class="s2">"Sample size"</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">comma</span><span class="p">,</span><span class="w"> </span><span class="n">breaks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">unique</span><span class="p">(</span><span class="n">ns</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">ggtitle</span><span class="p">(</span><span class="n">title</span><span class="p">)</span><span class="w">
+   
+   </span><span class="n">p</span><span class="m">3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">results</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="n">mutate</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">paste</span><span class="p">(</span><span class="s2">"n ="</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">),</span><span class="w">
+             </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">factor</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">levels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">paste</span><span class="p">(</span><span class="s2">"n ="</span><span class="p">,</span><span class="w"> </span><span class="n">unique</span><span class="p">(</span><span class="n">ns</span><span class="p">)</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="n">point_est</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">geom_density</span><span class="p">(</span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey75"</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">geom_rug</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">scales</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"free_y"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">geom_vline</span><span class="p">(</span><span class="n">xintercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">truevalue</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"blue"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">ggtitle</span><span class="p">(</span><span class="n">title</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Point estimates (blue line shows true value)"</span><span class="p">)</span><span class="w">
+   
+   </span><span class="nf">return</span><span class="p">(</span><span class="nf">list</span><span class="p">(</span><span class="n">tab</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tab</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="m">1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="m">2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="m">3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">3</span><span class="p">))</span><span class="w">
+   
+</span><span class="p">}</span></code></pre></figure>
+
+<p>Next I load in the data, and apply my testing program to the income data and to the various simulated datasets needed for the blog.</p>
+
+<p>Note that with the settings in the code below, nearly 1.25 million sets of data are analysed for each call to <code class="highlighter-rouge">test_boot_ci()</code>, so it takes overnight to run the whole thing on my laptop.  The <code class="highlighter-rouge">reps_per_sample_size</code> and <code class="highlighter-rouge">reps_per_bootstrap</code> variables should be set to much lower values (eg 20 and 99) if you just want to give this a go, or to adapt it.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="w"> 
+</span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">exists</span><span class="p">(</span><span class="s2">"nzis"</span><span class="p">)){</span><span class="w">
+   </span><span class="n">nzis</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">read.csv</span><span class="p">(</span><span class="s2">"http://www.stats.govt.nz/~/media/Statistics/services/microdata-access/nzis11-cart-surf/nzis11-cart-surf.csv"</span><span class="p">)</span><span class="w">   
+</span><span class="p">}</span><span class="w">
+
+
+</span><span class="n">reps_per_sample_size</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">2500</span><span class="w">
+</span><span class="n">reps_per_bootstrap</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">499</span><span class="w">
+
+</span><span class="c1">#------------standard deviation of income data------------
+</span><span class="n">income_sd</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">test_boot_ci</span><span class="p">(</span><span class="n">full_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nzis</span><span class="o">$</span><span class="n">income</span><span class="p">,</span><span class="w"> 
+                            </span><span class="n">statistic</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sampsd</span><span class="p">,</span><span class="w"> 
+                            </span><span class="n">reps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reps_per_sample_size</span><span class="p">,</span><span class="w"> 
+                            </span><span class="n">R</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reps_per_bootstrap</span><span class="p">,</span><span class="w">
+                            </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Estimating standard deviation from income data"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#---------standard deviation of simulated data--------------
+</span><span class="n">normal_sd</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">test_boot_ci</span><span class="p">(</span><span class="n">full_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rnorm</span><span class="p">(</span><span class="m">300000</span><span class="p">),</span><span class="w"> 
+                          </span><span class="n">statistic</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sampsd</span><span class="p">,</span><span class="w"> 
+                          </span><span class="n">reps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reps_per_sample_size</span><span class="p">,</span><span class="w"> 
+                          </span><span class="n">R</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reps_per_bootstrap</span><span class="p">,</span><span class="w">
+                          </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Estimating standard deviation from simulated Normal data"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">unif_sd</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">test_boot_ci</span><span class="p">(</span><span class="n">full_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">runif</span><span class="p">(</span><span class="m">300000</span><span class="p">),</span><span class="w"> 
+                        </span><span class="n">statistic</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sampsd</span><span class="p">,</span><span class="w"> 
+                        </span><span class="n">reps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reps_per_sample_size</span><span class="p">,</span><span class="w"> 
+                        </span><span class="n">R</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reps_per_bootstrap</span><span class="p">,</span><span class="w">
+                        </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Estimating standard deviation from simulated uniform data"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">lognormal_sd</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">test_boot_ci</span><span class="p">(</span><span class="n">full_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">exp</span><span class="p">(</span><span class="n">rnorm</span><span class="p">(</span><span class="m">300000</span><span class="p">)),</span><span class="w"> 
+                             </span><span class="n">reps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reps_per_sample_size</span><span class="p">,</span><span class="w"> 
+                             </span><span class="n">statistic</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sampsd</span><span class="p">,</span><span class="w"> 
+                             </span><span class="n">R</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reps_per_bootstrap</span><span class="p">,</span><span class="w">
+                             </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Estimating standard deviation from simulated log-normal data"</span><span class="p">)</span><span class="w">
+
+
+</span><span class="n">mixture</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="nf">exp</span><span class="p">(</span><span class="n">rnorm</span><span class="p">(</span><span class="m">100000</span><span class="p">)),</span><span class="w"> </span><span class="n">rnorm</span><span class="p">(</span><span class="m">100000</span><span class="p">),</span><span class="w"> </span><span class="n">runif</span><span class="p">(</span><span class="m">100000</span><span class="p">))</span><span class="w">
+</span><span class="n">mixture_sd</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">test_boot_ci</span><span class="p">(</span><span class="n">full_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mixture</span><span class="p">,</span><span class="w"> 
+                             </span><span class="n">reps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reps_per_sample_size</span><span class="p">,</span><span class="w"> 
+                             </span><span class="n">statistic</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sampsd</span><span class="p">,</span><span class="w"> 
+                             </span><span class="n">R</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reps_per_bootstrap</span><span class="p">,</span><span class="w">
+                             </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Estimating standard deviation from simulated mixture data"</span><span class="p">)</span><span class="w">
+
+
+</span><span class="c1">#-------simpler statistics on income data-----------
+</span><span class="n">income_mean</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">test_boot_ci</span><span class="p">(</span><span class="n">full_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nzis</span><span class="o">$</span><span class="n">income</span><span class="p">,</span><span class="w">
+                            </span><span class="n">statistic</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">){</span><span class="n">mean</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">])},</span><span class="w"> 
+                            </span><span class="n">reps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reps_per_sample_size</span><span class="p">,</span><span class="w"> 
+                            </span><span class="n">R</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reps_per_bootstrap</span><span class="p">,</span><span class="w">
+                            </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Estimating mean from income data"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">income_trmean</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">test_boot_ci</span><span class="p">(</span><span class="n">full_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nzis</span><span class="o">$</span><span class="n">income</span><span class="p">,</span><span class="w">
+                              </span><span class="n">statistic</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">){</span><span class="n">mean</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="w"> </span><span class="n">tr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.2</span><span class="p">)},</span><span class="w"> 
+                              </span><span class="n">reps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reps_per_sample_size</span><span class="p">,</span><span class="w"> 
+                              </span><span class="n">R</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reps_per_bootstrap</span><span class="p">,</span><span class="w">
+                              </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Estimating trimmed mean from income data"</span><span class="p">)</span><span class="w">
+                             </span></code></pre></figure>
+
+<p>Finally, I present the results in the graphics used in this post:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="w"> 
+</span><span class="c1">#------------Density of income data---------------
+</span><span class="n">ggplot</span><span class="p">(</span><span class="n">nzis</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">income</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_density</span><span class="p">(</span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey75"</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_rug</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_x_continuous</span><span class="p">(</span><span class="s2">"Weekly income"</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dollar</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"New Zealand Income Survey 2011"</span><span class="p">,</span><span class="w"> </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Full data"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">set.seed</span><span class="p">(</span><span class="m">123</span><span class="p">)</span><span class="w">
+</span><span class="n">ggplot</span><span class="p">(</span><span class="n">nzis</span><span class="p">[</span><span class="n">sample</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="n">nrow</span><span class="p">(</span><span class="n">nzis</span><span class="p">),</span><span class="w"> </span><span class="m">50</span><span class="p">),</span><span class="w"> </span><span class="p">],</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">income</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_density</span><span class="p">(</span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey75"</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_rug</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_x_continuous</span><span class="p">(</span><span class="s2">"Weekly income"</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dollar</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"New Zealand Income Survey 2011"</span><span class="p">,</span><span class="w"> </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Subsample of 50"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#-----------standard deviation of income--------------
+</span><span class="n">income_sd</span><span class="o">$</span><span class="n">p</span><span class="m">1</span><span class="w">  </span><span class="o">+</span><span class="w"> 
+   </span><span class="n">labs</span><span class="p">(</span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Source: New Zealand Income Survey 2011, Statistics New Zealand"</span><span class="p">))</span><span class="w">
+
+</span><span class="n">income_sd</span><span class="o">$</span><span class="n">p</span><span class="m">2</span><span class="w">
+
+</span><span class="n">income_sd</span><span class="o">$</span><span class="n">p</span><span class="m">3</span><span class="w">
+
+</span><span class="c1">#----------------other distributions--------------
+</span><span class="n">grid.arrange</span><span class="p">(</span><span class="w">
+   </span><span class="n">normal_sd</span><span class="o">$</span><span class="n">p</span><span class="m">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">theme_small</span><span class="p">,</span><span class="w">
+   </span><span class="n">unif_sd</span><span class="o">$</span><span class="n">p</span><span class="m">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">theme_small</span><span class="p">,</span><span class="w">
+   </span><span class="n">lognormal_sd</span><span class="o">$</span><span class="n">p</span><span class="m">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">theme_small</span><span class="p">,</span><span class="w">
+   </span><span class="n">mixture_sd</span><span class="o">$</span><span class="n">p</span><span class="m">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">theme_small</span><span class="w">
+</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#----------------mean and trimmed mean-----------------
+</span><span class="n">grid.arrange</span><span class="p">(</span><span class="w">
+   </span><span class="n">income_mean</span><span class="o">$</span><span class="n">p</span><span class="m">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">theme_small</span><span class="p">,</span><span class="w">
+   </span><span class="n">income_trmean</span><span class="o">$</span><span class="n">p</span><span class="m">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">theme_small</span><span class="p">,</span><span class="w">
+   </span><span class="n">ncol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="w">
+</span><span class="p">)</span><span class="w">
+
+</span><span class="n">grid.arrange</span><span class="p">(</span><span class="w">
+   </span><span class="n">income_mean</span><span class="o">$</span><span class="n">p</span><span class="m">2</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+      </span><span class="n">theme_small</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="n">limits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">-0.05</span><span class="p">,</span><span class="w"> </span><span class="m">0.05</span><span class="p">),</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">),</span><span class="w">
+   </span><span class="n">income_trmean</span><span class="o">$</span><span class="n">p</span><span class="m">2</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+      </span><span class="n">theme_small</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="n">limits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">-0.05</span><span class="p">,</span><span class="w"> </span><span class="m">0.05</span><span class="p">),</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">),</span><span class="w">
+   </span><span class="n">ncol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="w">
+</span><span class="p">)</span></code></pre></figure>
+
+
+
+</div>
+
+<div class = "container">
+   <div class="col-md-4">
+    
+        <a rel="prev" href="/blog/2016/05/22/robust-regression">
+        <p>&larr; Older</p>
+        <p>Visual contrast of two robust regression methods</p>
+        
+        </a>
+    
+    </div>
+    <div class="col-md-4">
+    </div>
+    <div class="col-md-4" style="text-align: right;">
+     
+        <a rel="next" href="/blog/2016/06/05/bootstrap-cv-strategies">
+        <p>Newer &rarr;</p>
+        <p>Bootstrap and cross-validation for evaluating modelling strategies</p>
+        
+        </a>
+    
+      </div>
+      </div>
+      
+      
+      
+</div>
+
+
+   
+    <div id="disqus_thread"></div>
+
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+    
+    
+   
+			
+			</div><!-- /.container -->
+
+         
+
+   <div class = "container footer">
+			<footer>
+	    		
+            <p>Follow <a href = "/feed.xml">this blog with RSS</a>.  Or follow <a href = "/feed.r.xml">posts in this blog featuring R with RSS</a>.</p>
+	
+            <p>This blog is built with <a href = "http://jekyllrb.com/">Jekyll</a>, <a href = "http://getbootstrap.com/">Bootstrap</a>, <a href = "https://www.ruby-lang.org/en/">Ruby</a> and <a href = "https://cran.r-project.org/">R</a>.  Read my <a href="/about/acknowledgements.html">acknowledgements</a> for a little more on how.  I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Peter's stats stuff</span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+
+
+			</footer>
+    </div>
+
+
+
+  
+</body>
+</html>
+   
+
+
+
+
+         
