@@ -17,6 +17,7 @@ One of the ideas in Edward Tufte's [*The Visual Display of Quantitative Informat
 
 
 Looking for example data on which to apply this, I picked up a table from Rebecca Lenihan's [*From Alba to Aotearoa*](http://www.otago.ac.nz/press/books/otago115810.html) which I'm reading at the moment.  It's a comprehensive look at what can be known about Scottish immigrants to New Zealand from 1840 to 1920 and includes a fair amount of tabular information that is ideal for presentation with this sort of graphic.  Here's where I got to with visualising one of her tables (Table 3.6 on page 105, for those following along), showing the disproportionately maleness of Scottish immigrants in the nineteenth century even compared to other ethnic groups.
+
 ![plot](/img/0040-females.svg)
 
 The key message from this graphic is that for both Scottish and Irish migrants to New Zealand in the nineteenth century, females were under-represented; but the ratio of females to males was noticeably lower for those of Scottish origin (all the provinces to the left of and above the pale blue diagonal line).  
