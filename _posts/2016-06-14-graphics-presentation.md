@@ -1,7 +1,7 @@
 ---
 layout: post
 title: Presentation slides on using graphics
-date: 2016-06-12
+date: 2016-06-14
 tag: 
    - R
 description: Excellent statistical graphics usually reveal multivariate interactions and comparisons, and combine high data density with a minimum of ink that doesn't directly represent data.
