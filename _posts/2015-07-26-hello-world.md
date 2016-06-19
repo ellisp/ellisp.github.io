@@ -7,7 +7,7 @@ description: Initial post with some musings on what this blog will be for.
 image: /img/jumbo-back2.JPG
 ---
 
-##Do we need another data blog?
+## Do we need another data blog?
 At last count there were [573 individual blogs related to the statistical computing language R.](http://www.r-bloggers.com/)  There are a [bunch more about data science in general](http://www.kdnuggets.com/2013/04/best-blogs-for-data-miners-data-scientists.html), many hundreds for [Python users](http://www.pythonblogs.com/), and a smattering for commercial software like [SAS](http://blogs.sas.com/content/), [Stata](http://www.stata.com/links/blogs-about-stata/), and [SPSS](http://www.unige.ch/ses/sococ/cl///bib/soft/spss.resources.html).
 
 When it comes to content, there are (literally) uncountable numbers of blogs covering economic issues, including several high quality regular blogs on New Zealand economic issues.  Thomas Lumley's [statschat](http://www.statschat.org.nz/) is an excellent source of high quality commentary and critique of statistics in the public debate in New Zealand, and the [New Zealand Herald's Data Blog](http://www.nzherald.co.nz/data-blog/news/article.cfm?c_id=1503710&objectid=11474706) provides useful case studies and examples of data journalism focusing in on New Zealand.
@@ -16,7 +16,7 @@ However, I don't see a technically oriented blog that covers the complete range 
 
 This blog will be an experiment, and whether I continue will depend in equal amounts on whether anyone gets interested in reading it; and how much I enjoy writing it.
 
-##What next
+## What next
 My aims are to use this blog:
 
 1.  to explore and communicate some exciting technical issues relating to data management, analysis and presentation; and

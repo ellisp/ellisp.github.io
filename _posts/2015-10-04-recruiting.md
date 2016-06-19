@@ -15,18 +15,18 @@ Within the New Zealand Ministry of Business, Innovation and Employment, the *Sec
 
 Here's a little more about the positions there wasn't space to put in the formal documentation:
 
-###Principal Analyst - Tourism Data
+### Principal Analyst - Tourism Data
 MBIE spends some millions of dollars each year on producing, publishing and analysing [data on the tourism sector in New Zealand](http://www.mbie.govt.nz/info-services/sectors-industries/tourism/tourism-research-data).  Tourism is New Zealand's second biggest export industry, and the Minister for Tourism happens to also be the Prime Minister.  The Principal Analyst Tourism Data will be responsible for the overall programme, including the world-leading Tourism Data Improvement Programme.  They'll lead on engagement with the Minister and with the sector, oversight overall prioritisation, planning, and quality control.  
 
 Principal Analysts don't have staff or financial delegations - those are with the Manager - but take leadership on all aspects of the *content* in their area.  They need the people and communication skills to engage with Ministers and the industry, and the technical skills to deal with our data-intensive projects and support the Analysts and Senior Analysts producing new data, publishing statistics, and undertaking analysis.
 
-###Principal Analyst - Science and Innovation data.  
+### Principal Analyst - Science and Innovation data.  
 MBIE administers [many hundreds of millions of dollars of science investments every year](http://www.budget.govt.nz/budget/pdfs/estimates/v1/est15-v1-buscin.pdf) and is the lead agency advising the Government on science and innovation policy.  A significant stepping up of resourcing is underway to improve the evidence base in the science and innovation field.  Working with the policy teams, we're identifying a range of areas where improvements are needed, from re-using our own investments data through to better understanding how science translates into innovation at the business level.  This programme is at its early stages and needs a experienced leader with vision and [mana](http://www.maoridictionary.co.nz/word/3424) to oversight it and make it happen.
 
-###Senior Analyst.
+### Senior Analyst.
 This role will work across the range of areas the team provides analysis on, which as well as tourism and science and innovation includes regions, cities, sectors, and strategic microeconomic thinking.  This is a more hands-on role than the Principals and needs someone who is either an expert with R and data management and visualisation or has demonstrated capacity to quickly become one.  Senior Analysts lead complex projects in sensitive areas, and coach and mentor Analysts.
 
-###Analyst.
+### Analyst.
 The Analyst role could be an entry level position or might be for a more experienced person looking for a new challenge.  This is the classic "data ninja" role - you need to be an R expert or quickly become one, have great ideas about data analysis and visualisation, and be keen to get your hands dirty with the data that tells us how New Zealand works.
 
 ## The workplace

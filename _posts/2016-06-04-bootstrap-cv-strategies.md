@@ -66,7 +66,7 @@ This exercise was a bit complex and I won't be astonished if someone points out 
 
 Here's the code:
 
-{% highlight R lang lineanchors %} 
+{% highlight R %} 
 #===================setup=======================
 library(ggplot2)
 library(scales)

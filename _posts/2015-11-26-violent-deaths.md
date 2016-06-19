@@ -17,7 +17,7 @@ A friend was looking at comparative data on violent deaths in a range of countri
 
 The data in this post are age-standardised deaths per 100,000 for whole population, male population, and female population; the OECD variables coded as TXCMILTX, TXCMHOTH and TXCMFETF.  I'm not an expert in this area - if they mean something else (I'm a little unsure on the age-standardisation) don't just curse me, let me know.
 
-###Compare across countries and sex
+### Compare across countries and sex
 Looking at snapshot cross-sectional average data since 1990 (for which there is more comparable data across countries, with a number of countries such as Germany and Czech Republic only coming into existence at or around that period) we see two things that met the "intra-ocular impact test" ie they hit you between the eyes:
 
 * For nearly all the listed countries, males are much more likely to killed in a assault than are females
@@ -28,7 +28,7 @@ Remember that this only shows relatively weathly countries - for a more complete
 In the chart below, the label for each country is centred at the overall population rate of deaths from assault and the red and blue vertical strokes mark the female and male rates respectively.  Beware that the scale is logarithmic - this was necessary to stop everywhere except Colombia being squashed into the left of the chart.
 ![snapshot](/img/0020-assault-average.svg)
 
-###Compare across time
+### Compare across time
 Looking at trends across time we see an encouraging sign.  Most countries' violent death rates peaked in the 1980s or 90s and have been declining, in some cases dramatically, in recent years.
 
 In the chart below the vertical axis for each country has been set to make most use of the plot area and draw attention to trends rather than absolute levels, so you can't compare the absolute levels of violence across countries.  That's what the first chart was for, so the two charts complement eachother.  The facets in the trend chart below have been *ordered* from lowest to highest rates (1990+ averages), so there is still some visual indicator of absolute size of the problem.

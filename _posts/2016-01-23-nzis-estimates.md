@@ -172,7 +172,7 @@ testY <- testData$income
 ## Modelling income
 The first job is to get a model that can estimate income for any arbitrary combination of the explanatory variables hourse worked, occupation, qualification, age group, ethnicity x 7 and region.  I worked through five or six different ways of doing this before eventually settling on Random Forests which had the right combination of convenience and accuracy.
 
-###Regression tree
+### Regression tree
 My first crude baseline is a single regression tree.  I didn't seriously expect this to work particularly well, but treated it as an interim measure before moving to a random forest.  I use the `train()` function from the `caret` package to determine the best value for the complexity parameter `cp` - the minimum improvement in overall R-squared needed before a split is made.  The best single tree is shown below.
 
 <img width = "750px" src="/img/0026-polished-tree.svg">
