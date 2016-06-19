@@ -102,11 +102,20 @@ occ_ordered <- names(sort(scores(res2)$species[ , 1], decreasing = TRUE))
 
 tab_mat2 <- tab_mat[eth_ordered , occ_ordered]
 
+
+svg("../img/0045-mosaic-plus-ca.svg", 11,11)
 # mosaicplot uses the order of the columns and rows (not eg
 # like ggplot, which uses the order of levels of factors)
-par(family = "Calibri", mfrow = c(2, 1))
+par(family = "Calibri", mfrow = c(2, 1), cex = 0.9)
+update_geom_defaults("text",   list(family = "Calibri"))
+
+
 mosaicplot(tab_mat2, shade = TRUE, las = 1, 
-           main = "Relationship of ethnicity and occupation in the New Zealand Income Survey 2011")
+           main = "Relationship of ethnicity and occupation in the New Zealand Income Survey 2011",
+           border = "grey90")
+# todo - solidify the dashed lines. Probably would need to hack graphics::mosaicplot to do this.
+#      - change legend title from "Standardized residuals" to "Standardized difference from average"
 
 cp2 <- grid::viewport(0.5, 0.3, h = 0.55, w = 1)
 print(p1, vp = cp2)
+dev.off()
