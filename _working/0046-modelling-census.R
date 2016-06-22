@@ -71,6 +71,14 @@ the_formula <- terms(MedianIncome ~
 
 original_model <- gam(the_formula, data = au)
 
+png("../img/0044-gam-relations.png", 1000, 900, res = 100)
+par(bty = "l", family = "myfont", mar = c(5,4, 2, 1))
+plot(original_model, residuals = TRUE, pages = 1, shade = TRUE, 
+     seWithMean = TRUE, ylab = "")
+grid.text("Impact of regional variables on median income by area unit", 0.5, 0.99,
+          gp = gpar(fontfamily = "myfont"))
+dev.off()
+
 # bootstrapping
 fit_gam <- function(data, i){
    mod1 <- gam(the_formula, data = data[i, ])
@@ -80,13 +88,6 @@ fit_gam <- function(data, i){
    
 }
 
-png("../img/0044-gam-relations.png", 1000, 900, res = 100)
-par(bty = "l", family = "myfont", mar = c(5,4, 2, 1))
-plot(original_model, residuals = TRUE, pages = 1, shade = TRUE, 
-     seWithMean = TRUE, ylab = "")
-grid.text("Impact of regional variables on median income by area unit", 0.5, 0.99,
-          gp = gpar(fontfamily = "myfont"))
-dev.off()
 
 rmses <- boot(au, statistic = fit_gam, R = 499) # takes a few minutes
 boot.ci(rmses, type = "perc")
@@ -133,7 +134,7 @@ d1 <- ggplot(mod_res, aes(x = Fitted, y = Residuals)) +
    scale_y_continuous("Difference between real and predicted median income", label = dollar) +
    scale_x_continuous("Predicted median income", label = dollar)
 
-png("../img/0044-d1.png", 700, 600, res = 100)
+png("../img/0046-d1.png", 700, 600, res = 100)
 print(d1)
 dev.off()
 
@@ -146,7 +147,7 @@ d2 <- ggplot(mod_res, aes(x = Fitted, y = Actual)) +
    scale_x_continuous("\nPredicted median individual income, based on 53 census variables", label = dollar) +
    coord_equal() +
    ggtitle("Individual income by area unit in the 2013 New Zealand Census")
-png("../img/0044-d2.png", 700, 600, res = 100)
+png("../img/0046-d2.png", 700, 600, res = 100)
 print(d2)
 dev.off()
 
@@ -154,7 +155,7 @@ d3 <- ggplot(mod_res, aes(x = Fitted, y = sqrt(abs(Residuals)))) +
    geom_point(alpha = 0.4, colour = "steelblue") +
    geom_text(aes(label = Outlier_Lab)) +
    geom_smooth()
-png("../img/0044-d3.png", 700, 600, res = 100)
+png("../img/0046-d3.png", 700, 600, res = 100)
 print(d3)
 dev.off()
 
@@ -162,10 +163,10 @@ dev.off()
 d4 <- ggplot(mod_res, aes(sample = scale(Residuals))) +
    geom_abline(slope = 1, intercept = 0) +
    stat_qq(color = "steelblue")
-png("../img/0044-d4.png", 700, 600, res = 100)
+png("../img/0046-d4.png", 700, 600, res = 100)
 print(d4)
 dev.off()
 
-
+mbie::qqNormEnv(mod_res$Residuals)
 
 
