@@ -1,0 +1,498 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Success rates of automated ARIMA fitting</title>
+      	
+         
+         
+            <meta name ="description" content ="Using an automated process to select the order of an ARMA time series model returns the true data generating process less than half the time even with simple data generating processes; and with more complex models the chance of success comes down nearly to zero even with long sample sizes.">
+            <meta property="og:description" content ="Using an automated process to select the order of an ARMA time series model returns the true data generating process less than half the time even with simple data generating processes; and with more complex models the chance of success comes down nearly to zero even with long sample sizes.">
+         
+         <meta property="og:site_name" content="Peter's stats stuff" />
+         <meta property="og:title" content="Success rates of automated ARIMA fitting" />
+         
+            <meta property="og:image" content="/img/0012-results.png" />
+         
+         <meta property="og:url" content="http://ellisp.github.io/blog/2015/09/30/autoarima-success-rates/" />
+         <meta property="og:author" content= "https://www.facebook.com/peter.ellis.353" />
+         <meta property="og:type" content="article" />
+           
+          <link href="/css/bootstrap.min.css" rel ="stylesheet">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet">
+            <link href="/css/custom.css" rel ="stylesheet">       
+     <link rel="stylesheet" href="/css/Pygments/autumn.css">      
+     <link rel="stylesheet" href="/css/Pygments/custom.css">      
+            
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="Peter's stats stuff by Peter Ellis"
+      href="/feed.xml">
+
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Peter's stats stuff</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">All blog posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">Ordered by date</a></li>
+                  <li><a href="/blog/index_by_tag.html">Grouped by subject matter</a></li>
+                  <li><a href = /blog/2016/06/16/mrtes>Most recent post</a></li>
+                 </ul>
+            </li>
+              <li><a href="/blog/showcase.html">Showcase</a></li>
+              <li><a href="/presentations/index.html">Presentations</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			    <div class="jumbotron">
+      <div class="container">
+        <h1>Success rates of automated ARIMA fitting</h1>
+         <p class="meta">30 Sep 2015</p>
+        
+      </div>
+    </div>
+
+
+
+
+<div class = "post-summary">
+<h2>TL;DR Summary:</h2>
+   Using an automated process to select the order of an ARMA time series model returns the true data generating process less than half the time even with simple data generating processes; and with more complex models the chance of success comes down nearly to zero even with long sample sizes.
+   <hr></hr>
+</div>
+
+<div class="post">
+<div class="col-md-2">
+
+</div>
+  <div class="col-md-8">
+
+  <h2>A function for testing auto.arima()</h2>
+<P>This is the third, and the last from me on this particular topic for a while, in a series of posts on fitting time series models and comparing time series to eachother, originally inspired by a question on the Cross-Validated Q&A site.  In this week's post I'm exploring and testing an almost throw-away comment in my original answer - that looking at the parameterisation of an automatically chosen <a href = "https://en.wikipedia.org/wiki/Autoregressive_integrated_moving_average">ARIMA (autoregressive integrated moving average) time series model</a> is a bad idea because very similar data generating models may quite legitimately be fit by different-looking ARIMA models. I want to look at a corollory to that:</p>
+
+<blockquote>
+  <p>"How successful will an automated ARIMA selection be at returning the order of the original data generating process for a simulated time series?"</p>
+</blockquote>
+
+<p>An ARMA process consists of an "autoregressive" AR part (basically, a linear combination of the lagged values of the series) plus a "moving average" MA (a linear combination of a white noise series).  By "order", I mean the number of lags in the AR part plus the number of lagged white noise values in the MA part.  An AR(1) model is just a coefficient times the lagged value, plus white noise; an MA(1) model is just a coefficient times the lagged value of the white noise, plus white noise; an ARMA(1,1) is a combination of the two.</p>
+
+<P>In particular, I wanted to explore Rob Hyndman's excellent auto.arima() function from his <a href = "https://cran.r-project.org/web/packages/forecast/index.html">{forecast} package</a>, which uses small-sample corrected Akaike Information Criterion (<a href = "https://en.wikipedia.org/wiki/Akaike_information_criterion#AICc">AICc</a>) for model selection.  We use it a lot at my work and I wanted to see how it performs when fitting a dataset that is known to have been created (because we did it ourselves) by an ARMA process of a particular order.  To explore this, I created a function that:<P>
+<ol>
+<LI>takes as an argument a model specification (eg AR(1) for autoregression of order 1 ie a time series created by a coefficient times its lagged value plus white noise)
+<LI>simulates a large number (user controlled) of replications of that series, of a variety of different sample lengths (defaulting to 20, 40, 80, ..., 10240)
+<LI>Uses the auto.arima() model to identify the best ARIMA model for each replication of the series
+<LI>Stores the order of the final model and compares it against the correct order
+</ol>
+
+<p>Here's the code for that function:</P>
+ 
+ 
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a><span class="kn">library</span><span class="p">(</span>dplyr<span class="p">)</span>
+<a name="True-2"></a><span class="kn">library</span><span class="p">(</span>tidyr<span class="p">)</span>
+<a name="True-3"></a><span class="kn">library</span><span class="p">(</span>ggplot2<span class="p">)</span>
+<a name="True-4"></a><span class="kn">library</span><span class="p">(</span>showtext<span class="p">)</span> <span class="c1"># for fonts</span>
+<a name="True-5"></a><span class="kn">library</span><span class="p">(</span>forecast<span class="p">)</span>
+<a name="True-6"></a>
+<a name="True-7"></a>font.add.google<span class="p">(</span><span class="s">&quot;Poppins&quot;</span><span class="p">,</span> <span class="s">&quot;myfont&quot;</span><span class="p">)</span>
+<a name="True-8"></a>showtext.auto<span class="p">()</span>
+<a name="True-9"></a>theme_set<span class="p">(</span>theme_light<span class="p">(</span>base_family <span class="o">=</span> <span class="s">&quot;myfont&quot;</span><span class="p">))</span>
+<a name="True-10"></a>
+<a name="True-11"></a>arima_fit_sim <span class="o">&lt;-</span> <span class="kr">function</span><span class="p">(</span>model<span class="p">,</span> 
+<a name="True-12"></a>                          correct_params<span class="p">,</span> 
+<a name="True-13"></a>                          n <span class="o">=</span> <span class="m">2</span> <span class="o">^</span> <span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">10</span><span class="p">)</span> <span class="o">*</span> <span class="m">10</span><span class="p">,</span> 
+<a name="True-14"></a>                          reps <span class="o">=</span> <span class="m">10</span><span class="p">,</span>
+<a name="True-15"></a>                          stepwise <span class="o">=</span> <span class="kc">FALSE</span><span class="p">,</span>
+<a name="True-16"></a>                          verbose <span class="o">=</span> <span class="kc">TRUE</span><span class="p">){</span>
+<a name="True-17"></a>   
+<a name="True-18"></a>   <span class="c1"># function that creates @reps number of simulated ARIMA models of type @model and </span>
+<a name="True-19"></a>   <span class="c1"># length @n.  @correct_params should be a vector of the correct parameters eg</span>
+<a name="True-20"></a>   <span class="c1"># c(&quot;ar1&quot;, &quot;ma1&quot;, &quot;ma2&quot;) for ARMA(1,2)</span>
+<a name="True-21"></a>   <span class="c1"># peter.ellis2013nz at gmail com 25 September 2015</span>
+<a name="True-22"></a>   
+<a name="True-23"></a>   <span class="kn">require</span><span class="p">(</span>forecast<span class="p">)</span>
+<a name="True-24"></a>   <span class="kr">if</span><span class="p">(</span>verbose<span class="p">){</span><span class="kn">require</span><span class="p">(</span>dplyr<span class="p">)}</span>
+<a name="True-25"></a>   
+<a name="True-26"></a>   results <span class="o">&lt;-</span> <span class="kt">data.frame</span><span class="p">(</span>n <span class="o">=</span> <span class="kp">rep</span><span class="p">(</span>n<span class="p">,</span> each <span class="o">=</span> reps<span class="p">),</span>
+<a name="True-27"></a>                      correct <span class="o">=</span> <span class="kc">FALSE</span><span class="p">,</span>
+<a name="True-28"></a>                      fitted <span class="o">=</span> <span class="s">&quot;&quot;</span><span class="p">,</span>
+<a name="True-29"></a>                      stringsAsFactors <span class="o">=</span> <span class="kc">FALSE</span><span class="p">)</span>
+<a name="True-30"></a>   counter <span class="o">&lt;-</span> <span class="m">0</span>
+<a name="True-31"></a>
+<a name="True-32"></a>   <span class="kr">for</span><span class="p">(</span>j <span class="kr">in</span> <span class="m">1</span><span class="o">:</span><span class="kp">length</span><span class="p">(</span>n<span class="p">)){</span>
+<a name="True-33"></a>      <span class="kr">if</span><span class="p">(</span>verbose<span class="p">){</span><span class="kp">message</span><span class="p">(</span>n<span class="p">[</span>j<span class="p">])}</span>
+<a name="True-34"></a>      <span class="kr">for</span><span class="p">(</span>i <span class="kr">in</span> <span class="m">1</span><span class="o">:</span>reps<span class="p">){</span>
+<a name="True-35"></a>         counter <span class="o">&lt;-</span> counter <span class="o">+</span> <span class="m">1</span>
+<a name="True-36"></a>         true_series <span class="o">&lt;-</span> arima.sim<span class="p">(</span>model<span class="p">,</span> n <span class="o">=</span> n<span class="p">[</span>j<span class="p">])</span>
+<a name="True-37"></a>         fit <span class="o">&lt;-</span> auto.arima<span class="p">(</span>true_series<span class="p">,</span> stepwise <span class="o">=</span> stepwise<span class="p">)</span>
+<a name="True-38"></a>         results<span class="p">[</span>counter<span class="p">,</span> <span class="s">&quot;fitted&quot;</span><span class="p">]</span> <span class="o">&lt;-</span> <span class="kp">paste</span><span class="p">(</span><span class="kp">names</span><span class="p">(</span>fit<span class="o">$</span>coef<span class="p">),</span> collapse <span class="o">=</span> <span class="s">&quot; &quot;</span><span class="p">)</span>
+<a name="True-39"></a>         <span class="kr">if</span><span class="p">(</span><span class="kp">length</span><span class="p">(</span>coef<span class="p">(</span>fit<span class="p">))</span> <span class="o">==</span> <span class="kp">length</span><span class="p">(</span>correct_params<span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="kp">sum</span><span class="p">(</span><span class="kp">names</span><span class="p">(</span>fit<span class="o">$</span>coef<span class="p">)</span> <span class="o">%in%</span> correct_params<span class="p">)</span> <span class="o">==</span> <span class="kp">length</span><span class="p">(</span>correct_params<span class="p">)</span> <span class="p">){</span>
+<a name="True-40"></a>            results<span class="p">[</span>counter<span class="p">,</span> <span class="s">&quot;correct&quot;</span><span class="p">]</span> <span class="o">&lt;-</span> <span class="kc">TRUE</span>
+<a name="True-41"></a>            
+<a name="True-42"></a>         <span class="p">}</span>   <span class="kr">else</span> <span class="p">{</span>
+<a name="True-43"></a>            results<span class="p">[</span>counter<span class="p">,</span> <span class="s">&quot;correct&quot;</span><span class="p">]</span> <span class="o">&lt;-</span> <span class="kc">FALSE</span>
+<a name="True-44"></a>         <span class="p">}</span>
+<a name="True-45"></a>         
+<a name="True-46"></a>      <span class="p">}</span>
+<a name="True-47"></a>   <span class="p">}</span>
+<a name="True-48"></a>   
+<a name="True-49"></a>   <span class="kr">if</span><span class="p">(</span>verbose<span class="p">){</span>
+<a name="True-50"></a>      <span class="kp">print</span><span class="p">(</span>
+<a name="True-51"></a>         results <span class="o">%&gt;%</span>
+<a name="True-52"></a>            group_by<span class="p">(</span>n<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-53"></a>            summarise<span class="p">(</span>correct <span class="o">=</span> <span class="kp">sum</span><span class="p">(</span>correct<span class="p">)</span> <span class="o">/</span> <span class="kp">length</span><span class="p">(</span>correct<span class="p">)</span> <span class="o">*</span> <span class="m">100</span><span class="p">)</span>
+<a name="True-54"></a>         <span class="p">)</span>
+<a name="True-55"></a>   <span class="p">}</span>
+<a name="True-56"></a>
+<a name="True-57"></a>   <span class="kr">return</span><span class="p">(</span>results<span class="p">)</span>
+<a name="True-58"></a>   <span class="p">}</span></code></pre></div>
+<p>There's flaws with this function I didn't have time to fix.  Most notably, there's a big risk in that the call to the function needs to specify a vector of parameters eg c("ar1", "ma1") for ARMA(1,1) that has to match the model provided.  A better function would deduce the vector of parameter names from the model structure; if someone knows how to do this simply, let me know.</P>
+
+<h2>The test</h2>
+<P>For my actual test, I chose to try out two simple simulations - AR(1) and MA(1) processes - and two more complex ones - ARMA(2,2) and ARMA(3,3).  There's a sticking point which is the actual  autoreggressive and moving average parameters.  An AR(1) process autoregression coefficient of 0.05 for example will be almost indistinguishable from white noise, whereas as it gets closer to 1 it would be much easier for the model selection algorithm to notice.  To do a comprehensive test, I should actually compare models across the whole parameter space.  As this is just a blog post, I arbitrarily chose some values.</P>
+
+<P>Here's the code performing the actual tests on those four processes, using my new arima_fit_sim() function with 500 repetitions of each combination of model and sample length.  This took about eight hours to run on my (nothing special) laptop:</P>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a>our_reps <span class="o">&lt;-</span> <span class="m">500</span>
+<a name="True-2"></a>
+<a name="True-3"></a>results_ar1 <span class="o">&lt;-</span> arima_fit_sim<span class="p">(</span>model <span class="o">=</span> <span class="kt">list</span><span class="p">(</span>ar <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="m">0.5</span><span class="p">)),</span>
+<a name="True-4"></a>                             correct_params <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="s">&quot;ar1&quot;</span><span class="p">),</span> 
+<a name="True-5"></a>                             reps <span class="o">=</span> our_reps<span class="p">)</span>
+<a name="True-6"></a>
+<a name="True-7"></a>results_ma1 <span class="o">&lt;-</span> arima_fit_sim<span class="p">(</span>model <span class="o">=</span> <span class="kt">list</span><span class="p">(</span>ma <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="m">0.5</span><span class="p">)),</span>
+<a name="True-8"></a>                             correct_params <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="s">&quot;ma1&quot;</span><span class="p">),</span> 
+<a name="True-9"></a>                             reps <span class="o">=</span> our_reps<span class="p">)</span>
+<a name="True-10"></a>
+<a name="True-11"></a>
+<a name="True-12"></a>results_arma22 <span class="o">&lt;-</span> arima_fit_sim<span class="p">(</span>model <span class="o">=</span> <span class="kt">list</span><span class="p">(</span>ar <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="m">0.5</span><span class="p">,</span> <span class="m">-0.2</span><span class="p">),</span> ma <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="m">-0.3</span><span class="p">,</span> <span class="m">0.2</span><span class="p">)),</span>
+<a name="True-13"></a>                                correct_params <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="s">&quot;ar1&quot;</span><span class="p">,</span> <span class="s">&quot;ar2&quot;</span><span class="p">,</span> <span class="s">&quot;ma1&quot;</span><span class="p">,</span> <span class="s">&quot;ma2&quot;</span><span class="p">),</span> 
+<a name="True-14"></a>                                reps <span class="o">=</span> our_reps<span class="p">)</span>
+<a name="True-15"></a>
+<a name="True-16"></a>results_arma33 <span class="o">&lt;-</span> arima_fit_sim<span class="p">(</span>model <span class="o">=</span> <span class="kt">list</span><span class="p">(</span>ar <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="m">0.5</span><span class="p">,</span> <span class="m">-0.2</span><span class="p">,</span> <span class="m">0.3</span><span class="p">),</span> ma <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="m">-0.3</span><span class="p">,</span> <span class="m">0.2</span><span class="p">,</span> <span class="m">0.4</span><span class="p">)),</span>
+<a name="True-17"></a>                                correct_params <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="s">&quot;ar1&quot;</span><span class="p">,</span> <span class="s">&quot;ar2&quot;</span><span class="p">,</span> <span class="s">&quot;ar3&quot;</span><span class="p">,</span> <span class="s">&quot;ma1&quot;</span><span class="p">,</span> <span class="s">&quot;ma2&quot;</span><span class="p">,</span> <span class="s">&quot;ma3&quot;</span><span class="p">),</span> 
+<a name="True-18"></a>                                reps <span class="o">=</span> our_reps<span class="p">)</span>
+<a name="True-19"></a>
+<a name="True-20"></a>
+<a name="True-21"></a><span class="kp">save</span><span class="p">(</span>results_ar1<span class="p">,</span> results_ma1<span class="p">,</span> results_arma22<span class="p">,</span> results_arma33<span class="p">,</span> file <span class="o">=</span> <span class="s">&quot;_output/0012_sim_results.rda&quot;</span><span class="p">)</span></code></pre></div>
+
+
+
+<h2>Results</h2>
+<p>My function stores the order (ie how many autoregressive and how many moving average parameters)of the 5000 models it has fit for each simulation.  Here are the ten most common models that were selected in the case of the AR(1) model:
+<!-- html table generated in R 3.2.1 by xtable 1.7-4 package -->
+<!-- Tue Sep 29 07:22:07 2015 -->
+<table border=1>
+<tr> <th> fitted </th> <th> count </th>  </tr>
+  <tr> <td> ar1 </td> <td align="right"> 1752 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 ma1 ma2 </td> <td align="right"> 316 </td> </tr>
+  <tr> <td> ar1 intercept </td> <td align="right"> 278 </td> </tr>
+  <tr> <td> ma1 </td> <td align="right"> 238 </td> </tr>
+  <tr> <td> ar1 ar2 </td> <td align="right"> 224 </td> </tr>
+  <tr> <td> ar1 ma1 </td> <td align="right"> 210 </td> </tr>
+  <tr> <td> ar1 ar2 ma1 </td> <td align="right"> 185 </td> </tr>
+  <tr> <td> ma1 ma2 </td> <td align="right"> 140 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 </td> <td align="right"> 124 </td> </tr>
+  <tr> <td> ma1 ma2 ma3 </td> <td align="right"> 116 </td> </tr>
+   </table></p>
+
+<p>As a percentage correct for different sample lengths, here's how they end up:
+<!-- html table generated in R 3.2.1 by xtable 1.7-4 package -->
+<!-- Wed Sep 30 07:31:01 2015 -->
+<table border=1>
+<tr> <th> n </th> <th> correct </th>  </tr>
+  <tr> <td align="right"> 20 </td> <td align="right"> 29.0 </td> </tr>
+  <tr> <td align="right"> 40 </td> <td align="right"> 35.0 </td> </tr>
+  <tr> <td align="right"> 80 </td> <td align="right"> 38.6 </td> </tr>
+  <tr> <td align="right"> 160 </td> <td align="right"> 31.2 </td> </tr>
+  <tr> <td align="right"> 320 </td> <td align="right"> 29.8 </td> </tr>
+  <tr> <td align="right"> 640 </td> <td align="right"> 35.4 </td> </tr>
+  <tr> <td align="right"> 1280 </td> <td align="right"> 37.2 </td> </tr>
+  <tr> <td align="right"> 2560 </td> <td align="right"> 37.4 </td> </tr>
+  <tr> <td align="right"> 5120 </td> <td align="right"> 36.0 </td> </tr>
+  <tr> <td align="right"> 10240 </td> <td align="right"> 40.8 </td> </tr>
+   </table></p>
+
+
+<p>In this simple case, auto.arima() is moderately successful.  It correctly picked an AR(1) model as the best 1752 times out of 5000, much more than the second most popular model which was a very complex ARMA(3,2).  Even when the time series is only 20 observations long it gets it right 29 percent of the time, and this goes up to 41 percent by the time there are 10,000 observations.  I suspect it gets better as the time series gets longer, but I'd (naively) expected better than this.  It certainly means, for example, that when your automated model selection tells you you have an ARMA(3,2) model you should not dismiss the possibility that an AR(1) model might be the true generating process (other information might help you dismiss that of course, including the actual parameters).  I was surprised that even for a longish time series only 41 percent of the time is the true model being recovered. </P>
+
+
+<p>Here's a plot summarising the overall results</p>
+<div class ="img-container"><img src = "/img/0012-results.svg"></div>
+
+<p>Here it is separated out by facets so we can see that pattern closer.</p>
+<div class ="img-container"><img src = "/img/0012-results-faceted.svg"></div>
+
+<p>I was a bit astonished at the poor success rate of picking up the ARMA(3, 3) process so I tabulate here the counts of every final model that actually was selected.
+<!-- html table generated in R 3.2.1 by xtable 1.7-4 package -->
+<!-- Tue Sep 29 07:22:07 2015 -->
+<table border=1>
+<tr> <th> fitted </th> <th> count </th>  </tr>
+  <tr> <td> ar1 ma1 ma2 ma3 ma4 </td> <td align="right"> 1446 </td> </tr>
+  <tr> <td> ma1 ma2 ma3 ma4 ma5 </td> <td align="right"> 500 </td> </tr>
+  <tr> <td> ma1 ma2 ma3 ma4 </td> <td align="right"> 444 </td> </tr>
+  <tr> <td> ar1 ma1 ma2 ma3 </td> <td align="right"> 339 </td> </tr>
+  <tr> <td> ar1 ma1 ma2 ma3 ma4 intercept </td> <td align="right"> 276 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 ma1 ma2 </td> <td align="right"> 248 </td> </tr>
+  <tr> <td> ar1 ar2 drift </td> <td align="right"> 229 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 </td> <td align="right"> 168 </td> </tr>
+  <tr> <td> ar1 ar2 ma1 ma2 ma3 </td> <td align="right"> 157 </td> </tr>
+  <tr> <td> ma1 ma2 ma3 ma4 intercept </td> <td align="right"> 151 </td> </tr>
+  <tr> <td> intercept </td> <td align="right"> 115 </td> </tr>
+  <tr> <td> ar1 ma1 ma2 ma3 intercept </td> <td align="right"> 103 </td> </tr>
+  <tr> <td>  </td> <td align="right">  88 </td> </tr>
+  <tr> <td> ma1 ma2 ma3 </td> <td align="right">  61 </td> </tr>
+  <tr> <td> ma1 </td> <td align="right">  54 </td> </tr>
+  <tr> <td> ar1 ar2 ma1 ma2 drift </td> <td align="right">  50 </td> </tr>
+  <tr> <td> ar1 ar2 ma1 ma2 ma3 intercept </td> <td align="right">  43 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 ar4 ar5 </td> <td align="right">  42 </td> </tr>
+  <tr> <td> ma1 ma2 ma3 intercept </td> <td align="right">  41 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 ar4 </td> <td align="right">  32 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 ar4 ma1 </td> <td align="right">  31 </td> </tr>
+  <tr> <td> ar1 ar2 ma1 ma2 </td> <td align="right">  29 </td> </tr>
+  <tr> <td> ma1 ma2 ma3 ma4 drift </td> <td align="right">  28 </td> </tr>
+  <tr> <td> ma1 drift </td> <td align="right">  27 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 drift </td> <td align="right">  25 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 ma1 ma2 intercept </td> <td align="right">  24 </td> </tr>
+  <tr> <td> ar1 ar2 intercept </td> <td align="right">  24 </td> </tr>
+  <tr> <td> ar1 </td> <td align="right">  21 </td> </tr>
+  <tr> <td> ar1 ar2 </td> <td align="right">  19 </td> </tr>
+  <tr> <td> ma1 intercept </td> <td align="right">  16 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 ar4 drift </td> <td align="right">  14 </td> </tr>
+  <tr> <td> drift </td> <td align="right">  13 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 ma1 </td> <td align="right">  12 </td> </tr>
+  <tr> <td> ar1 ar2 ma1 drift </td> <td align="right">  12 </td> </tr>
+  <tr> <td> ma1 ma2 ma3 ma4 ma5 drift </td> <td align="right">  12 </td> </tr>
+  <tr> <td> ma1 ma2 ma3 ma4 ma5 intercept </td> <td align="right">  12 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 intercept </td> <td align="right">  11 </td> </tr>
+  <tr> <td> ar1 ma1 ma2 </td> <td align="right">  11 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 ar4 ar5 intercept </td> <td align="right">   8 </td> </tr>
+  <tr> <td> ma1 ma2 ma3 drift </td> <td align="right">   8 </td> </tr>
+  <tr> <td> ma1 ma2 drift </td> <td align="right">   7 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 ar4 ar5 drift </td> <td align="right">   5 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 ar4 ma1 intercept </td> <td align="right">   5 </td> </tr>
+  <tr> <td> ar1 ar2 ma1 ma2 ma3 drift </td> <td align="right">   5 </td> </tr>
+  <tr> <td> ar1 intercept </td> <td align="right">   5 </td> </tr>
+  <tr> <td> ma1 ma2 </td> <td align="right">   5 </td> </tr>
+  <tr> <td> ma1 ma2 intercept </td> <td align="right">   5 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 ma1 ma2 drift </td> <td align="right">   4 </td> </tr>
+  <tr> <td> ar1 ar2 ma1 intercept </td> <td align="right">   4 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 ar4 intercept </td> <td align="right">   3 </td> </tr>
+  <tr> <td> ar1 drift </td> <td align="right">   2 </td> </tr>
+  <tr> <td> ar1 ma1 </td> <td align="right">   2 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 ar4 ma1 drift </td> <td align="right">   1 </td> </tr>
+  <tr> <td> ar1 ar2 ar3 ma1 intercept </td> <td align="right">   1 </td> </tr>
+  <tr> <td> ar1 ar2 ma1 </td> <td align="right">   1 </td> </tr>
+  <tr> <td> ar1 ma1 intercept </td> <td align="right">   1 </td> </tr>
+   </table></p>
+<p>Yes, that's right, many many models are picked but not a single instance matches the "ar1 ar2 ar3 ma1 ma2 ma3" that was the original data generating process.  So the take home message is even stronger than I thought - don't pay much attention to the order of your fitted ARIMA models!  This doesn't mean there's a problem with using them - they give good fits and work well in many forecasting situations.  But we shouldn't confuse them with some essential reality of an underlying process.  It's a striking example of the famous (well in some quarters) quote by George E. P. Box:</p>
+
+<blockquote>
+  <p><a href = "https://en.wikiquote.org/wiki/George_E._P._Box">"All models are wrong, but some are useful" (Box)</a></p>
+</blockquote>
+
+<p>I found all this a bit surprising.  I'd expected a material amount of variation in what models were returned, but not this much.  And I'd expected the model selection process to be more consistent (to use a term loosely) ie converge to the true model more noticeably as sample length got bigger. I presume there's a literature on all this but didn't have time to research it, so any pointers are welcomed in the comments or by Twitter.</p>
+
+<h3>Code that produced the summary tables</h3>
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a>results_ar1 <span class="o">%&gt;%</span>
+<a name="True-2"></a>   group_by<span class="p">(</span>fitted<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-3"></a>   summarise<span class="p">(</span>count <span class="o">=</span> <span class="kp">length</span><span class="p">(</span>fitted<span class="p">))</span> <span class="o">%&gt;%</span>
+<a name="True-4"></a>   arrange<span class="p">(</span><span class="o">-</span>count<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-5"></a>   <span class="kp">head</span><span class="p">(</span><span class="m">10</span><span class="p">)</span> 
+<a name="True-6"></a>
+<a name="True-7"></a>results_ar1 <span class="o">%&gt;%</span>
+<a name="True-8"></a>   group_by<span class="p">(</span>n<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-9"></a>   summarise<span class="p">(</span>correct <span class="o">=</span> <span class="kp">sum</span><span class="p">(</span>correct<span class="p">)</span> <span class="o">/</span> <span class="kp">length</span><span class="p">(</span>correct<span class="p">)</span> <span class="o">*</span> <span class="m">100</span><span class="p">)</span>
+<a name="True-10"></a>
+<a name="True-11"></a>results_arma33 <span class="o">%&gt;%</span>
+<a name="True-12"></a>   group_by<span class="p">(</span>fitted<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-13"></a>   summarise<span class="p">(</span>count <span class="o">=</span> <span class="kp">length</span><span class="p">(</span>fitted<span class="p">))</span> <span class="o">%&gt;%</span>
+<a name="True-14"></a>   arrange<span class="p">(</span><span class="o">-</span>count<span class="p">)</span></code></pre></div>
+
+<h3>Code that produced the summary plot</h3>
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a>r1 <span class="o">&lt;-</span> results_ar1 <span class="o">%&gt;%</span>
+<a name="True-2"></a>   mutate<span class="p">(</span>model <span class="o">=</span> <span class="s">&quot;AR(1)&quot;</span><span class="p">)</span>
+<a name="True-3"></a>
+<a name="True-4"></a>r2 <span class="o">&lt;-</span> results_ma1 <span class="o">%&gt;%</span>
+<a name="True-5"></a>   mutate<span class="p">(</span>model <span class="o">=</span> <span class="s">&quot;MA(1)&quot;</span><span class="p">)</span>
+<a name="True-6"></a>
+<a name="True-7"></a>r3 <span class="o">&lt;-</span> results_arma22 <span class="o">%&gt;%</span>
+<a name="True-8"></a>   mutate<span class="p">(</span>model <span class="o">=</span> <span class="s">&quot;ARMA(2, 2)&quot;</span><span class="p">)</span>
+<a name="True-9"></a>
+<a name="True-10"></a>r4 <span class="o">&lt;-</span> results_arma33 <span class="o">%&gt;%</span>
+<a name="True-11"></a>   mutate<span class="p">(</span>model <span class="o">=</span> <span class="s">&quot;ARMA(3, 3)&quot;</span><span class="p">)</span>
+<a name="True-12"></a>
+<a name="True-13"></a>r_all <span class="o">&lt;-</span> <span class="kp">rbind</span><span class="p">(</span>r1<span class="p">,</span> r2<span class="p">,</span> r3<span class="p">,</span> r4<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-14"></a>   mutate<span class="p">(</span>model <span class="o">=</span> <span class="kp">factor</span><span class="p">(</span>model<span class="p">,</span> 
+<a name="True-15"></a>                         levels <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="s">&quot;AR(1)&quot;</span><span class="p">,</span> <span class="s">&quot;MA(1)&quot;</span><span class="p">,</span> <span class="s">&quot;ARMA(2, 2)&quot;</span><span class="p">,</span> <span class="s">&quot;ARMA(3, 3)&quot;</span><span class="p">)))</span>
+<a name="True-16"></a>						 
+<a name="True-17"></a>p1 <span class="o">&lt;-</span> r_all <span class="o">%&gt;%</span>
+<a name="True-18"></a>   group_by<span class="p">(</span>model<span class="p">,</span> n<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-19"></a>   summarise<span class="p">(</span>correct <span class="o">=</span> <span class="kp">sum</span><span class="p">(</span>correct<span class="p">)</span> <span class="o">/</span> <span class="kp">length</span><span class="p">(</span>correct<span class="p">))</span> <span class="o">%&gt;%</span>
+<a name="True-20"></a>   ggplot<span class="p">(</span>aes<span class="p">(</span>x <span class="o">=</span> n<span class="p">,</span> y <span class="o">=</span> correct<span class="p">,</span> colour <span class="o">=</span> model<span class="p">))</span> <span class="o">+</span>
+<a name="True-21"></a>   geom_point<span class="p">()</span> <span class="o">+</span>
+<a name="True-22"></a>   geom_line<span class="p">()</span> <span class="o">+</span>
+<a name="True-23"></a>   scale_y_continuous<span class="p">(</span><span class="s">&quot;Percent of models correctly identified&quot;</span><span class="p">,</span> label <span class="o">=</span> percent<span class="p">)</span> <span class="o">+</span>
+<a name="True-24"></a>   scale_x_log10<span class="p">(</span><span class="s">&quot;Length of time series&quot;</span><span class="p">,</span> 
+<a name="True-25"></a>                <span class="c1"># label = comma, </span>
+<a name="True-26"></a>                breaks <span class="o">=</span> <span class="m">2</span> <span class="o">^</span> <span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">10</span><span class="p">)</span> <span class="o">*</span> <span class="m">10</span><span class="p">)</span> <span class="o">+</span>
+<a name="True-27"></a>   ggtitle<span class="p">(</span><span class="s">&quot;Success rate of automated ARIMA model selection\nfitting to a known data generating process&quot;</span><span class="p">)</span>
+<a name="True-28"></a>
+<a name="True-29"></a><span class="kp">print</span><span class="p">(</span>p1<span class="p">)</span>
+<a name="True-30"></a>
+<a name="True-31"></a>
+<a name="True-32"></a><span class="kp">print</span><span class="p">(</span>p1 <span class="o">+</span> 
+<a name="True-33"></a>		facet_wrap<span class="p">(</span><span class="o">~</span>model<span class="p">,</span> scales <span class="o">=</span> <span class="s">&quot;free_y&quot;</span><span class="p">)</span> <span class="o">+</span>
+<a name="True-34"></a>		theme<span class="p">(</span>legend.position <span class="o">=</span> <span class="s">&quot;none&quot;</span><span class="p">))</span></code></pre></div>
+
+
+</div>
+
+<div class = "container">
+   <div class="col-md-4">
+    
+        <a rel="prev" href="/blog/2015/09/20/timeseries-differences">
+        <p>&larr; Older</p>
+        <p>How to compare two blackbox timeseries generators?</p>
+        
+        </a>
+    
+    </div>
+    <div class="col-md-4">
+    </div>
+    <div class="col-md-4" style="text-align: right;">
+     
+        <a rel="next" href="/blog/2015/10/04/recruiting">
+        <p>Newer &rarr;</p>
+        <p>Recruiting Analysts for dynamic cutting edge public sector team</p>
+        
+        </a>
+    
+      </div>
+      </div>
+      
+      
+      
+</div>
+
+
+   
+    <div id="disqus_thread"></div>
+
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+    
+    
+   
+			
+			</div><!-- /.container -->
+
+         
+
+   <div class = "container footer">
+			<footer>
+	    		
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.  Or follow <a href = "/feed.r.xml">posts in this blog featuring R with RSS</a>.</p>
+			
+            <p>This blog is built with <a href = "http://jekyllrb.com/">Jekyll</a>, <a href = "http://getbootstrap.com/">Bootstrap</a>, <a href = "https://www.ruby-lang.org/en/">Ruby</a> and <a href = "https://cran.r-project.org/">R</a>.  Read my <a href="/about/acknowledgements.html">acknowledgements</a> for a little more on how.  I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+
+			<div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="true" data-share="false"></div>
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Peter's stats stuff</span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			
+			
+
+			</footer>
+    </div>
+
+
+
+  
+</body>
+</html>
+   
+
+
+
+
+         

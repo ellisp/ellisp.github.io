@@ -1,0 +1,308 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Create ARIMA time series from bottom up</title>
+      	
+         
+         
+            <meta name ="description" content ="Creating a range of ARIMA models by hand by manipulating white noise, instead of arima.sim(), to make clear exactly how they work, and a animation to see several of them unfold.">
+            <meta property="og:description" content ="Creating a range of ARIMA models by hand by manipulating white noise, instead of arima.sim(), to make clear exactly how they work, and a animation to see several of them unfold.">
+         
+         <meta property="og:site_name" content="Peter's stats stuff" />
+         <meta property="og:title" content="Create ARIMA time series from bottom up" />
+         
+            <meta property="og:image" content="http://ellisp.github.io/img/0019-snapshot.png" />
+         
+         <meta property="og:url" content="http://ellisp.github.io/blog/2015/11/21/arima-sims/" />
+         <meta property="og:author" content= "https://www.facebook.com/peter.ellis.353" />
+         <meta property="og:type" content="article" />
+           
+          <link href="/css/bootstrap.min.css" rel ="stylesheet">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet">
+            <link href="/css/custom.css" rel ="stylesheet">       
+     <link rel="stylesheet" href="/css/Pygments/autumn.css">      
+     <link rel="stylesheet" href="/css/Pygments/custom.css">      
+            
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="Peter's stats stuff by Peter Ellis"
+      href="/feed.xml">
+
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Peter's stats stuff</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">All blog posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">Ordered by date</a></li>
+                  <li><a href="/blog/index_by_tag.html">Grouped by subject matter</a></li>
+                  <li><a href = /blog/2016/06/16/mrtes>Most recent post</a></li>
+                 </ul>
+            </li>
+              <li><a href="/blog/showcase.html">Showcase</a></li>
+              <li><a href="/presentations/index.html">Presentations</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			    <div class="jumbotron">
+      <div class="container">
+        <h1>Create ARIMA time series from bottom up</h1>
+         <p class="meta">21 Nov 2015</p>
+        
+      </div>
+    </div>
+
+
+
+
+<div class = "post-summary">
+<h2>TL;DR Summary:</h2>
+   Creating a range of ARIMA models by hand by manipulating white noise, instead of arima.sim(), to make clear exactly how they work, and a animation to see several of them unfold.
+   <hr></hr>
+</div>
+
+<div class="post">
+<div class="col-md-2">
+
+</div>
+  <div class="col-md-8">
+
+  <h2>Simulating ARIMA models</h2>
+<p>
+Generating an arbitrary <a href = "https://en.wikipedia.org/wiki/Autoregressive_integrated_moving_average">Auto-Regressive Integrated Moving Average (ARIMA)</a> model is easy in R with the <a href = "https://stat.ethz.ch/R-manual/R-devel/library/stats/html/arima.sim.html">arima.sim()</a> function that is part of the built-in {stats} package.  In fact I've done it extensively in previous blog posts for various illustrative purposes.  But one cost of doing this for educational purposes is that the mechanics of generating them are hidden from the user (of course, that's the point!).  As was the case in last week's post, I'm motivated by teaching purposes.  I wanted to show people how an ARIMA model can be created, with high school maths and no special notation, from white noise.
+</p>
+
+<iframe width="700" height="700"
+src="http://www.youtube.com/embed/CiGM-NOV7Ms?autoplay=1&loop=1&playlist=CiGM-NOV7Ms" frameborder="0" allowfullscreen="allowfullscreen">
+</iframe>
+
+<p>
+The movie that is (hopefully) playing above shows this.  It takes a single series of independent and identical standard normally distributed variables (top left).  It shows how this can be turned into (from left to right one row at a time, starting at the top right):
+<ul>
+<li>an autoregressive model of order 1, where each value of x equals the previous value times 0.8, plus the white noise;
+<li>a moving average of order 1, where each value of x equals the latest bit of white noise plus 0.8 times the previous value of white noise;
+<li>an autoregressive moving average model of order (1, 1), combining the two;
+<li>an ARIMA(1, 1, 1) model that is the cumulative sum of the ARMA(1, 1); and
+<li>an ARIMA(2, 2, 2) model that is like all the above but with extra parameters and an extra cumulative sum stage
+</ul>
+</p>
+<p>
+One interesting thing is how the AR(1) and ARMA(1, 1) models look almost identical, except for the larger variance of the ARMA(1, 1) model which comes from throwing into the mix 80% of the last period's randomness.  This similarity is just a result of the the particular parameters chosen - the 0.8 times the previous value of x quickly dominates the moving average part.
+</p>
+<p>
+Here's the code that simulates the actual data.  It's simple enough that it can be easily explained and related to the equations on the images in the movie.  Note that I've avoided using the usual lag operator, or putting all the autoregression parts of the equation on the left as is normally done.  That's all so it is easy to explain exactly where the latest value is coming from.  Also note that I've done this in what might seem a very un-R-like fashion - creating a vector with a for() loop!  This is purely for to make it really obvious what is going on.  There's no issues with performance to worry about, and in this situation transparency and ease of reading is always paramount.
+</p>
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a><span class="c1">#-------------generate data-------------</span>
+<a name="True-2"></a><span class="kp">set.seed</span><span class="p">(</span><span class="m">123</span><span class="p">)</span>
+<a name="True-3"></a>n <span class="o">&lt;-</span> <span class="m">1000</span>
+<a name="True-4"></a>
+<a name="True-5"></a><span class="c1"># white noise:</span>
+<a name="True-6"></a>wn <span class="o">&lt;-</span> ts<span class="p">(</span>rnorm<span class="p">(</span>n<span class="p">))</span>
+<a name="True-7"></a>
+<a name="True-8"></a><span class="c1"># initialise the first two values:</span>
+<a name="True-9"></a>ar1 <span class="o">&lt;-</span> ma1 <span class="o">&lt;-</span> arma11 <span class="o">&lt;-</span> arma22 <span class="o">&lt;-</span> wn<span class="p">[</span><span class="m">1</span><span class="o">:</span><span class="m">2</span><span class="p">]</span>
+<a name="True-10"></a>
+<a name="True-11"></a><span class="c1"># loop through and create the 3:1000th values:</span>
+<a name="True-12"></a><span class="kr">for</span><span class="p">(</span>i <span class="kr">in</span> <span class="m">3</span><span class="o">:</span>n<span class="p">){</span>
+<a name="True-13"></a>   ar1<span class="p">[</span>i<span class="p">]</span>      <span class="o">&lt;-</span> ar1<span class="p">[</span>i <span class="o">-</span> <span class="m">1</span><span class="p">]</span> <span class="o">*</span> <span class="m">0.8</span> <span class="o">+</span> wn<span class="p">[</span>i<span class="p">]</span>
+<a name="True-14"></a>   ma1<span class="p">[</span>i<span class="p">]</span>      <span class="o">&lt;-</span> wn<span class="p">[</span>i <span class="o">-</span> <span class="m">1</span><span class="p">]</span>  <span class="o">*</span> <span class="m">0.8</span> <span class="o">+</span> wn<span class="p">[</span>i<span class="p">]</span>
+<a name="True-15"></a>   arma11<span class="p">[</span>i<span class="p">]</span>   <span class="o">&lt;-</span> arma11<span class="p">[</span>i <span class="o">-</span> <span class="m">1</span><span class="p">]</span> <span class="o">*</span> <span class="m">0.8</span> <span class="o">+</span> wn<span class="p">[</span>i <span class="o">-</span> <span class="m">1</span><span class="p">]</span> <span class="o">*</span> <span class="m">0.8</span> <span class="o">+</span> wn<span class="p">[</span>i<span class="p">]</span> 
+<a name="True-16"></a>   arma22<span class="p">[</span>i<span class="p">]</span>   <span class="o">&lt;-</span> arma22<span class="p">[</span>i <span class="o">-</span> <span class="m">1</span><span class="p">]</span> <span class="o">*</span> <span class="m">0.8</span> <span class="o">+</span> arma22<span class="p">[</span>i <span class="o">-</span> <span class="m">2</span><span class="p">]</span>  <span class="o">*</span> <span class="p">(</span><span class="m">-0.3</span><span class="p">)</span> <span class="o">+</span> <span class="m">0.8</span> <span class="o">*</span> wn<span class="p">[</span>i<span class="m">-1</span><span class="p">]</span> <span class="o">-</span> <span class="m">0.3</span> <span class="o">*</span> wn<span class="p">[</span>i<span class="m">-2</span><span class="p">]</span> <span class="o">+</span> wn<span class="p">[</span>i<span class="p">]</span>
+<a name="True-17"></a><span class="p">}</span>
+<a name="True-18"></a>
+<a name="True-19"></a><span class="c1"># turn them into time series, and for the last two, &quot;integrate&quot; them via cumulative sum</span>
+<a name="True-20"></a>ar1 <span class="o">&lt;-</span> ts<span class="p">(</span>ar1<span class="p">)</span>
+<a name="True-21"></a>ma1 <span class="o">&lt;-</span> ts<span class="p">(</span>ma1<span class="p">)</span>
+<a name="True-22"></a>arma11 <span class="o">&lt;-</span> ts<span class="p">(</span>arma11<span class="p">)</span>
+<a name="True-23"></a>arima111 <span class="o">&lt;-</span> ts<span class="p">(</span><span class="kp">cumsum</span><span class="p">(</span>arma11<span class="p">))</span>
+<a name="True-24"></a>arima222 <span class="o">&lt;-</span> ts<span class="p">(</span><span class="kp">cumsum</span><span class="p">(</span><span class="kp">cumsum</span><span class="p">(</span>arma22<span class="p">)))</span></code></pre></div>
+
+<p>
+The animation is created one frame at a time with basic R plots.  For the equations I used Stefano Meschiari's useful <a href = "https://cran.r-project.org/web/packages/latex2exp/index.html">{latex2exp}</a> package.  I don't really understand R's plotmath expressions that let you add equations to plots, and I don't really want to understand them if I can avoid it.  {latex2exp} let's me avoid it by using the much more commonly known LaTeX syntax and translating it for me into plotmath.
+</p>
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a><span class="kn">library</span><span class="p">(</span>latex2exp<span class="p">)</span>
+<a name="True-2"></a><span class="kn">library</span><span class="p">(</span>extrafont<span class="p">)</span>
+<a name="True-3"></a>
+<a name="True-4"></a><span class="kr">for</span><span class="p">(</span>i <span class="kr">in</span> <span class="m">3</span><span class="o">:</span>n<span class="p">){</span>
+<a name="True-5"></a>   png<span class="p">(</span><span class="kp">paste0</span><span class="p">(</span>i <span class="o">+</span> <span class="m">1000</span><span class="p">,</span> <span class="s">&quot;.png&quot;</span><span class="p">),</span> <span class="m">800</span><span class="p">,</span> <span class="m">800</span><span class="p">,</span> res <span class="o">=</span> <span class="m">100</span><span class="p">)</span>
+<a name="True-6"></a>      par<span class="p">(</span>mfrow <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="m">3</span><span class="p">,</span> <span class="m">2</span><span class="p">),</span> cex.main <span class="o">=</span> <span class="m">1.5</span><span class="p">,</span> cex <span class="o">=</span> <span class="m">0.8</span><span class="p">,</span> family <span class="o">=</span> <span class="s">&quot;Calibri&quot;</span><span class="p">)</span>
+<a name="True-7"></a>      plot<span class="p">(</span>wn<span class="p">[</span><span class="m">1</span><span class="o">:</span>i<span class="p">],</span> main <span class="o">=</span> latex2exp<span class="p">(</span><span class="s">&quot;$\\epsilon ~ N(0, \\sigma)&quot;</span><span class="p">),</span> 
+<a name="True-8"></a>           bty <span class="o">=</span> <span class="s">&quot;l&quot;</span><span class="p">,</span> type <span class="o">=</span> <span class="s">&quot;l&quot;</span><span class="p">,</span> ylab <span class="o">=</span> <span class="s">&quot;x = white noise&quot;</span><span class="p">,</span> xlab <span class="o">=</span> <span class="s">&quot;&quot;</span><span class="p">)</span>
+<a name="True-9"></a>      
+<a name="True-10"></a>      plot<span class="p">(</span>ar1<span class="p">[</span><span class="m">1</span><span class="o">:</span>i<span class="p">],</span> main <span class="o">=</span> latex2exp<span class="p">(</span><span class="s">&quot;$x_t = 0.8x_{t-1} + \\epsilon_t$&quot;</span><span class="p">),</span> 
+<a name="True-11"></a>           bty <span class="o">=</span> <span class="s">&quot;l&quot;</span><span class="p">,</span> type <span class="o">=</span> <span class="s">&quot;l&quot;</span><span class="p">,</span> ylab <span class="o">=</span> <span class="s">&quot;x =AR (1)&quot;</span><span class="p">,</span> xlab <span class="o">=</span> <span class="s">&quot;&quot;</span><span class="p">)</span>
+<a name="True-12"></a>      
+<a name="True-13"></a>      plot<span class="p">(</span>ma1<span class="p">[</span><span class="m">1</span><span class="o">:</span>i<span class="p">],</span> main <span class="o">=</span> latex2exp<span class="p">(</span><span class="s">&quot;$x_t = 0.8\\epsilon_{t-1} + \\epsilon_t$&quot;</span><span class="p">),</span> 
+<a name="True-14"></a>           bty <span class="o">=</span> <span class="s">&quot;l&quot;</span><span class="p">,</span> type <span class="o">=</span> <span class="s">&quot;l&quot;</span><span class="p">,</span> ylab <span class="o">=</span> <span class="s">&quot;x = MA(1)&quot;</span><span class="p">,</span> xlab <span class="o">=</span> <span class="s">&quot;&quot;</span><span class="p">)</span>
+<a name="True-15"></a>      
+<a name="True-16"></a>      plot<span class="p">(</span>arma11<span class="p">[</span><span class="m">1</span><span class="o">:</span>i<span class="p">],</span> main <span class="o">=</span> latex2exp<span class="p">(</span><span class="s">&quot;$x_t = 0.8x_{t-1} + 0.8\\epsilon_{t-1} + \\epsilon_t$&quot;</span><span class="p">),</span>
+<a name="True-17"></a>           bty <span class="o">=</span> <span class="s">&quot;l&quot;</span><span class="p">,</span> type <span class="o">=</span> <span class="s">&quot;l&quot;</span><span class="p">,</span> ylab <span class="o">=</span> <span class="s">&quot;x = ARMA(1, 1)&quot;</span><span class="p">,</span> xlab <span class="o">=</span> <span class="s">&quot;&quot;</span><span class="p">)</span>
+<a name="True-18"></a>      
+<a name="True-19"></a>      plot<span class="p">(</span>arima111<span class="p">[</span><span class="m">1</span><span class="o">:</span>i<span class="p">],</span> main <span class="o">=</span> latex2exp<span class="p">(</span><span class="s">&quot;$x_t = 0.8x_{t-1} + 0.8\\epsilon_{t-1} + \\epsilon_t$&quot;</span><span class="p">),</span> 
+<a name="True-20"></a>           bty <span class="o">=</span> <span class="s">&quot;l&quot;</span><span class="p">,</span> type <span class="o">=</span> <span class="s">&quot;l&quot;</span><span class="p">,</span> ylab <span class="o">=</span> <span class="s">&quot;y = ARIMA(1, 1, 1)&quot;</span><span class="p">,</span> xlab <span class="o">=</span> <span class="s">&quot;&quot;</span><span class="p">)</span>
+<a name="True-21"></a>      mtext<span class="p">(</span>latex2exp<span class="p">(</span><span class="s">&quot;$y_t = x_t + x_{t-1} + ... + x_0$&quot;</span><span class="p">),</span> cex <span class="o">=</span> <span class="m">1.3</span><span class="p">,</span> line <span class="o">=</span> <span class="m">-0.5</span><span class="p">)</span>
+<a name="True-22"></a>      
+<a name="True-23"></a>      plot<span class="p">(</span>arima222<span class="p">[</span><span class="m">1</span><span class="o">:</span>i<span class="p">],</span> main <span class="o">=</span>  latex2exp<span class="p">(</span>
+<a name="True-24"></a>         <span class="s">&quot;$x_t = 0.8x_{t-1} - 0.3x_{t-2} - 0.3\\epsilon_{t-2} + 0.8\\epsilon_{t-1} + \\epsilon_t$&quot;</span><span class="p">),</span> 
+<a name="True-25"></a>         bty <span class="o">=</span> <span class="s">&quot;l&quot;</span><span class="p">,</span> type <span class="o">=</span> <span class="s">&quot;l&quot;</span><span class="p">,</span> ylab <span class="o">=</span> <span class="s">&quot;z = ARIMA(2, 2, 2)&quot;</span><span class="p">,</span> xlab <span class="o">=</span> <span class="s">&quot;&quot;</span><span class="p">)</span>
+<a name="True-26"></a>      mtext<span class="p">(</span>latex2exp<span class="p">(</span><span class="s">&quot;$y_t = x_t + x_{t-1} + ... + x_0$&quot;</span><span class="p">),</span> cex <span class="o">=</span> <span class="m">1.3</span><span class="p">,</span> line <span class="o">=</span> <span class="m">-0.5</span><span class="p">)</span>
+<a name="True-27"></a>      mtext<span class="p">(</span>latex2exp<span class="p">(</span><span class="s">&quot;$z_t = y_t + y_{t-1} + ... + y_0$&quot;</span><span class="p">),</span> cex <span class="o">=</span> <span class="m">1.3</span><span class="p">,</span> line <span class="o">=</span> <span class="m">-2.0</span><span class="p">)</span>
+<a name="True-28"></a>   dev.off<span class="p">()</span>
+<a name="True-29"></a><span class="p">}</span></code></pre></div>
+
+<p>
+The result has 998 frames and is probably too big for the sort of animated GIF I usually make.  When a web browser comes across an animated GIF it has to load the whole thing in - in this case, around 28MB worth - before it starts playing and I'd probably lose some audiences while that happened.  So I used Microsoft MovieMaker to turn the stills into an mp4 and uploaded it to YouTube, which is basically the standard and easiest way to stream video over the web.
+</p>
+
+</div>
+
+<div class = "container">
+   <div class="col-md-4">
+    
+        <a rel="prev" href="/blog/2015/11/15/linear-model-timeseries">
+        <p>&larr; Older</p>
+        <p>Linear model with time series random component</p>
+        
+        </a>
+    
+    </div>
+    <div class="col-md-4">
+    </div>
+    <div class="col-md-4" style="text-align: right;">
+     
+        <a rel="next" href="/blog/2015/11/26/violent-deaths">
+        <p>Newer &rarr;</p>
+        <p>Deaths from assault over time in 40 relatively rich countries</p>
+        
+        </a>
+    
+      </div>
+      </div>
+      
+      
+      
+</div>
+
+
+   
+    <div id="disqus_thread"></div>
+
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+    
+    
+   
+			
+			</div><!-- /.container -->
+
+         
+
+   <div class = "container footer">
+			<footer>
+	    		
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.  Or follow <a href = "/feed.r.xml">posts in this blog featuring R with RSS</a>.</p>
+			
+            <p>This blog is built with <a href = "http://jekyllrb.com/">Jekyll</a>, <a href = "http://getbootstrap.com/">Bootstrap</a>, <a href = "https://www.ruby-lang.org/en/">Ruby</a> and <a href = "https://cran.r-project.org/">R</a>.  Read my <a href="/about/acknowledgements.html">acknowledgements</a> for a little more on how.  I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+
+			<div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="true" data-share="false"></div>
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Peter's stats stuff</span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			
+			
+
+			</footer>
+    </div>
+
+
+
+  
+</body>
+</html>
+   
+
+
+
+
+         

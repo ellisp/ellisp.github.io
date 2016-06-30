@@ -1,0 +1,572 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Actual coverage of confidence intervals for standard deviation</title>
+      	
+         
+         
+            <meta name ="description" content ="The success rate (proportion of times the true value is covered by the interval) of 95% confidence intervals from the bootstrap when estimating population standard deviation can be very poor for complex mixed distributions, such as real world weekly income from a modest sample size (<20,000).">
+            <meta property="og:description" content ="The success rate (proportion of times the true value is covered by the interval) of 95% confidence intervals from the bootstrap when estimating population standard deviation can be very poor for complex mixed distributions, such as real world weekly income from a modest sample size (<20,000).">
+         
+         <meta property="og:site_name" content="Peter's stats stuff" />
+         <meta property="og:title" content="Actual coverage of confidence intervals for standard deviation" />
+         
+            <meta property="og:image" content="http://ellisp.github.io/img/0042-sd-ci-coverage.png" />
+         
+         <meta property="og:url" content="http://ellisp.github.io/blog/2016/05/29/standard-deviation-confidence-intervals/" />
+         <meta property="og:author" content= "https://www.facebook.com/peter.ellis.353" />
+         <meta property="og:type" content="article" />
+           
+          <link href="/css/bootstrap.min.css" rel ="stylesheet">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet">
+            <link href="/css/custom.css" rel ="stylesheet">       
+     <link rel="stylesheet" href="/css/Pygments/autumn.css">      
+     <link rel="stylesheet" href="/css/Pygments/custom.css">      
+            
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="Peter's stats stuff by Peter Ellis"
+      href="/feed.xml">
+
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Peter's stats stuff</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">All blog posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">Ordered by date</a></li>
+                  <li><a href="/blog/index_by_tag.html">Grouped by subject matter</a></li>
+                  <li><a href = /blog/2016/06/16/mrtes>Most recent post</a></li>
+                 </ul>
+            </li>
+              <li><a href="/blog/showcase.html">Showcase</a></li>
+              <li><a href="/presentations/index.html">Presentations</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			    <div class="jumbotron">
+      <div class="container">
+        <h1>Actual coverage of confidence intervals for standard deviation</h1>
+         <p class="meta">29 May 2016</p>
+        
+      </div>
+    </div>
+
+
+
+
+<div class = "post-summary">
+<h2>TL;DR Summary:</h2>
+   The success rate (proportion of times the true value is covered by the interval) of 95% confidence intervals from the bootstrap when estimating population standard deviation can be very poor for complex mixed distributions, such as real world weekly income from a modest sample size (<20,000).
+   <hr></hr>
+</div>
+
+<div class="post">
+<div class="col-md-2">
+
+</div>
+  <div class="col-md-8">
+
+  <h2 id="overview">Overview</h2>
+<p>How big a sample size would you think you need to get a reliable 95% confidence interval (ie one that really does contain the true value 95% of the time) for a single univariate statistic like standard deviation? 30? 50?  Turns out the answer is more like 20,000 for some not-particularly-extreme real-world data.</p>
+
+<p>In this post I explore the phenomenon shown in the first chart below; lower than hoped-for coverage of 95% confidence intervals calculated with the bootstrap when estimating a population standard deviation from a modest sample size.</p>
+
+<p><img src="/img/0042-sd-ci-coverage.svg" alt="coverage" /></p>
+
+<p>The test is admittedly a tough one, albeit realistic.  The population data from which my samples are drawn are the <a href="http://www.stats.govt.nz/tools_and_services/microdata-access/nzis-2011-cart-surf.aspx">simulated unit record file microdata</a> from Statistics New Zealand’s New Zealand Income Survey 2011, which I’ve written about in <a href="/blog/index_by_tag.html">numerous posts</a>.  The distribution of weekly income in this data set is complex; it could perhaps be described as a mixture of:</p>
+
+<ul>
+  <li>individuals with positive income that is approximately log-normal distributed;</li>
+  <li>individuals with negative income of some difficult-to-describe distribution;</li>
+  <li>a large spike of individuals with zero income; plus a sprinkling of outliers.</li>
+</ul>
+
+<p>In fact, it looks like this:</p>
+
+<p><img src="/img/0042-full-data.svg" alt="fulldata" /></p>
+
+<p>The actual standard deviation of all 29,471 observations of income is $806.</p>
+
+<p>The inference problem is how to estimate that value if you have only a smaller sample, eg 50?  Because if you have only 50 observations, you think the data looks like this:</p>
+
+<p><img src="/img/0042-sample-data.svg" alt="sampledata" /></p>
+
+<p>In the case of this particular sample of 50, the standard deviation is $527.</p>
+
+<h2 id="unbiased-estimate-of-standard-deviation">Unbiased estimate of standard deviation</h2>
+<p>The first challenge - although it turns out to be a relatively small detail in terms of the challenge - is to get the best estimator for the situation when you want to estimate a population’s standard deviation from a sample.  While an unbiased estimator of variance is well known, standard deviation (the square root of variance) is complex.  Creating an <a href="https://en.wikipedia.org/wiki/Unbiased_estimation_of_standard_deviation">unbiased estimator of standard deviation</a> turns out to depend on the vagaries of the shape of the original population, with the <em>fourth</em> moment (expected value of the variable to the power of four) playing a role.</p>
+
+<p>A reasonably generally well-performing estimator for non-Normal variables is reportedly (image from the Wikipedia article linked to above):</p>
+
+<p><img src="/img/0042-unbiased-sd.png" alt="equation" /></p>
+
+<h2 id="method">Method</h2>
+<p>Using the unbiased estimate of standard deviation above, I set out to test the performance of bootstrap confidence intervals in covering the true value of population standard deviation for sample sizes of 50, 100, 200, 400, …, 12800.  I took 2,500 samples of the data for each of these sample sizes; estimated the standard deviation from each sample; and use the bootstrap to estimate confidence intervals for population standard deviation from each sample, with 499 bootstrap replicates.  I tested both the <a href="https://en.wikipedia.org/wiki/Bootstrapping_(statistics)#Methods_for_bootstrap_confidence_intervals">basic and the percentile methods for bootstrap confidence intervals</a>.  To reduce the complications of my finite population, each of the 2,500 samples is taken with replacement from the original data set.</p>
+
+<h2 id="results---income">Results - income</h2>
+<p>The unbiased estimator works ok, at least in terms of bias.  Here’s the full distribution of the estimated standard deviation from all those different samples:</p>
+
+<p><img src="/img/0042-sd-bias-full.svg" alt="sd-bias-full" /></p>
+
+<p>For the smaller samples, it’s obvious that most of the estimates are to the left of the blue line ie the estimated standard deviation is less than the true standard deviation from the full 29,471 observations.  However, this frequent underestimation is compensated for by the fact that when the standard deviation is <em>over</em>-estimated, it tends to be by quite a lot - with a strong rightwards skew in the distribution of this statistic for all the smaller sample sizes.  This all sounds bad of course, but it is the sort of thing that’s needed if a statistic with a skewed sampling distribution is going to be on average unbiased.  We see how this plays out when we look at the actual average error of the estimator:</p>
+
+<p><img src="/img/0042-sd-bias-summary.svg" alt="sd-bias-summ" /></p>
+
+<p>There’s a slight bias to under-estimation for smaller sample sizes (six percent isn’t that much in the scheme of things), but by the time sample size is 800 or higher the estimator on average gets it pretty much right.</p>
+
+<p>It’s the coverage of the bootstrapped confidence intervals that is disappointing however.  Here’s a repeat of that graphic I started the post with:
+<img src="/img/0042-sd-ci-coverage.svg" alt="coverage" /></p>
+
+<p>Basically, when you have a really complex mixed and dirty variable like this one (New Zealand weekly income from survey data), not until you have a sample size of 20,000 or so do your bootstrapped confidence intervals start to have the coverage that is planned for them.</p>
+
+<p>What’s going on here?  Well, the bootstrap depends on you taking many re-samples with replacements from your original sample, in the hope that doing this mimics the behaviour of taking many samples from the whole population which isn’t possible for reasons of expense or logistics.  For this to work, the original sample has to sufficiently resemble the whole population that the resamples from the sample behave similarly to samples from the population.  There’s no straightforward definition of “sufficiently resemble” that I know of, but what we’re seeing here is that until the sample size is really quite moderately large, for a statistic like standard deviation for a moderately complex population distribution, the sample does not “sufficiently resemble” the population for the bootstrap to work as advertised.</p>
+
+<h2 id="results---other-variables">Results - other variables</h2>
+
+<p>To get more of a feel for what was going on here, I ran the same computer program over more regular, simulated data:</p>
+
+<ul>
+  <li>a standard normal distribution (mean zero, variance one)</li>
+  <li>a standard uniform distribution (bounded by zero and one)</li>
+  <li>a standard log-normal distribution (e to the power of standard normal)</li>
+  <li>a mixture of all three</li>
+</ul>
+
+<p>The results in terms of confidence interval coverage can be seen in this graphic:</p>
+
+<p><img src="/img/0042-other-dists.svg" alt="other-dists" /></p>
+
+<p>Points to make from this are:</p>
+
+<ul>
+  <li>In all cases the “basic” and “percentile” methods perform similarly, with neither of the two consistently outperforming the other for the two symmetrical distributions, but percentile performing slightly better for the two asymmetrical distributions.</li>
+  <li>For the two symmetrical distributions - uniform and normal - the coverage at small sample sizes isn’t bad.  Even with only 50 observations in the sample, more than 90% of the confidence intervals contain the true value, and the sample size doesn’t need to be much larger than that before it gets up to the desired 95%.</li>
+  <li>In contrast, for the non-symmetrical, right-skewed log-normal data and the mixture distribution, the success rate of 95% confidence intervals actually containing the true value is relatively low until the sample size is many thousands, and it never reaches (with the sample sizes tested) the desired 95% rate.</li>
+</ul>
+
+<p>Mixed or “contaminated” distributions are known to cause problems for statistical inference (although I don’t like the word “contaminated” as too value-laden - as though it is the data’s fault it doesn’t live up to twentieth century simplifying assumptions!).  The bootstrap was part of the late twentieth century revolution in applied statistical methods to help address those and other problems, but the observations in this post confirm that it doesn’t magically make them go away.</p>
+
+<blockquote>
+  <p>“Classic, routinely used statistical methods are based on the assumptions that observations follow a normal curve.  It was once thought that violating the normality assumption rarely had a detrimental impact on these methods, but theoretical and empirical advances have made it clear that general types of non-normality cause serious practical problems in a wide range of commonly occurring situations.  Indeed, even very slight departures from normality can be a source of concern.”</p>
+</blockquote>
+
+<p>Wilcox, <a href="http://www.amazon.com/Modern-Statistics-Social-Behavioral-Sciences/dp/1439834563"><em>Modern Statistics for the Social and Behavioral Sciences</em></a></p>
+
+<h2 id="simpler-statistics">Simpler statistics</h2>
+
+<p>Finally, to round out the picture I tried the same approach on statistics that are simpler than standard deviation - mean and trimmed mean - on the same awkward weekly income data.</p>
+
+<p>The confidence interval coverage is pretty satisfactory even with small sample sizes, hovering close to the desired 95%.
+<img src="/img/0042-mean-ci-coverage.svg" alt="ci-means" /></p>
+
+<p>And as expected from theoretical results, there’s no discernable bias:
+<img src="/img/0042-mean-bias.svg" alt="bias-means" /></p>
+
+<h2 id="conclusion">Conclusion</h2>
+<p>The overall conclusion: standard deviation of non-normal(skewed, contaminated, or both) distributions is a really tough statistic to get a valid confidence interval for.  But a simple statistic (like mean) for an awkward distribution - or standard deviation of a simple distribution (like Normal or Uniform) - perform fine.</p>
+
+<h2 id="code">Code</h2>
+<p>Here’s the computer programs, all in R.</p>
+
+<p>First I load up the packages I’m using.  This is fairly straightforward.  The <code>moments</code> package is needed because I need to estimate excess kurtosis as part of the formula for an unbiased estimate of standard deviation</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a><span class="c1">#===================setup=======================</span>
+<a name="True-2"></a><span class="kn">library</span><span class="p">(</span>ggplot2<span class="p">)</span> <span class="c1"># using the dev version from GitHub so can have subtitles and captions</span>
+<a name="True-3"></a><span class="kn">library</span><span class="p">(</span>scales<span class="p">)</span>
+<a name="True-4"></a><span class="kn">library</span><span class="p">(</span>boot<span class="p">)</span>
+<a name="True-5"></a><span class="kn">library</span><span class="p">(</span>dplyr<span class="p">)</span>
+<a name="True-6"></a><span class="kn">library</span><span class="p">(</span>moments<span class="p">)</span> <span class="c1"># for kurtosis()</span>
+<a name="True-7"></a><span class="kn">library</span><span class="p">(</span>tidyr<span class="p">)</span>
+<a name="True-8"></a><span class="kn">library</span><span class="p">(</span>gridExtra<span class="p">)</span> <span class="c1"># for grid.arrange()</span>
+<a name="True-9"></a>
+<a name="True-10"></a><span class="c1"># themes for graphics</span>
+<a name="True-11"></a>theme_set<span class="p">(</span>theme_light<span class="p">(</span><span class="m">10</span><span class="p">)</span> <span class="p">)</span>
+<a name="True-12"></a>theme_small <span class="o">&lt;-</span> theme_light<span class="p">(</span><span class="m">8</span><span class="p">)</span> <span class="o">+</span>
+<a name="True-13"></a>   theme<span class="p">(</span>axis.text.x <span class="o">=</span> element_text<span class="p">(</span>angle <span class="o">=</span> <span class="m">45</span><span class="p">,</span> hjust <span class="o">=</span> <span class="m">1</span><span class="p">))</span></code></pre></div>
+
+<p>Next I create two functions.  One is unbiased standard deviation of a vector x, to be scrambled/resampled by means of the index i - the sort of function that is accepted by the <code>boot</code> function as a statistic:</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a><span class="c1">#==========Functions==================</span>
+<a name="True-2"></a>sampsd <span class="o">&lt;-</span> <span class="kr">function</span><span class="p">(</span>x<span class="p">,</span> i<span class="p">,</span> xbar <span class="o">=</span> <span class="kp">mean</span><span class="p">(</span>x<span class="p">)){</span>
+<a name="True-3"></a>   <span class="c1"># function suitable for boot which returns estimated standard deviation</span>
+<a name="True-4"></a>   <span class="c1"># from a sample x that has been scrambled by the index i</span>
+<a name="True-5"></a>   d <span class="o">&lt;-</span> x<span class="p">[</span>i<span class="p">]</span>
+<a name="True-6"></a>   n <span class="o">&lt;-</span> <span class="kp">length</span><span class="p">(</span>d<span class="p">)</span>
+<a name="True-7"></a>   
+<a name="True-8"></a>   <span class="c1"># this next formula is the best general approximation to a general  </span>
+<a name="True-9"></a>   <span class="c1"># unbiased estimator of standard deviation from a non-normal distribution</span>
+<a name="True-10"></a>   <span class="c1"># https://en.wikipedia.org/wiki/Unbiased_estimation_of_standard_deviation</span>
+<a name="True-11"></a>   unbiased_sd <span class="o">&lt;-</span> <span class="kp">sqrt</span><span class="p">(</span>
+<a name="True-12"></a>      <span class="kp">sum</span><span class="p">((</span>d <span class="o">-</span> xbar<span class="p">)</span> <span class="o">^</span> <span class="m">2</span><span class="p">)</span> <span class="o">/</span> 
+<a name="True-13"></a>         <span class="p">(</span>n <span class="o">-</span> <span class="m">1.5</span> <span class="o">-</span> <span class="p">(</span>kurtosis<span class="p">(</span>d<span class="p">)</span> <span class="o">-</span> <span class="m">3</span><span class="p">)</span> <span class="o">/</span> <span class="m">4</span><span class="p">)</span>
+<a name="True-14"></a>   <span class="p">)</span>
+<a name="True-15"></a>   <span class="kr">return</span><span class="p">(</span>unbiased_sd<span class="p">)</span>
+<a name="True-16"></a><span class="p">}</span></code></pre></div>
+
+<p>Second is the main routine that performs the actual testing of the confidence interval.  This is little involved so I won’t try to explain it line by line.  Hopefully the in-function comments are adequate:</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a>test_boot_ci <span class="o">&lt;-</span> <span class="kr">function</span><span class="p">(</span>full_data<span class="p">,</span> 
+<a name="True-2"></a>                         statistic<span class="p">,</span> 
+<a name="True-3"></a>                         truevalue <span class="o">=</span> statistic<span class="p">(</span>full_data<span class="p">,</span> i <span class="o">=</span> <span class="m">1</span><span class="o">:</span><span class="kp">length</span><span class="p">(</span>full_data<span class="p">)),</span>
+<a name="True-4"></a>                         reps <span class="o">=</span> <span class="m">50</span><span class="p">,</span> 
+<a name="True-5"></a>                         R <span class="o">=</span> <span class="m">499</span><span class="p">,</span> 
+<a name="True-6"></a>                         title <span class="o">=</span> <span class="kp">match.call</span><span class="p">()){</span>
+<a name="True-7"></a>
+<a name="True-8"></a>   <span class="c1"># Function to explore the coverage of basic and percentile bootstrap </span>
+<a name="True-9"></a>   <span class="c1"># 95% confidence intervals.</span>
+<a name="True-10"></a>   <span class="c1">#&#39; @full_data A full population of data from which samples of various sizes</span>
+<a name="True-11"></a>   <span class="c1">#           will be drawn without replacement, and each of those samples will</span>
+<a name="True-12"></a>   <span class="c1">#           be analysed with the bootstrap as though it were all that is</span>
+<a name="True-13"></a>   <span class="c1">#           available.</span>
+<a name="True-14"></a>   <span class="c1">#&#39; @statistic a function suitable for passing to the statistic argument of boot</span>
+<a name="True-15"></a>   <span class="c1">#           ie first argument is data, second argument is an index for </span>
+<a name="True-16"></a>   <span class="c1">#           scrambling the data</span>
+<a name="True-17"></a>   <span class="c1">#&#39; @truevalue true value that the statistic is trying to esimate.</span>
+<a name="True-18"></a>   <span class="c1">#&#39; @reps number of repeats of each sample size to analyse</span>
+<a name="True-19"></a>   <span class="c1">#&#39; @R number of bootstrap resamples for each sample</span>
+<a name="True-20"></a>   <span class="c1">#&#39; @title Title for plots</span>
+<a name="True-21"></a>   
+<a name="True-22"></a>   
+<a name="True-23"></a>   <span class="c1"># create a data frame to hold the results, with &quot;reps&quot; rows for each</span>
+<a name="True-24"></a>   <span class="c1"># sample size from 50, 100, 200, ..., 12800</span>
+<a name="True-25"></a>   ns <span class="o">&lt;-</span> <span class="kp">rep</span><span class="p">(</span><span class="m">2</span> <span class="o">^</span> <span class="p">(</span><span class="m">0</span><span class="o">:</span><span class="m">8</span><span class="p">)</span> <span class="o">*</span> <span class="m">50</span><span class="p">,</span> each <span class="o">=</span> reps<span class="p">)</span>
+<a name="True-26"></a>   results <span class="o">&lt;-</span> <span class="kt">data.frame</span><span class="p">(</span>
+<a name="True-27"></a>      n <span class="o">=</span> ns<span class="p">,</span>
+<a name="True-28"></a>      point_est <span class="o">=</span> <span class="kt">numeric</span><span class="p">(</span><span class="kp">length</span><span class="p">(</span>ns<span class="p">)),</span>
+<a name="True-29"></a>      ci_basic_correct <span class="o">=</span> <span class="kt">logical</span><span class="p">(</span><span class="kp">length</span><span class="p">(</span>ns<span class="p">)),</span>
+<a name="True-30"></a>      ci_perc_correct <span class="o">=</span> <span class="kt">logical</span><span class="p">(</span><span class="kp">length</span><span class="p">(</span>ns<span class="p">))</span>
+<a name="True-31"></a>   <span class="p">)</span>
+<a name="True-32"></a>      
+<a name="True-33"></a>   
+<a name="True-34"></a>   <span class="c1"># Create point estimates and two types of bootstrap confidence interval</span>
+<a name="True-35"></a>   <span class="c1"># for each repetition at each value of sample size:</span>
+<a name="True-36"></a>   <span class="kr">for</span><span class="p">(</span>i <span class="kr">in</span> <span class="m">1</span><span class="o">:</span><span class="kp">nrow</span><span class="p">(</span>results<span class="p">)){</span>
+<a name="True-37"></a>   
+<a name="True-38"></a>      this_data <span class="o">&lt;-</span> full_data<span class="p">[</span><span class="kp">sample</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="kp">length</span><span class="p">(</span>full_data<span class="p">),</span> results<span class="p">[</span>i<span class="p">,</span> <span class="s">&quot;n&quot;</span><span class="p">],</span> replace <span class="o">=</span> <span class="kc">TRUE</span><span class="p">)]</span>   
+<a name="True-39"></a>      res <span class="o">&lt;-</span> boot<span class="p">(</span>this_data<span class="p">,</span> statistic <span class="o">=</span> statistic<span class="p">,</span> R <span class="o">=</span> R<span class="p">)</span>
+<a name="True-40"></a>      
+<a name="True-41"></a>      results<span class="p">[</span>i<span class="p">,</span> <span class="s">&quot;point_est&quot;</span><span class="p">]</span> <span class="o">&lt;-</span> res<span class="o">$</span>t0
+<a name="True-42"></a>      
+<a name="True-43"></a>      ciobj <span class="o">&lt;-</span> boot.ci<span class="p">(</span>res<span class="p">,</span> type <span class="o">=</span> <span class="s">&quot;basic&quot;</span><span class="p">)</span>
+<a name="True-44"></a>      citest <span class="o">&lt;-</span> <span class="p">(</span>truevalue <span class="o">&gt;</span> ciobj<span class="o">$</span>basic<span class="p">[</span><span class="m">4</span><span class="p">]</span> <span class="o">&amp;</span> truevalue <span class="o">&lt;</span> ciobj<span class="o">$</span>basic<span class="p">[</span><span class="m">5</span><span class="p">])</span>
+<a name="True-45"></a>      results<span class="p">[</span>i<span class="p">,</span> <span class="s">&quot;ci_basic_correct&quot;</span><span class="p">]</span> <span class="o">&lt;-</span> citest
+<a name="True-46"></a>      
+<a name="True-47"></a>      ciobj <span class="o">&lt;-</span> boot.ci<span class="p">(</span>res<span class="p">,</span> type <span class="o">=</span> <span class="s">&quot;perc&quot;</span><span class="p">)</span>
+<a name="True-48"></a>      citest <span class="o">&lt;-</span> <span class="p">(</span>truevalue <span class="o">&gt;</span> ciobj<span class="o">$</span>perc<span class="p">[</span><span class="m">4</span><span class="p">]</span> <span class="o">&amp;</span> truevalue <span class="o">&lt;</span> ciobj<span class="o">$</span>perc<span class="p">[</span><span class="m">5</span><span class="p">])</span>
+<a name="True-49"></a>      results<span class="p">[</span>i<span class="p">,</span> <span class="s">&quot;ci_perc_correct&quot;</span><span class="p">]</span> <span class="o">&lt;-</span> citest
+<a name="True-50"></a>      
+<a name="True-51"></a>   <span class="p">}</span>
+<a name="True-52"></a>   
+<a name="True-53"></a>   <span class="c1"># Prepare summary table and plots for output</span>
+<a name="True-54"></a>   tab <span class="o">&lt;-</span> results <span class="o">%&gt;%</span>
+<a name="True-55"></a>      group_by<span class="p">(</span>n<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-56"></a>      summarise<span class="p">(</span>coverage_basic <span class="o">=</span> <span class="kp">round</span><span class="p">(</span><span class="kp">sum</span><span class="p">(</span>ci_basic_correct<span class="p">)</span> <span class="o">/</span> <span class="kp">length</span><span class="p">(</span>ci_basic_correct<span class="p">),</span> <span class="m">3</span><span class="p">),</span>
+<a name="True-57"></a>                coverage_perc <span class="o">=</span>  <span class="kp">round</span><span class="p">(</span><span class="kp">sum</span><span class="p">(</span>ci_perc_correct<span class="p">)</span> <span class="o">/</span> <span class="kp">length</span><span class="p">(</span>ci_perc_correct<span class="p">),</span> <span class="m">3</span><span class="p">),</span>
+<a name="True-58"></a>                bias <span class="o">=</span> <span class="kp">round</span><span class="p">((</span><span class="kp">mean</span><span class="p">(</span>point_est<span class="p">)</span> <span class="o">-</span> truevalue<span class="p">)</span> <span class="o">/</span> truevalue<span class="p">,</span> <span class="m">3</span><span class="p">))</span>
+<a name="True-59"></a>   
+<a name="True-60"></a>   p1 <span class="o">&lt;-</span> tab <span class="o">%&gt;%</span>
+<a name="True-61"></a>      dplyr<span class="o">::</span>select<span class="p">(</span><span class="o">-</span>bias<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-62"></a>      gather<span class="p">(</span>Method<span class="p">,</span> value<span class="p">,</span> <span class="o">-</span>n<span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-63"></a>      mutate<span class="p">(</span>Method <span class="o">=</span> <span class="kp">gsub</span><span class="p">(</span><span class="s">&quot;coverage_perc&quot;</span><span class="p">,</span> <span class="s">&quot;Percentile&quot;</span><span class="p">,</span> Method<span class="p">),</span>
+<a name="True-64"></a>             Method <span class="o">=</span> <span class="kp">gsub</span><span class="p">(</span><span class="s">&quot;coverage_basic&quot;</span><span class="p">,</span> <span class="s">&quot;Basic&quot;</span><span class="p">,</span> Method<span class="p">),</span>
+<a name="True-65"></a>             Method <span class="o">=</span> <span class="kp">factor</span><span class="p">(</span>Method<span class="p">,</span> levels <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="s">&quot;Percentile&quot;</span><span class="p">,</span> <span class="s">&quot;Basic&quot;</span><span class="p">)))</span> <span class="o">%&gt;%</span>
+<a name="True-66"></a>      ggplot<span class="p">(</span>aes<span class="p">(</span>x <span class="o">=</span> n<span class="p">,</span> y <span class="o">=</span> value<span class="p">,</span> color <span class="o">=</span> Method<span class="p">))</span> <span class="o">+</span>
+<a name="True-67"></a>      geom_hline<span class="p">(</span>yintercept <span class="o">=</span> <span class="m">0.95</span><span class="p">,</span> colour <span class="o">=</span> <span class="s">&quot;blue&quot;</span><span class="p">)</span> <span class="o">+</span>
+<a name="True-68"></a>      geom_point<span class="p">()</span> <span class="o">+</span>
+<a name="True-69"></a>      geom_line<span class="p">()</span> <span class="o">+</span>
+<a name="True-70"></a>      scale_y_continuous<span class="p">(</span><span class="s">&quot;Proportion of 95% confidence intervals\nthat include true value&quot;</span><span class="p">,</span> 
+<a name="True-71"></a>                         label <span class="o">=</span> percent<span class="p">)</span> <span class="o">+</span>
+<a name="True-72"></a>      scale_x_sqrt<span class="p">(</span><span class="s">&quot;Sample size&quot;</span><span class="p">,</span> label <span class="o">=</span> comma<span class="p">,</span> breaks <span class="o">=</span> <span class="kp">unique</span><span class="p">(</span>ns<span class="p">))</span> <span class="o">+</span>
+<a name="True-73"></a>      labs<span class="p">(</span>colour <span class="o">=</span> <span class="s">&quot;Bootstrap\nmethod&quot;</span><span class="p">)</span> <span class="o">+</span>
+<a name="True-74"></a>      ggtitle<span class="p">(</span>title<span class="p">)</span> <span class="o">+</span>
+<a name="True-75"></a>      theme<span class="p">(</span>axis.text.x <span class="o">=</span> element_text<span class="p">(</span>angle <span class="o">=</span> <span class="m">45</span><span class="p">,</span> hjust <span class="o">=</span> <span class="m">1</span><span class="p">))</span>
+<a name="True-76"></a>   
+<a name="True-77"></a>   p2 <span class="o">&lt;-</span> tab <span class="o">%&gt;%</span>
+<a name="True-78"></a>      ggplot<span class="p">(</span>aes<span class="p">(</span>x <span class="o">=</span> n<span class="p">,</span> y <span class="o">=</span> bias<span class="p">))</span> <span class="o">+</span>
+<a name="True-79"></a>      geom_hline<span class="p">(</span>yintercept <span class="o">=</span> <span class="m">0</span><span class="p">,</span> colour <span class="o">=</span> <span class="s">&quot;blue&quot;</span><span class="p">)</span> <span class="o">+</span>
+<a name="True-80"></a>      geom_point<span class="p">()</span> <span class="o">+</span>
+<a name="True-81"></a>      geom_line<span class="p">()</span> <span class="o">+</span>
+<a name="True-82"></a>      scale_y_continuous<span class="p">(</span><span class="s">&quot;Bias (as percentage of true value)&quot;</span><span class="p">,</span> 
+<a name="True-83"></a>                         label <span class="o">=</span> percent<span class="p">)</span> <span class="o">+</span>
+<a name="True-84"></a>      scale_x_sqrt<span class="p">(</span><span class="s">&quot;Sample size&quot;</span><span class="p">,</span> label <span class="o">=</span> comma<span class="p">,</span> breaks <span class="o">=</span> <span class="kp">unique</span><span class="p">(</span>ns<span class="p">))</span> <span class="o">+</span>
+<a name="True-85"></a>      ggtitle<span class="p">(</span>title<span class="p">)</span>
+<a name="True-86"></a>   
+<a name="True-87"></a>   p3 <span class="o">&lt;-</span> results <span class="o">%&gt;%</span>
+<a name="True-88"></a>      mutate<span class="p">(</span>n <span class="o">=</span> <span class="kp">paste</span><span class="p">(</span><span class="s">&quot;n =&quot;</span><span class="p">,</span> n<span class="p">),</span>
+<a name="True-89"></a>             n <span class="o">=</span> <span class="kp">factor</span><span class="p">(</span>n<span class="p">,</span> levels <span class="o">=</span> <span class="kp">paste</span><span class="p">(</span><span class="s">&quot;n =&quot;</span><span class="p">,</span> <span class="kp">unique</span><span class="p">(</span>ns<span class="p">)</span> <span class="p">)</span> <span class="p">)</span> <span class="p">)</span> <span class="o">%&gt;%</span>
+<a name="True-90"></a>      ggplot<span class="p">(</span>aes<span class="p">(</span>x <span class="o">=</span>point_est<span class="p">))</span> <span class="o">+</span>
+<a name="True-91"></a>      geom_density<span class="p">(</span>fill <span class="o">=</span> <span class="s">&quot;grey75&quot;</span><span class="p">,</span> alpha <span class="o">=</span> <span class="m">0.5</span><span class="p">)</span> <span class="o">+</span>
+<a name="True-92"></a>      geom_rug<span class="p">()</span> <span class="o">+</span>
+<a name="True-93"></a>      facet_wrap<span class="p">(</span><span class="o">~</span>n<span class="p">,</span> scales <span class="o">=</span> <span class="s">&quot;free_y&quot;</span><span class="p">)</span> <span class="o">+</span>
+<a name="True-94"></a>      geom_vline<span class="p">(</span>xintercept <span class="o">=</span> truevalue<span class="p">,</span> colour <span class="o">=</span> <span class="s">&quot;blue&quot;</span><span class="p">)</span> <span class="o">+</span>
+<a name="True-95"></a>      ggtitle<span class="p">(</span>title<span class="p">)</span> <span class="o">+</span>
+<a name="True-96"></a>      labs<span class="p">(</span>x <span class="o">=</span> <span class="s">&quot;Point estimates (blue line shows true value)&quot;</span><span class="p">)</span>
+<a name="True-97"></a>   
+<a name="True-98"></a>   <span class="kr">return</span><span class="p">(</span><span class="kt">list</span><span class="p">(</span>tab <span class="o">=</span> tab<span class="p">,</span> p1 <span class="o">=</span> p1<span class="p">,</span> p2 <span class="o">=</span> p2<span class="p">,</span> p3 <span class="o">=</span> p3<span class="p">))</span>
+<a name="True-99"></a>   
+<a name="True-100"></a><span class="p">}</span></code></pre></div>
+
+<p>Next I load in the data, and apply my testing program to the income data and to the various simulated datasets needed for the blog.</p>
+
+<p>Note that with the settings in the code below, nearly 1.25 million sets of data are analysed for each call to <code>test_boot_ci()</code>, so it takes overnight to run the whole thing on my laptop.  The <code>reps_per_sample_size</code> and <code>reps_per_bootstrap</code> variables should be set to much lower values (eg 20 and 99) if you just want to give this a go, or to adapt it.</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a><span class="kr">if</span><span class="p">(</span><span class="o">!</span><span class="kp">exists</span><span class="p">(</span><span class="s">&quot;nzis&quot;</span><span class="p">)){</span>
+<a name="True-2"></a>   nzis <span class="o">&lt;-</span> read.csv<span class="p">(</span><span class="s">&quot;http://www.stats.govt.nz/~/media/Statistics/services/microdata-access/nzis11-cart-surf/nzis11-cart-surf.csv&quot;</span><span class="p">)</span>   
+<a name="True-3"></a><span class="p">}</span>
+<a name="True-4"></a>
+<a name="True-5"></a>
+<a name="True-6"></a>reps_per_sample_size <span class="o">&lt;-</span> <span class="m">2500</span>
+<a name="True-7"></a>reps_per_bootstrap <span class="o">&lt;-</span> <span class="m">499</span>
+<a name="True-8"></a>
+<a name="True-9"></a><span class="c1">#------------standard deviation of income data------------</span>
+<a name="True-10"></a>income_sd <span class="o">&lt;-</span> test_boot_ci<span class="p">(</span>full_data <span class="o">=</span> nzis<span class="o">$</span>income<span class="p">,</span> 
+<a name="True-11"></a>                            statistic <span class="o">=</span> sampsd<span class="p">,</span> 
+<a name="True-12"></a>                            reps <span class="o">=</span> reps_per_sample_size<span class="p">,</span> 
+<a name="True-13"></a>                            R <span class="o">=</span> reps_per_bootstrap<span class="p">,</span>
+<a name="True-14"></a>                            title <span class="o">=</span> <span class="s">&quot;Estimating standard deviation from income data&quot;</span><span class="p">)</span>
+<a name="True-15"></a>
+<a name="True-16"></a><span class="c1">#---------standard deviation of simulated data--------------</span>
+<a name="True-17"></a>normal_sd <span class="o">&lt;-</span> test_boot_ci<span class="p">(</span>full_data <span class="o">=</span> rnorm<span class="p">(</span><span class="m">300000</span><span class="p">),</span> 
+<a name="True-18"></a>                          statistic <span class="o">=</span> sampsd<span class="p">,</span> 
+<a name="True-19"></a>                          reps <span class="o">=</span> reps_per_sample_size<span class="p">,</span> 
+<a name="True-20"></a>                          R <span class="o">=</span> reps_per_bootstrap<span class="p">,</span>
+<a name="True-21"></a>                          title <span class="o">=</span> <span class="s">&quot;Estimating standard deviation from simulated Normal data&quot;</span><span class="p">)</span>
+<a name="True-22"></a>
+<a name="True-23"></a>unif_sd <span class="o">&lt;-</span> test_boot_ci<span class="p">(</span>full_data <span class="o">=</span> runif<span class="p">(</span><span class="m">300000</span><span class="p">),</span> 
+<a name="True-24"></a>                        statistic <span class="o">=</span> sampsd<span class="p">,</span> 
+<a name="True-25"></a>                        reps <span class="o">=</span> reps_per_sample_size<span class="p">,</span> 
+<a name="True-26"></a>                        R <span class="o">=</span> reps_per_bootstrap<span class="p">,</span>
+<a name="True-27"></a>                        title <span class="o">=</span> <span class="s">&quot;Estimating standard deviation from simulated uniform data&quot;</span><span class="p">)</span>
+<a name="True-28"></a>
+<a name="True-29"></a>lognormal_sd <span class="o">&lt;-</span> test_boot_ci<span class="p">(</span>full_data <span class="o">=</span> <span class="kp">exp</span><span class="p">(</span>rnorm<span class="p">(</span><span class="m">300000</span><span class="p">)),</span> 
+<a name="True-30"></a>                             reps <span class="o">=</span> reps_per_sample_size<span class="p">,</span> 
+<a name="True-31"></a>                             statistic <span class="o">=</span> sampsd<span class="p">,</span> 
+<a name="True-32"></a>                             R <span class="o">=</span> reps_per_bootstrap<span class="p">,</span>
+<a name="True-33"></a>                             title <span class="o">=</span> <span class="s">&quot;Estimating standard deviation from simulated log-normal data&quot;</span><span class="p">)</span>
+<a name="True-34"></a>
+<a name="True-35"></a>
+<a name="True-36"></a>mixture <span class="o">&lt;-</span> <span class="kt">c</span><span class="p">(</span><span class="kp">exp</span><span class="p">(</span>rnorm<span class="p">(</span><span class="m">100000</span><span class="p">)),</span> rnorm<span class="p">(</span><span class="m">100000</span><span class="p">),</span> runif<span class="p">(</span><span class="m">100000</span><span class="p">))</span>
+<a name="True-37"></a>mixture_sd <span class="o">&lt;-</span> test_boot_ci<span class="p">(</span>full_data <span class="o">=</span> mixture<span class="p">,</span> 
+<a name="True-38"></a>                             reps <span class="o">=</span> reps_per_sample_size<span class="p">,</span> 
+<a name="True-39"></a>                             statistic <span class="o">=</span> sampsd<span class="p">,</span> 
+<a name="True-40"></a>                             R <span class="o">=</span> reps_per_bootstrap<span class="p">,</span>
+<a name="True-41"></a>                             title <span class="o">=</span> <span class="s">&quot;Estimating standard deviation from simulated mixture data&quot;</span><span class="p">)</span>
+<a name="True-42"></a>
+<a name="True-43"></a>
+<a name="True-44"></a><span class="c1">#-------simpler statistics on income data-----------</span>
+<a name="True-45"></a>income_mean <span class="o">&lt;-</span> test_boot_ci<span class="p">(</span>full_data <span class="o">=</span> nzis<span class="o">$</span>income<span class="p">,</span>
+<a name="True-46"></a>                            statistic <span class="o">=</span> <span class="kr">function</span><span class="p">(</span>x<span class="p">,</span> i<span class="p">){</span><span class="kp">mean</span><span class="p">(</span>x<span class="p">[</span>i<span class="p">])},</span> 
+<a name="True-47"></a>                            reps <span class="o">=</span> reps_per_sample_size<span class="p">,</span> 
+<a name="True-48"></a>                            R <span class="o">=</span> reps_per_bootstrap<span class="p">,</span>
+<a name="True-49"></a>                            title <span class="o">=</span> <span class="s">&quot;Estimating mean from income data&quot;</span><span class="p">)</span>
+<a name="True-50"></a>
+<a name="True-51"></a>income_trmean <span class="o">&lt;-</span> test_boot_ci<span class="p">(</span>full_data <span class="o">=</span> nzis<span class="o">$</span>income<span class="p">,</span>
+<a name="True-52"></a>                              statistic <span class="o">=</span> <span class="kr">function</span><span class="p">(</span>x<span class="p">,</span> i<span class="p">){</span><span class="kp">mean</span><span class="p">(</span>x<span class="p">[</span>i<span class="p">],</span> tr <span class="o">=</span> <span class="m">0.2</span><span class="p">)},</span> 
+<a name="True-53"></a>                              reps <span class="o">=</span> reps_per_sample_size<span class="p">,</span> 
+<a name="True-54"></a>                              R <span class="o">=</span> reps_per_bootstrap<span class="p">,</span>
+<a name="True-55"></a>                              title <span class="o">=</span> <span class="s">&quot;Estimating trimmed mean from income data&quot;</span><span class="p">)</span></code></pre></div>
+
+<p>Finally, I present the results in the graphics used in this post:</p>
+
+<div class="highlight"><pre><code class="language-r" data-lang="r"><a name="True-1"></a><span class="c1">#------------Density of income data---------------</span>
+<a name="True-2"></a>ggplot<span class="p">(</span>nzis<span class="p">,</span> aes<span class="p">(</span>x <span class="o">=</span> income<span class="p">))</span> <span class="o">+</span>
+<a name="True-3"></a>   geom_density<span class="p">(</span>fill <span class="o">=</span> <span class="s">&quot;grey75&quot;</span><span class="p">,</span> alpha <span class="o">=</span> <span class="m">0.5</span><span class="p">)</span> <span class="o">+</span>
+<a name="True-4"></a>   geom_rug<span class="p">()</span> <span class="o">+</span>
+<a name="True-5"></a>   scale_x_continuous<span class="p">(</span><span class="s">&quot;Weekly income&quot;</span><span class="p">,</span> label <span class="o">=</span> dollar<span class="p">)</span> <span class="o">+</span>
+<a name="True-6"></a>   ggtitle<span class="p">(</span><span class="s">&quot;New Zealand Income Survey 2011&quot;</span><span class="p">,</span> subtitle <span class="o">=</span> <span class="s">&quot;Full data&quot;</span><span class="p">)</span>
+<a name="True-7"></a>
+<a name="True-8"></a><span class="kp">set.seed</span><span class="p">(</span><span class="m">123</span><span class="p">)</span>
+<a name="True-9"></a>ggplot<span class="p">(</span>nzis<span class="p">[</span><span class="kp">sample</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="kp">nrow</span><span class="p">(</span>nzis<span class="p">),</span> <span class="m">50</span><span class="p">),</span> <span class="p">],</span> aes<span class="p">(</span>x <span class="o">=</span> income<span class="p">))</span> <span class="o">+</span>
+<a name="True-10"></a>   geom_density<span class="p">(</span>fill <span class="o">=</span> <span class="s">&quot;grey75&quot;</span><span class="p">,</span> alpha <span class="o">=</span> <span class="m">0.5</span><span class="p">)</span> <span class="o">+</span>
+<a name="True-11"></a>   geom_rug<span class="p">()</span> <span class="o">+</span>
+<a name="True-12"></a>   scale_x_continuous<span class="p">(</span><span class="s">&quot;Weekly income&quot;</span><span class="p">,</span> label <span class="o">=</span> dollar<span class="p">)</span> <span class="o">+</span>
+<a name="True-13"></a>   ggtitle<span class="p">(</span><span class="s">&quot;New Zealand Income Survey 2011&quot;</span><span class="p">,</span> subtitle <span class="o">=</span> <span class="s">&quot;Subsample of 50&quot;</span><span class="p">)</span>
+<a name="True-14"></a>
+<a name="True-15"></a><span class="c1">#-----------standard deviation of income--------------</span>
+<a name="True-16"></a>income_sd<span class="o">$</span>p1  <span class="o">+</span> 
+<a name="True-17"></a>   labs<span class="p">(</span>caption <span class="o">=</span> <span class="s">&quot;Source: New Zealand Income Survey 2011, Statistics New Zealand&quot;</span><span class="p">))</span>
+<a name="True-18"></a>
+<a name="True-19"></a>income_sd<span class="o">$</span>p2
+<a name="True-20"></a>
+<a name="True-21"></a>income_sd<span class="o">$</span>p3
+<a name="True-22"></a>
+<a name="True-23"></a><span class="c1">#----------------other distributions--------------</span>
+<a name="True-24"></a>grid.arrange<span class="p">(</span>
+<a name="True-25"></a>   normal_sd<span class="o">$</span>p1 <span class="o">+</span> theme_small<span class="p">,</span>
+<a name="True-26"></a>   unif_sd<span class="o">$</span>p1 <span class="o">+</span> theme_small<span class="p">,</span>
+<a name="True-27"></a>   lognormal_sd<span class="o">$</span>p1 <span class="o">+</span> theme_small<span class="p">,</span>
+<a name="True-28"></a>   mixture_sd<span class="o">$</span>p1 <span class="o">+</span> theme_small
+<a name="True-29"></a><span class="p">)</span>
+<a name="True-30"></a>
+<a name="True-31"></a><span class="c1">#----------------mean and trimmed mean-----------------</span>
+<a name="True-32"></a>grid.arrange<span class="p">(</span>
+<a name="True-33"></a>   income_mean<span class="o">$</span>p1 <span class="o">+</span> theme_small<span class="p">,</span>
+<a name="True-34"></a>   income_trmean<span class="o">$</span>p1 <span class="o">+</span> theme_small<span class="p">,</span>
+<a name="True-35"></a>   ncol <span class="o">=</span> <span class="m">2</span>
+<a name="True-36"></a><span class="p">)</span>
+<a name="True-37"></a>
+<a name="True-38"></a>grid.arrange<span class="p">(</span>
+<a name="True-39"></a>   income_mean<span class="o">$</span>p2 <span class="o">+</span> 
+<a name="True-40"></a>      theme_small <span class="o">+</span>
+<a name="True-41"></a>      scale_y_continuous<span class="p">(</span>limits <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="m">-0.05</span><span class="p">,</span> <span class="m">0.05</span><span class="p">),</span> label <span class="o">=</span> percent<span class="p">),</span>
+<a name="True-42"></a>   income_trmean<span class="o">$</span>p2 <span class="o">+</span> 
+<a name="True-43"></a>      theme_small <span class="o">+</span>
+<a name="True-44"></a>      scale_y_continuous<span class="p">(</span>limits <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="m">-0.05</span><span class="p">,</span> <span class="m">0.05</span><span class="p">),</span> label <span class="o">=</span> percent<span class="p">),</span>
+<a name="True-45"></a>   ncol <span class="o">=</span> <span class="m">2</span>
+<a name="True-46"></a><span class="p">)</span></code></pre></div>
+
+
+
+</div>
+
+<div class = "container">
+   <div class="col-md-4">
+    
+        <a rel="prev" href="/blog/2016/05/22/robust-regression">
+        <p>&larr; Older</p>
+        <p>Visual contrast of two robust regression methods</p>
+        
+        </a>
+    
+    </div>
+    <div class="col-md-4">
+    </div>
+    <div class="col-md-4" style="text-align: right;">
+     
+        <a rel="next" href="/blog/2016/06/05/bootstrap-cv-strategies">
+        <p>Newer &rarr;</p>
+        <p>Bootstrap and cross-validation for evaluating modelling strategies</p>
+        
+        </a>
+    
+      </div>
+      </div>
+      
+      
+      
+</div>
+
+
+   
+    <div id="disqus_thread"></div>
+
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+    
+    
+   
+			
+			</div><!-- /.container -->
+
+         
+
+   <div class = "container footer">
+			<footer>
+	    		
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.  Or follow <a href = "/feed.r.xml">posts in this blog featuring R with RSS</a>.</p>
+			
+            <p>This blog is built with <a href = "http://jekyllrb.com/">Jekyll</a>, <a href = "http://getbootstrap.com/">Bootstrap</a>, <a href = "https://www.ruby-lang.org/en/">Ruby</a> and <a href = "https://cran.r-project.org/">R</a>.  Read my <a href="/about/acknowledgements.html">acknowledgements</a> for a little more on how.  I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+
+			<div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="true" data-share="false"></div>
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Peter's stats stuff</span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			
+			
+
+			</footer>
+    </div>
+
+
+
+  
+</body>
+</html>
+   
+
+
+
+
+         
