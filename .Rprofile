@@ -1,4 +1,5 @@
 setwd("_working")
+proj_dir <- getwd()
 library(showtext)
 library(ggplot2)
 library(scales)
