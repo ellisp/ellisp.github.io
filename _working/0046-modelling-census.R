@@ -1,5 +1,6 @@
+
+
 #===================setup=======================
-library(showtext)
 library(ggplot2)
 library(scales)
 library(boot)
@@ -11,26 +12,22 @@ library(grid)
 library(stringr)
 library(ggrepel)
 
-# Fonts:
-font.add.google("Poppins", "myfont")
-showtext.auto()
-theme_set(theme_light(10, base_family = "myfont") )
-
 set.seed(123)
 
 # install nzelect package that has census data
-devtools::install_github("ellisp/nzelect/pkg")
+# devtools::install_github("ellisp/nzelect/pkg")
 library(nzelect)
 
 # drop the columns with areas' code and name
 au <- AreaUnits2013 %>%
-   select(-AU2014, -Area_Code_and_Description)
+   select(-AU2014, -AU_NAM, -NZTM2000Easting, -NZTM2000Northing)
 
 # give meaningful rownames, helpful for some diagnostic plots later
-row.names(au) <- AreaUnits2013$Area_Code_and_Description
+row.names(au) <- AreaUnits2013$AU_NAM
 
 # remove some repetition from the variable names
 names(au) <- gsub("2013", "", names(au))
+names(au) <- gsub("Prop", "", names(au))
 
 # restrict to areas with no missing data.  If this was any more complicated (eg
 # imputation),it would need to be part of the validation resampling too; but
@@ -45,27 +42,28 @@ au <- au[complete.cases(au), ]
 # with the highest rank/rank-squared correlation coefficient
 
 sp <- spearman2(MedianIncome ~ ., data = au)
-sp <- sp[order(sp[ ,1]), ]
+plot(sp)
+sp[order(sp[ ,6]), ]
 
 
 # see http://stackoverflow.com/questions/30627642/issue-with-gam-function-in-r
 the_formula <- terms(MedianIncome ~  
-                        s(PropFullTimeEmployed, k = 6) + 
-                        s(PropInternetHH, k = 6) +
-                        s(PropNoQualification, k = 5) +
-                        s(PropUnemploymentBenefit, k = 5) +
-                        s(PropSmoker, k = 5) +
-                        s(PropPartnered, k = 5)  +
-                        s(PropManagers, k = 5) +
-                        s(PropBachelor, k = 5) +
-                        s(PropSelfEmployed, k = 5) +
-                        s(PropNoMotorVehicle, k = 4) +
-                        s(PropUnemployed, k = 4) +
-                        s(PropLabourers, k = 4) +
-                        s(PropSeparated, k = 4) +
-                        s(PropMaori, k = 4) +
-                        s(PropProfServices, k = 4) +
-                        s(PropOld, k = 4) +
+                        s(FullTimeEmployed, k = 6) + 
+                        s(InternetHH, k = 6) +
+                        s(NoQualification, k = 5) +
+                        s(UnemploymentBenefit, k = 5) +
+                        s(Smoker, k = 5) +
+                        s(Partnered, k = 5)  +
+                        s(Managers, k = 4) +
+                        s(Bachelor, k = 4) +
+                        s(SelfEmployed, k = 4) +
+                        s(NoMotorVehicle, k = 3) +
+                        s(Unemployed, k = 3) +
+                        s(Labourers, k = 3) +
+                        s(Separated, k = 3) +
+                        s(Maori, k = 3) +
+                        s(ProfServices, k = 3) +
+                        s(WGS84Longitude, WGS84Latitude) +
                         .,
                      data = au)
 
@@ -100,11 +98,11 @@ rmses
 average_data <- data.frame(t(apply(au, 2, mean, tr = 0.2)))
 
 HH_number_impact <- function(data, i){
-   compare_data <- average_data %>%
+   comparison_data <- average_data %>%
       mutate(NumberInHH = NumberInHH + 0.5)
    mod1 <- gam(the_formula, data = data[i, ])
    comparison <- predict(mod1, newdata = average_data) -
-      predict(mod1, newdata = compare_data)
+      predict(mod1, newdata = comparison_data)
    return(comparison)
 }
 
@@ -167,6 +165,6 @@ png("../img/0046-d4.png", 700, 600, res = 100)
 print(d4)
 dev.off()
 
-mbie::qqNormEnv(mod_res$Residuals)
+
 
 

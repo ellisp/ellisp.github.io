@@ -47,7 +47,7 @@ greens <- GE2014a %>%
              TotalGLVotes = sum(Votes)) %>%
    ungroup() %>%
    left_join(Locations2014, by = "VotingPlace") %>%
-   left_join(Meshblocks2013, by = c("MB2014" = "MB")) %>%
+   left_join(Meshblocks2013[ , 1:55], by = c("MB2014" = "MB")) %>%
    select(PropGreens, TotalGLVotes, WGS84Latitude, WGS84Longitude,
           MeanBedrooms2013:PropStudentAllowance2013) 
 
