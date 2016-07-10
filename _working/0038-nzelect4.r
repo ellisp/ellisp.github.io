@@ -8,12 +8,10 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(scales)
-library(showtext)
 library(car)      # for vif()
 library(ggthemes) # for theme_tufte
 library(mgcv)     # for a version of gam with vcov() method
-font.add.google("Poppins", "myfont")
-showtext.auto()
+
 theme_set(theme_light(10, base_family = "myfont"))
 
 # load in the data
@@ -36,6 +34,12 @@ GE2014a <- GE2014 %>%
    filter(!VotingPlace %in% bad_vps)
 
 
+Meshblocks <- Meshblocks2013 %>%
+   # remove spatial coordinates from meshblocks, as we have them separately for voting place:
+   select(-(AU2014:WGS84Latitude)) %>%
+   # remove some inherently multicollinear or sparesely used variables:
+   select(-PropWorked40_49hours2013, -Prop35to39_2013, -PropWorkedOver60hours2013, -PropFemale2013)
+
 #------------Greens / (Greens + Labour)--------------
 # make a dataset with the response variable we want (Greens / (Greens + Labour))
 # and merged with the VotingPlace locations and the relevant meshblock data
@@ -47,12 +51,13 @@ greens <- GE2014a %>%
              TotalGLVotes = sum(Votes)) %>%
    ungroup() %>%
    left_join(Locations2014, by = "VotingPlace") %>%
-   left_join(Meshblocks2013[ , 1:55], by = c("MB2014" = "MB")) %>%
+   left_join(Meshblocks, by = c("MB2014" = "MB")) %>%
    select(PropGreens, TotalGLVotes, WGS84Latitude, WGS84Longitude,
           MeanBedrooms2013:PropStudentAllowance2013) 
 
 # Tidy up names of variables.  All the census data is from 2013 so we don't
 # need to say so in each variable:
+names(greens) <- gsub("_2013", "", names(greens), fixed = TRUE)
 names(greens) <- gsub("2013", "", names(greens))
 
 
@@ -66,7 +71,7 @@ greens <- greens[ , !names(greens) %in% c("PropEuropean", "PropOwnResidence")]
 
 
 # Image of scatter plots of explanatory variables v response variable
-png("../img/0038-green-labour.png", 1000, 1000, res = 100)
+png("../img/0038a-green-labour.png", 1000, 1000, res = 100)
 greens %>%
    gather(Variable, Value, -PropGreens) %>%
    mutate(Variable = gsub("2013", "", Variable),
@@ -112,18 +117,17 @@ paste(names(greens_scaled)[-1], collapse = " + ")
 
 # fit models to each of the imputed datasets:
 mod2 <- with(greens_mi, 
-             gam(PropGreens ~ MeanBedrooms + PropPrivateDwellings + 
-                   PropSeparateHouse + NumberInHH + PropMultiPersonHH + 
-                   PropInternetHH + PropNotOwnedHH + MedianRentHH + 
-                   PropLandlordPublic + PropNoMotorVehicle + PropOld + 
-                   PropEarly20s + PropAreChildren + PropSameResidence5YearsAgo + 
-                   PropOverseas5YearsAgo + PropNZBorn + PropMaori + 
-                   PropPacific + PropAsian + PropNoReligion + PropSmoker +
-                   PropSeparated + PropPartnered + PropNoChildren + 
-                   PropNoQualification + PropBachelor + PropDoctorate + 
-                   PropFTStudent + PropPTStudent + MedianIncome + 
-                   PropSelfEmployed + PropUnemploymentBenefit + 
-                   PropStudentAllowance + 
+             gam(PropGreens ~ MeanBedrooms + PropPrivateDwellings + PropSeparateHouse + 
+                    NumberInHH + PropMultiPersonHH + PropInternetHH + PropNotOwnedHH +
+                    MedianRentHH + PropLandlordPublic + PropNoMotorVehicle + PropAreChildren + 
+                    PropSameResidence5YearsAgo + PropOverseas5YearsAgo + PropNZBorn + 
+                    PropMaori + PropPacific + PropAsian + PropMale + Prop20to24 + Prop25to29 + 
+                    Prop30to34 + Prop40to44 + Prop45to49 + Prop50to54 + Prop55to59 + 
+                    Prop60to64 + Prop65AndOlder + PropNoReligion + PropSmoker + 
+                    PropSeparated + PropPartnered + PropNoChildren + PropNoQualification + 
+                    PropBachelor + PropDoctorate + PropFTStudent + PropPTStudent + 
+                    MedianIncome + PropSelfEmployed + PropUnemploymentBenefit + 
+                    PropStudentAllowance + 
                     s(WGS84Latitude) + s(WGS84Longitude) +
                     s(WGS84Latitude * WGS84Longitude),
                 family = binomial, weights = TotalGLVotes)
@@ -162,14 +166,14 @@ should be taken as indicative, not strictly interpretable.\n",
    theme(axis.text.y = element_blank(),
          axis.ticks.y = element_blank()) +
    annotate("text", y = -0.2, x = 6, label = "More likely to\nvote Labour", 
-            colour = "red", family = "myfont") +
+            colour = "red") +
    annotate("text", y = 0.18, x = 31, label = "More likely to\nvote Green", 
-            colour = "darkgreen", family = "myfont")
-svg("../img/0038-model-results.svg", 8, 8)
+            colour = "darkgreen")
+svg("../img/0038a-model-results.svg", 8, 8)
    print(p2)
 dev.off()
 
-png("../img/0038-model-results.png", 800, 800, res = 100)
+png("../img/0038a-model-results.png", 800, 800, res = 100)
    print(p2)
 dev.off()
 

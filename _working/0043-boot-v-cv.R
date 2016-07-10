@@ -14,7 +14,7 @@ theme_set(theme_light(10, base_family = "myfont") )
 set.seed(123)
 
 # install nzelect package that has census data
-devtools::install_github("ellisp/nzelect/pkg")
+# devtools::install_github("ellisp/nzelect/pkg")
 library(nzelect)
 
 # drop some variables so the simple approaches tested here can work:
@@ -101,7 +101,7 @@ compare <- function(orig_data, i){
 }
 
 # perform bootstrap
-Repeats <- 10
+Repeats <- 100
 res <- boot(au, statistic = compare, R = Repeats)
 
 # restructure results for a graphic showing root mean square error, and for
