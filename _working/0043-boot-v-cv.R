@@ -1,7 +1,6 @@
 
 #===================setup=======================
 library(MASS) # must be loaded before dplyr
-library(showtext)
 library(ggplot2)
 library(scales)
 library(boot)
@@ -9,9 +8,7 @@ library(caret)
 library(dplyr)
 library(tidyr)
 library(directlabels)
-# Fonts:
-font.add.google("Poppins", "myfont")
-showtext.auto()
+
 theme_set(theme_light(10, base_family = "myfont") )
 
 set.seed(123)
@@ -20,15 +17,23 @@ set.seed(123)
 devtools::install_github("ellisp/nzelect/pkg")
 library(nzelect)
 
-# drop the columns with areas' code and name
+# drop some variables so the simple approaches tested here can work:
 au <- AreaUnits2013 %>%
-   select(-AU2014, -Area_Code_and_Description)
+   # drop the columns with areas' code and name:
+   select(-AU2014, -AU_NAM) %>%
+   # drop geographical variables:
+   select(-(NZTM2000Easting:WGS84Latitude)) %>%
+   # drop some perfectly collinear variables:
+   select(-PropWorked40_49hours2013, -Prop35to39_2013) %>%
+   # drop some rarely informative variables:
+   select(-PropWorkedOver60hours2013)
 
 # give meaningful rownames, helpful for some diagnostic plots later
-row.names(au) <- AreaUnits2013$Area_Code_and_Description
+row.names(au) <- AreaUnits2013$AU_NAM
 
 # remove some repetition from the variable names
-names(au) <- gsub("2013", "", names(au))
+names(au) <- gsub("_2013", "", names(au), fixed = TRUE)
+names(au) <- gsub("2013", "", names(au), fixed = TRUE)
 
 # restrict to areas with no missing data.  If this was any more complicated (eg
 # imputation),it would need to be part of the validation resampling too; but
@@ -96,7 +101,7 @@ compare <- function(orig_data, i){
 }
 
 # perform bootstrap
-Repeats <- 100
+Repeats <- 10
 res <- boot(au, statistic = compare, R = Repeats)
 
 # restructure results for a graphic showing root mean square error, and for
@@ -122,11 +127,11 @@ p1 <- RMSE_res %>%
         colour = "Strategy",
         caption = "Data from New Zealand Census 2013")
 
-png("../img/0043-boot-results.png", 800, 500, res = 100)
+png("../img/0043a-boot-results.png", 800, 500, res = 100)
 print(p1)
 dev.off()
 
-svg("../img/0043-boot-results.svg", 8, 5)
+svg("../img/0043a-boot-results.svg", 8, 5)
 print(p1)
 dev.off()
 
@@ -227,7 +232,7 @@ summary_results <- data.frame(rbind(
    gather(variable, value, -method)
 
 # Draw a plot summarising the results
-svg("../img/0043-boot-v-cv.svg", 8, 5)
+svg("../img/0043a-boot-v-cv.svg", 8, 5)
 direct.label(
 summary_results %>%
    mutate(variable = factor(variable, levels = c(
