@@ -1,5 +1,6 @@
 #---------load up functionality and fonts------------
-devtools::install_github("ellisp/nzelect/pkg")
+devtools::install_github("ellisp/nzelect/pkg1") # election data
+devtools::install_github("ellisp/nzelect/pkg2") # census data
 devtools::install_github("hadley/ggplot2") # latest version needed for subtitles and captions
 
 library(MASS) # for rlm().  Load before dplyr to avoid "select" conflicts
@@ -16,6 +17,7 @@ theme_set(theme_light(10, base_family = "myfont"))
 
 # load in the data
 library(nzelect)
+library(nzcensus)
 
 #-----------general data prep------------
 # Some voting places don't have a match to mesthblock and hence aren't any
