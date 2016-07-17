@@ -204,79 +204,64 @@ rmses
 plot(rmses)
 mean(rmses$t)
 
-#=============inference about a particular parameter of interest=============
-# create a data frame with one row, and each column is the trimmed mean of
-# the variables in the original dataset
-average_data <- data.frame(t(apply(au, 2, mean, tr = 0.2)))
 
-HH_number_impact <- function(data, i){
-   comparison_data <- average_data %>%
-      mutate(NumberInHH = NumberInHH + 0.5)
-   mod1 <- gam(the_formula, data = data[i, ])
-   comparison <- predict(mod1, newdata = average_data) -
-      predict(mod1, newdata = comparison_data)
-   return(comparison)
+
+#===================lasso=======================
+library(glmnet)
+
+foldid <- sample(1:10, nrow(the_data), replace = TRUE)
+
+cv_results <- data_frame(lambda = numeric(), alpha = numeric(), mcve = numeric())
+alphas <- seq(from = 0, to = 1, length.out = 9)
+
+for(i in alphas){
+   cvfit <- glmnet::cv.glmnet(as.matrix(X), Y, foldid = foldid, alpha = i)
+   tmp <- data_frame(lambda = cvfit$lambda, alpha = i, mcve = cvfit$cvm)   
+   cv_results <- rbind(cv_results, tmp)
 }
 
-HH_number_boot <- boot(au, HH_number_impact, R = 499) # takes 10+ minutes
-boot.ci(HH_number_boot, type = "perc")
+arrange(cv_results, mcve)
 
-#==============identification of interesting outliers=================
-mod_res <- data_frame(
-   Fitted = fitted(original_model),
-   Actual = au$MedianIncome,
-   Residuals = residuals(original_model),
-   Location = str_sub(row.names(au), start = 8)
-) %>%
-   mutate(
-      Outlier = abs(Residuals) > 6500 | 
-         Actual < quantile(Actual, 0.001) | 
-         Actual > quantile(Actual, 0.999),
-      Outlier_Lab = ifelse(Outlier, Location, "")
-   )
+ggplot(cv_results, aes(x = lambda, y = mcve, colour = as.factor(round(alpha, 3)))) +
+   geom_line(size = 2) +
+   scale_x_log10() +
+   coord_cartesian(ylim = c(2 * 10 ^ 6, 10 ^ 7), xlim = c(1, 1000)) +
+   scale_colour_brewer(palette = "Set1")
 
 
-d1 <- ggplot(mod_res, aes(x = Fitted, y = Residuals)) +
-   geom_hline(yintercept = 0) +
-   geom_smooth() +
-   geom_point(alpha = 0.5, colour = "steelblue") +
-   geom_text_repel(data = filter(mod_res, Outlier), aes(label = Outlier_Lab)) +
-   scale_y_continuous("Difference between real and predicted median income", label = dollar) +
-   scale_x_continuous("Predicted median income", label = dollar)
-
-png("../img/0046-d1.png", 700, 600, res = 100)
-print(d1)
-dev.off()
-
-d2 <- ggplot(mod_res, aes(x = Fitted, y = Actual)) +
-   geom_abline(intercept = 0, slope = 1, colour = "skyblue") +
-   geom_point(alpha = 0.5, colour = "steelblue") +
-   geom_text_repel(data = filter(mod_res, Outlier), aes(label = Outlier_Lab),
-                   colour = "chocolate4") +
-   scale_y_continuous("Actual median individual income\n", label = dollar) +
-   scale_x_continuous("\nPredicted median individual income, based on 53 census variables", label = dollar) +
-   coord_equal() +
-   ggtitle("Individual income by area unit in the 2013 New Zealand Census")
-png("../img/0046-d2.png", 700, 600, res = 100)
-print(d2)
-dev.off()
-
-d3 <- ggplot(mod_res, aes(x = Fitted, y = sqrt(abs(Residuals)))) +
-   geom_point(alpha = 0.4, colour = "steelblue") +
-   geom_text(aes(label = Outlier_Lab)) +
-   geom_smooth()
-png("../img/0046-d3.png", 700, 600, res = 100)
-print(d3)
-dev.off()
 
 
-d4 <- ggplot(mod_res, aes(sample = scale(Residuals))) +
-   geom_abline(slope = 1, intercept = 0) +
-   stat_qq(color = "steelblue")
-png("../img/0046-d4.png", 700, 600, res = 100)
-print(d4)
-dev.off()
+fit_elastic <- function(data, i){
+   # i = sample(1:nrow(data), nrow(data), replace = TRUE)
+   Y_orig <- data$MedianIncome
+   X_orig <- as.matrix(select(data, -MedianIncome))
+   data2 <- data[i, ]
+   Y_new <- data2$MedianIncome
+   X_new <- as.matrix(select(data2, -MedianIncome))
+   lambda <- cv.glmnet (X_new, Y_new, alpha = 0.25)$lambda.min
+   mod1 <- glmnet(X_new, Y_new, lambda = lambda, alpha = 0.25)
+   # use the model based on resample on the original data to estimate how
+   # good or not it is:
+   rmse <- RMSE(predict(mod1, newx = X_orig), Y)
+   return(rmse)
+}
+
+rmses_elastic <- boot(the_data, statistic = fit_elastic, R = 499) # takes a few minutes
+plot(rmses_elastic)
+mean(rmses_elastic$t)
 
 
+
+fit_lm <- function(data, i){
+   # i = sample(1:nrow(data), nrow(data), replace = TRUE)
+   mod1 <- lm(MedianIncome ~ ., data = data[i, ])
+   # use the model based on resample on the original data to estimate how
+   # good or not it is:
+   rmse <- RMSE(predict(mod1, newdata = data), Y)
+   return(rmse)
+}
+rmses_lm <- boot(the_data, statistic = fit_lm, R = 499) # takes a few minutes
+plot(rmses_lm)
+mean(rmses_lm$t)
 
 
