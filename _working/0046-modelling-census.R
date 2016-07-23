@@ -142,16 +142,19 @@ fit_elastic <- function(data, i){
 rmses_elastic_boot <- boot(data = the_data, statistic = fit_elastic, R = 99) # takes a few minutes
 elastic_rmse <- mean(rmses_elastic_boot$t)
 
-mod_elastic <- cv.glmnet(as.matrix(X), Y, alpha = 0.85)
+# demonstration model
+lambda <- cv.glmnet(as.matrix(X), Y, alpha = 0.85)$lambda.min
+mod_elastic <- glmnet(as.matrix(X), Y, lambda = lambda, alpha = 0.85)
 coefs <- data.frame(lm = coef(mod_lm), elastic = as.vector(coef(mod_elastic)))
 coefs$variable <- row.names(coefs)
 
 svg("../img/0046-compare-coefs.svg", 9, 7)
 print(
    ggplot(coefs, aes(x = lm, y = elastic, label = variable)) + 
-   geom_abline(slope = 1, intercept = 0) +
+   geom_abline(slope = 1, intercept = 0, colour = "grey75") +
+      geom_smooth() +
    geom_point() +
-   geom_text_repel(colour = "steelblue") +
+   geom_text_repel(colour = "steelblue", size = 3) +
    labs(x = "Coefficient from ordinary least squares",
         y = "Coefficient after shrinkage from elastic net regularization") +
    coord_equal()
