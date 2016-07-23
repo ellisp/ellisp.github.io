@@ -1,23 +1,27 @@
-library(ggrepel)
 library(leaflet)
+library(nzcensus)
 
-ggplot(the_data, aes(x = MeanBedrooms, y = NumberInHH, colour = MedianIncome)) +
-   geom_jitter(size = 4) +
-#   geom_text(aes(label = row.names(the_data)), colour = "steelblue") +
-   geom_abline(slope = 1, intercept = 0) +
-   scale_colour_gradientn(colours = c("blue", "yellow", "red"), label = dollar)
+# remove Chatham Islands 
+tmp <- AreaUnits2013[AreaUnits2013$WGS84Longitude > 0 & !is.na(AreaUnits2013$MedianIncome2013), ]
 
-tmp <- the_data %>%
-   filter(WGS84Longitude > 0) 
+# create colour palette function
+pal <- colorQuantile("RdBu", NULL, n = 10)
 
-pal <- colorQuantile("RdBu", NULL, n = 9)
+# create labels for popups
+labs <- paste0(tmp$AU_NAM, " $", format(tmp$MedianIncome2013, big.mark = ","))
 
-labs <- paste0(row.names(the_data), " $", format(the_data$MedianIncome, big.mark = ","))
 
+# draw map:
 leaflet() %>%
    addProviderTiles("CartoDB.Positron") %>%
    addCircles(lng = tmp$WGS84Longitude, lat = tmp$WGS84Latitude,
-              color = pal(-tmp$MedianIncome),
+              color = pal(-tmp$MedianIncome2013),
               popup = labs,
-              radius = 500)
+              radius = 500) %>%
+   addLegend(
+      pal = pal,
+      values = -tmp$MedianIncome2013,
+      title = "Quantile of median<br>household income",
+      position = "topleft",
+      bins = 5)
 

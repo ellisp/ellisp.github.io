@@ -1,5 +1,5 @@
 
-# repurpose this so it is comparing lm (all variables), glmnet, and gam.  
+# comparing lm (all variables), glmnet, and gam.  
 # Illustrates that there are two problems to deal with  - collinearity
 # and hence interpreting coefficients; and curvature in relationships.
 
@@ -61,8 +61,6 @@ fit_lm <- function(data, i){
    RMSE(predict(mod1, newdata = data), data$MedianIncome)
    
 }
-
-fit_lm(data = the_data, i = 1:nrow(the_data))
 
 # use bootstrap validation for an unbiaased estimate of root mean square error
 rmses_lm_boot <- boot(the_data, statistic = fit_lm, R = 99)
@@ -128,25 +126,23 @@ dev.off()
 
 
 fit_elastic <- function(data, i){
-   # i = sample(1:nrow(data), nrow(data), replace = TRUE)
    Y_orig <- data$MedianIncome
    X_orig <- as.matrix(select(data, -MedianIncome))
    data2 <- data[i, ]
    Y_new <- data2$MedianIncome
    X_new <- as.matrix(select(data2, -MedianIncome))
-   lambda <- cv.glmnet (X_new, Y_new, alpha = 0.85)$lambda.min
+   lambda <- cv.glmnet(X_new, Y_new, alpha = 0.85)$lambda.min
    mod1 <- glmnet(X_new, Y_new, lambda = lambda, alpha = 0.85)
    # use the model based on resample on the original data to estimate how
    # good or not it is:
-   rmse <- RMSE(predict(mod1, newx = X_orig), Y)
+   rmse <- RMSE(predict(mod1, newx = X_orig), Y)   
    return(rmse)
 }
 
 rmses_elastic_boot <- boot(data = the_data, statistic = fit_elastic, R = 99) # takes a few minutes
 elastic_rmse <- mean(rmses_elastic_boot$t)
 
-lambda <- cv.glmnet (as.matrix(X), Y, alpha = 0.25)$lambda.min
-mod_elastic <- glmnet(as.matrix(X), Y, lambda = lambda, alpha = 0.25)
+mod_elastic <- cv.glmnet(as.matrix(X), Y, alpha = 0.85)
 coefs <- data.frame(lm = coef(mod_lm), elastic = as.vector(coef(mod_elastic)))
 coefs$variable <- row.names(coefs)
 
@@ -232,7 +228,6 @@ fit_gam <- function(data, i){
 }
 
 rmses_gam_boot <- boot(data = the_data, statistic = fit_gam, R = 99) # takes a few minutes
-plot(rmses_gam_boot)
 gam_rmse <- mean(rmses_gam_boot$t)
 
 
