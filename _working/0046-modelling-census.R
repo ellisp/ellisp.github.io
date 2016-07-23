@@ -1,4 +1,8 @@
 
+# repurpose this so it is comparing lm (all variables), glmnet, and gam.  
+# Illustrates that there are two problems to deal with  - collinearity
+# and hence interpreting coefficients; and curvature in relationships.
+
 
 #===================setup=======================
 library(ggplot2)
@@ -11,6 +15,8 @@ library(caret) # for RMSE
 library(grid)
 library(stringr)
 library(ggrepel)
+library(glmnet)
+library(maps) # for country borders on the smoothing plot
 
 set.seed(123)
 
@@ -32,201 +38,91 @@ names(au) <- gsub("_2013", "", names(au))
 names(au) <- gsub("2013", "", names(au))
 names(au) <- gsub("Prop", "", names(au))
 
-# restrict to areas with no missing data.  If this was any more complicated (eg
-# imputation),it would need to be part of the validation resampling too; but
-# just dropping them all at the beginning doesn't need to be resampled; the only
-# implication would be sample size which would be small impact and complicating.
+# restrict to areas with no missing data.  An improvement for later
+# is to use imputation and include this step within the validation.
 au <- au[complete.cases(au), ]
 
-
-
-# ind <- sample(1:nrow(au), replace = TRUE)
+# give the data a generic name for ease of copying and pasting
 the_data <- au
 
-X <- the_data %>% select(-MedianIncome)
-Y <- the_data$MedianIncome 
+# we need a dummy variable for the Chathams because it's extreme value of longitude
+# makes any spatial variables otherwise highly problematic.
+# the_data$chathams <- the_data$WGS84Longitude < 100
+the_data <- the_data[the_data$WGS84Longitude > 100, ]
+
+names(the_data) <- make.names(names(the_data))
 
 
-
-#===============scaling==================
-# scale the training set so it is mean zero and standard deviation 1, preserving
-# the original mean and sd for backtransformation and for applying later to the
-# test set
-means <- apply(X, 2, mean, na.rm = TRUE)
-sds <- apply(X, 2, sd, na.rm = TRUE)
-X_scaled <- data.frame(t((t(X) - means) / sds))
-
-
-X_scaled$Chathams <- X$WGS84Longitude < 0
-#=================collinearity================
-# Some of the variables are intrinsically co-linear
-library(cluster)
-library(car) # for vif
-
-X_d <- diana(t(X_scaled))
-X_a <- agnes(t(X_scaled))
-plot(X_d, which = 2)
-plot(X_a, which = 2)
-
-mod <- lm(the_data$MedianIncome ~ ., data = X_scaled , na.action = na.omit)
-summary(mod)
-vifs <- vif(mod)
-sort(vifs)
-
-
-# some variables naturally go together
-
-
-reduce_pc <- function(orig, 
-                      variables, 
-                      pcs = floor(length(variables) / 2), 
-                      newname = "PC"){
-   tmp <- orig[ , names(orig) %in% variables] 
-   new_data <- orig[ , !names(orig) %in% variables]    
-   
-   oldncol <- ncol(new_data)
-   
-   tmp_pc <- prcomp(tmp)
-   new_data <- cbind(new_data, tmp_pc$x[ , 1:pcs])
-   names(new_data)[(oldncol + 1) : ncol(new_data)] <- paste0(newname, 1:pcs)
-   return(new_data)
-   
-}
-
-X_scaled2 <- reduce_pc(X_scaled, c("Asian", "Maori", "Pacific",
-                                   "European", "NZBorn"),
-                       newname = "EthnicPC")
-
-X_scaled2 <- reduce_pc(orig = X_scaled2, 
-                       variables = c("AreChildren", "X20to24", "X25to29", "X30to34", "X40to44",
-                                   "X45to49", "X50to54", "X55to59",
-                                   "X60to64", "X65AndOlder"),
-                       newname = "AgePC")
-
-X_scaled2 <- reduce_pc(orig = X_scaled2,
-                       variables = c("Worked10_19hours", "Worked20_29hours", 
-                                     "Worked30_39hours", "Worked50_59hours", 
-                                     "WorkedOver60hours", "Worked1_9hours"),
-                       newname = "WorkingHoursPC")
-
-X_scaled2 <- reduce_pc(orig = X_scaled2,
-                       variables = c("SelfEmployed", "Employer", 
-                                     "Employee", "SelfEmployedNoEmployees"),
-                       newname = "EmploymentPC")
-
-X_scaled2 <- reduce_pc(orig = X_scaled2,
-                       variables = c("OwnResidence", "NotOwnedHH"),
-                       newname = "ResidencePC")
-
-X_scaled2 <- reduce_pc(orig = X_scaled2,
-                       variables = c("UnemploymentBenefit", "Unemployed", "FullTimeEmployed",
-                                     "PartTimeEmployed"),
-                       newname = "UnemplPC")
-
-X_scaled2 <- reduce_pc(orig = X_scaled2,
-                       variables = c("StudentAllowance", "PTStudent", "FTStudent"),
-                       newname = "StudentPC")
-
-
-dim(X_scaled2)
-dim(X_scaled)
-mod <- lm(the_data$MedianIncome ~ ., data = X_scaled2 , na.action = na.omit)
-vifs <- vif(mod)
-sort(vifs)
-
-X_cor <- cor(X_scaled2)
-sort(abs(X_cor[ , "StudentPC1"]))  # variables most associated with OwnResidence
-
-
-
-
-
-
-
-
-#==================allocate degrees of freedom===========
-# we have about 25 spare degrees of freedom to allocate to curvature and
-# interactions.  Lacking theoretical guidance there's too many interactions
-# to consider, so we focus on allowing a bit of non-linearity for the variables
-# with the highest rank/rank-squared correlation coefficient
-
-data_pc <- cbind(MedianIncome = Y, X_scaled2)
-
-sp <- spearman2(MedianIncome ~ ., data = data_pc)
-plot(sp)
-sp[order(sp[ ,6]), ]
-
-
-# see http://stackoverflow.com/questions/30627642/issue-with-gam-function-in-r
-the_formula1 <- terms(MedianIncome ~  
-                        s(UnemplPC1, k = 6) + 
-                        s(InternetHH, k = 6) +
-                        s(NoQualification, k = 5) +
-                        s(Smoker, k = 5) +
-                        s(Partnered, k = 5)  +
-                        s(Managers, k = 4) +
-                        s(Bachelor, k = 4) +
-                        s(NoMotorVehicle, k = 4) +
-                        s(Separated, k = 3) +
-                        s(Labourers, k = 3) +
-                        s(EthnicPC2, k = 3) +
-                        s(ProfServices, k = 3) +
-                        s(WGS84Longitude, WGS84Latitude) +
-                        .,
-                     data = data_pc)
-
-gam_model <- gam(the_formula, data = data_pc)
-lm_model <- lm(MedianIncome ~ ., data = data_pc)
-
-png("../img/0044-gam-relations.png", 1000, 900, res = 100)
-par(bty = "l", family = "myfont", mar = c(5,4, 2, 1))
-plot(gam_model, residuals = TRUE, pages = 1, shade = TRUE, 
-     seWithMean = TRUE, ylab = "")
-grid.text("Impact of regional variables on median income by area unit", 0.5, 0.99,
-          gp = gpar(fontfamily = "myfont"))
-dev.off()
-
-# bootstrapping
-fit_gam1 <- function(data, i){
-   # data = data_pc; i = sample(1:nrow(data), nrow(data), replace = TRUE)
-   mod1 <- gam(the_formula1, data = data[i, ])
+#==========Method 1 - lm================
+fit_lm <- function(data, i){
+   mod1 <- lm(MedianIncome ~ ., data = data[i, ])
    # use the model based on resample on the original data to estimate how
    # good or not it is:
    RMSE(predict(mod1, newdata = data), data$MedianIncome)
    
 }
 
-(1:n)[!(1:n) %in% i]
+fit_lm(data = the_data, i = 1:nrow(the_data))
 
-rmses <- boot(data_pc, statistic = fit_gam, R = 99) # takes a few minutes
-boot.ci(rmses, type = "perc")
-rmses
-plot(rmses)
-mean(rmses$t)
+# use bootstrap validation for an unbiaased estimate of root mean square error
+rmses_lm_boot <- boot(the_data, statistic = fit_lm, R = 99)
+lm_rmse <- mean(rmses_lm_boot$t)
 
+# save a single version of this model for later
+mod_lm <- lm(MedianIncome ~ ., data = the_data)
 
+# There's a bit of curvature in the residuals, and the
+# residuals have heavy tails, so any inference should
+# not rely on normality assumption
+svg("../img/0046-lm-diagnostics.svg", 7, 6)
+par(mfrow = c(2, 2), family = "myfont")
+plot(mod_lm)
+dev.off()
 
-#===================lasso=======================
-library(glmnet)
+#===================elastic net=======================
+# A lasso, ridge rigression, or elastic net (which combines the two) is a way
+# of dealing with the collinearity by forcing some coefficients to shrink (possibly to zero)
+# while doing minimal damage to the inferential qualities of the rest and to the overall model fit.
 
+# First we need to decide between ridge regression and lasso or elastic net (between the two)
+# define folds for cross validation so can check the impact of different values of alpha 
+set.seed(124)
 foldid <- sample(1:10, nrow(the_data), replace = TRUE)
+
+# separate out the explanatory from response variable
+# for when using lasso and ridge regression
+X <- the_data %>% select(-MedianIncome)
+Y <- the_data$MedianIncome 
+
 
 cv_results <- data_frame(lambda = numeric(), alpha = numeric(), mcve = numeric())
 alphas <- seq(from = 0, to = 1, length.out = 9)
 
 for(i in alphas){
-   cvfit <- glmnet::cv.glmnet(as.matrix(X), Y, foldid = foldid, alpha = i)
+   cvfit <- cv.glmnet(as.matrix(X), Y, foldid = foldid, alpha = i)
    tmp <- data_frame(lambda = cvfit$lambda, alpha = i, mcve = cvfit$cvm)   
    cv_results <- rbind(cv_results, tmp)
 }
 
-arrange(cv_results, mcve)
+arrange(cv_results, mcve) 
+# best alpha with this see is 0.75 but right combination of alpha and lambda
+# works pretty well for any alpha
 
-ggplot(cv_results, aes(x = lambda, y = mcve, colour = as.factor(round(alpha, 3)))) +
+# I take square root of mcve so it is back on same scale as RMSE used elsewhere in this post
+
+svg("../img/0046-alpha-lambda.svg", 7, 5)
+print(
+   ggplot(cv_results, aes(x = lambda, y = sqrt(mcve), colour = as.factor(round(alpha, 3)))) +
    geom_line(size = 2) +
+   geom_line(size = 0.2, colour = "grey50", aes(group = as.factor(round(alpha, 3)))) +
    scale_x_log10() +
-   coord_cartesian(ylim = c(2 * 10 ^ 6, 10 ^ 7), xlim = c(1, 1000)) +
-   scale_colour_brewer(palette = "Set1")
+   coord_cartesian(ylim = c(1800, 4000), xlim = c(5, 1000)) +
+   scale_colour_brewer("alpha", palette = "Greens", guide = guide_legend(reverse = TRUE)) +
+   ggtitle("Cross-validation to select hyper parameters\nin elastic net regression") +
+   scale_y_continuous("Square root of mean cross validation error", label = comma) +
+   theme(legend.position = "right")
+)
+dev.off()
 
 
 
@@ -238,30 +134,115 @@ fit_elastic <- function(data, i){
    data2 <- data[i, ]
    Y_new <- data2$MedianIncome
    X_new <- as.matrix(select(data2, -MedianIncome))
-   lambda <- cv.glmnet (X_new, Y_new, alpha = 0.25)$lambda.min
-   mod1 <- glmnet(X_new, Y_new, lambda = lambda, alpha = 0.25)
+   lambda <- cv.glmnet (X_new, Y_new, alpha = 0.85)$lambda.min
+   mod1 <- glmnet(X_new, Y_new, lambda = lambda, alpha = 0.85)
    # use the model based on resample on the original data to estimate how
    # good or not it is:
    rmse <- RMSE(predict(mod1, newx = X_orig), Y)
    return(rmse)
 }
 
-rmses_elastic <- boot(the_data, statistic = fit_elastic, R = 499) # takes a few minutes
-plot(rmses_elastic)
-mean(rmses_elastic$t)
+rmses_elastic_boot <- boot(data = the_data, statistic = fit_elastic, R = 99) # takes a few minutes
+elastic_rmse <- mean(rmses_elastic_boot$t)
+
+lambda <- cv.glmnet (as.matrix(X), Y, alpha = 0.25)$lambda.min
+mod_elastic <- glmnet(as.matrix(X), Y, lambda = lambda, alpha = 0.25)
+coefs <- data.frame(lm = coef(mod_lm), elastic = as.vector(coef(mod_elastic)))
+coefs$variable <- row.names(coefs)
+
+svg("../img/0046-compare-coefs.svg", 9, 7)
+print(
+   ggplot(coefs, aes(x = lm, y = elastic, label = variable)) + 
+   geom_abline(slope = 1, intercept = 0) +
+   geom_point() +
+   geom_text_repel(colour = "steelblue") +
+   labs(x = "Coefficient from ordinary least squares",
+        y = "Coefficient after shrinkage from elastic net regularization") +
+   coord_equal()
+)
+dev.off()
+
+#==================gam===========
+# Allocate degrees of freedom.
+# We have about 20-60 spare degrees of freedom to allocate to curvature and
+# interactions.  Lacking theoretical guidance there's too many interactions
+# to consider, so we focus on allowing a bit of non-linearity for the variables
+# with the highest rank/rank-squared correlation coefficient, and controlling for
+# spatial correlation in the residuals.
+
+sp <- spearman2(MedianIncome ~ ., data = the_data)
+sp[order(-sp[ ,6])[1:15], ]
 
 
+# see http://stackoverflow.com/questions/30627642/issue-with-gam-function-in-r
+# for why the data needs to be specified in both terms() and in gam()
+the_formula <- terms(MedianIncome ~  
+                        s(FullTimeEmployed, k = 6) + 
+                        s(InternetHH, k = 6) +
+                        s(NoQualification, k = 5) +
+                        s(UnemploymentBenefit, k = 5) +
+                        s(Smoker, k = 5) +
+                        s(Partnered, k = 5)  +
+                        s(Managers, k = 4) +
+                        s(Bachelor, k = 4) +
+                        s(SelfEmployed, k = 4) +
+                        s(NoMotorVehicle, k = 4) +
+                        s(Unemployed, k = 3) +
+                        s(Labourers, k = 3) +
+                        s(Worked50_59hours, k = 3) +
+                        s(Separated, k = 3) +
+                        s(Maori, k = 3) +
+                        s(WGS84Longitude, WGS84Latitude) +
+                        .,
+                     data = the_data)
 
-fit_lm <- function(data, i){
-   # i = sample(1:nrow(data), nrow(data), replace = TRUE)
-   mod1 <- lm(MedianIncome ~ ., data = data[i, ])
+gam_model <- gam(the_formula, data = the_data)
+
+plot_gam <- function(){
+   par(bty = "l", family = "myfont", mar = c(5,4, 2, 1))
+   plot(gam_model, residuals = TRUE, pages = 1, shade = TRUE, 
+        seWithMean = TRUE, ylab = "")
+   grid.text("Impact of area average variables on median income by area unit (New Zealand census 2013)", 0.5, 0.99,
+             gp = gpar(fontfamily = "myfont"))
+}
+
+png("../img/0046-gam-relations.png", 1000, 900, res = 100)
+plot_gam()
+dev.off()
+
+svg("../img/0046-gam-relations.svg", 10, 9)
+plot_gam()
+dev.off()
+
+png("../img/0046-gam-spatial-residuals.png", 600, 800, res = 100)
+par(bty = "l", family = "myfont", fg = "white")
+plot(gam_model, shade = TRUE, select = 16, rug = TRUE, se = FALSE, scheme = 2, col = topo.colors(100), 
+     pch = 1, ylab = "Latitude", xlab = "Longitude", main = "Spatial pattern in regression of income\non demographic area variables")
+map(add = TRUE, col = "grey75")
+dev.off()
+
+
+# bootstrapping
+fit_gam <- function(data, i){
+   mod1 <- gam(the_formula, data = data[i, ])
    # use the model based on resample on the original data to estimate how
    # good or not it is:
-   rmse <- RMSE(predict(mod1, newdata = data), Y)
-   return(rmse)
+   RMSE(predict(mod1, newdata = data), data$MedianIncome)
+   
 }
-rmses_lm <- boot(the_data, statistic = fit_lm, R = 499) # takes a few minutes
-plot(rmses_lm)
-mean(rmses_lm$t)
+
+rmses_gam_boot <- boot(data = the_data, statistic = fit_gam, R = 99) # takes a few minutes
+plot(rmses_gam_boot)
+gam_rmse <- mean(rmses_gam_boot$t)
+
+
+
+#=======================summary===============
+# the elastic approach has a slight cost in RMSE which pays for the better estimates
+# of coefficients.  The GAM has much better RMSE because it fits the curvature of the 
+# relationships better.  But it doesn't deal with the collinearity (and concurvity).
+data.frame(lm_rmse, elastic_rmse, gam_rmse)
+
+# further improvements: imputation; and gamsel to apply the elastic approach to the GAM
 
 
