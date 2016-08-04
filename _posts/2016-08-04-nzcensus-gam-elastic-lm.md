@@ -1,7 +1,7 @@
 ---
 layout: post
 title: nzcensus on GitHub
-date: 2016-07-23
+date: 2016-08-04
 tag: 
    - R
    - NewZealand
@@ -13,15 +13,15 @@ category: R
 
 ## Introduction
 
-A few months back as part of the `nzelect` package I included some data from the New Zealand Census 2013.  As noted in my [last post](/blog/2016/07/14/nzelect-cran), I've now split this into a separate `nzcensus` package, for ease of development and maintenance and to allow `nzelect` to fit within CRAN size restrictions.
+A few months back the first, pre-CRAN versions of my `nzelect` package included some data from the New Zealand Census 2013.  As noted in my [last post](/blog/2016/07/14/nzelect-cran), I've now split this into a separate `nzcensus` package, for ease of development and maintenance and to allow `nzelect` to fit within CRAN size restrictions.
 
-The `nzcensus` package has a set of 60+ demographic variables aggregated at the level of meshblock, area unit, territorial authority and regional council.  These variables have mostly been calculated by me from the counts in the Statistics New Zealand "meshblock" data set.  For example, I've converted the count of individuals of European descent into a proportion of individuals who provided ethnicity information.  This makes the `nzcensus` R package much more analysis-ready than the publichsed meshblock data  because the calculated variables are in a state for comparisons across area groupings.  
+The `nzcensus` package has a set of 60+ demographic variables aggregated at the level of meshblock, area unit, territorial authority and regional council.  These variables have mostly been calculated by me from the counts in the Statistics New Zealand "meshblock" data set.  For example, I've converted the count of individuals of European descent into a proportion of individuals who provided ethnicity information.  This makes the `nzcensus` R package more analysis-ready than the published meshblock data  because the calculated variables are suitable for comparisons across area groupings, which wasn't the case with the straight counts.  
 
 The code that does these calculations is [available on GitHub](https://github.com/ellisp/nzelect).  The preparation of `nzcensus` is still done as part of the `nzelect` project, although end users can install either or both separately.  I've fixed a few errors in my census calculations found in the past few weeks but there's always potential for more.  In the event of any uncertainty, refer back to the definitive version on the Statistics New Zealand website.
 
 ## Interactive map of household income
 
-One of the variables that I didn't have to calculate (because it is directly available in the original data) is median household income.  Here's an interactive map showing that variable by area unit.  Zoom in and out to the map in the usual way for map interaction on your device; click on circles to get the name and income value for the area unit in which it is centred.)
+One of the variables that I didn't have to calculate (because it is directly available in the original data) is median household income.  Here's an interactive map showing that variable by area unit.  Zoom in and out to the map in the usual way for map interaction on your device; click on circles to get the name and income value for the area unit in which it is centred.  Red means higher income; blue means lower.  The darkest red colour means in the top 10% of area units' by household income.
 
 <iframe src="/img/0046-leaflet-map.html" style = "overflow-y: hidden;" width = "100%" height = "430px"></iframe>
 
@@ -66,16 +66,16 @@ In a [previous post](/blog/2016/06/05/bootstrap-cv-strategies) which became one 
 
 To take this idea to its next step, I start edging towards what I think is a better modelling strategy for that data.  In today's post I start with some techniques which I think both are needed for the optimal end approach, but I don't yet bring them together.  The methods I'm using here are:
 
-* Adding latitude and longitude as explanatory variables to adjust for the fact that spatially located observations are not independent of eachother, but spatially close variables are likely to have correlated random elements
-* Lasso, ridge regression, and elastic net regularisation (a generalisation of the lasso and ridge regression) to deal with the multicollinearity in a better way than simply dropping some of the variables
-* A generalized additive model which lets me take into account non-linear shaped relationships between some of the explanatory variables and the response variable
+* Adding latitude and longitude as explanatory variables to adjust for the fact that spatially located observations are not independent of eachother, but spatially close variables are likely to have correlated random elements;
+* Lasso, ridge regression, and elastic net regularisation (a generalisation of the lasso and ridge regression) to deal with the multicollinearity in a better way than simply dropping some of the variables;
+* A generalized additive model which lets me take into account non-linear shaped relationships between some of the explanatory variables and the response variable.
 
 My ultimate approach to this kind of regression modelling for this data - which has to wait for a later post - will combine the above, plus imputation of missing  values for some explanatory variables, using the `gamsel` approach.
 
 I'm going to fit three different models:
 
-* a linear model with all explanatory variables, fit using ordinary least squares
-* a linear model with all explanatory variables, fit via elastic net regularisation which penalises for extra variables included in the model and shrinks estimated coefficients towards zero to compensate
+* a linear model with all explanatory variables, fit using ordinary least squares;
+* a linear model with all explanatory variables, fit via elastic net regularisation which penalises for extra variables included in the model and shrinks estimated coefficients towards zero to compensate;
 * a generalised additive model that lets the explanatory variables with the stronger relationship to income to have curved, non-linear relationships that better fit the actual data; and allows the nuisance spatial relationship with income to be a smooth, flexible spline.
 
 ### Setup
@@ -133,9 +133,9 @@ names(the_data) <- make.names(names(the_data))
 
 
 ### Linear model
-My first and simplest method is one of those I used in the previous post - linear regression, estimated with ordinary least squares, using all the explanatory variables.
+My first and simplest method is one of those I used in the previous post: linear regression, estimated with ordinary least squares, using all the explanatory variables.
 
-In comparing these approaches I am always going to use the same validation approach.  All three validation methods gave similar results, so I'm going to pick one that's easy to generalise, the so-called "simple bootstrap" validation method.  In this approach, a re-sample of data is taken from the original data with replacement, the same number of rows as originally (hence some points sampled twice, some not at all).  The model is fit based on this re-sample, and that model fit is used to predict the response variable for the entire (not just the "out of bag" samples - that's a different approach) original dataset.  I collect the average root mean square error of those predictions from doing this resampling 99 times.
+In comparing these approaches I am always going to use the same validation approach.  All three validation methods gave similar results, so I'm going to pick one that's easy to generalise, the so-called "simple bootstrap" validation method.  In this approach, a re-sample of data is taken from the original data with replacement, the same number of rows as originally (hence some points sampled twice, some not at all).  The model is fit based on this re-sample, and that model fit is used to predict the response variable for the entire original dataset (not just the "out of bag" samples - that's a different approach).  I collect the average root mean square error of those predictions from doing this resampling 99 times.
 
 Because this classic model forms a reference point for alternative methods, it's important to consider the classic diagnostic graphics too.  Here they are:
 
@@ -145,11 +145,11 @@ There's no problems with outliers or leverage (noting that in the earlier prepar
 
 Here's the code for fitting this simple model.  As will be the case for all three of our approaches, we start by defining a function that 
 
-* fits the model to a resample with replacement of the data, defined by the argument `i`
-* uses that model to predict the values of income from the full original data
-* returns the root mean square errors of those predictions:
+* fits the model to a resample with replacement of the data, defined by the argument `i`;
+* uses that model to predict the values of income from the full original data;
+* returns the root mean square errors of those predictions.
 
-This function can then be used by the `boot` function to perform the bootstrap validation
+This function can then be used by the `boot` function to perform the bootstrap validation.
 
 {% highlight R %}
 fit_lm <- function(data, i){
@@ -175,9 +175,9 @@ plot(mod_lm)
 The average bootstrapped root mean square error from this method is 2015.
 
 ### Elastic net regularization
-[Elastic net regularization](https://en.wikipedia.org/wiki/Elastic_net_regularization) is a generalisation of the "ridge regression" and "lasso" methods of estimating parameters of a linear model.  Both ridge regression and lasso estimation provide extra penalties for the magnitude of coefficients in the linear predictor; the lasso penalises bases on the sum of the absolute value of estimated coefficients and the ridge on the sum of squared values.  In both cases the net effect is to shrink estimated coefficients towards zero.  It's a far superior method for model building than dropping variables based on their variable inflation factors, or stepwise regression, the two methods I used for demonstration purposes in my previous posts.  In particular, all sorts of problems for subsequent inference, such as bias towards significance of the parameters remaining in the model, are reduced or eliminated altogether.
+[Elastic net regularization](https://en.wikipedia.org/wiki/Elastic_net_regularization) is a generalisation of the "ridge regression" and "lasso" methods of estimating parameters of a linear model.  Both ridge regression and lasso estimation provide extra penalties for the magnitude of coefficients in the linear predictor; the "lasso" penalises based on the sum of the absolute value of estimated coefficients, and the "ridge" penalises based on the sum of squared values.  In both cases the net effect is to shrink estimated coefficients towards zero.  It's a far superior method for model building than dropping variables based on their variable inflation factors, or stepwise regression, the two methods I used for demonstration purposes in my previous posts.  In particular, all sorts of problems for subsequent inference, such as bias towards significance of the parameters remaining in the model, are reduced or eliminated altogether.
 
-The elastic net approach is defined by two hyperparameters, `alpha` and `lambda`.  When `alpha = 1` the elastic net is equivalent to the lasso; when `alpha = 0` it is equivalent to ridge regression.  For any given value of `alpha`, the value of `lambda` indicates how much penalty is given to the size of coefficients in the linear predictor.  The `cv.glmnet` function uses cross validation to give the best value of `lambda` for any given `alpha`; a bit of extra work is needed to simultaneously choose alpha.  In the code below I use `cv.glmnet` with nine different values of `alpha`
+The elastic net approach is defined by two hyperparameters, `alpha` and `lambda`.  When `alpha = 1` the elastic net is equivalent to the lasso; when `alpha = 0` it is equivalent to ridge regression.  For any given value of `alpha`, the value of `lambda` indicates how much penalty is given to the size of coefficients in the linear predictor.  The `cv.glmnet` function uses cross validation to give the best value of `lambda` for any given `alpha`; a bit of extra work is needed to simultaneously choose alpha.  In the code below I use `cv.glmnet` with nine different values of `alpha`:
 
 {% highlight R %}
 # A lasso, ridge rigression, or elastic net (which combines the two) is a way
@@ -284,9 +284,9 @@ The latitude and longitude plot at the bottom right of the image above is the mo
 
 ![map](/img/0046-gam-spatial-residuals.png)
 
-This map is showing the relationship between location and income, after all the demographic variables are accounted for.  Including a flexible spline for an interaction between longitude and latitude in a Generalized Additive Model like this is an excellent way of controlling for the nuisance factor of spatial autocorrelation, which if not accounted for is likely to lead to false inference, with the strength of evidence for relations between the data being overestimated (apparent relations can be just artefacts of how the spatial grouping was made).
+This map is showing the relationship between location and income, after all the demographic variables are accounted for.  Including a flexible spline for an interaction between longitude and latitude in a Generalized Additive Model like this is a good way of controlling for the nuisance factor of spatial autocorrelation, which if not accounted for is likely to lead to false inference, with the strength of evidence for relations between the data being overestimated (apparent relations can be just artefacts of how the spatial grouping was made).
 
-In specifying models of this sort I often follow Frank Harrell's informal advice of determining how many degrees of freedom are available (between 1/20 and 1/10 the number of observations) and allocating them (in the form of splines, the more degrees of freedom allocated the more flexible, with a single degree of freedom meaning a straight linear response) the explanatory variables with the strongest non-parametric relationship with the response variable.  This approach works only after the analyst has made a commitment to include all such variables in the model - letting the dstrength of relationship with the response determine whether an explanatory variable gets in at all is a form of stepwise regression and subject to all the problems that come from that.
+In specifying models of this sort I often follow Frank Harrell's informal advice of first determining how many degrees of freedom are available (between 1/20 and 1/10 the number of observations).  Those degrees of freedom are then allocated to the various explanatory variables in the form of splines, with more degrees of freedom meaning a flexible curved relationship with income is possible and a single degree of freedom meaning a straight linear relationship.  The explanatory variables with the strongest non-parametric relationship with the response variable get more degrees of freedoms.  This approach works only after the analyst has made a commitment to include all examined variables in the model; letting the strength of relationship with the response determine whether an explanatory variable gets in at all is a form of stepwise regression and subject to all the problems that come from that.
 
 To estimate the strength of the non parameteric relationships I use Harrell's `spearman2` which regresses Y on the rank of X and the square of the rank of X.   This powerful method allows non-monotonic relationships between variables.  In the case of today's data, it shows the strongest relationship to household income as being the proportion of people in full time employment, households with access to the internet, and so on as seen in the output below:
 
@@ -368,7 +368,7 @@ rmses_gam_boot <- boot(data = the_data, statistic = fit_gam, R = 99) # takes a f
 gam_rmse <- mean(rmses_gam_boot$t)
 {% endhighlight %}
 
-The root mean square error from this method is 1728, a very material improvement in model performance.
+The root mean square error from this method is 1728, a very material improvement in model performance; much less than 2015.
 
 The spatial spline (which was allowed to be as flexible as it needed) uses 27 effective degrees of freedom and the other splines another 30 (plus 60 or so from the parametric effects), taking this model to the most flexibility reasonable from the 1775 data points.
 
@@ -388,5 +388,5 @@ As foreshadowed earlier, the next improvements to make will be to combine these 
 
 For now, this serves as a sequel to my earlier piece on model validation, turning the attention now onto model strategies themselves; and to demonstrate a taster of the uses the `nzcensus` package can be turned to.
 
-Please file bugs or enhancement requests as [issues on GitHub](https://github.com/ellisp/nzelect/issues).
+The `nzcensus` package is still experimental, use with caution.  Please file bugs or enhancement requests as [issues on GitHub](https://github.com/ellisp/nzelect/issues).
 
