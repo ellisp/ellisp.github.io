@@ -49,7 +49,7 @@ bestalpha <- res[1, 1]
 
 cvmod <- cv.glmnet(X, Y, alpha = bestalpha)
 mod1 <- glmnet(X, Y, alpha = bestalpha)
-plot(mod1, label = TRUE)
+
 
 mod2 <- lm(Calories.Burned ~ ., data = fitbit2)
 
@@ -101,5 +101,15 @@ round(c("elastic" = mean(elastic_boot$t),
 pacf(resid(mod2))
 
 round(coef(mod0), 3)
-round(coef(lm(Calories.Burned ~ Steps, data = fitbit2)), 3)
+round(coef(lm(Calories.Burned ~ Steps, data = fitbit2)), 3) 
+# 69 calories per 1000 steps.  Compare to 50 calories per 1000 steps at http://www.livestrong.com/article/320124-how-many-calories-does-the-average-person-use-per-step/
 confint(mod0)
+
+
+#----variables coming in with different importance--
+# working with scaled variables just for visual distinguishing
+# shouldn't make a difference as under the hood glmnet does it anyway
+mod1s <- glmnet(scale(X), Y, alpha = bestalpha)
+plot(mod1s, xvar = "dev", label = TRUE)
+colnames(X)
+coef(mod1s)
