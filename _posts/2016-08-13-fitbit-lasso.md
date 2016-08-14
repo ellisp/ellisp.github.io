@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Elastic net regularization modelling of burned calories
+title: Elastic net regularization of a model of burned calories
 date: 2016-08-13
 tag: 
    - R
