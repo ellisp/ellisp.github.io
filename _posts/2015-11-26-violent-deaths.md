@@ -25,7 +25,7 @@ Looking at snapshot cross-sectional average data since 1990 (for which there is 
 
 Remember that this only shows relatively weathly countries - for a more complete list (but less complete data) check out this [Wikipedia list of countries that can be ranked by intentional homicide rates](https://en.wikipedia.org/wiki/List_of_countries_by_intentional_homicide_rate) (not quite the same as our data, which includes all deaths from assault, intentional or otherwise) or this [report from the UN Office on Drugs and Crime](https://www.unodc.org/documents/data-and-analysis/Crime-statistics/International_Statistics_on_Crime_and_Justice.pdf).
 
-In the chart below, the label for each country is centred at the overall population rate of deaths from assault and the red and blue vertical strokes mark the female and male rates respectively.  Beware that the scale is logarithmic - this was necessary to stop everywhere except Colombia being squashed into the left of the chart.
+In the chart below, the label for each country is centred at the overall population rate of deaths from assault and the red and blue vertical strokes mark the male and female rates respectively.  Beware that the scale is logarithmic - this was necessary to stop everywhere except Colombia being squashed into the left of the chart.
 ![snapshot](/img/0020-assault-average.svg)
 
 ### Compare across time

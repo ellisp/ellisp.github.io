@@ -5,7 +5,6 @@ date: 2016-08-13
 tag: 
    - R
    - ModellingStrategy
-   - OpenData
 description: Elastic net regularization of estimates is a good way of dealing with collinearity and feature selection; this is illustrated with a simple dataset of 30 daily observations from a fitbit tracker.
 image: /img/0050-pairs.svg
 socialimage: http://ellisp.github.io/img/0050-pairs.png
