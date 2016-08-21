@@ -127,7 +127,7 @@ theplot <- function(){
 par(family = "myfont")
 with(forex, dualplot(x1 = TimePeriod, y1 = NZDUSD, y2 = TWI, lwd = 1.2, colgrid = "grey90", 
                      main = "NZ dollar exchange rate & trade-weighted index",
-                     ylab1 = "NZ dollars for one US dollar",
+                     ylab1 = "US dollars for one NZ dollar",
                      ylab2 = "Index",
                      yleg1 = "NZD / USD exchange rate (left axis)",
                      yleg2 = "Trade-weighted index (right axis)",
@@ -152,7 +152,7 @@ theplot2 <- function(){
    with(forex, dualplot(x1 = TimePeriod, y1 = NZDUSD, y2 = TWI, lwd = 1.2, colgrid = "grey90", 
                      main = "NZ dollar exchange rate & trade-weighted index",
                      ylim.ref = 361, 
-                     ylab1 = "NZ dollars for one US dollar",
+                     ylab1 = "US dollars for one NZ dollar",
                      ylab2 = "Index",
                      yleg1 = "NZD / USD exchange rate (left axis)",
                      yleg2 = "Trade-weighted index (right axis)",
