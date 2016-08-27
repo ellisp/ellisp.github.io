@@ -1,12 +1,13 @@
-dualplot <- function(x1, y1, y2, x2 = x1, col1 = "#C54E6D", col2 = "#009380",
-                     lwd = 1, colgrid = NULL,
+dualplot <- function(x1, y1, y2, x2 = x1, col = c("#C54E6D", "#009380"),
+                     lwd = c(1, 1), colgrid = NULL,
                      mar = c(3, 6, 3, 6) + 0.1, 
                      ylab1 = paste(substitute(y1), collapse = ""), 
                      ylab2 = paste(substitute(y2), collapse = ""),
                      nxbreaks = 5, 
-                     yleg1 = paste(ylab1, "(LHS)"), yleg2 = paste(ylab2, "(RHS)"),
+                     yleg1 = paste(ylab1, "(left axis)"), yleg2 = paste(ylab2, "(right axis)"),
                      ylim1 = NULL, ylim2 = NULL, ylim.ref = NULL,
-                     xlab = "", main = NULL, legx = "topleft", legy = NULL, ...){
+                     xlab = "", main = NULL, legx = "topleft", legy = NULL, 
+                     silent = FALSE, ...){
    # Base graphics function for drawing dual axis line plot.
    # Assumed to be two time series on a conceptually similar, non-identical scale 
    #
@@ -63,7 +64,9 @@ dualplot <- function(x1, y1, y2, x2 = x1, col1 = "#C54E6D", col2 = "#009380",
    # to a graphic drawn of indexed series
    if(is.null(ylim1) & is.null(ylim2)){
       if(min(c(y1, y2), na.rm = TRUE) < 0){
-         stop("Sorry, with negative values you need to specify ylim1 or ylim2")
+         message("With negative values ylim1 or ylim2 need to be chosen by a method other than treating both series visually as though they are indexed. Defaulting to mean value +/- 3 times the standard deviations.")
+         ylim1 <- c(-3, 3) * sd(x1, na.rm = TRUE) + mean(x1, na.rm = TRUE)
+         ylim2 <- c(-3, 3) * sd(x2, na.rm = TRUE) + mean(x2, na.rm = TRUE)
       }
       
       
@@ -73,6 +76,8 @@ dualplot <- function(x1, y1, y2, x2 = x1, col1 = "#C54E6D", col2 = "#009380",
       if(ylim.ref[2] > length(y2)){
          stop("ylim.ref[2] must be a number shorter than the length of the second series.")
       }
+      
+      if(!silent) message("The two series will be presented visually as though they had been converted to indexes.")
       
       # convert the variables to indexes (base value of 1 at the time specified by ylim.ref)
       ind1 <- as.numeric(y1) / y1[ylim.ref[1]]
@@ -84,11 +89,13 @@ dualplot <- function(x1, y1, y2, x2 = x1, col1 = "#C54E6D", col2 = "#009380",
       # convert that back to the original y axis scales
       ylim1 = indlimits * y1[ylim.ref[1]]
       ylim2 = indlimits * y2[ylim.ref[2]]
+   } else {
+      if(!silent) warning("You've chosen to set at least one of the vertical axes limits manually.  Up to you, but it is often better to leave it to the defaults.")
    }
    
    # draw first series - with no axes.
-   plot(x1, y1, type = "l", axes = FALSE, lwd = lwd,
-        xlab = xlab, ylab = "", col = col1, main = main, 
+   plot(x1, y1, type = "l", axes = FALSE, lwd = lwd[1],
+        xlab = xlab, ylab = "", col = col[1], main = main, 
         xlim = range(xbreaks), ylim = ylim1)
    
    # add in the gridlines if wanted:
@@ -98,26 +105,26 @@ dualplot <- function(x1, y1, y2, x2 = x1, col1 = "#C54E6D", col2 = "#009380",
    }
    
    # add in the left hand vertical axis and its label
-   axis(2, col = col1, col.axis= col1, las=1 )  ## las=1 makes horizontal labels
-   mtext(paste0("\n", ylab1, "\n"), side = 2, col = col1, line = 1.5) 
+   axis(2, col = col[1], col.axis= col[1], las=1 )  ## las=1 makes horizontal labels
+   mtext(paste0("\n", ylab1, "\n"), side = 2, col = col[1], line = 1.5) 
    
    # Allow a second plot on the same graph
    par(new=TRUE)
    
    # Plot the second series:
-   plot(x2, y2,   xlab="", ylab="", axes = FALSE, type = "l", lwd = lwd,
-        col = col2, xlim = range(xbreaks), ylim = ylim2)
+   plot(x2, y2,   xlab="", ylab="", axes = FALSE, type = "l", lwd = lwd[2],
+        col = col[2], xlim = range(xbreaks), ylim = ylim2)
    
    ## add second vertical axis (on right) and its label
-   mtext(paste0("\n", ylab2, "\n"), side = 4, col = col2, line = 4.5) 
-   axis(4,  col = col2, col.axis = col2, las=1)
+   mtext(paste0("\n", ylab2, "\n"), side = 4, col = col[2], line = 4.5) 
+   axis(4,  col = col[2], col.axis = col[2], las=1)
    
    # Draw the horizontal time axis
    axis(1, at = xbreaks, labels = xbreaks)
    
    # Add Legend
    legend(x = legx, y = legy, legend=c(yleg1, yleg2),
-          text.col = c(col1, col2), lty = c(1, 1), col = c(col1, col2),
+          text.col = col, lty = c(1, 1), lwd = lwd, col = col,
           bty = "n", ...)
    
    par(oldpar)
