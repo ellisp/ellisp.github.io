@@ -57,7 +57,8 @@ milkplot <- function(){
          x2 = time(fonterra), y2 = fonterra$FCG.NZ.Close,
          ylab1 = "Whole milk powder price index\n",
          ylab2 = "Fonterra Cooperative Group\nshare price ($)",
-         colgrid = "grey90",
+         col = colorspace::rainbow_hcl(2, c = 80, l = 50, start = 45, end = 270),
+         colgrid = "grey90", cex = 0.8,
          main = "Fonterra share prices are less volatile than global milk prices")
 }
 
@@ -81,7 +82,7 @@ the_plot <- function(){
    par(family = "myfont")
    dualplot(x1 = services$TimePeriod, y1 = services$Value, x2 = time(airnz), y2 = airnz$AIR.NZ.Close,
          ylab1 = "New Zealand service exports ($m)\n", ylab2 = "Air New Zealand share price",
-         yleg1 = "All service exports ($m) (left axis)", lwd = c(4,2), col = c("orange", "steelblue"),
+         yleg1 = "All service exports ($m) (left axis)", lwd = c(4,2), col = c("rosybrown", "steelblue"),
          main ="New Zealand service exports and Air New Zealand share price over time",
          colgrid = "white", bty = "o", bg = "white", box.col = "white")
    }
@@ -127,8 +128,8 @@ airnz3 <- airnz %>%
 
 peaks <- filter(airnz3, PeakVol)$TimePeriod
 
-svg("../img/0052-airnz.svg", 8, 5)
-airnz3 %>%
+
+p1 <- airnz3 %>%
    select(TimePeriod, AIR.NZ.Close, AIR.NZ.Volume) %>%
    mutate(SquareRootOfVolume = sqrt(AIR.NZ.Volume)) %>%
    rename(ClosingPrice = AIR.NZ.Close) %>%
@@ -139,7 +140,15 @@ airnz3 %>%
    geom_vline(xintercept = as.numeric(peaks), colour = "steelblue", size = 2.5, alpha = 0.1) +
    geom_line(colour = "brown") +
    labs(x = "", y = "", title = "Four big trading events for Air New Zealand shares since 2000")
+
+svg("../img/0052-airnz.svg", 8, 5)
+print(p1)
 dev.off()   
+
+png("../img/0052-airnz.png", 8 * 110, 5 * 110)
+print(p1)
+dev.off()   
+
    
 # not for barcharts
 
