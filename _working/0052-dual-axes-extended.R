@@ -23,8 +23,20 @@ source("https://gist.github.com/ellisp/4002241def4e2b360189e58c3f461b4a/raw/0e5d
 fonterra <- getSymbols('FCG.NZ', src='yahoo', auto.assign = FALSE) 
 airnz <- getSymbols('AIR.NZ', src='yahoo', auto.assign = FALSE) 
 
-plot(fonterra$FCG.NZ.Close)
+# default - a cross over point happen at the earliest point of the shorter series
 dualplot(x1 = time(fonterra), x2 = time(airnz), y1 = fonterra$FCG.NZ.Close, y2 = airnz$AIR.NZ.Close)
+
+# or the other way around:
+dualplot(x2 = time(fonterra), x1 = time(airnz), y2 = fonterra$FCG.NZ.Close, y1 = airnz$AIR.NZ.Close)
+
+# or can override eg - each one begins at the same vertical height on its earliest point
+dualplot(x1 = time(fonterra), x2 = time(airnz), y1 = fonterra$FCG.NZ.Close, y2 = airnz$AIR.NZ.Close,
+         ylim.ref = c(1, 1))
+
+# or other ways of forcing the cross over point
+dualplot(x1 = time(fonterra), x2 = time(airnz), y1 = fonterra$FCG.NZ.Close, y2 = airnz$AIR.NZ.Close,
+         ylim.ref = c(nrow(fonterra), nrow(airnz)))
+
          
 args(dualplot)
 

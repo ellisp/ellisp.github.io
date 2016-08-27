@@ -5,10 +5,12 @@ dualplot <- function(x1, y1, y2, x2 = x1, col1 = "#C54E6D", col2 = "#009380",
                      ylab2 = paste(substitute(y2), collapse = ""),
                      nxbreaks = 5, 
                      yleg1 = paste(ylab1, "(LHS)"), yleg2 = paste(ylab2, "(RHS)"),
-                     ylim1 = NULL, ylim2 = NULL, ylim.ref = 1,
+                     ylim1 = NULL, ylim2 = NULL, ylim.ref = NULL,
                      xlab = "", main = NULL, legx = "topleft", legy = NULL, ...){
    # Base graphics function for drawing dual axis line plot.
    # Assumed to be two time series on a conceptually similar, non-identical scale 
+   #
+   # Assumes data is in sequence of x1 and of x2 ie ordered by time
    #
    # Use with caution! 
    # Please don't use to show growth rates and the original
@@ -35,9 +37,24 @@ dualplot <- function(x1, y1, y2, x2 = x1, col1 = "#C54E6D", col2 = "#009380",
    # strip excess attributes (eg xts etc) from the two vertical axis variables
    ylab1 <- as.character(ylab1)
    ylab2 <- as.character(ylab2)
-   
    y1 <- as.numeric(y1)
    y2 <- as.numeric(y2)
+   
+   # is ylim.ref is NULL, calculate a good default
+   if(is.null(ylim.ref)){
+      if (length(y1) == length(y2)){
+         ylim.ref <- c(1, 1)
+      } else {
+         if (min(x1) >  min(x2)){
+            ylim.ref <- c(1, which(abs(x2 - min(x1)) == min(abs(x2 - min(x1)))))
+         } else {
+            ylim.ref <- c(which(abs(x1 - min(x2)) == min(abs(x1 - min(x2)))), 1)
+         }
+      }
+
+      
+   }
+
    
    oldpar <- par(mar = mar)
    xbreaks <- round(seq(from = min(c(x1, x2)), to = max(c(x1, x2)), length.out = nxbreaks))
@@ -49,18 +66,24 @@ dualplot <- function(x1, y1, y2, x2 = x1, col1 = "#C54E6D", col2 = "#009380",
          stop("Sorry, with negative values you need to specify ylim1 or ylim2")
       }
       
-      if((length(y1) != length(y2)) & ylim.ref != 1){
-         warning("y1 and y2 are different lengths.  Forcing ylim.ref to be 1.")
-         ylim.ref <- 1
+      
+      if(ylim.ref[1] > length(y1)){
+         stop("ylim.ref[1] must be a number shorter than the length of the first series.")
       }
-      if(ylim.ref > min(length(y1), length(y2))){
-         stop("ylim.ref must be a number shorter than the length of the shorter series.")
+      if(ylim.ref[2] > length(y2)){
+         stop("ylim.ref[2] must be a number shorter than the length of the second series.")
       }
-      ind1 <- as.numeric(y1) / y1[ylim.ref]
-      ind2 <- as.numeric(y2) / y2[ylim.ref]
+      
+      # convert the variables to indexes (base value of 1 at the time specified by ylim.ref)
+      ind1 <- as.numeric(y1) / y1[ylim.ref[1]]
+      ind2 <- as.numeric(y2) / y2[ylim.ref[2]]
+      
+      # calculate y axis limits on the "index to 1" scale
       indlimits <- range(c(ind1, ind2))
-      ylim1 = indlimits * y1[ylim.ref]
-      ylim2 = indlimits * y2[ylim.ref]
+      
+      # convert that back to the original y axis scales
+      ylim1 = indlimits * y1[ylim.ref[1]]
+      ylim2 = indlimits * y2[ylim.ref[2]]
    }
    
    
