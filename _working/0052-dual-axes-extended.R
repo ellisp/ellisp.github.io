@@ -4,7 +4,7 @@ library(quantmod) # for getSymbols for share price data
 library(ggseas)   # for nzbop data
 
 
-source("https://gist.githubusercontent.com/ellisp/4002241def4e2b360189e58c3f461b4a/raw/b0a8e71dbb42402907cac764cfe14443beb43492/dualplot.R")     
+source("https://gist.githubusercontent.com/ellisp/4002241def4e2b360189e58c3f461b4a/raw/9ab547bff18f73e783aaf30a7e4851c9a2f95b80/dualplot.R")     
 
 
 
@@ -114,13 +114,15 @@ dev.off()
 
 
 #============not for serious anlaysis================
-# automated y limit choice has its limits (or is this a feature?)
-dualplot(x1 = time(airnz2), y1 = airnz2$AIR.NZ.Volume, y2 = airnz2$AIR.NZ.Close)
+# automated y limit choice has its limits:
+dualplot(x1 = time(airnz), y1 = airnz$AIR.NZ.Volume, y2 = airnz$AIR.NZ.Close)
 
-dualplot(x1 = time(airnz2), y1 = airnz2$AIR.NZ.Volume, y2 = airnz2$AIR.NZ.Close, ylim2 = c(0, 4 ))
+dualplot(x1 = time(airnz), y1 = airnz$AIR.NZ.Volume, y2 = airnz$AIR.NZ.Close, ylim2 = c(0, 4 ))
 
-dualplot(x1 = time(airnz2), y1 = sqrt(airnz2$AIR.NZ.Volume), y2 = airnz2$AIR.NZ.Close)
+dualplot(x1 = time(airnz), y1 = sqrt(airnz$AIR.NZ.Volume), y2 = airnz$AIR.NZ.Close)
 
+
+# so beter to take another approach
 airnz3 <- airnz %>%
    as.data.frame() %>%
    mutate(TimePeriod = time(airnz),

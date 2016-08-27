@@ -1,4 +1,5 @@
-dualplot <- function(x1, y1, y2, x2 = x1, col = c("#C54E6D", "#009380"),
+dualplot <- function(x1, y1, y2, x2 = x1, 
+                     col = c("#C54E6D", "#009380"),
                      lwd = c(1, 1), colgrid = NULL,
                      mar = c(3, 6, 3, 6) + 0.1, 
                      ylab1 = paste(substitute(y1), collapse = ""), 
@@ -23,7 +24,8 @@ dualplot <- function(x1, y1, y2, x2 = x1, col = c("#C54E6D", "#009380"),
    # x1 and y1 are the x and y coordinates for first line
    # x2 and y2 are the x and y coordinates for second line.  Often x2 will == x1, but can be overridden
    # ylim1 and ylim2 are the vertical limits of the 2 axes.  Recommended NOT to use these, as
-   #    the default algorithm will set them in a way that makes the axes equivalent to using an index.
+   #    the default algorithm will set them in a way that makes the axes equivalent to using an index (for 
+   #    positive data) or mean of each series +/- 3 standard deviations (if data include negatives)
    # ylim.ref the two numbers in the two series to use as the reference point for converting them to indices
    #    when drawing on the page.  If both elements are 1, both series will start together at the left of the plot.
    # nbreaks is number of breaks in horizontal axis
@@ -61,8 +63,9 @@ dualplot <- function(x1, y1, y2, x2 = x1, col = c("#C54E6D", "#009380"),
    oldpar <- par(mar = mar)
    xbreaks <- round(seq(from = min(c(x1, x2)), to = max(c(x1, x2)), length.out = nxbreaks))
    
-   # unless ylim1 or ylim2 were, set, we set them to levels that make it equivalent
-   # to a graphic drawn of indexed series
+   # unless ylim1 or ylim2 were set, we set them to levels that make it equivalent
+   # to a graphic drawn of indexed series (if all data positive), or to the mean
+   # of each series +/- three standard deviations if some data are negative
    if(is.null(ylim1) & is.null(ylim2)){
       if(min(c(y1, y2), na.rm = TRUE) < 0){
          message("With negative values ylim1 or ylim2 need to be chosen by a method other than treating both series visually as though they are indexed. Defaulting to mean value +/- 3 times the standard deviations.")

@@ -95,7 +95,7 @@ dev.off()
 #------------dual axis version-------------
 # As we're drawing a number of these, we want a function to make it easier.
 # Here's one I prepared earlier:
-# source("https://gist.github.com/ellisp/4002241def4e2b360189e58c3f461b4a/raw/0e5dc52262e86b5d21b914db3553e58b0b8d1d20/dualplot.R")     
+# source("https://gist.githubusercontent.com/ellisp/4002241def4e2b360189e58c3f461b4a/raw/9ab547bff18f73e783aaf30a7e4851c9a2f95b80/dualplot.R")     
 
 # bad:
 svg("../img/0051-dualbad1.svg", 8, 5)
