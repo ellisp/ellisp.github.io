@@ -62,7 +62,7 @@ dualplot <- function(x1, y1, y2, x2 = x1, col1 = "#C54E6D", col2 = "#009380",
    # unless ylim1 or ylim2 were, set, we set them to levels that make it equivalent
    # to a graphic drawn of indexed series
    if(is.null(ylim1) & is.null(ylim2)){
-      if(min(c(y1, y2)) < 0){
+      if(min(c(y1, y2), na.rm = TRUE) < 0){
          stop("Sorry, with negative values you need to specify ylim1 or ylim2")
       }
       
@@ -79,13 +79,12 @@ dualplot <- function(x1, y1, y2, x2 = x1, col1 = "#C54E6D", col2 = "#009380",
       ind2 <- as.numeric(y2) / y2[ylim.ref[2]]
       
       # calculate y axis limits on the "index to 1" scale
-      indlimits <- range(c(ind1, ind2))
+      indlimits <- range(c(ind1, ind2), na.rm = TRUE)
       
       # convert that back to the original y axis scales
       ylim1 = indlimits * y1[ylim.ref[1]]
       ylim2 = indlimits * y2[ylim.ref[2]]
    }
-   
    
    # draw first series - with no axes.
    plot(x1, y1, type = "l", axes = FALSE, lwd = lwd,
