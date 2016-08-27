@@ -4,7 +4,8 @@ dualplot <- function(x1, y1, y2, x2 = x1, col = c("#C54E6D", "#009380"),
                      ylab1 = paste(substitute(y1), collapse = ""), 
                      ylab2 = paste(substitute(y2), collapse = ""),
                      nxbreaks = 5, 
-                     yleg1 = paste(ylab1, "(left axis)"), yleg2 = paste(ylab2, "(right axis)"),
+                     yleg1 = paste(gsub("\n$", "", ylab1), "(left axis)"), 
+                     yleg2 = paste(ylab2, "(right axis)"),
                      ylim1 = NULL, ylim2 = NULL, ylim.ref = NULL,
                      xlab = "", main = NULL, legx = "topleft", legy = NULL, 
                      silent = FALSE, bty = "n", ...){
@@ -17,14 +18,14 @@ dualplot <- function(x1, y1, y2, x2 = x1, col = c("#C54E6D", "#009380"),
    # Please don't use to show growth rates and the original
    # series at the same time!
    #
-   # Peter Ellis, 16 August 2016, GNU GPL-3
+   # Peter Ellis, 16-27 August 2016, GNU GPL-3
    # most parameters should be obvious:
    # x1 and y1 are the x and y coordinates for first line
    # x2 and y2 are the x and y coordinates for second line.  Often x2 will == x1, but can be overridden
    # ylim1 and ylim2 are the vertical limits of the 2 axes.  Recommended NOT to use these, as
    #    the default algorithm will set them in a way that makes the axes equivalent to using an index.
-   # ylim.ref the number in the two series to use as the reference point for converting them to indices
-   #    when drawing on the page.  If it is 1, both series will start together at the left of the plot.
+   # ylim.ref the two numbers in the two series to use as the reference point for converting them to indices
+   #    when drawing on the page.  If both elements are 1, both series will start together at the left of the plot.
    # nbreaks is number of breaks in horizontal axis
    # lwd and mar are graphics parameters (see ?par)
    # colgrid is colour of gridlines; if NULL there are no gridlines
