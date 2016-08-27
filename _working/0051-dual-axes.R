@@ -95,7 +95,7 @@ dev.off()
 #------------dual axis version-------------
 # As we're drawing a number of these, we want a function to make it easier.
 # Here's one I prepared earlier:
-source("https://gist.github.com/ellisp/4002241def4e2b360189e58c3f461b4a/raw/0e5dc52262e86b5d21b914db3553e58b0b8d1d20/dualplot.R")     
+# source("https://gist.github.com/ellisp/4002241def4e2b360189e58c3f461b4a/raw/0e5dc52262e86b5d21b914db3553e58b0b8d1d20/dualplot.R")     
 
 # bad:
 svg("../img/0051-dualbad1.svg", 8, 5)
@@ -151,7 +151,7 @@ theplot2 <- function(){
    par(family = "myfont")
    with(forex, dualplot(x1 = TimePeriod, y1 = NZDUSD, y2 = TWI, lwd = 1.2, colgrid = "grey90", 
                      main = "NZ dollar exchange rate & trade-weighted index",
-                     ylim.ref = 361, 
+                     ylim.ref = c(361, 361), 
                      ylab1 = "US dollars for one NZ dollar",
                      ylab2 = "Index",
                      yleg1 = "NZD / USD exchange rate (left axis)",

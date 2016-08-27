@@ -7,7 +7,7 @@ dualplot <- function(x1, y1, y2, x2 = x1, col = c("#C54E6D", "#009380"),
                      yleg1 = paste(ylab1, "(left axis)"), yleg2 = paste(ylab2, "(right axis)"),
                      ylim1 = NULL, ylim2 = NULL, ylim.ref = NULL,
                      xlab = "", main = NULL, legx = "topleft", legy = NULL, 
-                     silent = FALSE, ...){
+                     silent = FALSE, bty = "n", ...){
    # Base graphics function for drawing dual axis line plot.
    # Assumed to be two time series on a conceptually similar, non-identical scale 
    #
@@ -125,7 +125,7 @@ dualplot <- function(x1, y1, y2, x2 = x1, col = c("#C54E6D", "#009380"),
    # Add Legend
    legend(x = legx, y = legy, legend=c(yleg1, yleg2),
           text.col = col, lty = c(1, 1), lwd = lwd, col = col,
-          bty = "n", ...)
+          bty = bty, ...)
    
    par(oldpar)
 }
