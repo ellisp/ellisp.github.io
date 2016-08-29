@@ -69,8 +69,8 @@ dualplot <- function(x1, y1, y2, x2 = x1,
    if(is.null(ylim1) & is.null(ylim2)){
       if(min(c(y1, y2), na.rm = TRUE) < 0){
          message("With negative values ylim1 or ylim2 need to be chosen by a method other than treating both series visually as though they are indexed. Defaulting to mean value +/- 3 times the standard deviations.")
-         ylim1 <- c(-3, 3) * sd(x1, na.rm = TRUE) + mean(x1, na.rm = TRUE)
-         ylim2 <- c(-3, 3) * sd(x2, na.rm = TRUE) + mean(x2, na.rm = TRUE)
+         ylim1 <- c(-3, 3) * sd(y1, na.rm = TRUE) + mean(y1, na.rm = TRUE)
+         ylim2 <- c(-3, 3) * sd(y2, na.rm = TRUE) + mean(y2, na.rm = TRUE)
       }
       
       
