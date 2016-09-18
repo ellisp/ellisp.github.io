@@ -127,13 +127,14 @@ res_sum <- results %>%
 
 kable(res_sum)
 
+# small horizontal jittering needed as otherwise hybrid 80% are on top of eachother
 res_sum %>%
    ggplot(aes(x = Success, y = model, colour = transform)) +
    facet_wrap(~level, scales = "free_x") +
-   geom_point() +
+   geom_jitter(size = 5, height = 0, alpha = 0.9) +
    scale_x_continuous(label = percent)
 
-svg("../img/0028-indiv-error.svg", 9, 7)
+svg("../img/0056-indiv-error.svg", 9, 7)
 print(
    results %>%
       gather(variable, value, -h) %>%
