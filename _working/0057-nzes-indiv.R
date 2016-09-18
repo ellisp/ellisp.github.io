@@ -56,7 +56,9 @@ dev.off()
 # Easier will be to draw two bar charts
 
 # party colours taken from https://en.wikipedia.org/wiki/List_of_political_parties_in_New_Zealand
-party_cols <- c("grey90", "#00AEEF", "#00529F", "black", "#d82a20", "#098137", "#770808", "grey80", "#770808", "grey80")
+# except for "other or no vote" which matches "don't know" in p3 plot
+party_cols <- c("grey90", "#00AEEF", "#00529F", "black", "#d82a20", "#098137", "#770808", "grey80", "#770808", 
+                brewer.pal(5, "PuRd")[1])
 names(party_cols) <- c(mainparties, "Internet /\nMana Party", "Other or no vote")
 
 total1 <- dirtypol %>%
