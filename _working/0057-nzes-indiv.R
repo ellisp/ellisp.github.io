@@ -74,6 +74,8 @@ p3 <- dirtypol %>%
    mutate(ddirtypol = fct_relevel(ddirtypol, levels(ddirtypol)[2:5])) %>%
    ggplot(aes(x = vpartysum, weight = prop, fill = ddirtypol)) +
    geom_bar(position = "stack", width = 0.75) +
+   geom_vline(xintercept = 9, colour = "grey60", size = 14, alpha = 0.3) +
+   geom_bar(position = "stack", width = 0.75) +
    theme(legend.position = "right") +
    scale_fill_brewer("", palette = "PuRd", direction = -1, guide = guide_legend(reverse = FALSE)) +
    scale_y_continuous("", label = percent) +
@@ -82,8 +84,7 @@ p3 <- dirtypol %>%
    ggtitle("Voter views on 'How much truth in Nicky Hager's Dirty Politics book'",
            subtitle = "Compared to party vote in the 2014 General Election\n\n
            Views about Mr Hagar's book, within each group of party voters") +
-   theme(legend.margin = unit(.80, "lines")) +
-   geom_vline(xintercept = 8.5, colour = "grey40", size = .8, alpha = 0.9, linetype = 1)
+   theme(legend.margin = unit(.80, "lines")) 
   
 
 total2 <- dirtypol %>%
@@ -102,10 +103,11 @@ p4 <- dirtypol %>%
    group_by(ddirtypol) %>%
    mutate(prop = Freq / sum(Freq)) %>%
    ggplot(aes(x = ddirtypol, weight = prop, fill = vpartysum)) +
-   geom_bar(position = "stack") +
+   geom_bar(position = "stack", width = 0.8) +
+   geom_vline(xintercept = 6, colour = "grey60", size = 38, alpha = 0.3) +
+   geom_bar(position = "stack", width = 0.8) +
    theme(legend.position = "right") +
    scale_fill_manual("Party vote", values = party_cols, guide = guide_legend(reverse = TRUE)) +
-   geom_vline(xintercept = 5.5, colour = "grey40", size = .8, alpha = 0.9, linetype = 1) +
    scale_y_continuous("\n\n\n\nProportion voting for each party\n", label = percent) +
    labs(x = "", caption = "Source: New Zealand Election Study, analysed in http://ellisp.github.io") +
    ggtitle("",
