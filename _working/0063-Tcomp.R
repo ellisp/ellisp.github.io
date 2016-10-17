@@ -1,4 +1,6 @@
 library(Tcomp)
+library(ggplot2)
+library(scales)
 library(forecastHybrid)
 library(tidyr)
 library(dplyr)
@@ -6,10 +8,29 @@ library(parallel)
 library(english)
 library(directlabels)
 
+
+#---basics----------
+tourism
+
+svg("../img/0063-t500.svg", 8, 6)
+round(forecast_comp(tourism[[500]], tests = list(2, 4, 6, 8), 
+                    plot = TRUE, family = "myfont", font.main = 1)
+      , 2)
+dev.off()
+
+svg("../img/0063-M31000.svg", 8, 6)
+library(Mcomp)
+round(forecast_comp(M3[[1000]], tests = list(2, 4, 6, 8), 
+                    plot = TRUE, family = "myfont", font.main = 1), 
+      2)
+dev.off()
+
+#----------------------helper function for comparing forecasts---------
 #' Function to perform five forecasts to all members of a set of series
 #' ARIMA, ETS, Theta, Naive and ensemble of ETS and ARIMA
 #' @param the_series a list of class Mcomp containing series of class Mdata
 #' @param tests a list of horizons over which to return the MASE of the forecast
+#' @return a list of results
 accuracy_point <- function (the_series, tests = list(the_series$h)) {
    x <- the_series$x
    xx <- the_series$xx
