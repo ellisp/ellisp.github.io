@@ -5,7 +5,7 @@ date: 2016-10-12
 tag: 
    - R
    - NewZealand
-   - TimeSeries
+   - Timeseries
 description: ggseas 0.5.1 is available on CRAN.  
 image: /img/0060-seas-rents.svg
 socialimage: http://ellisp.github.io/img/0060-seas-rents.png

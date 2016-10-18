@@ -1,4 +1,43 @@
+
+#---basics----------
 library(Tcomp)
+
+svg("../img/0063-x-only.svg", 7, 5)
+par(family = "myfont", font.main = 1, bty = "l")
+plot(tourism[[34]]$x)
+dev.off()
+
+
+svg("../img/0063-basic.svg", 7, 5)
+par(family = "myfont", font.main = 1, bty = "l")
+plot(tourism[[34]])
+dev.off()
+
+
+
+svg("../img/0063-t500.svg", 8, 6)
+round(forecast_comp(tourism[[500]], tests = list(2, 4, 6, 8), 
+                    plot = TRUE, family = "myfont", font.main = 1)
+      , 2)
+dev.off()
+
+png("../img/0063-t500.png", 800, 600, res = 100)
+round(forecast_comp(tourism[[500]], tests = list(2, 4, 6, 8), 
+                    plot = TRUE, family = "myfont", font.main = 1)
+      , 2)
+dev.off()
+
+
+svg("../img/0063-M31000.svg", 8, 6)
+library(Mcomp)
+round(forecast_comp(M3[[1000]], tests = list(2, 4, 6, 8), 
+                    plot = TRUE, family = "myfont", font.main = 1), 
+      2)
+dev.off()
+
+
+
+#------setup-------
 library(ggplot2)
 library(scales)
 library(forecastHybrid)
@@ -7,23 +46,6 @@ library(dplyr)
 library(parallel)
 library(english)
 library(directlabels)
-
-
-#---basics----------
-tourism
-
-svg("../img/0063-t500.svg", 8, 6)
-round(forecast_comp(tourism[[500]], tests = list(2, 4, 6, 8), 
-                    plot = TRUE, family = "myfont", font.main = 1)
-      , 2)
-dev.off()
-
-svg("../img/0063-M31000.svg", 8, 6)
-library(Mcomp)
-round(forecast_comp(M3[[1000]], tests = list(2, 4, 6, 8), 
-                    plot = TRUE, family = "myfont", font.main = 1), 
-      2)
-dev.off()
 
 #----------------------helper function for comparing forecasts---------
 #' Function to perform five forecasts to all members of a set of series
