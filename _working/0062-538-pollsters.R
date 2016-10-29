@@ -3,6 +3,7 @@ library(tidyr)
 library(ggplot2)
 library(viridis)
 library(ggthemes)
+library(wordcloud)
 
 # this next code will need to be adapted if you don't have a ../data/ folder...
 # alternatively, if that link stops working, there's a static copy at http://ellisp.github.io/data/polls.csv
@@ -98,45 +99,53 @@ p4 <- pollsonly %>%
         caption = "Data compiled by FiveThirtyEight, analysis by http://ellisp.github.io")
 
 
+#==========pollster infographics=============
+# create summary pollster info.  Most pollsters always have the same grade, a few
+# sometimes have different grades and sometimes have their grade missing
+palette <- magma(length(grades))[length(grades):1]
 
 pollsters <- pollsonly %>%
    group_by(pollster) %>%
-   summarise(grade = max(grade),
+   mutate(graden = ifelse(grade == "", NA, as.numeric(grade))) %>%
+   summarise(grade = round(mean(graden, na.rm = TRUE)),
              totalweight = sum(poll_wt),
              totalsample = sum(samplesize)) %>%
-   arrange(totalweight) %>%
-   mutate(pollster = factor(pollster, levels = pollster))
-
-# infographic of the various pollsters and their weights
-p3 <- pollsters %>%
-   ggplot(aes(x = totalweight, y = pollster, label = pollster, colour = grade)) +
-   geom_text(aes(size = totalsample), hjust = 0) +
-   theme_tufte(base_family = "myfont") +
-   theme(axis.text.y = element_blank(),
-         axis.ticks.y = element_blank(),
-         text = element_text(colour = "grey50")) +
-   theme(panel.background = element_rect(fill = "black", colour = NA)) +
-   scale_color_viridis(discrete = TRUE, direction = -1, option = "viridis") +
-   theme(legend.position = c(0.8, 0.5)) +
-   scale_x_continuous("Total weight towards forecasts",
-                breaks = seq(from = 0, to = 200, by = 50), limits = c(0, 270)) +
-   labs(y = "Pollsters arranged by weight that FiveThirtyEight gives to their surveys",
-        colour = "Pollster grade") +
-   guides(colour =  guide_legend(override.aes = list(size = 4)),
-          size = guide_legend(override.aes = list(colour = "grey80"))) +
-   scale_size("Combined sample size", label = comma, range = c(1, 9)) +
-   ggtitle("The pollsters used by FiveThirtyEight",
-           subtitle = "As at 29 October 2016")
+   mutate(grade = ifelse(is.na(grade), 11, grade),
+          grade = factor(grade, levels = 1:11, labels = grades),
+          grade_colours = palette[as.numeric(grade)]) %>%
+   ungroup() 
 
 
+plotcloud <- function(){
+   par(family = "myfont")   
+   par(bg = "grey40")
+   set.seed(223)
+   wordcloud(words = pollsters$pollster,
+             freq = pollsters$totalweight * 10000,
+             colors = pollsters$grade_colours,
+             random.order = FALSE,
+             ordered.colors = TRUE, 
+             family = "myfont")
+   grid.text(0.55, 0.03, hjust = 0,
+             label = "Size is mapped to total combined weight as at 29/10/2016;\nColour is mapped to pollster grade (lighter is better).", 
+             gp = gpar(col = "grey90", fontfamily = "myfont", cex = 0.8))
+   grid.text(0.03, 0.97, hjust = 0, label = "The pollster data used by FiveThirtyEight", 
+             gp = gpar(col = "grey90", fontfamily = "myfont", cex = 1.5))
+   legend("bottomleft", title = "", bg = "grey45", box.lty = 0,
+          legend = c(levels(pollsters$grade)[1:10], "None"), text.col = palette)
+}
 
-svg("../img/0062-pollsters.svg", 11, 11)   
-print(p3)
+svg("../img/0062-pollsters-cloud.svg", 9, 8)
+   plotcloud()
 dev.off()
 
-png("../img/0062-pollsters.png", 11 * 72, 11 * 72)   
-print(p3)
+png("../img/0062-pollsters-cloud.png", 900, 800, res = 100)
+   plotcloud()
 dev.off()
+
+
+
+#==============save images==============
 
 
 svg("../img/0062-clinton.svg", 10, 10)   
