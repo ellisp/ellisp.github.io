@@ -1,0 +1,374 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Timeseries forecasting using extreme gradient boosting</title>
+      	
+         
+         
+            <meta name ="description" content ="I'm working on a new R package to make it easier to forecast timeseries with the xgboost machine learning algorithm.  So far in tests against large competition data collections (thousands of timeseries), it performs comparably to the nnetar neural network method, but not as well as more traditional timeseries methods like auto.arima and theta.">
+            <meta property="og:description" content ="I'm working on a new R package to make it easier to forecast timeseries with the xgboost machine learning algorithm.  So far in tests against large competition data collections (thousands of timeseries), it performs comparably to the nnetar neural network method, but not as well as more traditional timeseries methods like auto.arima and theta.">
+         
+         <meta property="og:site_name" content="Peter's stats stuff" />
+         <meta property="og:title" content="Timeseries forecasting using extreme gradient boosting" />
+         
+            <meta property="og:image" content="http://ellisp.github.io/img/0066-tcomp.png" />
+         
+         <meta property="og:url" content="http://ellisp.github.io/blog/2016/11/06/forecastxgb/" />
+         <meta property="og:author" content= "https://www.facebook.com/peter.ellis.353" />
+         <meta property="og:type" content="article" />
+           
+          <link href="/css/bootstrap.min.css" rel ="stylesheet">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet">
+            <link href="/css/custom.css" rel ="stylesheet">     
+		<link href="/css/syntax.css" rel ="stylesheet">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="Peter's stats stuff by Peter Ellis"
+      href="/feed.xml">
+
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Peter's stats stuff</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">All blog posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">Ordered by date</a></li>
+                  <li><a href="/blog/index_by_tag.html">Grouped by subject matter</a></li>
+                  <li><a href = /blog/2016/11/06/forecastxgb>Most recent post</a></li>
+                 </ul>
+            </li>
+              <li><a href="/blog/showcase.html">Showcase</a></li>
+              <li><a href="/presentations/index.html">Presentations</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			    <div class="jumbotron">
+      <div class="container">
+        <h1>Timeseries forecasting using extreme gradient boosting</h1>
+         <p class="meta">06 Nov 2016</p>
+        
+      </div>
+    </div>
+
+
+
+
+<div class = "post-summary">
+<h2>TL;DR Summary:</h2>
+   I'm working on a new R package to make it easier to forecast timeseries with the xgboost machine learning algorithm.  So far in tests against large competition data collections (thousands of timeseries), it performs comparably to the nnetar neural network method, but not as well as more traditional timeseries methods like auto.arima and theta.
+   <hr></hr>
+</div>
+
+<div class="post">
+<div class="col-md-2">
+
+</div>
+  <div class="col-md-8">
+
+  <p>In the last few years there have been more attempts at a fresh approach to statistical timeseries forecasting using the increasingly accessible tools of machine learning.  This means methods like <a href="http://www.neural-forecasting-competition.com/index.htm">neural networks</a> and extreme <a href="https://en.wikipedia.org/wiki/Gradient_boosting">gradient boosting</a>, as supplements or even replacements of the more traditional tools like auto-regressive integrated moving average (ARIMA) models.</p>
+
+<p>As an example aiming to get these methods into accessible production, Rob Hyndman’s <code class="highlighter-rouge">forecast</code> R package now includes the <code class="highlighter-rouge">nnetar</code> function.  This takes lagged versions of the target variable as inputs and uses a neural network with a single hidden layer to model the results.  Forecasting is then done one period at a time, with each new period then becoming part of the matrix of explanatory variables for the subsequent periods.  All this is put into play (from the user’s perspective) with one or two lines of easily understood code.</p>
+
+<p>I’ve started on an <a href="https://github.com/ellisp/forecastxgb-r-package/">R package <code class="highlighter-rouge">forecastxgb</code></a> which will adapt this approach to extreme gradient boosting, popularly implemented by the astonishingly fast and effective <a href="https://CRAN.R-project.org/package=xgboost"><code class="highlighter-rouge">xgboost</code></a> algorithm.  <code class="highlighter-rouge">xgboost</code> has become dominant in parts of the predictive analytics field, particularly through competitions such as those hosted by Kaggle.  From the <a href="https://github.com/ellisp/forecastxgb-r-package/blob/master/pkg/vignettes/xgbts.Rmd"><code class="highlighter-rouge">forecastxgb</code> vignette</a>:</p>
+
+<blockquote>
+  <p>The <code class="highlighter-rouge">forecastxgb</code> package aims to provide time series modelling and forecasting functions that combine the machine learning approach of Chen, He and Benesty’s <a href="https://CRAN.R-project.org/package=xgboost"><code class="highlighter-rouge">xgboost</code></a> with the convenient handling of time series and familiar API of Rob Hyndman’s <a href="http://github.com/robjhyndman/forecast"><code class="highlighter-rouge">forecast</code></a>.  It applies to time series the Extreme Gradient Boosting proposed in <a href="http://www.jstor.org/stable/2699986"><em>Greedy Function Approximation: A Gradient Boosting Machine</em>, by Jerome Friedman in 2001</a>. xgboost has become an important machine learning algorithm; nicely explained in <a href="http://xgboost.readthedocs.io/en/latest/model.html">this accessible documentation</a>.</p>
+</blockquote>
+
+<p>My aim is to make the data handling - creating all those lagged variables, and lagged versions of the xreg variables, and dummies for seasons - easy, and to make the API familiar to timeseries analysts familiar with the <code class="highlighter-rouge">forecast</code> package.  Usage is straightforward, as shown here modelling Australia’s quarterly gas production using the <code class="highlighter-rouge">gas</code> time series included with <code class="highlighter-rouge">forecast</code>:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">devtools</span><span class="o">::</span><span class="n">install_github</span><span class="p">(</span><span class="s2">"ellisp/forecastxgb-r-package/pkg"</span><span class="p">)</span><span class="w"> </span><span class="c1"># CRAN release still to come
+</span><span class="n">library</span><span class="p">(</span><span class="n">forecastxgb</span><span class="p">)</span><span class="w">
+</span><span class="n">model</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">xgbts</span><span class="p">(</span><span class="n">gas</span><span class="p">)</span><span class="w">
+</span><span class="n">fc</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">forecast</span><span class="p">(</span><span class="n">model</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">12</span><span class="p">)</span><span class="w">
+</span><span class="n">plot</span><span class="p">(</span><span class="n">fc</span><span class="p">)</span></code></pre></figure>
+
+<p><em>[results not shown but will look familiar to anyone using the <code class="highlighter-rouge">forecast</code> toolkit]</em></p>
+
+<p>I’m hoping that at least a few people will try it out and give me feedback before I feel comfortable publishing it on CRAN.</p>
+
+<p>The <a href="https://github.com/ellisp/forecastxgb-r-package/blob/master/pkg/vignettes/xgbts.Rmd">vignette</a> has more examples, including with external regressors via the <code class="highlighter-rouge">xreg=</code> argument.  This is where I think the approach might have something to offer that is competitive with traditional techniques, but I’m still on the lookout for a ready-to-go mass collection of data with x regressors, set up like a forecasting competition (ie with the actual results for assessment), to test it against.</p>
+
+<p>Here is an extended univariate test of my new <code class="highlighter-rouge">xgbts</code> function against <code class="highlighter-rouge">nnetar</code> and two more traditional time series methods - ARIMA and the Theta method.  Because it is well known that forecasting is more successful when averages of several forecasts are used, I also look at all the combinations of the four models, meaning there are 15 different sets of forecasts in the end for each data series.  I test the approach on the 1,311 data series from the <a href="/blog/2016/10/19/Tcomp">2010 Tourism forecasting competition</a> conveniently available in the <code class="highlighter-rouge">Tcomp</code> R package which I released and blogged about a few weeks ago.  The chart below shows mean absolute scaled error (MASE) of the various models’ forecasts when confronted with the actual results.</p>
+
+<p><img src="/img/0066-tcomp.png" alt="tcomp-results" /></p>
+
+<p>We see the overall best performing ensemble is the average of the Theta and ARIMA models - the two from the more traditional timeseries forecasting approach.  The two machine learning methods (neural network and extreme gradient boosting) are not as effective, at least in these implementations.  As individual methods, they are the two weakest, although the extreme gradient boosting method provided in <code class="highlighter-rouge">forecastxgb</code> performs noticeably better than <code class="highlighter-rouge">forecast::nnetar</code> (with this particular set of data - as I write, my computer finishes churning through all 3,000+ M3 competition datasets, which goes the other way in terms of <code class="highlighter-rouge">xgbts</code> versus <code class="highlighter-rouge">nnetar</code>).</p>
+
+<p>Theta by itself is the best performing with the annual data - simple methods work well when the dataset is small and highly aggregate.  The best that can be said of the <code class="highlighter-rouge">xgbts</code> approach in this context is that it doesn’t damage the Theta method much when included in a combination - several of the better performing ensembles have <code class="highlighter-rouge">xgbts</code> as one of their members.  In contrast, the neural network models do badly with this particular collection of annual data.</p>
+
+<p>Adding <code class="highlighter-rouge">auto.arima</code> and <code class="highlighter-rouge">xgbts</code> to an ensemble of quarterly or monthly data definitely improves on Theta by itself.  The best performing single model for quarterly or monthly data is <code class="highlighter-rouge">auto.arima</code> followed by <code class="highlighter-rouge">thetaf</code>.  Again, neural networks are the poorest of the four individual models.</p>
+
+<p>Overall, I conclude that with this sort of univariate data, <code class="highlighter-rouge">xgbts</code> with its current default settings has little to add to an ensemble that already contains <code class="highlighter-rouge">auto.arima</code> and <code class="highlighter-rouge">thetaf</code> (or - not shown - the closely related <code class="highlighter-rouge">ets</code>).  It’s likely that more investigation will show differing results with differing defaults, particuarly of the maximum number of lags to use.  It’s also possible that inclusion of <code class="highlighter-rouge">xreg</code> external regressors might shift the balance in favour of <code class="highlighter-rouge">xgbts</code> and maybe even <code class="highlighter-rouge">nnetar</code> - the more complex and larger the dataset, the better the chance that these methods will have something to offer.  Watch this space.  Any ideas welcomed.  Specific bugs, suggestions or enhancement requests are particularly welcome on the <a href="https://github.com/ellisp/forecastxgb-r-package/issues"><code class="highlighter-rouge">forecastxgb</code> page on GitHub</a>.</p>
+
+<p>Here’s the code that did that test against the tourism competition data:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#=============prep======================
+</span><span class="n">library</span><span class="p">(</span><span class="n">Tcomp</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">foreach</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">doParallel</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">forecastxgb</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">dplyr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">ggplot2</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">Mcomp</span><span class="p">)</span><span class="w">
+</span><span class="c1">#============set up cluster for parallel computing===========
+</span><span class="n">cluster</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">makeCluster</span><span class="p">(</span><span class="m">7</span><span class="p">)</span><span class="w"> </span><span class="c1"># only any good if you have at least 7 processors :)
+</span><span class="n">registerDoParallel</span><span class="p">(</span><span class="n">cluster</span><span class="p">)</span><span class="w">
+
+</span><span class="n">clusterEvalQ</span><span class="p">(</span><span class="n">cluster</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w">
+   </span><span class="n">library</span><span class="p">(</span><span class="n">Tcomp</span><span class="p">)</span><span class="w">
+   </span><span class="n">library</span><span class="p">(</span><span class="n">forecastxgb</span><span class="p">)</span><span class="w">
+   </span><span class="n">library</span><span class="p">(</span><span class="n">Mcomp</span><span class="p">)</span><span class="w">
+</span><span class="p">})</span><span class="w">
+
+
+</span><span class="c1">#===============the actual analytical function==============
+</span><span class="n">competition</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">collection</span><span class="p">,</span><span class="w"> </span><span class="n">maxfors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">collection</span><span class="p">)){</span><span class="w">
+   </span><span class="k">if</span><span class="p">(</span><span class="nf">class</span><span class="p">(</span><span class="n">collection</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">"Mcomp"</span><span class="p">){</span><span class="w">
+      </span><span class="n">stop</span><span class="p">(</span><span class="s2">"This function only works on objects of class Mcomp, eg from the Mcomp or Tcomp packages."</span><span class="p">)</span><span class="w">
+   </span><span class="p">}</span><span class="w">
+   </span><span class="n">nseries</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">collection</span><span class="p">)</span><span class="w">
+   </span><span class="n">mases</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">foreach</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">maxfors</span><span class="p">,</span><span class="w"> </span><span class="n">.combine</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"rbind"</span><span class="p">)</span><span class="w"> </span><span class="o">%dopar%</span><span class="w"> </span><span class="p">{</span><span class="w">
+      </span><span class="n">thedata</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">collection</span><span class="p">[[</span><span class="n">i</span><span class="p">]]</span><span class="w">  
+      </span><span class="n">mod1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">xgbts</span><span class="p">(</span><span class="n">thedata</span><span class="o">$</span><span class="n">x</span><span class="p">)</span><span class="w">
+      </span><span class="n">fc1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">forecast</span><span class="p">(</span><span class="n">mod1</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">thedata</span><span class="o">$</span><span class="n">h</span><span class="p">)</span><span class="w">
+      </span><span class="n">fc2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">thetaf</span><span class="p">(</span><span class="n">thedata</span><span class="o">$</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">thedata</span><span class="o">$</span><span class="n">h</span><span class="p">)</span><span class="w">
+      </span><span class="n">fc3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">forecast</span><span class="p">(</span><span class="n">auto.arima</span><span class="p">(</span><span class="n">thedata</span><span class="o">$</span><span class="n">x</span><span class="p">),</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">thedata</span><span class="o">$</span><span class="n">h</span><span class="p">)</span><span class="w">
+      </span><span class="n">fc4</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">forecast</span><span class="p">(</span><span class="n">nnetar</span><span class="p">(</span><span class="n">thedata</span><span class="o">$</span><span class="n">x</span><span class="p">),</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">thedata</span><span class="o">$</span><span class="n">h</span><span class="p">)</span><span class="w">
+      </span><span class="c1"># copy the skeleton of fc1 over for ensembles:
+</span><span class="w">      </span><span class="n">fc12</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">fc13</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">fc14</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">fc23</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">fc24</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">fc34</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">fc123</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">fc124</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">fc134</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">fc234</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">fc1234</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">fc1</span><span class="w">
+      </span><span class="c1"># replace the point forecasts with averages of member forecasts:
+</span><span class="w">      </span><span class="n">fc12</span><span class="o">$</span><span class="n">mean</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="p">(</span><span class="n">fc1</span><span class="o">$</span><span class="n">mean</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">fc2</span><span class="o">$</span><span class="n">mean</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">2</span><span class="w">
+      </span><span class="n">fc13</span><span class="o">$</span><span class="n">mean</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="p">(</span><span class="n">fc1</span><span class="o">$</span><span class="n">mean</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">fc3</span><span class="o">$</span><span class="n">mean</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">2</span><span class="w">
+      </span><span class="n">fc14</span><span class="o">$</span><span class="n">mean</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="p">(</span><span class="n">fc1</span><span class="o">$</span><span class="n">mean</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">fc4</span><span class="o">$</span><span class="n">mean</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">2</span><span class="w">
+      </span><span class="n">fc23</span><span class="o">$</span><span class="n">mean</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="p">(</span><span class="n">fc2</span><span class="o">$</span><span class="n">mean</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">fc3</span><span class="o">$</span><span class="n">mean</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">2</span><span class="w">
+      </span><span class="n">fc24</span><span class="o">$</span><span class="n">mean</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="p">(</span><span class="n">fc2</span><span class="o">$</span><span class="n">mean</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">fc4</span><span class="o">$</span><span class="n">mean</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">2</span><span class="w">
+      </span><span class="n">fc34</span><span class="o">$</span><span class="n">mean</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="p">(</span><span class="n">fc3</span><span class="o">$</span><span class="n">mean</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">fc4</span><span class="o">$</span><span class="n">mean</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">2</span><span class="w">
+      </span><span class="n">fc123</span><span class="o">$</span><span class="n">mean</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="p">(</span><span class="n">fc1</span><span class="o">$</span><span class="n">mean</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">fc2</span><span class="o">$</span><span class="n">mean</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">fc3</span><span class="o">$</span><span class="n">mean</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">3</span><span class="w">
+      </span><span class="n">fc124</span><span class="o">$</span><span class="n">mean</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="p">(</span><span class="n">fc1</span><span class="o">$</span><span class="n">mean</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">fc2</span><span class="o">$</span><span class="n">mean</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">fc4</span><span class="o">$</span><span class="n">mean</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">3</span><span class="w">
+      </span><span class="n">fc134</span><span class="o">$</span><span class="n">mean</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="p">(</span><span class="n">fc1</span><span class="o">$</span><span class="n">mean</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">fc3</span><span class="o">$</span><span class="n">mean</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">fc4</span><span class="o">$</span><span class="n">mean</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">3</span><span class="w">
+      </span><span class="n">fc234</span><span class="o">$</span><span class="n">mean</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="p">(</span><span class="n">fc2</span><span class="o">$</span><span class="n">mean</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">fc3</span><span class="o">$</span><span class="n">mean</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">fc4</span><span class="o">$</span><span class="n">mean</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">3</span><span class="w">
+      </span><span class="n">fc1234</span><span class="o">$</span><span class="n">mean</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="p">(</span><span class="n">fc1</span><span class="o">$</span><span class="n">mean</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">fc2</span><span class="o">$</span><span class="n">mean</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">fc3</span><span class="o">$</span><span class="n">mean</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">fc4</span><span class="o">$</span><span class="n">mean</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">4</span><span class="w">
+      </span><span class="n">mase</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">accuracy</span><span class="p">(</span><span class="n">fc1</span><span class="p">,</span><span class="w"> </span><span class="n">thedata</span><span class="o">$</span><span class="n">xx</span><span class="p">)[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">6</span><span class="p">],</span><span class="w">
+                </span><span class="n">accuracy</span><span class="p">(</span><span class="n">fc2</span><span class="p">,</span><span class="w"> </span><span class="n">thedata</span><span class="o">$</span><span class="n">xx</span><span class="p">)[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">6</span><span class="p">],</span><span class="w">
+                </span><span class="n">accuracy</span><span class="p">(</span><span class="n">fc3</span><span class="p">,</span><span class="w"> </span><span class="n">thedata</span><span class="o">$</span><span class="n">xx</span><span class="p">)[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">6</span><span class="p">],</span><span class="w">
+                </span><span class="n">accuracy</span><span class="p">(</span><span class="n">fc4</span><span class="p">,</span><span class="w"> </span><span class="n">thedata</span><span class="o">$</span><span class="n">xx</span><span class="p">)[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">6</span><span class="p">],</span><span class="w">
+                </span><span class="n">accuracy</span><span class="p">(</span><span class="n">fc12</span><span class="p">,</span><span class="w"> </span><span class="n">thedata</span><span class="o">$</span><span class="n">xx</span><span class="p">)[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">6</span><span class="p">],</span><span class="w">
+                </span><span class="n">accuracy</span><span class="p">(</span><span class="n">fc13</span><span class="p">,</span><span class="w"> </span><span class="n">thedata</span><span class="o">$</span><span class="n">xx</span><span class="p">)[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">6</span><span class="p">],</span><span class="w">
+                </span><span class="n">accuracy</span><span class="p">(</span><span class="n">fc14</span><span class="p">,</span><span class="w"> </span><span class="n">thedata</span><span class="o">$</span><span class="n">xx</span><span class="p">)[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">6</span><span class="p">],</span><span class="w">
+                </span><span class="n">accuracy</span><span class="p">(</span><span class="n">fc23</span><span class="p">,</span><span class="w"> </span><span class="n">thedata</span><span class="o">$</span><span class="n">xx</span><span class="p">)[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">6</span><span class="p">],</span><span class="w">
+                </span><span class="n">accuracy</span><span class="p">(</span><span class="n">fc24</span><span class="p">,</span><span class="w"> </span><span class="n">thedata</span><span class="o">$</span><span class="n">xx</span><span class="p">)[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">6</span><span class="p">],</span><span class="w">
+                </span><span class="n">accuracy</span><span class="p">(</span><span class="n">fc34</span><span class="p">,</span><span class="w"> </span><span class="n">thedata</span><span class="o">$</span><span class="n">xx</span><span class="p">)[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">6</span><span class="p">],</span><span class="w">
+                </span><span class="n">accuracy</span><span class="p">(</span><span class="n">fc123</span><span class="p">,</span><span class="w"> </span><span class="n">thedata</span><span class="o">$</span><span class="n">xx</span><span class="p">)[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">6</span><span class="p">],</span><span class="w">
+                </span><span class="n">accuracy</span><span class="p">(</span><span class="n">fc124</span><span class="p">,</span><span class="w"> </span><span class="n">thedata</span><span class="o">$</span><span class="n">xx</span><span class="p">)[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">6</span><span class="p">],</span><span class="w">
+                </span><span class="n">accuracy</span><span class="p">(</span><span class="n">fc134</span><span class="p">,</span><span class="w"> </span><span class="n">thedata</span><span class="o">$</span><span class="n">xx</span><span class="p">)[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">6</span><span class="p">],</span><span class="w">
+                </span><span class="n">accuracy</span><span class="p">(</span><span class="n">fc234</span><span class="p">,</span><span class="w"> </span><span class="n">thedata</span><span class="o">$</span><span class="n">xx</span><span class="p">)[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">6</span><span class="p">],</span><span class="w">
+                </span><span class="n">accuracy</span><span class="p">(</span><span class="n">fc1234</span><span class="p">,</span><span class="w"> </span><span class="n">thedata</span><span class="o">$</span><span class="n">xx</span><span class="p">)[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">6</span><span class="p">])</span><span class="w">
+      </span><span class="n">mase</span><span class="w">
+   </span><span class="p">}</span><span class="w">
+   </span><span class="n">message</span><span class="p">(</span><span class="s2">"Finished fitting models"</span><span class="p">)</span><span class="w">
+   </span><span class="n">colnames</span><span class="p">(</span><span class="n">mases</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"x"</span><span class="p">,</span><span class="w"> </span><span class="s2">"f"</span><span class="p">,</span><span class="w"> </span><span class="s2">"a"</span><span class="p">,</span><span class="w"> </span><span class="s2">"n"</span><span class="p">,</span><span class="w"> </span><span class="s2">"xf"</span><span class="p">,</span><span class="w"> </span><span class="s2">"xa"</span><span class="p">,</span><span class="w"> </span><span class="s2">"xn"</span><span class="p">,</span><span class="w"> </span><span class="s2">"fa"</span><span class="p">,</span><span class="w"> </span><span class="s2">"fn"</span><span class="p">,</span><span class="w"> </span><span class="s2">"an"</span><span class="p">,</span><span class="w">
+                        </span><span class="s2">"xfa"</span><span class="p">,</span><span class="w"> </span><span class="s2">"xfn"</span><span class="p">,</span><span class="w"> </span><span class="s2">"xan"</span><span class="p">,</span><span class="w"> </span><span class="s2">"fan"</span><span class="p">,</span><span class="w"> </span><span class="s2">"xfan"</span><span class="p">)</span><span class="w">
+   </span><span class="nf">return</span><span class="p">(</span><span class="n">mases</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+
+
+</span><span class="c1">## Test on a small set of data, useful during dev
+</span><span class="n">small_collection</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="n">tourism</span><span class="p">[[</span><span class="m">1</span><span class="p">]],</span><span class="w"> </span><span class="n">tourism</span><span class="p">[[</span><span class="m">2</span><span class="p">]],</span><span class="w"> </span><span class="n">tourism</span><span class="p">[[</span><span class="m">3</span><span class="p">]],</span><span class="w"> </span><span class="n">tourism</span><span class="p">[[</span><span class="m">4</span><span class="p">]],</span><span class="w"> </span><span class="n">tourism</span><span class="p">[[</span><span class="m">5</span><span class="p">]],</span><span class="w"> </span><span class="n">tourism</span><span class="p">[[</span><span class="m">6</span><span class="p">]])</span><span class="w">
+</span><span class="nf">class</span><span class="p">(</span><span class="n">small_collection</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"Mcomp"</span><span class="w">
+</span><span class="n">test1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">competition</span><span class="p">(</span><span class="n">small_collection</span><span class="p">)</span><span class="w">
+
+
+</span><span class="c1">#========Fit models==============
+</span><span class="n">system.time</span><span class="p">(</span><span class="n">t</span><span class="m">1</span><span class="w">  </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">competition</span><span class="p">(</span><span class="n">subset</span><span class="p">(</span><span class="n">tourism</span><span class="p">,</span><span class="w"> </span><span class="s2">"yearly"</span><span class="p">)))</span><span class="w">
+</span><span class="n">system.time</span><span class="p">(</span><span class="n">t</span><span class="m">4</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">competition</span><span class="p">(</span><span class="n">subset</span><span class="p">(</span><span class="n">tourism</span><span class="p">,</span><span class="w"> </span><span class="s2">"quarterly"</span><span class="p">)))</span><span class="w">
+</span><span class="n">system.time</span><span class="p">(</span><span class="n">t</span><span class="m">12</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">competition</span><span class="p">(</span><span class="n">subset</span><span class="p">(</span><span class="n">tourism</span><span class="p">,</span><span class="w"> </span><span class="s2">"monthly"</span><span class="p">)))</span><span class="w">
+
+</span><span class="c1"># shut down cluster to avoid any mess:
+</span><span class="n">stopCluster</span><span class="p">(</span><span class="n">cluster</span><span class="p">)</span><span class="w">
+
+
+</span><span class="c1">#==============present tourism results================
+</span><span class="n">results</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">apply</span><span class="p">(</span><span class="n">t</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">mean</span><span class="p">),</span><span class="w">
+             </span><span class="n">apply</span><span class="p">(</span><span class="n">t</span><span class="m">4</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">mean</span><span class="p">),</span><span class="w">
+             </span><span class="n">apply</span><span class="p">(</span><span class="n">t</span><span class="m">12</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">mean</span><span class="p">))</span><span class="w">
+
+</span><span class="n">results_df</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.frame</span><span class="p">(</span><span class="n">MASE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">results</span><span class="p">)</span><span class="w">
+</span><span class="n">results_df</span><span class="o">$</span><span class="n">model</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">as.character</span><span class="p">(</span><span class="nf">names</span><span class="p">(</span><span class="n">results</span><span class="p">))</span><span class="w">
+</span><span class="n">periods</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Annual"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Quarterly"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Monthly"</span><span class="p">)</span><span class="w">
+</span><span class="n">results_df</span><span class="o">$</span><span class="n">Frequency</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">rep.int</span><span class="p">(</span><span class="n">periods</span><span class="p">,</span><span class="w"> </span><span class="n">times</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">15</span><span class="p">,</span><span class="w"> </span><span class="m">15</span><span class="p">,</span><span class="w"> </span><span class="m">15</span><span class="p">))</span><span class="w">
+
+</span><span class="n">best</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">results_df</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">group_by</span><span class="p">(</span><span class="n">model</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">summarise</span><span class="p">(</span><span class="n">MASE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">MASE</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">arrange</span><span class="p">(</span><span class="n">MASE</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">Frequency</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Average"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">Tcomp_results</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">results_df</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">rbind</span><span class="p">(</span><span class="n">best</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">factor</span><span class="p">(</span><span class="n">model</span><span class="p">,</span><span class="w"> </span><span class="n">levels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">best</span><span class="o">$</span><span class="n">model</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">Frequency</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">factor</span><span class="p">(</span><span class="n">Frequency</span><span class="p">,</span><span class="w"> </span><span class="n">levels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Annual"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Average"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Quarterly"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Monthly"</span><span class="p">)))</span><span class="w">
+
+</span><span class="n">leg</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"f: Theta; forecast::thetaf\na: ARIMA; forecast::auto.arima
+n: Neural network; forecast::nnetar\nx: Extreme gradient boosting; forecastxgb::xgbts"</span><span class="w">
+
+</span><span class="n">Tcomp_results</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">model</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="n">MASE</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Frequency</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">model</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_text</span><span class="p">(</span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">6</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_line</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">model</span><span class="p">)),</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.25</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="s2">"Mean scaled absolute error\n(smaller numbers are better)"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">annotate</span><span class="p">(</span><span class="s2">"text"</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3.5</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">leg</span><span class="p">,</span><span class="w"> </span><span class="n">hjust</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Average error of four different timeseries forecasting methods\n2010 Tourism Forecasting Competition data"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Model, or ensemble of models\n(further to the left means better overall performance)"</span><span class="p">)</span></code></pre></figure>
+
+
+
+</div>
+
+<div class = "container">
+   <div class="col-md-4">
+    
+        <a rel="prev" href="/blog/2016/10/29/538-pollsters">
+        <p>&larr; Older</p>
+        <p>FiveThirtyEight's polling data for the US Presidential election</p>
+        
+        </a>
+    
+    </div>
+    <div class="col-md-4">
+    </div>
+    <div class="col-md-4" style="text-align: right;">
+    
+      </div>
+      </div>
+      
+      
+      
+</div>
+
+
+   
+    <div id="disqus_thread"></div>
+
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+    
+    
+   
+			
+			</div><!-- /.container -->
+
+         
+
+   <div class = "container footer">
+			<footer>
+	    		
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.  Or follow <a href = "/feed.r.xml">posts in this blog featuring R with RSS</a>.</p>
+			
+            <p>This blog is built with <a href = "http://jekyllrb.com/">Jekyll</a>, <a href = "http://getbootstrap.com/">Bootstrap</a>, <a href = "https://www.ruby-lang.org/en/">Ruby</a> and <a href = "https://cran.r-project.org/">R</a>.  Read my <a href="/about/acknowledgements.html">acknowledgements</a> for a little more on how.  I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+
+			<div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="true" data-share="false"></div>
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Peter's stats stuff</span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			
+			
+
+			</footer>
+    </div>
+
+
+
+  
+</body>
+</html>
+   
+
+
+
+
+         
