@@ -7,7 +7,7 @@ n: Neural network; forecast::nnetar\nx: Extreme gradient boosting; forecastxgb::
 
 p1 <- Tcomp_results %>%
    ggplot(aes(x = model, y =  MASE, colour = Frequency, label = model)) +
-   geom_text(size = 6) +
+   geom_text(size = 4) +
    geom_line(aes(x = as.numeric(model)), alpha = 0.25) +
    scale_y_continuous("Mean scaled absolute error\n(smaller numbers are better)") +
    annotate("text", x = 2, y = 3.5, label = leg, hjust = 0) +

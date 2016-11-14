@@ -4,7 +4,7 @@ title: Timeseries forecasting using extreme gradient boosting
 date: 2016-11-06
 tag: 
    - R
-   - TimeSeries
+   - Timeseries
    - MachineLearning
 description: I'm working on a new R package to make it easier to forecast timeseries with the xgboost machine learning algorithm.  So far in tests against large competition data collections (thousands of timeseries), it performs comparably to the nnetar neural network method, but not as well as more traditional timeseries methods like auto.arima and theta.
 image: /img/0066-tcomp.svg
