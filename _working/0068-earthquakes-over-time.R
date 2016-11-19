@@ -56,6 +56,11 @@ svg("../img/0068-m1.svg", 10, 6)
 print(m1)
 dev.off()
 
+png("../img/0068-m1.png", 1000, 600, res = 100)
+print(m1)
+dev.off()
+
+
 #=======aggregate by day===============
 quakes_g <- quakes_df %>%
    filter(eventtype == "earthquake") %>%
