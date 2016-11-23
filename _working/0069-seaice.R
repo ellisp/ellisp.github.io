@@ -1,103 +1,75 @@
-library(readr)
 library(dplyr)
 library(ggplot2)
 library(scales)
 library(viridis)
-library(tidyr)
 library(seasonal)
 library(ggseas)
 library(forecast)
-library(forecastHybrid)
-library(directlabels)
 library(ggthemes)
+library(testthat)
+library(tibble)
+library(lubridate) # for yday
 #=============download===========
-# https://nsidc.org/data/docs/noaa/g02135_seaice_index/#monthly_data_files
-# 3.1.6 Monthly Sea Ice Extent and Area Data Files
-# 
-# file naming convention h_mm_area.txt
-# 
-# ftp from here: ftp://sidads.colorado.edu/DATASETS/NOAA/G02135/
-   
+
+
 mon <- c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
-monnum <- gsub(" ", 0, format(1:12, width = 2))
-urls <- paste0(
-      "ftp://sidads.colorado.edu/DATASETS/NOAA/G02135/",
-      mon,
-      "/N_",
-      monnum,
-      "_area_v2.txt"  
-)
 
+# https://nsidc.org/data/docs/noaa/g02135_seaice_index/#daily_data_files
 
-tmp <- tempdir() 
+# This is the latest incomplete year's "near real time" data:
+download.file("ftp://sidads.colorado.edu/DATASETS/NOAA/G02135/north/daily/data/NH_seaice_extent_nrt_v2.csv",
+              destfile = "seaice_nrt.csv")
 
-# only about 60KB of downloading:
-for(i in 1:12){
-   download.file(urls[i], destfile = paste0(tmp, "/seaice", i, ".txt"))
-}
+# And this is the earlier, fully definitive years' data
+download.file("ftp://sidads.colorado.edu/DATASETS/NOAA/G02135/north/daily/data/NH_seaice_extent_final_v2.csv",
+              destfile = "seaice_final.csv")
 
-seaice_list <- list(12)
-maxyear <- 2016 # better would be to automate this
-for(i in 1:12){
-   # next line returns lots of warnings
-   seaice_list[[i]] <- read_fwf(paste0(tmp, "/seaice", i, ".txt"), 
-            col_positions = fwf_widths(c(5, 6, 10, 7, 7, 6),
-                                       col_names = c("year", "mo", "data_type", "region", "extent", "area")),
-            skip = 1, na = c("", "NA", "-9999"), n_max = maxyear - 1977
-            )
-}
+seaice_nrt <- read.csv("seaice_nrt.csv", skip = 2, header = FALSE)[ , 1:5]
+seaice_final <- read.csv("seaice_final.csv", skip = 2, header = FALSE)[ , 1:5]
 
-seaice <- do.call("rbind", seaice_list) %>%
-   mutate(
-      year = as.numeric(year),
-      mo = as.numeric(mo),
-      extent = as.numeric(extent),
-      area = as.numeric(area)
-   ) %>%
-   filter(!is.na(year)) %>%
-   arrange(year, mo)
+seaice <- rbind(seaice_final, seaice_nrt)
+names(seaice) <- c("year", "month", "day", "extent", "missing")
+expect_equal(sum(seaice$missing == 0), nrow(seaice))
+   
+seaice <- seaice %>%
+   mutate(date = as.Date(paste(year, month, day, sep = "-"))) %>%
+   group_by(month) %>%
+   mutate(monthday = month + day / max(day)) %>%
+   ungroup() %>%
+   mutate(month = factor(month, labels = mon)) %>%
+   arrange(year, month, day) %>%
+   mutate(timediff = c(NA, diff(date)),
+          dayofyear = yday(date))
 
+# clean up (unless you want to keep the csvs)
+unlink("seaice_nrt.csv")
+unlink("seaice_final.csv")   
 
 #================graphing================
 # try to improve on https://www.washingtonpost.com/news/energy-environment/wp/2016/11/17/the-north-pole-is-an-insane-36-degrees-warmer-than-normal-as-winter-descends/?postshare=4511479671672405&tid=ss_tw&utm_term=.7268a7dc9692
-p1 <- seaice %>%
-   select(mo, year, extent, area) %>%
-   gather(variable, value, -mo, -year) %>%
-   mutate(latestyear = (year == max(year))) %>%
-   ggplot(aes(x = mo, y = value, group = as.factor(year), colour = year, alpha = latestyear)) +
-   facet_wrap(~variable, ncol = 1) +
-   geom_line() +
-   scale_alpha_discrete(range = c(0.25, 1), guide = "none") +
-   scale_color_viridis(direction = -1)  +
-   scale_x_continuous("", breaks = 1:12, labels = mon)
-p1
-
-
-p2 <- ggplot(seaice, aes(x = extent, y = area, colour = year + mo / 12)) +
-   geom_point() +
-   geom_path() +
-   coord_equal() +
-   scale_color_viridis(direction = -1)  
-p2
 
 # difference between area and extent explained at https://nsidc.org/arcticseaicenews/faq/#area_extent
-# Basically, scientists prefer extent.
+# Basically, scientists prefer extent, and that is the only one in the daily data (monthly has area too).
 
+
+# There is a trick in the below, equally spacing the months.  this only slightly warps
+# the visual though(makes February look about 8% longer than it is), not noticeable
 p3 <- seaice %>%
    mutate(latestyear = (year == max(year))) %>%
-   ggplot(aes(x = mo, y = extent, group = as.factor(year), colour = year, alpha = latestyear)) +
+   ggplot(aes(x = monthday, y = extent, group = as.factor(year), colour = year, alpha = latestyear)) +
    geom_line() +
    scale_alpha_discrete(range = c(0.25, 1), guide = "none") +
    scale_color_viridis("", direction = -1, guide = guide_legend(reverse = FALSE))  +
-   scale_x_continuous("", breaks = 1:12, labels = mon) +
+   scale_x_continuous(breaks = 1:12, labels = mon) +
    theme_tufte(base_family = "myfont") +
    theme(legend.position = c(0.2, 0.3)) +
-   # "10.5" in the next line is a magic number, would need manual updating if done with more data:
-   annotate("text", x = 10.5, y = seaice[nrow(seaice), ]$extent, label = maxyear) +
-   ggtitle("The extent of arctic sea ice has been steadily declining",
-           subtitle = "Area of ocean with at least 15% sea ice, from the USA National Snow and Ice Data Center") +
-   labs(y = "Extent of Arctic sea ice\n(millions of square kilometres)",
-        caption = "Source: https://nsidc.org/data/docs/noaa/g02135_seaice_index/#monthly_data_files") +
+   # x coordinate in the next line is a magic number, would need manual updating if done with more data:
+   annotate("text", x = 12, y = seaice[nrow(seaice), ]$extent, label = maxyear) +
+   ggtitle("The extent of Arctic sea ice has been steadily declining...",
+           subtitle = "...but this year is special.") +
+   labs(y = "Area of ocean with at least 15% sea ice \n(millions of square kilometres)",
+        x = "",
+        caption = "Source: USA National Snow and Ice Data Center\nhttps://nsidc.org/data/docs/noaa/g02135_seaice_index/#daily_data_files") +
    theme(plot.caption = element_text(colour = "grey50"))
 
 svg("../img/0069-seaice-final.svg", 8, 4)
@@ -110,48 +82,46 @@ dev.off()
 
 
 #===============timeseries analysis==========
-seaice_extent <- seaice  %>%
-   select(extent) %>%
-   ts(frequency = 12, start = c(1978, 11)) %>%
-   tsdf()
+# the data is not actuall daily but starts as every second day until about 1987.
+# Latest date that is 2 days ahead of the previous date:
+seaice %>%
+   filter(timediff == 2)  %>%
+   filter(date == max(date)) %>%
+   select(date)
 
-seaice_extent$imputed <- FALSE
-for(i in 2:nrow(seaice_extent)){
-   if(is.na(seaice_extent[i, "y"])){
-      seaice_extent[i, "y"] <- mean(c(seaice_extent[i - 2, "y"], seaice_extent[i + 2, "y"]))
-      seaice_extent[i, "imputed"] <- TRUE
-   }
-}
-# this method makes a small dip in 1988 but is better than nothing
+seaice_daily <- seaice %>%
+   filter(date > as.Date("1987-08-20")) 
 
-
-# stl works best as the decomposition method in this case - better than X13, not sure why
-ggsdc(seaice_extent, aes(x = x, y = y), method = "stl", s.window = 7) +
+svg("../img/0069-decomposition.svg", 7, 6) 
+ggsdc(seaice_daily, aes(x = date, y = extent), method = "stl", s.window = 7, frequency = 365.25) +
    geom_line() +
-   ggtitle("Seasonal decomposition of Arctic seasonal ice coverage") +
-   labs(x = "", y = "")
-# NRTSI is an interim measure used until the GSFC data are available.
-
-# error potential - more magic numbers
-seaice_ts <- ts(seaice_extent$y, start = c(1978, 11), frequency = 12)
-
-svg("../img/0069-tsdisplay.svg", 7, 5)
-par(family = "myplot", bty = "l")
-tsdisplay(seaice_ts, main = "Arctic sea ice coverage as a time series")
+   ggtitle("Seasonal decomposition of Arctic seasonal ice coverage",
+           subtitle = "Some difficult patterns when daily data was new, then a steady decline") +
+   labs(x = "", y = "Sea ice extent\n",
+        caption = "Analysis by http://ellisp.github.io; data from National Snow and Ice Data Center")
 dev.off()
 
-svg("../img/0069-monthplot.svg", 7, 5)
-par(family = "myplot", bty = "l")
-monthplot(seaice_ts, ylab = "Arctic ice extent",
-          main = "Declining ice coverage in all twelve months")
-grid()
-dev.off()
+# adapting the method at http://robjhyndman.com/hyndsight/dailydata/
+# going to pretend no frequency in the call to ts we use later in auto.arima
+seaice_ts1 <- ts(seaice_daily$extent, frequency = 1, start = 1987 + (8 + 20 / 31) / 12 )
+seaice_ts365 <- ts(seaice_daily$extent, frequency = 365.25, start = 1987 + (8 + 20 / 31) / 12 )
 
-model <- hybridModel(seaice_ts, models = "aefs") # using the GitHub version of forecastHybrid
-seaice_fc <- forecast(model, 24)
+# and instead create a set of fourier seasonal terms
+z <- fourier(seaice_ts365, K = 5)
+zf <- fourier(seaice_ts365, K = 5, h = 2 * 365)
 
-svg("../img/0069-forecast.svg", 7, 2.7) 
-   autoplot(seaice_fc) + labs(x = "", y = "Arctic ice extent")
+model <- auto.arima(seaice_ts1, xreg = z)
+
+seaice_fc <- forecast(model, 2 * 365, xreg = zf)
+
+time(seaice_fc$mean) <- time(seaice_ts365)
+
+svg("../img/0069-forecast.svg", 7, 3.5) 
+   autoplot(seaice_fc) + 
+      labs(x = "", y = "Arctic ice extent") +
+      ggtitle("Forecast Actic ice coverage to late 2018") +
+      labs(caption = "Analysis by http://ellisp.github.io; data from National Snow and Ice Data Center",
+           x = "Days since 20 August 1987 (when daily measurements began)")
 dev.off()
 
 
