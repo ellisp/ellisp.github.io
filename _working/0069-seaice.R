@@ -124,9 +124,12 @@ for(i in 2:nrow(seaice_extent)){
 }
 # this method makes a small dip in 1988 but is better than nothing
 
+
 # stl works best as the decomposition method in this case - better than X13, not sure why
 ggsdc(seaice_extent, aes(x = x, y = y), method = "stl", s.window = 7) +
-   geom_line() 
+   geom_line() +
+   ggtitle("Seasonal decomposition of Arctic seasonal ice coverage") +
+   labs(x = "", y = "")
 # NRTSI is an interim measure used until the GSFC data are available.
 
 # error potential - more magic numbers
@@ -134,7 +137,7 @@ seaice_ts <- ts(seaice_extent$y, start = c(1978, 11), frequency = 12)
 
 svg("../img/0069-tsdisplay.svg", 7, 5)
 par(family = "myplot", bty = "l")
-tsdisplay(seaice_ts)
+tsdisplay(seaice_ts, main = "Arctic sea ice coverage as a time series")
 dev.off()
 
 svg("../img/0069-monthplot.svg", 7, 5)
