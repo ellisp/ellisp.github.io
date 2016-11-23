@@ -76,10 +76,7 @@ svg("../img/0069-seaice-final.svg", 8, 4)
 print(p3)
 dev.off()
 
-png("../img/0069-seaice-final.png", 800, 400, res = 100)
-print(p3)
-dev.off()
-
+ggsave("../img/0069-seaice-final.png", p3, width = 8, height = 4, dpi = 300)
 
 #===============timeseries analysis==========
 # the data is not actuall daily but starts as every second day until about 1987.
@@ -114,7 +111,6 @@ model <- auto.arima(seaice_ts1, xreg = z)
 
 seaice_fc <- forecast(model, 2 * 365, xreg = zf)
 
-time(seaice_fc$mean) <- time(seaice_ts365)
 
 svg("../img/0069-forecast.svg", 7, 3.5) 
    autoplot(seaice_fc) + 
@@ -125,4 +121,4 @@ svg("../img/0069-forecast.svg", 7, 3.5)
 dev.off()
 
 
-
+system('"C:\\Program Files\\ImageMagick-7.0.2-Q16\\convert" ../img/0069-forecast.svg ../img/0069-forecast.png')
