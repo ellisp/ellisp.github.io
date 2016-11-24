@@ -76,7 +76,7 @@ svg("../img/0069-seaice-final.svg", 8, 4)
 print(p3)
 dev.off()
 
-ggsave("../img/0069-seaice-final.png", p3, width = 8, height = 4, dpi = 300)
+system('"C:\\Program Files\\ImageMagick-7.0.2-Q16\\magick" -size 1600x800 ../img/0069-seaice-final.svg ../img/0069-seaice-final.png')
 
 #===============timeseries analysis==========
 # the data is not actuall daily but starts as every second day until about 1987.
@@ -97,6 +97,7 @@ ggsdc(seaice_daily, aes(x = date, y = extent), method = "stl", s.window = 7, fre
    labs(x = "", y = "Sea ice extent\n",
         caption = "Analysis by http://ellisp.github.io; data from National Snow and Ice Data Center")
 dev.off()
+system('"C:\\Program Files\\ImageMagick-7.0.2-Q16\\magick" -size 1400x1200 ../img/0069-decomposition.svg ../img/0069-decomposition.png')
 
 # adapting the method at http://robjhyndman.com/hyndsight/dailydata/
 # going to pretend no frequency in the call to ts we use later in auto.arima
@@ -119,6 +120,5 @@ svg("../img/0069-forecast.svg", 7, 3.5)
       labs(caption = "Analysis by http://ellisp.github.io; data from National Snow and Ice Data Center",
            x = "Days since 20 August 1987 (when daily measurements began)")
 dev.off()
+system('"C:\\Program Files\\ImageMagick-7.0.2-Q16\\magick" -size 1400x700 ../img/0069-forecast.svg ../img/0069-forecast.png')
 
-
-system('"C:\\Program Files\\ImageMagick-7.0.2-Q16\\convert" ../img/0069-forecast.svg ../img/0069-forecast.png')
