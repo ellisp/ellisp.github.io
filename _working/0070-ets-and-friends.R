@@ -124,3 +124,5 @@ results %>%
    ggtitle("Comparison of three related forecasting methods",
            subtitle = "'Tourism' and 'M1' competition datasets")
 dev.off()
+
+system('"C:\\Program Files\\ImageMagick-7.0.2-Q16\\magick" -size 1600x900 ../img/0070-mean.svg ../img/0070-mean.png')
