@@ -12,20 +12,22 @@ library(Mcomp)
 svg("../img/0070-eg1.svg", 8, 8)
 # Example 1
 x <- tourism[[150]]$x
-par(mfrow = c(4, 1), bty = "l", family = "myfont")
-plot(forecast(ets(x))); grid()
-plot(forecast(stlm(x))); grid()
-plot(thetaf(x)); grid()
+h <- tourism[[150]]$h
+par(mfrow = c(4, 1), bty = "l", font.main = 1, family = "myfont")
+plot(forecast(ets(x), h = h)); grid()
+plot(forecast(stlm(x), h = h)); grid()
+plot(thetaf(x, h = h)); grid()
 plot(tourism[[150]], main = "Actual results - `tourism` data series 150"); grid()
 dev.off()
 
 svg("../img/0070-eg2.svg", 8, 8)
 # Example 2
 x <- tourism[[600]]$x
-par(mfrow = c(4, 1), bty = "l", family = "myfont")
-plot(forecast(ets(x))); grid()
-plot(forecast(stlm(x))); grid()
-plot(thetaf(x)); grid()
+h <- tourism[[600]]$h
+par(mfrow = c(4, 1), bty = "l", font.main = 1, family = "myfont")
+plot(forecast(ets(x), h = h)); grid()
+plot(forecast(stlm(x), h = h)); grid()
+plot(thetaf(x, h = h)); grid()
 plot(tourism[[600]], main = "Actual results - `tourism` data series 600"); grid()
 dev.off()
 
@@ -84,16 +86,18 @@ results <- as.data.frame(rbind(t4, t12, m4, m12) ) %>%
                        times = c(nrow(t4), nrow(t12), nrow(m4), nrow(m12)))) %>%
    gather(method, MASE, -period, -dataset)
 
-svg("../img/0070-density.svg", 8, 6)
+svg("../img/0070-density.svg", 8, 5)
 results %>%
    ggplot(aes(x = MASE, colour = method, fill = method)) +
    geom_density(alpha = 0.1) + 
    geom_rug() +
+   scale_colour_brewer("", palette = "Set1") +
+   scale_fill_brewer("", palette = "Set1") +
    facet_grid(period ~ dataset) +
    scale_x_sqrt()
 dev.off()
 
-svg("../img/0070-trmean.svg", 8, 6)
+svg("../img/0070-trmean.svg", 8, 4.5)
 results %>%
    group_by(period, dataset, method) %>%
    summarise(MASE = mean(MASE, tr = 0.1)) %>%
@@ -107,7 +111,7 @@ results %>%
            subtitle = "'Tourism' and 'M1' competition datasets")
 dev.off()
 
-svg("../img/0070-mean.svg", 8, 6)
+svg("../img/0070-mean.svg", 8, 4.5)
 results %>%
    group_by(period, dataset, method) %>%
    summarise(MASE = mean(MASE, tr = 0)) %>%
