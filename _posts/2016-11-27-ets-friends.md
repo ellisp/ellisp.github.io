@@ -20,6 +20,19 @@ XXXXXXXXXX
 - `thetaf()` Seasonal adjustment via `decomp()` (classical multiplicative seasonal decomposition); `ets()` with just an additive model (no trend or seasonality); estimate trend by an adjusted form simple linear regression of the seasonally adjusted variable against time
 
 
+![eg1](/img/0070-eg1.svg)
+
+![eg2](/img/0070-eg2.svg)
+
+
+![density](/img/0070-densities.svg)
+
+![trmean](/img/0070-trmean.svg)
+
+![mean](/img/0070-mean.svg)
+
+
+
 {% highlight R %}
 
 

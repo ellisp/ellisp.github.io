@@ -5,6 +5,30 @@ library(doParallel)
 library(dplyr)
 library(tidyr)
 library(Mcomp)
+
+
+#======example datasets=============
+
+svg("../img/0070-eg1.svg", 8, 8)
+# Example 1
+x <- tourism[[150]]$x
+par(mfrow = c(4, 1), bty = "l", family = "myfont")
+plot(forecast(ets(x))); grid()
+plot(forecast(stlm(x))); grid()
+plot(thetaf(x)); grid()
+plot(tourism[[150]], main = "Actual results - `tourism` data series 150"); grid()
+dev.off()
+
+svg("../img/0070-eg2.svg", 8, 8)
+# Example 2
+x <- tourism[[600]]$x
+par(mfrow = c(4, 1), bty = "l", family = "myfont")
+plot(forecast(ets(x))); grid()
+plot(forecast(stlm(x))); grid()
+plot(thetaf(x)); grid()
+plot(tourism[[600]], main = "Actual results - `tourism` data series 600"); grid()
+dev.off()
+
 #============set up cluster for parallel computing===========
 cluster <- makeCluster(7) # only any good if you have at least 7 processors :)
 registerDoParallel(cluster)
@@ -48,9 +72,7 @@ t12 <- competition(subset(tourism, "monthly"))
 m4 <- competition(subset(M1, "quarterly"))
 m12 <- competition(subset(M1, "monthly"))
 
-
-
-# shut down cluster to avoid any mess:
+# shut down cluster
 stopCluster(cluster)
 
 #===========results=============
@@ -62,13 +84,16 @@ results <- as.data.frame(rbind(t4, t12, m4, m12) ) %>%
                        times = c(nrow(t4), nrow(t12), nrow(m4), nrow(m12)))) %>%
    gather(method, MASE, -period, -dataset)
 
+svg("../img/0070-density.svg", 8, 6)
 results %>%
    ggplot(aes(x = MASE, colour = method, fill = method)) +
    geom_density(alpha = 0.1) + 
    geom_rug() +
    facet_grid(period ~ dataset) +
    scale_x_sqrt()
+dev.off()
 
+svg("../img/0070-trmean.svg", 8, 6)
 results %>%
    group_by(period, dataset, method) %>%
    summarise(MASE = mean(MASE, tr = 0.1)) %>%
@@ -80,8 +105,9 @@ results %>%
    labs(x = "", y = "Trimmed mean of Mean Absolute Scaled Error", colour = "") +
    ggtitle("Comparison of three related forecasting methods",
            subtitle = "'Tourism' and 'M1' competition datasets")
+dev.off()
 
-
+svg("../img/0070-mean.svg", 8, 6)
 results %>%
    group_by(period, dataset, method) %>%
    summarise(MASE = mean(MASE, tr = 0)) %>%
@@ -93,3 +119,4 @@ results %>%
    labs(x = "", y = "Mean of Mean Absolute Scaled Error", colour = "") +
    ggtitle("Comparison of three related forecasting methods",
            subtitle = "'Tourism' and 'M1' competition datasets")
+dev.off()
