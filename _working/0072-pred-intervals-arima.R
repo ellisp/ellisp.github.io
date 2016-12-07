@@ -9,11 +9,7 @@ library(stringr)
 library(grid)
 library(colorspace)
 
-library(extrafont)
-theme_set(theme_light(base_family = "Calibri") + 
-             theme(legend.position = "bottom") +
-             theme(plot.caption = element_text(colour = "grey50"))) 
-update_geom_defaults("text", list(family = "Calibri"))
+
 #=============prediction interval functions===================
 #' takes a forecast object, and the actual results, and returns a data frame
 #' binary indicator of success as well as the horizon for each row and an optional
@@ -70,7 +66,12 @@ stopCluster(cluster)
 #==========present results==================
 pal <- rainbow_hcl(2)
 
-svg("../img/0072-results.svg", 7, 5)
+targetlines <- data.frame(
+   limit = c("80%", "95%"),
+   yintercept = c(0.8, 0.95)
+)
+
+svg("../img/0072-results.svg", 7, 6.5)
 results %>%
    gather(limit, success, -h, -type) %>%
    group_by(h, type, limit) %>%
@@ -85,14 +86,21 @@ results %>%
         caption = "Data generated with an ARIMA(1,1,1) process, which is much more regular than real life data.",
         colour = "Modelling approach:") +
    scale_colour_manual(values = pal) +
-   scale_x_continuous(breaks = 0:5 * 2)
+   scale_x_continuous(breaks = 0:5 * 2) +
+   geom_hline(data = targetlines, aes(yintercept = yintercept), colour = "violet", linetype = 2, size = 1.1)
 
 grid.text(0.3, y= 0.65,
-          label = str_wrap("When the true model family, and the true meta-parameters p, d, q are known, coverage is close to the 80% and 95% promised.", 33),
+          label = str_wrap("When the true model family and the true meta-parameters p, d, q are known, coverage is close to the 80% and 95% promised.", 33),
           gp = gpar(family = "myfont", col = pal[2], cex = 0.8))
 grid.text(0.8, y= 0.45,
           label = str_wrap("When the meta parameters p, d and q are estimated from the data, coverage is materially less.", 33),
           gp = gpar(family = "myfont", col = pal[1], cex = 0.8))
+
+grid.text(0.9, y = 0.779, label = "Gap from estimating\nmeta-parameters",
+          gp = gpar(family = "myfont", col = "grey50", cex = 0.7))
+
+grid.text(0.85, y = 0.840, label = "Gap from estimating parameters",
+          gp = gpar(family = "myfont", col = "grey50", cex = 0.7))
 
 dev.off()   
  
@@ -102,7 +110,7 @@ dev.off()
 svg("../img/0072-examples.svg", 8, 7)
 # four example datasets
 set.seed(123) # for reproducibility
-par(mfrow = c(2, 2), bty = "l")
+par(mfrow = c(2, 2), bty = "l", family = "myfont", font.main = 1)
 for(i in 1:4){
    
    sim_data <- ts(cumsum(arima.sim(model = the_model, n = n)))
@@ -126,3 +134,12 @@ for(i in files){
    system(cmd)
    
 }
+setwd("../_working")
+
+#====================calibri version==========
+# for the actual presentation
+library(extrafont)
+theme_set(theme_light(base_family = "Calibri") + 
+             theme(legend.position = "bottom") +
+             theme(plot.caption = element_text(colour = "grey50"))) 
+update_geom_defaults("text", list(family = "Calibri"))
