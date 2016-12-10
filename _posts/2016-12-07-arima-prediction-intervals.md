@@ -5,6 +5,7 @@ date: 2016-12-07
 tag: 
    - R
    - Timeseries
+   - Forecasting
 description: A quick demonstration of the impact of inevitably random estimates of the parameters and meta-parameters in ARIMA time series modelling
 image: /img/0072-results.svg
 socialimage: http://ellisp.github.io/img/0072-results.png
