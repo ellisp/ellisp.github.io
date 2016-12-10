@@ -29,7 +29,7 @@ mod_nn <- nnet(y ~ x, size = 8, linout = TRUE)
 # I use a maximum depth of 2 for the trees which I identified by trial and error
 # with different values of max.depth and cross-validation, not shown
 xg_params <- list(objective = "reg:linear", max.depth = 2)
-mod_cv <- xgb.cv(label = y, params = xg_params, data = as.matrix(x), nrounds = 40, nfold = 10) # choose nrounds that gives best value of RMSE
+mod_cv <- xgb.cv(label = y, params = xg_params, data = as.matrix(x), nrounds = 40, nfold = 10) # choose nrounds that gives best value of  root mean square error on the training set
 best_nrounds <- which(mod_cv$test.rmse.mean == min(mod_cv$test.rmse.mean))
 mod_xg <- xgboost(label = y, params = xg_params, data = as.matrix(x), nrounds = best_nrounds)
 
