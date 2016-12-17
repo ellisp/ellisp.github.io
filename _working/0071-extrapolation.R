@@ -20,7 +20,6 @@ extrap <- data.frame(x = c(x, 1:5 * 10 + 100))
 mod_lm <- lm(y ~ x)
 
 mod_rf <- ranger(y ~ x)
-fc_rf <- predict(mod_rf, data = extrap)
 
 mod_nn <- nnet(y ~ x, size = 8, linout = TRUE)
 
@@ -56,6 +55,7 @@ p("Extreme gradient boosting")
 points(extrap$x, predict(mod_xg, newdata = as.matrix(extrap)), col = "darkgreen", pch = predshape)
 
 p("Random forest")
+fc_rf <- predict(mod_rf, data = extrap)
 points(extrap$x, fc_rf$predictions, col = "plum3", pch = predshape) 
 
 grid.text(0.5, 0.54, gp = gpar(fontfamily = "myfont", col = "steelblue"), 
