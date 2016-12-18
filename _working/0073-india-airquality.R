@@ -11,7 +11,6 @@ library(seasonal)   # for Diwali dates
 library(ggseas)
 library(ggmap)
 library(lubridate)
-library(png)
 library(RColorBrewer)
 
 data(holiday) # will be using this for "diwali"
@@ -81,7 +80,7 @@ pm25_india %>%
 dev.off()
 
 svg("../img/0073-six-cities-monthly.svg", 8, 8)
-# monthly aggregation
+# monthly aggregation graphic
 pm25_india %>%
    mutate(mon = substring(datetime, 1, 7)) %>%
    group_by(mon, city) %>%
@@ -100,6 +99,7 @@ pm25_india %>%
 dev.off()
 
 #=======analysis=========
+# Create time series objects
 pm25_monthly_df <- pm25_india %>%
    mutate(mon = substring(datetime, 1, 7)) %>%
    group_by(mon, city) %>%
@@ -112,9 +112,11 @@ pm25_monthly_ts <- pm25_monthly_df %>%
    map(function(x){ts(x, start = c(2013, 1), frequency = 12)}) %>%
    do.call(cbind, .)
 
+# named palette assigning a colour to each city
 palette <- brewer.pal(5, "Set1")
 names(palette) <- c("Delhi", "Kolkata", "Mumbai", "Hyderabad", "Chennai")
 
+# Decomposition graphic:
 svg("../img/0073-decomp.svg", 8, 6)
 pm25_monthly_ts %>%
    as.data.frame() %>%
@@ -139,6 +141,7 @@ pm25_monthly_ts %>%
    geom_vline(xintercept = ((month(diwali) - 1) / 12 + year(diwali))[114:116], colour = "grey50")
 dev.off()   
 
+# Decomposition graphic, with indexing:
 svg("../img/0073-decomp-index.svg", 8, 6)
 pm25_monthly_ts %>%
    as.data.frame() %>%
@@ -188,8 +191,7 @@ acf(delhi)
 pacf(delhi)
 dev.off()
 
-BoxCox.lambda(delhi) # about 0.2.  Note that if we don't use this in forecasting (below) there is a tendency to forecast < 0
-
+BoxCox.lambda(delhi) # about 0.21.  Note that if we don't use this in forecasting (below) there is a tendency to forecast < 0
 
 diwalix <- window(genhol(diwali), start = start(delhi), end = end(delhi))
 
