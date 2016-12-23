@@ -13,7 +13,7 @@ category: R
 ---
 
 ## Make it easy to make ensemble time series forecast
-`forecastHybrid` is an R package to make it easier to use the average predictions of 'ensembles' (or 'combinations') of time series models from Rob Hyndman's `forecast` package.  It looks after the averaging, and also calculates predcition intervals by a [conservative method](/presentations/ellis-prediction-intervals-for-ensemble-forecasts.pptx) that aims to redress the general over-optimism in forecasting prediction intervals.
+`forecastHybrid` is an R package to make it easier to use the average predictions of 'ensembles' (or 'combinations') of time series models from Rob Hyndman's `forecast` package.  It looks after the averaging, and also calculates prediction intervals by a [conservative method](/presentations/ellis-prediction-intervals-for-ensemble-forecasts.pptx) that aims to redress the general over-optimism in forecasting prediction intervals.
 
 New in version 0.3.0 is:
 
