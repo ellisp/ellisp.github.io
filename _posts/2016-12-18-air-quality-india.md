@@ -150,13 +150,7 @@ We can decompose the monthly series into the trend, seasonal and random elements
 
 ![decomp](/img/0073-decomp.svg)
 
-And we can do the same but having converted the data to an index first, to make the relative growth rates the primary focus of the graphi
-
-![decomp-index](/img/0073-decomp-index.svg)
-
-There's no particularly interesting (to me) trends here.  When converted to an index, we can visually compare the relative size of the seasonal effect, and this just confirms that Chennai's seasonality is a little less than the other four cities.
-
-Here's the code that did the above aggregation and analysis.  Note the use of a named vector as a palette of colours to ensure each city gets the same colour in the two graphics.
+Here's the code that did the above aggregation and analysis.
 
 {% highlight R %}
 # monthly aggregation graphic:
@@ -230,28 +224,6 @@ pm25_monthly_ts %>%
            subtitle = "Diwali makes an impact but is part of a broader seasonality")  +
    geom_vline(xintercept = ((month(diwali) - 1) / 12 + year(diwali))[114:116], colour = "grey50")
 
-# Decomposition graphic, with indexing:
-pm25_monthly_ts %>%
-   as.data.frame() %>%
-   mutate(time = time(pm25_monthly_ts),
-          month = time - floor(time)) %>%
-   gather(city, value, -time, -month) %>% 
-   # imputation: if value is missing, give it mean for that month and city:
-   group_by(city, month) %>%
-   mutate(value = ifelse(is.na(value), mean(value, na.rm = TRUE), value)) %>%
-   ungroup() %>%
-   # order city levels for drawing legend (there are better ways for doing this programmatically):
-   mutate(city = factor(city, levels = c("Chennai", "Hyderabad", "Delhi", "Mumbai", "Kolkata"))) %>%
-   ggsdc(aes(x = time, y = value, colour = city), s.window = 7, index.ref = 1) +
-   geom_line(size = 1) +
-   theme(legend.position = "right")+
-   labs(colour = "", x = "Vertical lines show the month of Diwali, and any impact is seen in the 'irregular' series.", 
-        y = "Trimmed mean monthly PM2.5 concentration as an index\n(January 2013 = 100)",
-        caption = "Data: U.S. Embassy and Consulates in India") +
-   scale_colour_manual(values = palette) +
-   ggtitle("Airborne fine particulate matter in Indian cities (PM2.5)",
-           subtitle = "Viewing the data as an index reveals overall growth patterns")  +
-   geom_vline(xintercept = ((month(diwali) - 1) / 12 + year(diwali))[114:116], colour = "grey50")
 {% endhighlight %}
 
 
