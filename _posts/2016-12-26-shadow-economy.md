@@ -66,6 +66,8 @@ As far as I'm aware there's no general and robust way of converting the wide var
 library(pdftools)
 library(dplyr)
 library(tidyr)
+library(ggplot2)
+library(scales)
 
 #------download file and bring into R------------
 download.file("http://www.econ.jku.at/members/schneider/files/publications/2015/shadeceurope31.pdf",
