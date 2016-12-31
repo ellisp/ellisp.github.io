@@ -1,19 +1,18 @@
 library(ggplot2)
 library(scales)
-library(R.utils) # for gunzip
+library(R.utils)    # for gunzip
 library(tidyverse)
 library(tidytext)
-library(Matrix) # for sparse matrices
+library(Matrix)     # for sparse matrices
 library(data.table) # for fread, fast version of read.table
-library(SnowballC) # for wordStem
+library(SnowballC)  # for wordStem
 library(foreach)
 library(doParallel)
-library(testthat)
-library(knitr) # for kable
+library(testthat)   # used for various checks and tests along the way
 library(topicmodels)
-library(slam)
+library(slam)       # for other types of sparse matrices, used with topicmodels
 library(wordcloud)
-library(grid)
+library(grid)       # for annotating graphics 
 
 # latest version of h2o needed at time of writing (December 2016) for sparse matrix support
 # install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/rel-tutte/1/R")))
@@ -29,8 +28,7 @@ if(!"docword.kos.txt" %in% list.files()){
    
 kos <- fread("docword.kos.txt", skip = 3, sep = " ")  
 names(kos) <- c("doc", "word", "count")
-head(kos)
-sum(kos$count) # should have 467714 words in total
+expect_equal(sum(kos$count), 467714)
 
 kos_vocab <- read.table("https://archive.ics.uci.edu/ml/machine-learning-databases/bag-of-words/vocab.kos.txt")$V1
 
@@ -83,7 +81,7 @@ kos_df <- kos3 %>%
    spread(word, count, fill = 0)
 kos_dense <- as.matrix(kos_df[ , -1])
 
-expect_equal(colnames(kos_dense)[1:10], colnames(kos_sparse)[1:10])
+expect_equal(colnames(kos_dense), colnames(kos_sparse))
 
 dim(kos_sparse) # would be 3430 documents and 6906 words except that there's been more processing, so only 4566 words
 object.size(kos) # about 4MB
@@ -196,7 +194,7 @@ kc_df <- h2o.centers(kos_km_final) %>%
    left_join(sz, by = "group") %>%
    arrange(desc(size)) 
 
-kable(kc_df)
+knitr::kable(kc_df)
 
 
 
@@ -255,18 +253,15 @@ h2o.shutdown()
 
 
 #======================topic modelling within R======================
-
-# function for fitting into a pipeline and generating a slam::simple_triplet_matrix,
-# for use in situations that need one.
-cast_triplet <- function(data, i, j, v, dimnames = NULL){
-   with(data, simple_triplet_matrix(i = i, j = j, v = v, dimnames = dimnames))
-}
+# Other goes at this:
+# https://datamicroscopes.github.io/topic.html
 
 kos_counts <- kos2 %>%
-   # arrange it so the colnames after cast_sparse are in alphabetical order:
    arrange(word) %>%
+   # take advantage of factor() as a quick way to make number:level pairings
    mutate(word = factor(word))
 
+# convert to triplet (row, column, cell) sparse matrix format:
 kos_trip <- with(kos_counts, simple_triplet_matrix(i = doc, j = as.numeric(word), v = count))
 
 dimnames(kos_trip)[[2]] <- levels(kos_counts$word)
@@ -287,6 +282,7 @@ apply(p$topics, 1, sum) # all ones.  So posterior()$topics gives probabilities o
 
 topics(lda) # returns the numbers of the actual topics for each document
 
+#' function for drawing word clouds of all topics from an object created with LDA
 wclda <- function(lda, n = 100, palette = "Blues", ...){
    p <- posterior(lda)
    w1 <- as.data.frame(t(p$terms)) 
@@ -308,14 +304,36 @@ wclda <- function(lda, n = 100, palette = "Blues", ...){
 }
 
 
+# system.time(lda2 <- LDA(kos_trip, k = 10)) # 330 seconds
+# 
+# svg("../img/0076-topics-10.svg", 12, 7)
+# par(mfrow = c(2, 5), family = "myfont", font.main = 1)
+# wclda(lda2)
+# dev.off()
 
-   
 
-system.time(lda2 <- LDA(kos_trip, k = 10))
+system.time(lda3 <- LDA(kos_trip, k = 8))
 
+svg("../img/0076-topics-8.svg", 10, 7)
+par(mfrow = c(2, 4), family = "myfont", font.main = 1)
+wclda(lda3)
+grid.text(0.5, 0.55, label = "Latent topics identified in 3,430 dailykos.com blog posts in 2004",
+          gp = gpar(fontfamily = "myfont", fontface = "italic"))
+grid.text(0.98, 0.02, hjust = 1,
+          label = "Source: data from https://archive.ics.uci.edu/ml/datasets/Bag+of+Words\n           analysis from https://ellisp.github.io",
+          gp = gpar(fontfamily = "myfont", fontface = "italic", cex = 0.7, col = "grey60"))
 
-
-svg("../img/0076-topics.svg", 12, 7)
-par(mfrow = c(2, 5), family = "myfont", font.main = 1)
-wclda(lda2)
 dev.off()
+
+
+
+setwd("../img")
+files <- list.files()
+files <- files[grepl("^0076-topics.+svg$", files)]
+for(i in files){
+   output <- gsub("svg$", "png", i)
+   cmd <- paste0('\"C:\\Program Files\\ImageMagick-7.0.2-Q16\\magick\" -size 1200x800', " ", i, " ", output)
+   system(cmd)
+   
+}
+setwd("../_working")
