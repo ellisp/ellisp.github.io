@@ -313,8 +313,12 @@ kos_counts <- kos2 %>%
 
 # convert to triplet (row, column, cell) sparse matrix format:
 kos_trip <- with(kos_counts, simple_triplet_matrix(i = doc, j = as.numeric(word), v = count))
-
 dimnames(kos_trip)[[2]] <- levels(kos_counts$word)
+
+# EDIT - on Twitter, Julia Silge pointed out these last two lines could have
+# stayed in the tidytext world by adding cast_dtm() to my pipeline above.  I'd
+# overlooked the existence of cast_dtm(), which is indeed exactly what I was looking for.
+
 
 # function for drawing word clouds of all topics from an object created with LDA
 wclda <- function(lda, n = 100, palette = "Blues", ...){
