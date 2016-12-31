@@ -1,0 +1,551 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Sparse matrices, k-means clustering, topic modelling with posts on the 2004 US Presidential election</title>
+      	
+         
+         
+            <meta name ="description" content ="I explore different sparse matrix formats in R and moving data from R to H2O.  Along the way I use k-means clustering and topic modelling to explore textual data from the Daily Kos blog on the 2004 US Presidential election.">
+            <meta property="og:description" content ="I explore different sparse matrix formats in R and moving data from R to H2O.  Along the way I use k-means clustering and topic modelling to explore textual data from the Daily Kos blog on the 2004 US Presidential election.">
+         
+         <meta property="og:site_name" content="Peter's stats stuff" />
+         <meta property="og:title" content="Sparse matrices, k-means clustering, topic modelling with posts on the 2004 US Presidential election" />
+         
+            <meta property="og:image" content="http://ellisp.github.io/img/0076-topics.png" />
+         
+         <meta property="og:url" content="http://ellisp.github.io/blog/2016/12/31/sparse-bags/" />
+         <meta property="og:author" content= "https://www.facebook.com/peter.ellis.353" />
+         <meta property="og:type" content="article" />
+           
+          <link href="/css/bootstrap.min.css" rel ="stylesheet">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet">
+            <link href="/css/custom.css" rel ="stylesheet">     
+		<link href="/css/syntax.css" rel ="stylesheet">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="Peter's stats stuff by Peter Ellis"
+      href="/feed.xml">
+
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Peter's stats stuff</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">All blog posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">Ordered by date</a></li>
+                  <li><a href="/blog/index_by_tag.html">Grouped by subject matter</a></li>
+                  <li><a href = /blog/2016/12/31/sparse-bags>Most recent post</a></li>
+                 </ul>
+            </li>
+              <li><a href="/blog/showcase.html">Showcase</a></li>
+              <li><a href="/presentations/index.html">Presentations</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			    <div class="jumbotron">
+      <div class="container">
+        <h1>Sparse matrices, k-means clustering, topic modelling with posts on the 2004 US Presidential election</h1>
+         <p class="meta">31 Dec 2016</p>
+        
+      </div>
+    </div>
+
+
+
+
+<div class = "post-summary">
+<h2>At a glance:</h2>
+   I explore different sparse matrix formats in R and moving data from R to H2O.  Along the way I use k-means clustering and topic modelling to explore textual data from the Daily Kos blog on the 2004 US Presidential election.
+   <hr></hr>
+</div>
+
+<div class="post">
+<div class="col-md-2">
+
+</div>
+  <div class="col-md-8">
+
+  <h2 id="daily-kos-bags-of-words-from-the-time-of-the-2004-presidential-election">Daily Kos bags of words from the time of the 2004 Presidential election</h2>
+<p>This is a bit of a rambly blog entry today.  My original motivation was to just explore moving data around from R into the H2O machine learning software.  While successful on this, and more on it below, I got a bit interested in my example data in its own right.  The best initial exploratory analysis of that data turns out on my opinion not to be one of the approaches implemented in H2O, so by the end of the post I’m back in R illustrating the use of topic modelling for analysing blog posts.  As a teaser, this is where we’re going to end up:</p>
+
+<p><img src="/img/0076-topics-8.svg" width="730" /></p>
+
+<p>That graphic represents eight latent “topics” identified in 3,430 posts on the liberal (as per US terminology) <a href="http://www.dailykos.com/">Daily Kos site</a> from the time of the 2004 US Presidential Election.  The data are available at the <a href="https://archive.ics.uci.edu/ml/datasets/Bag+of+Words">Machine Learning Repository</a> of the Univerity of California’s Center for Machine Learning and Intelligent Systems.  The metadata are low on context (or perhaps I was just looking in the wrong spot) - the origin is just described as “KOS blog entries … orig source: dailykos.com”, and I’m presuming from their content that they are from 2004.  More on what it all means down below.</p>
+
+<h2 id="sparse-matrices">Sparse matrices</h2>
+
+<p>I chose this data because it’s a nice example of a medium sized sparse matrix.  The data has the number of occurences of 6,906 words in 3,430 documents so the obvious conceptual format is a matrix with 3,430 rows and 6,906 columns, where most cells are empty (meaning zero occurences of that word in that document) and the filled cells are counts.  Of course, we try to avoid moving data around like that.  Instead of that super-wide matrix, the data is distributed as a text file with three columns that looks like this:</p>
+
+<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="mi">1</span> <span class="mi">61</span> <span class="mi">2</span>
+<span class="mi">1</span> <span class="mi">76</span> <span class="mi">1</span>
+<span class="mi">1</span> <span class="mi">89</span> <span class="mi">1</span>
+<span class="mi">1</span> <span class="mi">211</span> <span class="mi">1</span>
+<span class="mi">1</span> <span class="mi">296</span> <span class="mi">1</span>
+<span class="mi">1</span> <span class="mi">335</span> <span class="mi">1</span>
+<span class="mi">1</span> <span class="mi">404</span> <span class="mi">1</span>
+<span class="mi">1</span> <span class="mi">441</span> <span class="mi">1</span>
+<span class="mi">1</span> <span class="mi">454</span> <span class="mi">2</span></code></pre></figure>
+
+<p>In this case, it means that the first document has two counts of word 61; one count of word 76; one count of word 89; and so on.  A separate file tells us that word 61 is “action”, word 76 is “added” and so on.  In fact, the two files for distributing these data are just the two tables that you’d represent them with in a relational database.  This is the optimally efficient way of storing data of this sort.</p>
+
+<p>Now, I’ve been exploring the machine learning software <a href="http://www.h2o.ai/">H2O</a> which provides fast and efficient estimation of models such as :</p>
+
+<ul>
+  <li>deep learning neural networks</li>
+  <li>random forests</li>
+  <li>gradient boosting machines</li>
+  <li>generalized linear models with elastic net regularisation</li>
+  <li>k-means clustering</li>
+</ul>
+
+<p>All these tools need data to be represented in a wide format, rather than the efficient long format you’d have in a relational database.  In this case, that would mean a row for each document (or observation) and a column for each word, which would be used as “features” in machine learning terminology.  That is, it needs the sort of operation you’d use <code class="highlighter-rouge">PIVOT</code> for in SQL Server, or <code class="highlighter-rouge">tidyr::spread</code> in R (or, before the coming of the tidyverse, <code class="highlighter-rouge">reshape</code> or <code class="highlighter-rouge">reshape2::cast</code>).</p>
+
+<p>H2O is expected to work with another tool for data persistence eg a Hadoop cluster.  One thing I’m still getting my head around is the several variants on making data actually available to H2O.  I’m particularly interested in the case of medium-sized data that can be handled on a single machine in efficient sparse format, when a Hadoop cluster isn’t available.  So the Daily Kos data was my small familiarisation example in this space.</p>
+
+<p>A common workflow I expect with this sort of data is a bunch of pre-processing that will need a general data munging tool like R or Python before upload into H2O.  For example, with text data, I might want to do one or more of remove common “stopwords” (like ‘the’, ‘and’, etc); reduce words to their “stems” (so “abandons” and “abandon” are treated as the same); match words to sentiment; etc.  This is the sort of thing done with <code class="highlighter-rouge">NLTK</code> in Python or <code class="highlighter-rouge">tm</code>, <code class="highlighter-rouge">SnowballC</code> and the brilliant new <code class="highlighter-rouge">tidytext</code> in R.</p>
+
+<p><a href="http://tidytextmining.com/"><code class="highlighter-rouge">tidytext</code> by Julia Silge and David Robinson</a> makes it possible to analyse textual data using the general data manipulation grammar familiar to users of Hadley Wickham’s <code class="highlighter-rouge">tidyverse</code>.  One verb tidytext offers is <code class="highlighter-rouge">cast_sparse</code>, which converts data in long tidy format into a wide but sparse <code class="highlighter-rouge">Matrix</code> format (using Doug Bates and  Martin Maechler’s <code class="highlighter-rouge">Matrix</code> package, which is distributed with base R) that is suitable for a range of statistical and machine learning models.  So I was pleased to note that the <a href="http://h2o-release.s3.amazonaws.com/h2o/rel-tutte/1/index.html">latest stable version of H2O</a> (not yet on CRAN at the time of writing) and its accompanying R interface expands the <code class="highlighter-rouge">h2o::as.H2O</code> function to support the sparse <code class="highlighter-rouge">Matrix</code> format.</p>
+
+<h2 id="importing-and-modifying-the-data">Importing and modifying the data</h2>
+
+<p>So here’s how I set about exploring a workflow based on the following key tools</p>
+
+<ul>
+  <li>Pre-processing in R
+    <ul>
+      <li>Import data with <code class="highlighter-rouge">data.table::fread</code> - the fastest way to get data in.  While <code class="highlighter-rouge">readr</code> or even <code class="highlighter-rouge">utils</code> functions would also do the job well in this modest-sized case, I want to scale up in the future and <code class="highlighter-rouge">fread</code> is the best there is for getting large, regular text data into R.</li>
+      <li>Modify with tools from the <code class="highlighter-rouge">tidyverse</code> and <code class="highlighter-rouge">tidytext</code>, calling in specialist packages for stemming etc as necessary</li>
+      <li>Cast to sparse <code class="highlighter-rouge">Matrix</code> format and export to H2O with <code class="highlighter-rouge">h2o::as.h2o</code></li>
+    </ul>
+  </li>
+  <li>Analyse in H2O</li>
+  <li>Export the summary results back to R for presentation</li>
+</ul>
+
+<p>I had my doubts about whether <code class="highlighter-rouge">h2o::as.h2o</code> is right for the job, because I understand it doesn’t make the most of H2O’s own fast data importing abilities.  But it is definitely a candidate for medium sized data.</p>
+
+<p>Here’s how I got started.  This first chunk just loads the functionality used in the rest of the post and downloads the main table, if it hasn’t been downloaded before (I developed this script in little chunks of time between doing other stuff, and didn’t want to download the file every time I ran it or have to bother with selectively running bits of the script).  Lots of R packages needed for today’s exploration:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">ggplot2</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">R.utils</span><span class="p">)</span><span class="w">    </span><span class="c1"># for gunzip
+</span><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">tidytext</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">Matrix</span><span class="p">)</span><span class="w">     </span><span class="c1"># for sparse matrices
+</span><span class="n">library</span><span class="p">(</span><span class="n">data.table</span><span class="p">)</span><span class="w"> </span><span class="c1"># for fread, fast version of read.table
+</span><span class="n">library</span><span class="p">(</span><span class="n">SnowballC</span><span class="p">)</span><span class="w">  </span><span class="c1"># for wordStem
+</span><span class="n">library</span><span class="p">(</span><span class="n">foreach</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">doParallel</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">testthat</span><span class="p">)</span><span class="w">   </span><span class="c1"># used for various checks and tests along the way
+</span><span class="n">library</span><span class="p">(</span><span class="n">topicmodels</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">slam</span><span class="p">)</span><span class="w">       </span><span class="c1"># for other types of sparse matrices, used with topicmodels
+</span><span class="n">library</span><span class="p">(</span><span class="n">wordcloud</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">grid</span><span class="p">)</span><span class="w">       </span><span class="c1"># for annotating graphics 
+</span><span class="w">
+</span><span class="c1"># latest version of h2o needed at time of writing (December 2016) for sparse matrix support
+# install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/rel-tutte/1/R")))
+</span><span class="n">library</span><span class="p">(</span><span class="n">h</span><span class="m">2</span><span class="n">o</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># https://archive.ics.uci.edu/ml/datasets/Bag+of+Words
+# download the smallest example bag of words for first trial
+</span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="s2">"docword.kos.txt"</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="n">list.files</span><span class="p">()){</span><span class="w">
+   </span><span class="n">download.file</span><span class="p">(</span><span class="s2">"https://archive.ics.uci.edu/ml/machine-learning-databases/bag-of-words/docword.kos.txt.gz"</span><span class="p">,</span><span class="w">
+                 </span><span class="n">destfile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"docword.kos.txt.gz"</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"wb"</span><span class="p">)</span><span class="w">
+   </span><span class="n">gunzip</span><span class="p">(</span><span class="s2">"docword.kos.txt.gz"</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span></code></pre></figure>
+
+<p>Importing the data is super fast with <code class="highlighter-rouge">data.table::fread</code>.  Combining it with the vocabulary look up table, removing stop words and performing stemming is made super-easy by <code class="highlighter-rouge">tidytext</code> in combination with text mining specialist tools, in this case <code class="highlighter-rouge">SnowballC::wordStem</code>:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">kos</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">fread</span><span class="p">(</span><span class="s2">"docword.kos.txt"</span><span class="p">,</span><span class="w"> </span><span class="n">skip</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="n">sep</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">" "</span><span class="p">)</span><span class="w">  
+</span><span class="nf">names</span><span class="p">(</span><span class="n">kos</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"doc"</span><span class="p">,</span><span class="w"> </span><span class="s2">"word"</span><span class="p">,</span><span class="w"> </span><span class="s2">"count"</span><span class="p">)</span><span class="w">
+</span><span class="n">expect_equal</span><span class="p">(</span><span class="nf">sum</span><span class="p">(</span><span class="n">kos</span><span class="o">$</span><span class="n">count</span><span class="p">),</span><span class="w"> </span><span class="m">467714</span><span class="p">)</span><span class="w">
+
+</span><span class="n">kos_vocab</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">read.table</span><span class="p">(</span><span class="s2">"https://archive.ics.uci.edu/ml/machine-learning-databases/bag-of-words/vocab.kos.txt"</span><span class="p">)</span><span class="o">$</span><span class="n">V</span><span class="m">1</span><span class="w">
+
+</span><span class="n">kos2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">kos</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="c1"># attach the names of words back to the words
+</span><span class="w">   </span><span class="n">mutate</span><span class="p">(</span><span class="n">word</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">factor</span><span class="p">(</span><span class="n">word</span><span class="p">,</span><span class="w"> </span><span class="n">labels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kos_vocab</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="c1"># stopwords are meant to be already removed but no harm in checking (note - makes no difference):
+</span><span class="w">   </span><span class="n">anti_join</span><span class="p">(</span><span class="n">stop_words</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"word"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="c1"># reduce words to their stems (otherwise abandon, abandoning, abandons all treated as different, etc),
+</span><span class="w">   </span><span class="n">mutate</span><span class="p">(</span><span class="n">word</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">wordStem</span><span class="p">(</span><span class="n">word</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">word</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"^iraq$"</span><span class="p">,</span><span class="w"> </span><span class="s2">"iraqi"</span><span class="p">,</span><span class="w"> </span><span class="n">word</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="c1"># ... and aggregate back up by the new stemmed words to remove duplicates
+</span><span class="w">   </span><span class="n">group_by</span><span class="p">(</span><span class="n">doc</span><span class="p">,</span><span class="w"> </span><span class="n">word</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">summarise</span><span class="p">(</span><span class="n">count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">count</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="c1"># correct some names that went wrong in the stemming:
+</span><span class="w">   </span><span class="n">mutate</span><span class="p">(</span><span class="n">word</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"^chenei$"</span><span class="p">,</span><span class="w"> </span><span class="s2">"cheney"</span><span class="p">,</span><span class="w"> </span><span class="n">word</span><span class="p">),</span><span class="w">
+          </span><span class="n">word</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"^kerri$"</span><span class="p">,</span><span class="w"> </span><span class="s2">"kerry"</span><span class="p">,</span><span class="w"> </span><span class="n">word</span><span class="p">),</span><span class="w">
+          </span><span class="n">word</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"^georg$"</span><span class="p">,</span><span class="w"> </span><span class="s2">"george"</span><span class="p">,</span><span class="w"> </span><span class="n">word</span><span class="p">),</span><span class="w">
+          </span><span class="n">word</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"^john$"</span><span class="p">,</span><span class="w"> </span><span class="s2">"John"</span><span class="p">,</span><span class="w"> </span><span class="n">word</span><span class="p">))</span><span class="w">
+		  
+</span><span class="c1"># how many words per post?
+</span><span class="n">wordcount</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">kos2</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">group_by</span><span class="p">(</span><span class="n">doc</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">summarise</span><span class="p">(</span><span class="n">words</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">count</span><span class="p">))</span><span class="w">
+
+</span><span class="n">par</span><span class="p">(</span><span class="n">font.main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+</span><span class="n">hist</span><span class="p">(</span><span class="n">wordcount</span><span class="o">$</span><span class="n">words</span><span class="p">,</span><span class="w"> </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey"</span><span class="p">,</span><span class="w"> </span><span class="n">fg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey80"</span><span class="p">,</span><span class="w"> </span><span class="n">border</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey95"</span><span class="p">,</span><span class="w">
+     </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Words per post in the KOS data set"</span><span class="p">,</span><span class="w"> </span><span class="n">xlab</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Number of words"</span><span class="p">)</span></code></pre></figure>
+
+<p><img src="/img/0076-words-per-post.svg" alt="histogram" /></p>
+
+<p>Because the post lengths varied in the predictable way (histogram above), I decided to convert all the counts to proportions of words in each original document.  The next chunk does this, and then casts the data out of long format into wide, analysis-ready format.  I create both sparse and dense versions of the wide matrix to check that things are working the way I want (this is one of the reasons for checking things out on a fairly small dataset).  In the chunk below, note that I had a bit of a fiddle (and then built in a test to check I got it right) to get the columns in the same order with <code class="highlighter-rouge">cast_sparse</code> as when I used <code class="highlighter-rouge">spread</code> for the dense version.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># OK, quite a variety of words per post.
+# Convert counts to *relative* count (ie proportion of words in each doc)
+# need to do this as otherwise the main dimension in the data is just the 
+# length of each blog post
+</span><span class="n">kos3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">kos2</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">group_by</span><span class="p">(</span><span class="n">doc</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">count</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">count</span><span class="p">))</span><span class="w">
+
+</span><span class="c1"># Sparse version
+</span><span class="n">kos_sparse</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">kos3</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="c1"># arrange it so the colnames after cast_sparse are in alphabetical order:
+</span><span class="w">   </span><span class="n">arrange</span><span class="p">(</span><span class="n">word</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">cast_sparse</span><span class="p">(</span><span class="n">doc</span><span class="p">,</span><span class="w"> </span><span class="n">word</span><span class="p">,</span><span class="w"> </span><span class="n">count</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># Dense version
+</span><span class="n">kos_df</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">kos3</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">spread</span><span class="p">(</span><span class="n">word</span><span class="p">,</span><span class="w"> </span><span class="n">count</span><span class="p">,</span><span class="w"> </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w">
+</span><span class="n">kos_dense</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.matrix</span><span class="p">(</span><span class="n">kos_df</span><span class="p">[</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="m">-1</span><span class="p">])</span><span class="w">
+
+</span><span class="n">expect_equal</span><span class="p">(</span><span class="n">colnames</span><span class="p">(</span><span class="n">kos_dense</span><span class="p">),</span><span class="w"> </span><span class="n">colnames</span><span class="p">(</span><span class="n">kos_sparse</span><span class="p">))</span><span class="w">
+
+</span><span class="nf">dim</span><span class="p">(</span><span class="n">kos_sparse</span><span class="p">)</span><span class="w"> </span><span class="c1"># would be 3430 documents and 6906 words except that there's been more processing, so only 4566 words
+</span><span class="n">object.size</span><span class="p">(</span><span class="n">kos</span><span class="p">)</span><span class="w"> </span><span class="c1"># about 4MB
+</span><span class="n">object.size</span><span class="p">(</span><span class="n">kos_sparse</span><span class="p">)</span><span class="w"> </span><span class="c1"># about the same.  Slightly less efficient
+</span><span class="n">object.size</span><span class="p">(</span><span class="n">kos_dense</span><span class="p">)</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="m">120</span><span class="o">+</span><span class="w"> </span><span class="n">MB</span></code></pre></figure>
+
+<h2 id="k-means-cluster-analysis-in-r">k-means cluster analysis in R</h2>
+
+<p>As this exercise started as essentially just a test of getting data into H2O, I needed an H2O algorithm to test on the data.  With just bags of words and no other metadata (such as how popular each post was, or who wrote it, or anything else of that sort) there’s no obvious response variable to test predictive analytics methods on, so I chose <a href="https://en.wikipedia.org/wiki/K-means_clustering">k-means clustering</a> as my test algorithm instead.  There’s reasons why this method isn’t particularly useful for this sort of high-dimensional (ie lots of columns) data, but they’re not enough to stop it being a test of sorts.</p>
+
+<p>One of the challenges of cluster analysis is to know how many groups (k) to divide the data into.  So give R and H2O a decent run, I applied the k-means clustering to the data (using the dense version of the matrix) with each value of k from 1 to 25.</p>
+
+<p>Close readers - if there are any - may note that I haven’t first scaled all the columns in the matrix before applying the k-means algorithm, even though this is often recommended to avoid columns with high variance dominating the clustering.  This is a deliberate choice from me, applicable to this particular dataset.  As all the columns are on the same scale (“this word’s frequency as a proportion of total words in the document for this row”) I thought it made sense to let the high variance columns sway the results, rather than (in effect) let low variance columns for rarely-used words get equal votes.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#========k-means cluster analysis in R===========
+# set up parallel cluster for the R version of analysis 
+# (sorry for there being two uses of the word "cluster"...)
+</span><span class="n">cluster</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">makeCluster</span><span class="p">(</span><span class="m">7</span><span class="p">)</span><span class="w"> </span><span class="c1"># only any good if you have at least 7 processors :)
+</span><span class="n">registerDoParallel</span><span class="p">(</span><span class="n">cluster</span><span class="p">)</span><span class="w">
+</span><span class="n">clusterExport</span><span class="p">(</span><span class="n">cluster</span><span class="p">,</span><span class="w"> </span><span class="s2">"kos_dense"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># How to work out how many clusters to find in the data?
+# great answer at http://stackoverflow.com/questions/15376075/cluster-analysis-in-r-determine-the-optimal-number-of-clusters 
+# But I only use the simplest method - visual inspection of a scree plot of the total within squares
+</span><span class="w">
+</span><span class="c1"># takes some time, even with the parallel processing:
+</span><span class="n">max_groups</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">25</span><span class="w">
+</span><span class="n">wss</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">foreach</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">max_groups</span><span class="p">)</span><span class="w"> </span><span class="o">%dopar%</span><span class="w"> </span><span class="p">{</span><span class="w">
+   </span><span class="n">kmeans</span><span class="p">(</span><span class="n">kos_dense</span><span class="p">,</span><span class="w"> </span><span class="n">centers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="o">$</span><span class="n">tot.withinss</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">par</span><span class="p">(</span><span class="n">font.main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+</span><span class="n">plot</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="n">max_groups</span><span class="p">,</span><span class="w"> </span><span class="n">wss</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="o">=</span><span class="s2">"b"</span><span class="p">,</span><span class="w"> </span><span class="n">xlab</span><span class="o">=</span><span class="s2">"Number of groups"</span><span class="p">,</span><span class="w">
+     </span><span class="n">ylab</span><span class="o">=</span><span class="s2">"Within groups sum of squares"</span><span class="p">,</span><span class="w"> </span><span class="n">bty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"l"</span><span class="p">)</span><span class="w">
+</span><span class="n">grid</span><span class="p">()</span><span class="w">
+
+</span><span class="n">stopCluster</span><span class="p">(</span><span class="n">cluster</span><span class="p">)</span></code></pre></figure>
+
+<p>This graphic shows the total within-groups sum of squares for each value of k.  The within-groups sum of squares is an indicator of how homogenous the points within each group are.  Inevitably it goes down as the number of groups dividing the data increases; we draw plots like this one to see if there is a visually-obvious “levelling-off” point to indicate when we are getting diminishing marginal returns from adding more groups.</p>
+
+<p><img src="/img/0076-base-scree.svg" alt="scree" /></p>
+
+<p>I won’t worry too much about interpreting this as I think the method is of dubious value anyway.  But my gut feel is that either there is 1, 2, or about 20 groups in this data.</p>
+
+<h2 id="getting-the-data-into-h2o">Getting the data into H2O</h2>
+
+<p>For the H2O comparison, first step is to initiate an H2O cluster and get the data into it.  With the newly enhanced <code class="highlighter-rouge">as.h2o</code> function working with sparse <code class="highlighter-rouge">Matrix</code> objects this is easy and takes only 3 seconds (compared to 22 seconds for uploading the dense version of the matrix, code not shown).</p>
+
+<blockquote>
+  <p>There’s a funny quirk to watch out for; the column names don’t get imported, and only 100 column names are applied.</p>
+</blockquote>
+
+<p>I suspect the <code class="highlighter-rouge">colnames</code> issue after importing a sparse Matrix to H2O is a bug. but will make sure before I report it as an issue.</p>
+
+<p>Having imported the data, I do a basic check.  k-means with a single group should return just the mean of each column as the p-dimensional centroid of a single big hyper-sphere containing all the data.  I want to check that the various versions of the data in R and H2O all return the same values for this.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#==============cluster analysis in h2o======================
+</span><span class="n">h</span><span class="m">2</span><span class="n">o.init</span><span class="p">(</span><span class="n">nthreads</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">-1</span><span class="p">,</span><span class="w"> </span><span class="n">max_mem_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"10G"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">system.time</span><span class="p">({</span><span class="w"> </span><span class="n">kos_h1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.h2o</span><span class="p">(</span><span class="n">kos_sparse</span><span class="p">)})</span><span class="w"> </span><span class="c1"># 3 seconds
+</span><span class="nf">dim</span><span class="p">(</span><span class="n">kos_h1</span><span class="p">)</span><span class="w"> </span><span class="c1"># correct
+</span><span class="n">colnames</span><span class="p">(</span><span class="n">kos_h1</span><span class="p">)</span><span class="w"> </span><span class="c1"># for some reason, only 100 columnames, c1:100
+</span><span class="n">colnames</span><span class="p">(</span><span class="n">kos_h1</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">colnames</span><span class="p">(</span><span class="n">kos_sparse</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#--------------------checking we have the same data in all its different versions--------------------
+# Compare the simplest single cluster case - should just be the mean of each column
+</span><span class="n">simple_r</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">kmeans</span><span class="p">(</span><span class="n">kos_dense</span><span class="p">,</span><span class="w"> </span><span class="n">centers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+</span><span class="n">simple_h</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">h</span><span class="m">2</span><span class="n">o.kmeans</span><span class="p">(</span><span class="n">kos_h1</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">colnames</span><span class="p">(</span><span class="n">kos_h1</span><span class="p">),</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">standardize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w">
+</span><span class="n">simple_m1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">apply</span><span class="p">(</span><span class="n">kos_dense</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">mean</span><span class="p">)</span><span class="w">
+</span><span class="n">simple_m2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">t</span><span class="p">(</span><span class="n">apply</span><span class="p">(</span><span class="n">kos_h1</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">mean</span><span class="p">))</span><span class="w">
+</span><span class="n">simple_m3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">apply</span><span class="p">(</span><span class="n">kos_sparse</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">mean</span><span class="p">)</span><span class="w">
+
+</span><span class="n">comparison</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.frame</span><span class="p">(</span><span class="w">
+   </span><span class="n">R</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">simple_r</span><span class="o">$</span><span class="n">centers</span><span class="p">[</span><span class="m">1</span><span class="w"> </span><span class="p">,],</span><span class="w">
+   </span><span class="n">manual1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">simple_m1</span><span class="p">,</span><span class="w">
+   </span><span class="n">H</span><span class="m">2</span><span class="n">O</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">t</span><span class="p">(</span><span class="n">h</span><span class="m">2</span><span class="n">o.centers</span><span class="p">(</span><span class="n">simple_h</span><span class="p">))[,</span><span class="m">1</span><span class="p">],</span><span class="w">
+   </span><span class="n">manual2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">as.vector</span><span class="p">(</span><span class="n">simple_m2</span><span class="p">[,</span><span class="m">1</span><span class="p">]),</span><span class="w">
+   </span><span class="n">manual3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">simple_m3</span><span class="w">
+</span><span class="p">)</span><span class="w">
+
+</span><span class="n">par</span><span class="p">(</span><span class="n">font.main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+</span><span class="n">pairs</span><span class="p">(</span><span class="n">comparison</span><span class="p">,</span><span class="w"> </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Different methods of estimating the center of the data"</span><span class="p">)</span></code></pre></figure>
+
+<p><img src="/img/0076-pairs-centers.png" width="730" /></p>
+
+<p>And the result is fine.  The data import has worked ok.  Note that this wasn’t the case when I first did it - after a while I tracked it down to the non-alphabetical ordering of columns created by <code class="highlighter-rouge">cast_sparse</code>, which I have now forced to be alphabetical in the code earlier in this post.</p>
+
+<h2 id="k-means-cluster-analysis-in-h2o">k-means cluster analysis in H2O</h2>
+<p>To complete my experiment, I ran the k-means clustering algorithm on the data in H2O in a similar way to how I’d already done it in base R.  One advantage of H2O in this context is it lets you use cross-validation for assessing the within-group sum of squares, rather than getting it from the data that was used to set the centers.  This takes longer but is a better way of doing it.  In fact, I tried it with and without cross validation and got similar results - the cross-validation total within groups sum of squares is always a little higher than that from the training data, but not enough to disrupt patterns.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">max_groups</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">25</span><span class="w">
+</span><span class="n">wss_h2o</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">numeric</span><span class="p">(</span><span class="n">max_groups</span><span class="p">)</span><span class="w">
+</span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">max_groups</span><span class="p">){</span><span class="w">
+   </span><span class="n">kos_km1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">h</span><span class="m">2</span><span class="n">o.kmeans</span><span class="p">(</span><span class="n">kos_h1</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="o">=</span><span class="w"> </span><span class="n">colnames</span><span class="p">(</span><span class="n">kos_h1</span><span class="p">),</span><span class="w"> </span><span class="n">estimate_k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">standardize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> 
+                         </span><span class="n">nfolds</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="n">max_iterations</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">25</span><span class="p">)</span><span class="w">   
+   </span><span class="n">wss_h2o</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">h</span><span class="m">2</span><span class="n">o.tot_withinss</span><span class="p">(</span><span class="n">kos_km1</span><span class="p">,</span><span class="w"> </span><span class="n">xval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w"> </span><span class="c1"># xval=TRUE means cross validation used
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">par</span><span class="p">(</span><span class="n">font.main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+</span><span class="n">plot</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="n">max_groups</span><span class="p">,</span><span class="w"> </span><span class="n">wss_h2o</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="o">=</span><span class="s2">"b"</span><span class="p">,</span><span class="w"> </span><span class="n">xlab</span><span class="o">=</span><span class="s2">"Number of Clusters"</span><span class="p">,</span><span class="w">
+     </span><span class="n">ylab</span><span class="o">=</span><span class="s2">"Within groups sum of squares"</span><span class="p">,</span><span class="w"> </span><span class="n">bty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"l"</span><span class="p">)</span><span class="w">
+</span><span class="n">grid</span><span class="p">()</span></code></pre></figure>
+
+<p><img src="/img/0076-h2o-scree.svg" alt="h2o-scree" /></p>
+
+<p>Note that the scree plot from H2O is <em>much</em> less regular than that from base R.  This was the case whether it was created with cross-validation values of total within group sum of squares, or those from the training data.  Basically, the H2O k-means algorithm appears to be a little less steady than that in R.  This would worry me except for my concerns with the appropriateness of the method at all to this sort of data.  Because of the <a href="https://en.wikipedia.org/wiki/Clustering_high-dimensional_data">“curse of dimensionality”, nearly all points in this 4,000 dimensional space are pretty much equally far from each-other</a>, and it’s not surprising that a technique that aims to efficiently group them into clusters finds itself in unstable territory.</p>
+
+<p>So I’m not going to spend more space on presenting the final model, as I just don’t think the method is a good one in this case.  The exercise has served its purpose of showing that the new <code class="highlighter-rouge">as.h2o</code> upload of sparse <code class="highlighter-rouge">Matrix</code> format data into H2O works.  Unfortunately, it didn’t scale up to larger data.  The New York Times bags of words in the same repository as the Kos Blog data has about 300,000 documents and a vocabulary of 100,000 words, and although R, <code class="highlighter-rouge">tidytext</code> and <code class="highlighter-rouge">Matrix</code> handle it fine I couldn’t upload to H2O with <code class="highlighter-rouge">as.h2o</code>.  So this remains an open problem.  If you know how to fix it, please answer my <a href="http://stackoverflow.com/questions/41340086/how-to-cast-data-from-long-to-wide-format-in-h2o">question on Stack Overflow!</a>  The solution could be either a way of pivoting/spreading long form data in H2O itself, or a better way of handling the upload of pre-pivoted wide sparse data.  Or perhaps I just need more computing power.</p>
+
+<h2 id="topic-modelling-in-r">Topic modelling in R</h2>
+
+<p>I would have stopped there but I thought it was a waste of a good dataset to use only an admittedly inferior method to analyse it.  So I reached into the toolbox and grabbed the <a href="https://en.wikipedia.org/wiki/Topic_model">topic modelling</a> approach, which is a more appropriate tool in this case.  Topic modelling is a Bayesian approach that postulates a number of unseen latent “topics”.  Each topic has its own probability distribution to generate a bag of words.  The probability of each estimated topic generating each observed bag of words conditional on the best estimate of topics is considered, the process improved iteratively, and eventually one is left with a bunch of topics each of which has a probability of generating each word.</p>
+
+<p>As an inferential method I think it’s over-rated, but as an exploratory approach to otherwise intractable large bunches of bags of words it’s pretty useful - sort of the equivalent exploratory analytical/graphical combined method (in my view) to the armoury of density plots, scatter plots and line charts that we use when first exploring continuous data.  Oddly enough, the results are usually presented as tables of data listing the words most characteristic of each topic.  I think we can do better than that… here’s the graphic from the top of the post again, for convenience:</p>
+
+<p><img src="/img/0076-topics-8.svg" width="730" /></p>
+
+<p>Word clouds can be a silly gimmick, but if used well they are a good use of space to pack text in.  Like any graphic, they should facilitate comparisons (in this case, between different topics).</p>
+
+<p>My interpretation of these topics?</p>
+
+<ul>
+  <li>Topics 1 and 8 might be the more tactically focused discussion of polls and punditry in the leadup to the actual election</li>
+  <li>Topic 2 stands out clearly as the Iraq War topic</li>
+  <li>Topic 6 clearly relates to the broader war on terror, intelligence and defence issues</li>
+  <li>Topic 5 looks to be the general “Bush Administration” discussions</li>
+  <li>Topic 3 seems to be focused on the Democratic primary process</li>
+  <li>Topic 4 might be discussion of non-Presidential (Senate, House, Governor) races</li>
+  <li>Topic 7 might be a more general discussion of the Democratic party, people, politics and parties</li>
+  <li>The Daily Kos writers are a pretty nationally focused lot.  A political blog in Australia or New Zealand might discuss elections in the USA, Britain, and probably France, Germany, Japan and maybe Indonesia as well as their own country, but the Daily Kos has the luxury of focusing on just the USA.</li>
+</ul>
+
+<p>Overall, it’s not a bad overview of the subject-matter of 3,400 articles that the computer has read so we don’t need to.</p>
+
+<p>As this is a standard and nicely curated dataset I thought there would be stacks of people who have done this before me but on a cursory search I couldn’t find it.  Here are a couple of bits of related analysis:</p>
+
+<ul>
+  <li><a href="https://datamicroscopes.github.io/topic.html">https://datamicroscopes.github.io/topic.html</a></li>
+  <li><a href="http://cseweb.ucsd.edu/~saul/papers/icml13_tilda.pdf">http://cseweb.ucsd.edu/~saul/papers/icml13_tilda.pdf</a></li>
+</ul>
+
+<p>There’s a fair bit of discussion and not much clarity on the web on how to choose the correct number of topics for a given corpus of text.  I think I’ll save that for another time.</p>
+
+<p>Here’s the R code that created it, no frills or playing around with arguments.  Note that I had to put the data into <em>another</em> sparse matrix format for the excellent <a href="https://cran.r-project.org/package=topicmodels"><code class="highlighter-rouge">topicmodels</code> R package</a> by Bettina Gruen to work with.  I use the <code class="highlighter-rouge">kos2</code> object defined earlier in this post, which was the data after stemming and re-aggregation, but before word frequencies were converted to counts.  The most common form of topic modelling uses a method called latent Dirichlet allocation which unless I’m mistaken does that conversion under the hood; but the <code class="highlighter-rouge">topicmodels::LDA</code> function I use below needs to be provided counts, not proportions.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">kos_counts</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">kos2</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">arrange</span><span class="p">(</span><span class="n">word</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="c1"># take advantage of factor() as a quick way to make number:level pairings
+</span><span class="w">   </span><span class="n">mutate</span><span class="p">(</span><span class="n">word</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">factor</span><span class="p">(</span><span class="n">word</span><span class="p">))</span><span class="w">
+
+</span><span class="c1"># convert to triplet (row, column, cell) sparse matrix format:
+</span><span class="n">kos_trip</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">with</span><span class="p">(</span><span class="n">kos_counts</span><span class="p">,</span><span class="w"> </span><span class="n">simple_triplet_matrix</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">doc</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">word</span><span class="p">),</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">count</span><span class="p">))</span><span class="w">
+
+</span><span class="nf">dimnames</span><span class="p">(</span><span class="n">kos_trip</span><span class="p">)[[</span><span class="m">2</span><span class="p">]]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">levels</span><span class="p">(</span><span class="n">kos_counts</span><span class="o">$</span><span class="n">word</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># function for drawing word clouds of all topics from an object created with LDA
+</span><span class="n">wclda</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">lda</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w"> </span><span class="n">palette</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Blues"</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p">){</span><span class="w">
+   </span><span class="n">p</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">posterior</span><span class="p">(</span><span class="n">lda</span><span class="p">)</span><span class="w">
+   </span><span class="n">w</span><span class="m">1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.data.frame</span><span class="p">(</span><span class="n">t</span><span class="p">(</span><span class="n">p</span><span class="o">$</span><span class="n">terms</span><span class="p">))</span><span class="w"> 
+   </span><span class="n">w</span><span class="m">2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">w</span><span class="m">1</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="n">mutate</span><span class="p">(</span><span class="n">word</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rownames</span><span class="p">(</span><span class="n">w</span><span class="m">1</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="n">gather</span><span class="p">(</span><span class="n">topic</span><span class="p">,</span><span class="w"> </span><span class="n">weight</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">word</span><span class="p">)</span><span class="w"> 
+   
+   </span><span class="n">pal</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="n">brewer.pal</span><span class="p">(</span><span class="m">9</span><span class="p">,</span><span class="w"> </span><span class="n">palette</span><span class="p">),</span><span class="w"> </span><span class="n">each</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">ceiling</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">9</span><span class="p">))[</span><span class="n">n</span><span class="o">:</span><span class="m">1</span><span class="p">]</span><span class="w">
+   
+   </span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">ncol</span><span class="p">(</span><span class="n">w</span><span class="m">1</span><span class="p">)){</span><span class="w">
+      </span><span class="n">w</span><span class="m">3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">w</span><span class="m">2</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+         </span><span class="n">filter</span><span class="p">(</span><span class="n">topic</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+         </span><span class="n">arrange</span><span class="p">(</span><span class="n">desc</span><span class="p">(</span><span class="n">weight</span><span class="p">))</span><span class="w">
+      </span><span class="n">with</span><span class="p">(</span><span class="n">w</span><span class="m">3</span><span class="p">[</span><span class="m">1</span><span class="o">:</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="p">],</span><span class="w"> 
+           </span><span class="n">wordcloud</span><span class="p">(</span><span class="n">word</span><span class="p">,</span><span class="w"> </span><span class="n">freq</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">weight</span><span class="p">,</span><span class="w"> </span><span class="n">random.order</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> 
+                     </span><span class="n">ordered.colors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> </span><span class="n">colors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pal</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p">))</span><span class="w">
+      </span><span class="n">title</span><span class="p">(</span><span class="n">paste</span><span class="p">(</span><span class="s2">"Topic"</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">))</span><span class="w">
+   </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">system.time</span><span class="p">(</span><span class="n">lda3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">LDA</span><span class="p">(</span><span class="n">kos_trip</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">8</span><span class="p">))</span><span class="w"> </span><span class="c1"># about 300 seconds
+</span><span class="w">
+</span><span class="n">par</span><span class="p">(</span><span class="n">mfrow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">4</span><span class="p">),</span><span class="w"> </span><span class="n">font.main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+</span><span class="n">wclda</span><span class="p">(</span><span class="n">lda3</span><span class="p">)</span><span class="w">
+</span><span class="n">grid.text</span><span class="p">(</span><span class="m">0.5</span><span class="p">,</span><span class="w"> </span><span class="m">0.55</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Latent topics identified in 3,430 dailykos.com blog posts in 2004"</span><span class="p">,</span><span class="w">
+          </span><span class="n">gp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gpar</span><span class="p">(</span><span class="n">fontface</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"italic"</span><span class="p">))</span><span class="w">
+</span><span class="n">grid.text</span><span class="p">(</span><span class="m">0.98</span><span class="p">,</span><span class="w"> </span><span class="m">0.02</span><span class="p">,</span><span class="w"> </span><span class="n">hjust</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w">
+          </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Source: data from https://archive.ics.uci.edu/ml/datasets/Bag+of+Words\n           analysis from https://ellisp.github.io"</span><span class="p">,</span><span class="w">
+          </span><span class="n">gp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gpar</span><span class="p">(</span><span class="n">fontface</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"italic"</span><span class="p">,</span><span class="w"> </span><span class="n">cex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.7</span><span class="p">,</span><span class="w"> </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey60"</span><span class="p">))</span></code></pre></figure>
+
+
+
+</div>
+
+<div class = "container">
+   <div class="col-md-4">
+    
+        <a rel="prev" href="/blog/2016/12/26/shadow-economy">
+        <p>&larr; Older</p>
+        <p>Extracting data on shadow economy from PDF tables</p>
+        
+        </a>
+    
+    </div>
+    <div class="col-md-4">
+    </div>
+    <div class="col-md-4" style="text-align: right;">
+    
+      </div>
+      </div>
+      
+      
+      
+</div>
+
+
+   
+    <div id="disqus_thread"></div>
+
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+    
+    
+   
+			
+			</div><!-- /.container -->
+
+         
+
+   <div class = "container footer">
+			<footer>
+	    		
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.  Or follow <a href = "/feed.r.xml">posts in this blog featuring R with RSS</a>.</p>
+			
+            <p>This blog is built with <a href = "http://jekyllrb.com/">Jekyll</a>, <a href = "http://getbootstrap.com/">Bootstrap</a>, <a href = "https://www.ruby-lang.org/en/">Ruby</a> and <a href = "https://cran.r-project.org/">R</a>.  Read my <a href="/about/acknowledgements.html">acknowledgements</a> for a little more on how.  I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+
+			<div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="true" data-share="false"></div>
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Peter's stats stuff</span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			
+			
+
+			</footer>
+    </div>
+
+
+
+  
+</body>
+</html>
+   
+
+
+
+
+         
