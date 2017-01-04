@@ -1,0 +1,397 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Error, trend, seasonality -  ets and its forecast model friends</title>
+      	
+         
+         
+            <meta name ="description" content ="I check out exponential smoothing state space models for univariate time series as a general family of forecasting models, and in particular the `ets`, `stlm` and `thetaf` functions from Hyndman's forecast R package.  For monthly and quarterly seasonal data, `thetaf` seems to be slightly outperformed by its more flexible and general cousins.">
+            <meta property="og:description" content ="I check out exponential smoothing state space models for univariate time series as a general family of forecasting models, and in particular the `ets`, `stlm` and `thetaf` functions from Hyndman's forecast R package.  For monthly and quarterly seasonal data, `thetaf` seems to be slightly outperformed by its more flexible and general cousins.">
+         
+         <meta property="og:site_name" content="Peter's stats stuff" />
+         <meta property="og:title" content="Error, trend, seasonality -  ets and its forecast model friends" />
+         
+            <meta property="og:image" content="http://ellisp.github.io/img/0070-mean.png" />
+         
+         <meta property="og:url" content="http://ellisp.github.io/blog/2016/11/27/ets-friends/" />
+         <meta property="og:author" content= "https://www.facebook.com/peter.ellis.353" />
+         <meta property="og:type" content="article" />
+           
+          <link href="/css/bootstrap.min.css" rel ="stylesheet">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet">
+            <link href="/css/custom.css" rel ="stylesheet">     
+		<link href="/css/syntax.css" rel ="stylesheet">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="Peter's stats stuff by Peter Ellis"
+      href="/feed.xml">
+
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Peter's stats stuff</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">All blog posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">Ordered by date</a></li>
+                  <li><a href="/blog/index_by_tag.html">Grouped by subject matter</a></li>
+                  <li><a href = /blog/2016/12/31/sparse-bags>Most recent post</a></li>
+                 </ul>
+            </li>
+              <li><a href="/blog/showcase.html">Showcase</a></li>
+              <li><a href="/presentations/index.html">Presentations</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			    <div class="jumbotron">
+      <div class="container">
+        <h1>Error, trend, seasonality -  ets and its forecast model friends</h1>
+         <p class="meta">27 Nov 2016</p>
+        
+      </div>
+    </div>
+
+
+
+
+<div class = "post-summary">
+<h2>At a glance:</h2>
+   I check out exponential smoothing state space models for univariate time series as a general family of forecasting models, and in particular the `ets`, `stlm` and `thetaf` functions from Hyndman's forecast R package.  For monthly and quarterly seasonal data, `thetaf` seems to be slightly outperformed by its more flexible and general cousins.
+   <hr></hr>
+</div>
+
+<div class="post">
+<div class="col-md-2">
+
+</div>
+  <div class="col-md-8">
+
+  <h2 id="a-broad-family-of-fast-and-effective-forecast-methods">A broad family of fast and effective forecast methods</h2>
+<p><a href="https://en.wikipedia.org/wiki/Exponential_smoothing">Exponential smoothing state space</a> methods constitute a broad family of approaches to univariate time series forecasting that have been around for many decades and only in the twenty-first century placed into a systematic framework.  The definitive book on the subject is Hyndman, Koehler, Ord and Snyder’s <a href="http://www.exponentialsmoothing.net/">Forecasting with Exponential Smoothing: The State Space Approach</a>.  Well known models such as <a href="https://www.otexts.org/fpp/7/1">simple or single exponential smoothing</a>, Holt’s linear trend method (ingeniously implemented here <a href="http://www.real-statistics.com/time-series-analysis/basic-time-series-forecasting/holt-linear-trend/">in Excel</a>  -  these methods are popular in the business world where better tools are often not used) and <a href="https://www.otexts.org/fpp/7/5">the Holt-Winters seasonal method</a> can be shown to be special cases of a single family.</p>
+
+<p>A simple must-read in this space is the <a href="https://www.otexts.org/fpp/7/6">taxonomy of exponential smoothing methods</a> in Hyndman and Athanasopolous’ <em>Forecasting Principles and Practice</em>.  Their taxonomy is based on characterising each model against three dimensions: error, trend and seasonality (hence the function that implements these models is <code class="highlighter-rouge">ets</code> in the <code class="highlighter-rouge">forecast</code> package).  Each of those three can be characteristised as “additive”, “multiplicative”, or “none”.  From the ets helpfile:</p>
+
+<blockquote>
+  <p><code class="highlighter-rouge">model</code>: Usually a three-character string identifying method using the framework terminology of Hyndman et al. (2002) and Hyndman et al. (2008). The first letter denotes the error type (“A”, “M” or “Z”); the second letter denotes the trend type (“N”,”A”,”M” or “Z”); and the third letter denotes the season type (“N”,”A”,”M” or “Z”). In all cases, “N”=none, “A”=additive, “M”=multiplicative and “Z”=automatically selected. So, for example, “ANN” is simple exponential smoothing with additive errors, “MAM” is multiplicative Holt-Winters’ method with multiplicative errors, and so on.</p>
+</blockquote>
+
+<p>By taking a fully general approach, <code class="highlighter-rouge">ets</code> is able to make the most of all of the members of its family and automatically choose the most effective method for a given dataset.</p>
+
+<h2 id="three-relatives">Three relatives</h2>
+
+<p>I wanted to get my head around the performance with seasonal data of two close relatives of <code class="highlighter-rouge">ets</code>: <code class="highlighter-rouge">stlm</code> and <code class="highlighter-rouge">thetaf</code>, Hyndman’s implementation of the successful <a href="https://www.google.co.nz/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=5&amp;cad=rja&amp;uact=8&amp;ved=0ahUKEwi2i-3NxsnQAhWDF5QKHdw7A-YQFgg5MAQ&amp;url=https%3A%2F%2Fwww.researchgate.net%2Fpublication%2F223049702_The_theta_model_A_decomposition_approach_to_forecasting&amp;usg=AFQjCNGN1PCpPDu5KSMWzHvNbhDFYLQofw&amp;sig2=cdBAHctXx8kd2eVsDPXgLQ">Theta decomposition method of forecasting</a>.</p>
+
+<p>After the Theta method made a name for itself in the forecasting competition world as a complex new algorithm, Hyndman and Billah <a href="http://www.robjhyndman.com/papers/Theta.pdf">successfully showed</a> that it could be seen as yet another special case of an exponential smoothing model with drift.  Both the <code class="highlighter-rouge">thetaf</code> and <code class="highlighter-rouge">stlm</code> methods, in Hyndman’s <code class="highlighter-rouge">forecast</code> package, work by first seasonally adjusting a series, then applying a type of exponential smoothing model to it.  The original Theta method <a href="http://stats.stackexchange.com/questions/67036/does-thetaf-in-the-forecast-package-in-r-detect-seasonality">did not detect seasonality</a>, but Hyndman’s more recent implementations of it do.</p>
+
+<p>Because Hyndman’s <code class="highlighter-rouge">forecast</code> package is open source, we can inspect the <a href="https://github.com/robjhyndman/forecast/tree/master/R">source code</a> to be sure the functions are doing what we think they are.  Here are the three functions I’m looking at:</p>
+
+<ul>
+  <li><code class="highlighter-rouge">ets</code> The most general and flexible version.  Models error, trend and seasonal elements together.</li>
+  <li><code class="highlighter-rouge">stlm</code> Seasonal adjustment via <code class="highlighter-rouge">stl</code> (Cleveland-style loess); then a non-seasonal <code class="highlighter-rouge">ets</code> model (ie just error and trend terms); then re-seasonalise.</li>
+  <li><code class="highlighter-rouge">thetaf</code> Seasonal adjustment via <code class="highlighter-rouge">decomp</code> (classical multiplicative seasonal decomposition); <code class="highlighter-rouge">ets</code> with just an additive model (no trend or seasonality); estimate trend/drift by an adjusted form of linear regression of the seasonally adjusted variable against time.</li>
+</ul>
+
+<p>One way of looking at this is that <code class="highlighter-rouge">ets</code> uses exponential smoothing for all three of error, trend and seasonal; <code class="highlighter-rouge">stlm</code> for just error and trend; and <code class="highlighter-rouge">thetaf</code> for just error.  <code class="highlighter-rouge">stlm</code> and <code class="highlighter-rouge">thetaf</code> bring in other methods for dealing with the seasonal and trend elements.</p>
+
+<p>Here are those three methods in action against one of the example monthly data sets from the <a href="http://ellisp.github.io/blog/2016/10/19/Tcomp">2010 Tourism Forecasting Competition</a>.</p>
+
+<p><img src="/img/0070-eg1.svg" alt="eg1" /></p>
+
+<p>We see from the plot titles in this example that the <code class="highlighter-rouge">ets</code> approach detects additive error and seasonal structures; whereas the <code class="highlighter-rouge">stlm</code> approach first removes the seasonality, so what is left is simply additive error.  None of the methods is good at picking up the subtle upwards trend and they all slightly underestimate the forward values of the series, albeit with good prediction interval coverage.</p>
+
+<p>Here’s a second example, this time a quarterly series:</p>
+
+<p><img src="/img/0070-eg2.svg" alt="eg2" /></p>
+
+<p>In this case, multiplicative error and seasonal components are detected in the original data.</p>
+
+<h2 id="a-systematic-comparison">A systematic comparison</h2>
+
+<p>To get a more systematic view on which of these variants of methods is most effective with seasonal data of the sort I mostly deal with, I ran an experiment.  I used all three methods against each of the quarterly and monthly series in the 2010 tourism forecasting competition and the 1982 “M1” forecasting competition from Makridakis et al.  This constitutes well over a thousand time series in total.  I calculated the mean absolute scaled error (MASE) of the forecasts against the actual future data.  Here’s the distribution of those values of MASE:</p>
+
+<p><img src="/img/0070-density.svg" alt="density" /></p>
+
+<p>Easier to take in than all those individual values of MASE is a summary statistic.  Here’s the trimmed mean:
+<img src="/img/0070-trmean.svg" alt="trmean" /></p>
+
+<p>The Theta method stands out as not as consistently accurate as either <code class="highlighter-rouge">ets</code> or <code class="highlighter-rouge">stlm</code> and there is little to tell the two apart.  But here is the mean:</p>
+
+<p><img src="/img/0070-mean.svg" alt="mean" /></p>
+
+<p>All three methods obviously generated a few poor values of MASE that drag their untrimmed mean scores up.  Those pesky, hard to predict real datasets… Mostly but not always <code class="highlighter-rouge">stlm</code> appears a bit better than <code class="highlighter-rouge">ets</code>, which might suggest that it is a good idea to seasonally adjust the data before fitting an exponential smoothing model to it - but there isn’t much in it.  <code class="highlighter-rouge">thetaf</code> does seem to be systematically outperformed by its more general and flexible cousins with this seasonal data.  We can’t tell from this whether it is the simple seasonal adjustment method used in <code class="highlighter-rouge">thetaf</code> that is responsible or the Theta method itself; my suspicion is with the seasonal adjustment.  Classical decomposition is a less flexible method than the rolling window smoothing approach used by <code class="highlighter-rouge">stl</code>, which is able to pick up changes in seasonality over time.</p>
+
+<p>Here’s the code that produces all the above examples and runs the tests against the competition data:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">ggplot2</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">forecast</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">Tcomp</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">doParallel</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">dplyr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">tidyr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">Mcomp</span><span class="p">)</span><span class="w">
+
+
+</span><span class="c1">#======example datasets=============
+</span><span class="w">
+</span><span class="c1"># Example 1
+</span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tourism</span><span class="p">[[</span><span class="m">150</span><span class="p">]]</span><span class="o">$</span><span class="n">x</span><span class="w">
+</span><span class="n">h</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tourism</span><span class="p">[[</span><span class="m">150</span><span class="p">]]</span><span class="o">$</span><span class="n">h</span><span class="w">
+</span><span class="n">par</span><span class="p">(</span><span class="n">mfrow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">4</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">),</span><span class="w"> </span><span class="n">bty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"l"</span><span class="p">,</span><span class="w"> </span><span class="n">font.main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+</span><span class="n">plot</span><span class="p">(</span><span class="n">forecast</span><span class="p">(</span><span class="n">ets</span><span class="p">(</span><span class="n">x</span><span class="p">),</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">h</span><span class="p">));</span><span class="w"> </span><span class="n">grid</span><span class="p">()</span><span class="w">
+</span><span class="n">plot</span><span class="p">(</span><span class="n">forecast</span><span class="p">(</span><span class="n">stlm</span><span class="p">(</span><span class="n">x</span><span class="p">),</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">h</span><span class="p">));</span><span class="w"> </span><span class="n">grid</span><span class="p">()</span><span class="w">
+</span><span class="n">plot</span><span class="p">(</span><span class="n">thetaf</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">h</span><span class="p">));</span><span class="w"> </span><span class="n">grid</span><span class="p">()</span><span class="w">
+</span><span class="n">plot</span><span class="p">(</span><span class="n">tourism</span><span class="p">[[</span><span class="m">150</span><span class="p">]],</span><span class="w"> </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Actual results - `tourism` data series 150"</span><span class="p">);</span><span class="w"> </span><span class="n">grid</span><span class="p">()</span><span class="w">
+
+</span><span class="c1"># Example 2
+</span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tourism</span><span class="p">[[</span><span class="m">600</span><span class="p">]]</span><span class="o">$</span><span class="n">x</span><span class="w">
+</span><span class="n">h</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tourism</span><span class="p">[[</span><span class="m">600</span><span class="p">]]</span><span class="o">$</span><span class="n">h</span><span class="w">
+</span><span class="n">par</span><span class="p">(</span><span class="n">mfrow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">4</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">),</span><span class="w"> </span><span class="n">bty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"l"</span><span class="p">,</span><span class="w"> </span><span class="n">font.main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+</span><span class="n">plot</span><span class="p">(</span><span class="n">forecast</span><span class="p">(</span><span class="n">ets</span><span class="p">(</span><span class="n">x</span><span class="p">),</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">h</span><span class="p">));</span><span class="w"> </span><span class="n">grid</span><span class="p">()</span><span class="w">
+</span><span class="n">plot</span><span class="p">(</span><span class="n">forecast</span><span class="p">(</span><span class="n">stlm</span><span class="p">(</span><span class="n">x</span><span class="p">),</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">h</span><span class="p">));</span><span class="w"> </span><span class="n">grid</span><span class="p">()</span><span class="w">
+</span><span class="n">plot</span><span class="p">(</span><span class="n">thetaf</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">h</span><span class="p">));</span><span class="w"> </span><span class="n">grid</span><span class="p">()</span><span class="w">
+</span><span class="n">plot</span><span class="p">(</span><span class="n">tourism</span><span class="p">[[</span><span class="m">600</span><span class="p">]],</span><span class="w"> </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Actual results - `tourism` data series 600"</span><span class="p">);</span><span class="w"> </span><span class="n">grid</span><span class="p">()</span><span class="w">
+
+</span><span class="c1">#============set up cluster for parallel computing===========
+</span><span class="n">cluster</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">makeCluster</span><span class="p">(</span><span class="m">7</span><span class="p">)</span><span class="w"> </span><span class="c1"># only any good if you have at least 7 processors :)
+</span><span class="n">registerDoParallel</span><span class="p">(</span><span class="n">cluster</span><span class="p">)</span><span class="w">
+
+</span><span class="n">clusterEvalQ</span><span class="p">(</span><span class="n">cluster</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w">
+   </span><span class="n">library</span><span class="p">(</span><span class="n">Tcomp</span><span class="p">)</span><span class="w">
+   </span><span class="n">library</span><span class="p">(</span><span class="n">Mcomp</span><span class="p">)</span><span class="w">
+   </span><span class="n">library</span><span class="p">(</span><span class="n">forecast</span><span class="p">)</span><span class="w">
+</span><span class="p">})</span><span class="w">
+
+</span><span class="c1">#==========the actual analytical function==============
+</span><span class="n">competition</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">collection</span><span class="p">,</span><span class="w"> </span><span class="n">maxfors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">collection</span><span class="p">)){</span><span class="w">
+   </span><span class="k">if</span><span class="p">(</span><span class="nf">class</span><span class="p">(</span><span class="n">collection</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">"Mcomp"</span><span class="p">){</span><span class="w">
+      </span><span class="n">stop</span><span class="p">(</span><span class="s2">"This function only works on objects of class Mcomp, eg from the Mcomp or Tcomp packages."</span><span class="p">)</span><span class="w">
+   </span><span class="p">}</span><span class="w">
+   </span><span class="n">nseries</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">collection</span><span class="p">)</span><span class="w">
+   </span><span class="n">mases</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">foreach</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">maxfors</span><span class="p">,</span><span class="w"> </span><span class="n">.combine</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"rbind"</span><span class="p">)</span><span class="w"> </span><span class="o">%dopar%</span><span class="w"> </span><span class="p">{</span><span class="w">
+      </span><span class="n">thedata</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">collection</span><span class="p">[[</span><span class="n">i</span><span class="p">]]</span><span class="w">  
+      </span><span class="n">fc1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">forecast</span><span class="p">(</span><span class="n">ets</span><span class="p">(</span><span class="n">thedata</span><span class="o">$</span><span class="n">x</span><span class="p">),</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">thedata</span><span class="o">$</span><span class="n">h</span><span class="p">)</span><span class="w">
+      </span><span class="n">fc2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">forecast</span><span class="p">(</span><span class="n">stlm</span><span class="p">(</span><span class="n">thedata</span><span class="o">$</span><span class="n">x</span><span class="p">),</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">thedata</span><span class="o">$</span><span class="n">h</span><span class="p">)</span><span class="w">
+      </span><span class="n">fc3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">thetaf</span><span class="p">(</span><span class="n">thedata</span><span class="o">$</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">thedata</span><span class="o">$</span><span class="n">h</span><span class="p">)</span><span class="w">
+      </span><span class="n">mase</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">accuracy</span><span class="p">(</span><span class="n">fc1</span><span class="p">,</span><span class="w"> </span><span class="n">thedata</span><span class="o">$</span><span class="n">xx</span><span class="p">)[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="s2">"MASE"</span><span class="p">],</span><span class="w">
+                </span><span class="n">accuracy</span><span class="p">(</span><span class="n">fc2</span><span class="p">,</span><span class="w"> </span><span class="n">thedata</span><span class="o">$</span><span class="n">xx</span><span class="p">)[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="s2">"MASE"</span><span class="p">],</span><span class="w">
+                </span><span class="n">accuracy</span><span class="p">(</span><span class="n">fc3</span><span class="p">,</span><span class="w"> </span><span class="n">thedata</span><span class="o">$</span><span class="n">xx</span><span class="p">)[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="s2">"MASE"</span><span class="p">])</span><span class="w">
+      </span><span class="nf">return</span><span class="p">(</span><span class="n">mase</span><span class="p">)</span><span class="w">
+   </span><span class="p">}</span><span class="w">
+   </span><span class="n">colnames</span><span class="p">(</span><span class="n">mases</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"ets"</span><span class="p">,</span><span class="w"> </span><span class="s2">"stlm"</span><span class="p">,</span><span class="w"> </span><span class="s2">"thetaf"</span><span class="p">)</span><span class="w">
+   </span><span class="nf">return</span><span class="p">(</span><span class="n">mases</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="c1">## Test on a small set of data, useful during dev
+</span><span class="n">small_collection</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="n">tourism</span><span class="p">[[</span><span class="m">100</span><span class="p">]],</span><span class="w"> </span><span class="n">tourism</span><span class="p">[[</span><span class="m">200</span><span class="p">]],</span><span class="w"> </span><span class="n">tourism</span><span class="p">[[</span><span class="m">300</span><span class="p">]],</span><span class="w"> </span><span class="n">tourism</span><span class="p">[[</span><span class="m">400</span><span class="p">]],</span><span class="w"> </span><span class="n">tourism</span><span class="p">[[</span><span class="m">500</span><span class="p">]],</span><span class="w"> </span><span class="n">tourism</span><span class="p">[[</span><span class="m">600</span><span class="p">]])</span><span class="w">
+</span><span class="nf">class</span><span class="p">(</span><span class="n">small_collection</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"Mcomp"</span><span class="w">
+</span><span class="n">test1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">competition</span><span class="p">(</span><span class="n">small_collection</span><span class="p">)</span><span class="w">
+</span><span class="nf">round</span><span class="p">(</span><span class="n">test1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#===========application=================
+# takes a few minutes to run
+</span><span class="n">t</span><span class="m">4</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">competition</span><span class="p">(</span><span class="n">subset</span><span class="p">(</span><span class="n">tourism</span><span class="p">,</span><span class="w"> </span><span class="s2">"quarterly"</span><span class="p">))</span><span class="w">
+</span><span class="n">t</span><span class="m">12</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">competition</span><span class="p">(</span><span class="n">subset</span><span class="p">(</span><span class="n">tourism</span><span class="p">,</span><span class="w"> </span><span class="s2">"monthly"</span><span class="p">))</span><span class="w">
+</span><span class="n">m</span><span class="m">4</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">competition</span><span class="p">(</span><span class="n">subset</span><span class="p">(</span><span class="n">M</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="s2">"quarterly"</span><span class="p">))</span><span class="w">
+</span><span class="n">m</span><span class="m">12</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">competition</span><span class="p">(</span><span class="n">subset</span><span class="p">(</span><span class="n">M</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="s2">"monthly"</span><span class="p">))</span><span class="w">
+
+</span><span class="c1"># shut down cluster
+</span><span class="n">stopCluster</span><span class="p">(</span><span class="n">cluster</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#===========results=============
+</span><span class="w">
+</span><span class="n">results</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.data.frame</span><span class="p">(</span><span class="n">rbind</span><span class="p">(</span><span class="n">t</span><span class="m">4</span><span class="p">,</span><span class="w"> </span><span class="n">t</span><span class="m">12</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="m">4</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="m">12</span><span class="p">)</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">dataset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="nf">c</span><span class="p">(</span><span class="s2">"Tourism"</span><span class="p">,</span><span class="w"> </span><span class="s2">"M1"</span><span class="p">),</span><span class="w"> 
+                        </span><span class="n">times</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">nrow</span><span class="p">(</span><span class="n">t</span><span class="m">4</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">t</span><span class="m">12</span><span class="p">),</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">m</span><span class="m">4</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">m</span><span class="m">12</span><span class="p">))))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">period</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="nf">c</span><span class="p">(</span><span class="s2">"Quarterly"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Monthly"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Quarterly"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Monthly"</span><span class="p">),</span><span class="w">
+                       </span><span class="n">times</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">nrow</span><span class="p">(</span><span class="n">t</span><span class="m">4</span><span class="p">),</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">t</span><span class="m">12</span><span class="p">),</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">m</span><span class="m">4</span><span class="p">),</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">m</span><span class="m">12</span><span class="p">))))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">gather</span><span class="p">(</span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">MASE</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">period</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">dataset</span><span class="p">)</span><span class="w">
+
+</span><span class="n">results</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MASE</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">method</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_density</span><span class="p">(</span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+   </span><span class="n">geom_rug</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_colour_brewer</span><span class="p">(</span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">palette</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Set1"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_fill_brewer</span><span class="p">(</span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">palette</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Set1"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">facet_grid</span><span class="p">(</span><span class="n">period</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">dataset</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_x_sqrt</span><span class="p">()</span><span class="w">
+
+</span><span class="n">results</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">group_by</span><span class="p">(</span><span class="n">period</span><span class="p">,</span><span class="w"> </span><span class="n">dataset</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">summarise</span><span class="p">(</span><span class="n">MASE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">MASE</span><span class="p">,</span><span class="w"> </span><span class="n">tr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.1</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">period</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MASE</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">method</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">dataset</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_text</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_colour_brewer</span><span class="p">(</span><span class="n">palette</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Set1"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">theme</span><span class="p">(</span><span class="n">legend.position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"none"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Trimmed mean of Mean Absolute Scaled Error"</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Comparison of three related forecasting methods"</span><span class="p">,</span><span class="w">
+           </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"'Tourism' and 'M1' competition datasets"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">results</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">group_by</span><span class="p">(</span><span class="n">period</span><span class="p">,</span><span class="w"> </span><span class="n">dataset</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">summarise</span><span class="p">(</span><span class="n">MASE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">MASE</span><span class="p">,</span><span class="w"> </span><span class="n">tr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">period</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MASE</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">method</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">dataset</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_text</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_colour_brewer</span><span class="p">(</span><span class="n">palette</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Set1"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">theme</span><span class="p">(</span><span class="n">legend.position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"none"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Mean of Mean Absolute Scaled Error"</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Comparison of three related forecasting methods"</span><span class="p">,</span><span class="w">
+           </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"'Tourism' and 'M1' competition datasets"</span><span class="p">)</span></code></pre></figure>
+
+
+
+</div>
+
+<div class = "container">
+   <div class="col-md-4">
+    
+        <a rel="prev" href="/blog/2016/11/24/seaice">
+        <p>&larr; Older</p>
+        <p>Declining sea ice in the Arctic</p>
+        
+        </a>
+    
+    </div>
+    <div class="col-md-4">
+    </div>
+    <div class="col-md-4" style="text-align: right;">
+     
+        <a rel="next" href="/blog/2016/12/07/arima-prediction-intervals">
+        <p>Newer &rarr;</p>
+        <p>Why time series forecasts prediction intervals aren't as good as we'd hope</p>
+        
+        </a>
+    
+      </div>
+      </div>
+      
+      
+      
+</div>
+
+
+   
+    <div id="disqus_thread"></div>
+
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+    
+    
+   
+			
+			</div><!-- /.container -->
+
+         
+
+   <div class = "container footer">
+			<footer>
+	    		
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.  Or follow <a href = "/feed.r.xml">posts in this blog featuring R with RSS</a>.</p>
+			
+            <p>This blog is built with <a href = "http://jekyllrb.com/">Jekyll</a>, <a href = "http://getbootstrap.com/">Bootstrap</a>, <a href = "https://www.ruby-lang.org/en/">Ruby</a> and <a href = "https://cran.r-project.org/">R</a>.  Read my <a href="/about/acknowledgements.html">acknowledgements</a> for a little more on how.  I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+
+			<div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="true" data-share="false"></div>
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Peter's stats stuff</span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			
+			
+
+			</footer>
+    </div>
+
+
+
+  
+</body>
+</html>
+   
+
+
+
+
+         

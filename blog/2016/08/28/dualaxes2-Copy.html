@@ -1,0 +1,396 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Dual axes time series plots with various more awkward data</title>
+      	
+         
+         
+            <meta name ="description" content ="I finish enhancements of the dual axes time series plotting function in R so it handles reasonably well series that may start at different times, have different frequencies, or include negatives.">
+            <meta property="og:description" content ="I finish enhancements of the dual axes time series plotting function in R so it handles reasonably well series that may start at different times, have different frequencies, or include negatives.">
+         
+         <meta property="og:site_name" content="Peter's stats stuff" />
+         <meta property="og:title" content="Dual axes time series plots with various more awkward data" />
+         
+            <meta property="og:image" content="http://ellisp.github.io/img/0052-milk-price.png" />
+         
+         <meta property="og:url" content="http://ellisp.github.io/blog/2016/08/28/dualaxes2-Copy/" />
+         <meta property="og:author" content= "https://www.facebook.com/peter.ellis.353" />
+         <meta property="og:type" content="article" />
+           
+          <link href="/css/bootstrap.min.css" rel ="stylesheet">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet">
+            <link href="/css/custom.css" rel ="stylesheet">     
+		<link href="/css/syntax.css" rel ="stylesheet">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="Peter's stats stuff by Peter Ellis"
+      href="/feed.xml">
+
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Peter's stats stuff</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">All blog posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">Ordered by date</a></li>
+                  <li><a href="/blog/index_by_tag.html">Grouped by subject matter</a></li>
+                  <li><a href = /blog/2016/08/28/dualaxes2>Most recent post</a></li>
+                 </ul>
+            </li>
+              <li><a href="/blog/showcase.html">Showcase</a></li>
+              <li><a href="/presentations/index.html">Presentations</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			    <div class="jumbotron">
+      <div class="container">
+        <h1>Dual axes time series plots with various more awkward data</h1>
+         <p class="meta">28 Aug 2016</p>
+        
+      </div>
+    </div>
+
+
+
+
+<div class = "post-summary">
+<h2>TL;DR Summary:</h2>
+   I finish enhancements of the dual axes time series plotting function in R so it handles reasonably well series that may start at different times, have different frequencies, or include negatives.
+   <hr></hr>
+</div>
+
+<div class="post">
+<div class="col-md-2">
+
+</div>
+  <div class="col-md-8">
+
+  <p>In my most <a href="/blog/2016/08/18/dualaxes">recent blog post</a> I introduced the <code class="highlighter-rouge">dualplot()</code> R function, which allows you to create time series plots with two different scales on the vertical axes in a way that minimises the potential problems of misinterpretation.  See that earlier post for a discussion of the pros and cons of the whole approach, which I won’t repeat here.</p>
+
+<p>I’ve now made some minor enhancements:</p>
+
+<ul>
+  <li>improved handling of series that start at different times</li>
+  <li>fixed some minor problems with series that have different frequencies (eg monthly versus quarterly)</li>
+  <li>added a fairly sensible default choice of axes for when one or both of the series dip into negative territory</li>
+  <li>improved default legend and axis titles for situations when the data are columns in a data frame</li>
+  <li>improved x axis labels for when x is a an object with date or time characteristics</li>
+</ul>
+
+<p>The main idea behind my first version was that the two series would be rendered on the screen as though they had first been converted to indexes (like the Consumer Price Index), and then have the original scales restored so the original absolute values can still be seen.  The choice to be made then becomes which point to choose as the point to make the series use as their reference (eg the period at which they are defined as 1, 100 or 1000, if we were to leave them as indices).</p>
+
+<h2 id="when-time-series-start-at-different-times">When time series start at different times</h2>
+
+<h3 id="default-to-use-first-available-cross-over-point">Default to use first available “cross over point”</h3>
+<p>For the (common) situation that the two series you wish to plot start at different times, I decided it rarely made sense to have both series <strong>start</strong> at the same vertical position on the page at their respective earliest point.  So I’ve set the default to make the two series appear as though their reference period is the <strong>first time period when both series have data</strong>.  In effect, this makes the later series appear to grow out of the first series, and you can see its relative growth from that period onwards.</p>
+
+<p>This is illustrated nicely in the first plot below, which shows how the share price of <a href="https://www.nzx.com/companies/FCG">Fonterra Cooperative Group</a> has performed performed relative to BHP Billiton.  For non-Australasian readers, Fonterra (who’s historical origin is as a dairy farming cooperative) is one of the most important economic enterprises in New Zealand; and BHP is an <a href="https://en.wikipedia.org/wiki/BHP_Billiton">Anglo-Australian multinational mining giant</a>.</p>
+
+<p><img src="/img/0052-starts2.svg" alt="starts2" /></p>
+
+<p>As well as seeing the relative growth since data on both series has become available, we can still see the approximate absolute values, eg just under $6 for a Fonterra Cooperative Group share.</p>
+
+<p>Readers who have been paying attention will notice that in drawing this plot I appear to have broken one of my own rules on when to use a dual axes graphic, which was to <strong>not</strong> use two axes when the unit of both series is fundamentally the same.  In this case, both series are showing dollars per share.  I had a hard think about this and think that this is (marginally) a case where it is acceptable to use two different axes.  While the <strong>units</strong> are the same (dollars per share), the magnitudes are sufficiently different that it is worthwhile, if we wish to compare growth paths (typically the issue of most interest with shares), to examine them on different scales.</p>
+
+<p>Here’s the code to load that data from Yahoo Finance and draw the chart with my <code class="highlighter-rouge">dualplot()</code> function:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># Load up functionality
+</span><span class="n">library</span><span class="p">(</span><span class="n">dplyr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">tidyr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">quantmod</span><span class="p">)</span><span class="w"> </span><span class="c1"># for getSymbols for share price data
+</span><span class="n">library</span><span class="p">(</span><span class="n">ggseas</span><span class="p">)</span><span class="w">   </span><span class="c1"># for nzbop data
+</span><span class="n">library</span><span class="p">(</span><span class="n">Quandl</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># The dualplot() function:
+</span><span class="n">source</span><span class="p">(</span><span class="s2">"https://gist.githubusercontent.com/ellisp/4002241def4e2b360189e58c3f461b4a/raw/e959562be9e7a4d919a9c454d8b1b70cde904ab0/dualplot.R"</span><span class="p">)</span><span class="w">     
+
+</span><span class="c1">#=================Different starting points==================
+# Load some example data from the stock exchange
+# Fonterra data only available from Yahoo for the past few years
+</span><span class="n">fonterra</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">getSymbols</span><span class="p">(</span><span class="s1">'FCG.NZ'</span><span class="p">,</span><span class="w"> </span><span class="n">src</span><span class="o">=</span><span class="s1">'yahoo'</span><span class="p">,</span><span class="w"> </span><span class="n">auto.assign</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w"> 
+</span><span class="n">bhp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">getSymbols</span><span class="p">(</span><span class="s1">'BHP.AX'</span><span class="p">,</span><span class="w"> </span><span class="n">src</span><span class="o">=</span><span class="s1">'yahoo'</span><span class="p">,</span><span class="w"> </span><span class="n">auto.assign</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w"> 
+
+</span><span class="c1"># default - a cross over point happen at the earliest point of the shorter series
+</span><span class="n">dualplot</span><span class="p">(</span><span class="n">x</span><span class="m">1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">time</span><span class="p">(</span><span class="n">bhp</span><span class="p">),</span><span class="w"> </span><span class="n">y</span><span class="m">1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bhp</span><span class="o">$</span><span class="n">BHP.AX.Close</span><span class="p">,</span><span class="w">
+         </span><span class="n">x</span><span class="m">2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">time</span><span class="p">(</span><span class="n">fonterra</span><span class="p">),</span><span class="w"> </span><span class="n">y</span><span class="m">2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fonterra</span><span class="o">$</span><span class="n">FCG.NZ.Close</span><span class="p">,</span><span class="w"> 
+         </span><span class="n">ylab1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"BHP"</span><span class="p">,</span><span class="w"> </span><span class="n">ylab2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Fonterra"</span><span class="p">,</span><span class="w"> 
+         </span><span class="n">legx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"topright"</span><span class="p">,</span><span class="w"> </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Price per share of two key firms"</span><span class="p">)</span></code></pre></figure>
+
+<p>Note that this is a common case where both series would have been converted to an index somehow in many graphics.  The absolute value of share prices is not meaningful to most people so there is little lost in converting them to indices.  However, they do mean something for people who are actively concerned with them, so there is value in my dual axis approach which retains the absolute value of the two series while preserving the non-misleading characteristics of the index-based approach.</p>
+
+<h3 id="starting-at-the-same-vertical-position">Starting at the same vertical position</h3>
+
+<p>Sometime it might make sense, depending on the data and the purpose of the graphic, to start the later series at the same vertical height as the first series.  This is equivalent visually to plots of indexes where the reference point for each series is the first time period of the series.  The tweaked version of <code class="highlighter-rouge">dualplot()</code> lets the user specify this (or more complex) combinations of reference points.</p>
+
+<p><img src="/img/0052-starts3.svg" alt="starts3" /></p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># or can override eg - each one begins at the same vertical height on its earliest point
+</span><span class="n">dualplot</span><span class="p">(</span><span class="n">x</span><span class="m">1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">time</span><span class="p">(</span><span class="n">bhp</span><span class="p">),</span><span class="w"> </span><span class="n">y</span><span class="m">1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bhp</span><span class="o">$</span><span class="n">BHP.AX.Close</span><span class="p">,</span><span class="w">
+         </span><span class="n">x</span><span class="m">2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">time</span><span class="p">(</span><span class="n">fonterra</span><span class="p">),</span><span class="w"> </span><span class="n">y</span><span class="m">2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fonterra</span><span class="o">$</span><span class="n">FCG.NZ.Close</span><span class="p">,</span><span class="w"> 
+         </span><span class="n">ylab1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"BHP"</span><span class="p">,</span><span class="w"> </span><span class="n">ylab2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Fonterra"</span><span class="p">,</span><span class="w"> 
+         </span><span class="n">legx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"topright"</span><span class="p">,</span><span class="w"> 
+         </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Price per share of two key firms\n(starting at same vertical position)"</span><span class="p">,</span><span class="w">
+         </span><span class="n">ylim.ref</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">),</span><span class="w"> </span><span class="n">silent</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span></code></pre></figure>
+
+<h3 id="converging-to-a-common-vertical-position">Converging to a common vertical position</h3>
+
+<p>… or you might want to adopt a teleological view of history and and see how growth in the past has led to the latest point:</p>
+
+<p><img src="/img/0052-starts4.svg" alt="starts4" /></p>
+
+<p>In this case, the last two charts are almost identical, but that’s not always going to be the result.  In this particular case, these two charts being similar just means the decline in BHP Billiton share price from the beginning of the chart to the end of the chart is roughly the same (a bit over 10%) as the decline in Fonterra Cooperative Group share price from the end of 2012 to the end of the chart.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dualplot</span><span class="p">(</span><span class="n">x</span><span class="m">1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">time</span><span class="p">(</span><span class="n">bhp</span><span class="p">),</span><span class="w"> </span><span class="n">y</span><span class="m">1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bhp</span><span class="o">$</span><span class="n">BHP.AX.Close</span><span class="p">,</span><span class="w">
+         </span><span class="n">x</span><span class="m">2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">time</span><span class="p">(</span><span class="n">fonterra</span><span class="p">),</span><span class="w"> </span><span class="n">y</span><span class="m">2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fonterra</span><span class="o">$</span><span class="n">FCG.NZ.Close</span><span class="p">,</span><span class="w"> 
+         </span><span class="n">ylab1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"BHP"</span><span class="p">,</span><span class="w"> </span><span class="n">ylab2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Fonterra"</span><span class="p">,</span><span class="w"> 
+         </span><span class="n">legx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"topright"</span><span class="p">,</span><span class="w"> 
+         </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Price per share of two key firms\n(finishing at same vertical position)"</span><span class="p">,</span><span class="w">
+         </span><span class="n">ylim.ref</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">nrow</span><span class="p">(</span><span class="n">bhp</span><span class="p">),</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">fonterra</span><span class="p">)))</span></code></pre></figure>
+
+<h2 id="time-series-that-have-different-frequencies">Time series that have different frequencies</h2>
+
+<p>I’ve tested the <code class="highlighter-rouge">dualplot()</code> function more thoroughly against data where the two series have different frequencies.  Here’s an example comparing a longer series of Air New Zealand share prices against New Zealand’s national exports of services (which includes Air New Zealand sales to foreigners).</p>
+
+<p><img src="/img/0052-frequency1.svg" alt="frequency" /></p>
+
+<p>We can see that both series took a hit from the Global Financial crisis with a dip in the years after 2008; but the Air New Zealand share price was impacted much more severely than were New Zealand service exports as a whole (which of course comprise multiple industries and firms).</p>
+
+<p>To do this I used an old copy of New Zealand balance of payments data that is one of the example datasets in the <a href="https://cran.r-project.org/web/packages/ggseas/index.html"><code class="highlighter-rouge">ggseas</code> R package</a> for seasonal adjustment on the fly.  The data are not meant to be up to date, they just illustrate superimposing quarterly data on daily data.</p>
+
+<p>There’s nothing special about the call to <code class="highlighter-rouge">dualplot()</code> to do this so I used this as a chance to show some of the optional features of the function; such as drawing gridlines (white ones in this case) and passing arguments through to <code class="highlighter-rouge">legend()</code> to colour the space behind the legend white.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">airnz</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">getSymbols</span><span class="p">(</span><span class="s1">'AIR.NZ'</span><span class="p">,</span><span class="w"> </span><span class="n">src</span><span class="o">=</span><span class="s1">'yahoo'</span><span class="p">,</span><span class="w"> </span><span class="n">auto.assign</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"2000-01-01"</span><span class="p">)</span><span class="w"> 
+
+</span><span class="n">services</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">nzbop</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">filter</span><span class="p">(</span><span class="n">Category</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Services; Exports total"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">filter</span><span class="p">(</span><span class="n">TimePeriod</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">as.Date</span><span class="p">(</span><span class="s2">"1997-12-30"</span><span class="p">))</span><span class="w">
+
+</span><span class="n">dualplot</span><span class="p">(</span><span class="n">x</span><span class="m">1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">services</span><span class="o">$</span><span class="n">TimePeriod</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="m">1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">services</span><span class="o">$</span><span class="n">Value</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="m">2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">time</span><span class="p">(</span><span class="n">airnz</span><span class="p">),</span><span class="w"> </span><span class="n">y</span><span class="m">2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">airnz</span><span class="o">$</span><span class="n">AIR.NZ.Close</span><span class="p">,</span><span class="w">
+	 </span><span class="n">ylab1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"New Zealand service exports ($m)\n"</span><span class="p">,</span><span class="w"> </span><span class="n">ylab2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Air New Zealand share price"</span><span class="p">,</span><span class="w">
+	 </span><span class="n">yleg1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"All service exports ($m) (left axis)"</span><span class="p">,</span><span class="w"> </span><span class="n">lwd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">4</span><span class="p">,</span><span class="m">2</span><span class="p">),</span><span class="w"> </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"rosybrown"</span><span class="p">,</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">),</span><span class="w">
+	 </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="s2">"New Zealand service exports and Air New Zealand share price over time"</span><span class="p">,</span><span class="w">
+	 </span><span class="n">colgrid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"white"</span><span class="p">,</span><span class="w"> </span><span class="n">bty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"o"</span><span class="p">,</span><span class="w"> </span><span class="n">bg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"white"</span><span class="p">,</span><span class="w"> </span><span class="n">box.col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"white"</span><span class="p">)</span></code></pre></figure>
+
+<p>For a second example, let’s go back to Fonterra, and this time compare their daily share price to weekly movements in the the world whole milk dairy powder price which I sourced from <a href="https://www.quandl.com/data/GDT/WMP_PI-Whole-Milk-Powder-Price-Indices">Quandl</a>.</p>
+
+<p><img src="/img/0052-milk-price.svg" alt="frequency" /></p>
+
+<p>Having the scales carefully chosen to mimic indices means that we can see immediately the lower level of volatility in the share price than the dairy price; something that would be hidden by other visualisation methods such as showing each series on its own facet with a free y axis chosen to use the full plotting area.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">dairy</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">Quandl</span><span class="p">(</span><span class="s2">"GDT/WMP_PI"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">dualplot</span><span class="p">(</span><span class="n">x</span><span class="m">1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dairy</span><span class="p">[</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">],</span><span class="w"> </span><span class="n">y</span><span class="m">1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dairy</span><span class="p">[,</span><span class="w"> </span><span class="m">8</span><span class="p">],</span><span class="w"> 
+	 </span><span class="n">x</span><span class="m">2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">time</span><span class="p">(</span><span class="n">fonterra</span><span class="p">),</span><span class="w"> </span><span class="n">y</span><span class="m">2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fonterra</span><span class="o">$</span><span class="n">FCG.NZ.Close</span><span class="p">,</span><span class="w">
+	 </span><span class="n">ylab1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Whole milk powder price index\n"</span><span class="p">,</span><span class="w">
+	 </span><span class="n">ylab2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Fonterra Cooperative Group\nshare price ($)"</span><span class="p">,</span><span class="w">
+	 </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">colorspace</span><span class="o">::</span><span class="n">rainbow_hcl</span><span class="p">(</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">80</span><span class="p">,</span><span class="w"> </span><span class="n">l</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">50</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">45</span><span class="p">,</span><span class="w"> </span><span class="n">end</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">270</span><span class="p">),</span><span class="w">
+	 </span><span class="n">colgrid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey90"</span><span class="p">,</span><span class="w">
+	 </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Fonterra share prices are less volatile than global milk prices"</span><span class="p">)</span></code></pre></figure>
+
+<p>Before I move on, a note on colour.  Usually I wouldn’t use so many palettes in a single document for basically the same purpose (identification between two qualitative variables).  The effect is (to me) somewhat jarring.  But as I’m demonstrating use of a new graphics function some of the normal requirements of good aesthetics are suspended.</p>
+
+<h2 id="negative-data">Negative data</h2>
+
+<p>When data goes negative, graphing an index rarely makes sense.  Most indexes are of data that is strictly positive, such as share prices or the consumer price index.  This creates a new problem of what scale to use for a dual axis plot, and there is no clear answer, which makes me inclined to doubt that such a graphic is often justified.  However, to get at least a reasonable default, I’ve set it so that if one of the series is negative the graphic will choose two vertical scales such that the plotting area includes the mean of each series plus three standard deviations in each direction.</p>
+
+<p><img src="/img/0052-negatives.svg" alt="negatives" /></p>
+
+<p>Here’s the code for that example usage with negative data; I struggled to think of a good (non-misleading) use case with negative data so had to simulate two series:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">set.seed</span><span class="p">(</span><span class="m">123</span><span class="p">)</span><span class="w">
+</span><span class="n">data1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.frame</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">100</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">arima.sim</span><span class="p">(</span><span class="nf">list</span><span class="p">(</span><span class="n">ar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">0.9</span><span class="p">)),</span><span class="w"> </span><span class="m">100</span><span class="p">))</span><span class="w">
+</span><span class="n">data2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.frame</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">100</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">arima.sim</span><span class="p">(</span><span class="nf">list</span><span class="p">(</span><span class="n">ar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">0.9</span><span class="p">)),</span><span class="w"> </span><span class="m">100</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">50</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">3</span><span class="p">)</span><span class="w">
+
+</span><span class="n">dualplot</span><span class="p">(</span><span class="n">x</span><span class="m">1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data1</span><span class="o">$</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="m">1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data1</span><span class="o">$</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="m">2</span><span class="o">=</span><span class="w"> </span><span class="n">data1</span><span class="o">$</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="m">2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data2</span><span class="o">$</span><span class="n">y</span><span class="p">)</span></code></pre></figure>
+
+<h2 id="but-the-dual-axis-approach-has-limitations">But the dual axis approach has limitations</h2>
+
+<p>Finally, as an offshoot of preparing this blog post, here’s a use case that reminded me that dual axes plots are very often not going to be a good graphic.  They are cluttered, and can be hard to interpret.</p>
+
+<p>A graphic that does not superimpose two data series in the same plotting area is best in this case.  After various attempts to relate the volume of Air New Zealand share sales with prices, I ended up with this as my best graphic:</p>
+
+<p><img src="/img/0052-airnz.svg" alt="airnz" /></p>
+
+<p>The vertical lines connecting the bursts of high sales volumes in the lower plot to the price changes in the upper plot work far better than superimposing the series (cluttered and hard to see connections); un-annotated facets; or a connected scatter plot (of either the original or transformed data or growth rates).</p>
+
+<p>Here’s the code behind that graphic:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">airnz3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">airnz</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">as.data.frame</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">TimePeriod</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">time</span><span class="p">(</span><span class="n">airnz</span><span class="p">),</span><span class="w">
+          </span><span class="n">PeakVol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">AIR.NZ.Volume</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="m">7</span><span class="p">)</span><span class="w"> 
+
+</span><span class="n">peaks</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">filter</span><span class="p">(</span><span class="n">airnz3</span><span class="p">,</span><span class="w"> </span><span class="n">PeakVol</span><span class="p">)</span><span class="o">$</span><span class="n">TimePeriod</span><span class="w">
+
+</span><span class="n">airnz3</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">select</span><span class="p">(</span><span class="n">TimePeriod</span><span class="p">,</span><span class="w"> </span><span class="n">AIR.NZ.Close</span><span class="p">,</span><span class="w"> </span><span class="n">AIR.NZ.Volume</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">SquareRootOfVolume</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sqrt</span><span class="p">(</span><span class="n">AIR.NZ.Volume</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">rename</span><span class="p">(</span><span class="n">ClosingPrice</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">AIR.NZ.Close</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">gather</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">TimePeriod</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">AIR.NZ.Volume</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TimePeriod</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">scales</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"free_y"</span><span class="p">,</span><span class="w"> </span><span class="n">ncol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_line</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_vline</span><span class="p">(</span><span class="n">xintercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">peaks</span><span class="p">),</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2.5</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_line</span><span class="p">(</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"brown"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Four big trading events for Air New Zealand shares since 2000"</span><span class="p">)</span></code></pre></figure>
+
+<h2 id="dualplot"><code class="highlighter-rouge">dualplot()</code></h2>
+<p>Here’s the code for the latest version of dualplot; it’s a Gist on GitHub.  The code above includes an example line to source it directly into an R program.</p>
+
+<script src="https://gist.github.com/ellisp/4002241def4e2b360189e58c3f461b4a.js"></script>
+
+
+
+</div>
+
+<div class = "container">
+   <div class="col-md-4">
+    
+        <a rel="prev" href="/blog/2016/08/18/dualaxes">
+        <p>&larr; Older</p>
+        <p>Dual axes time series plots may be ok sometimes after all</p>
+        
+        </a>
+    
+    </div>
+    <div class="col-md-4">
+    </div>
+    <div class="col-md-4" style="text-align: right;">
+     
+        <a rel="next" href="/blog/2016/08/28/dualaxes2">
+        <p>Newer &rarr;</p>
+        <p>Dual axes time series plots with various more awkward data</p>
+        
+        </a>
+    
+      </div>
+      </div>
+      
+      
+      
+</div>
+
+
+   
+    <div id="disqus_thread"></div>
+
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+    
+    
+   
+			
+			</div><!-- /.container -->
+
+         
+
+   <div class = "container footer">
+			<footer>
+	    		
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.  Or follow <a href = "/feed.r.xml">posts in this blog featuring R with RSS</a>.</p>
+			
+            <p>This blog is built with <a href = "http://jekyllrb.com/">Jekyll</a>, <a href = "http://getbootstrap.com/">Bootstrap</a>, <a href = "https://www.ruby-lang.org/en/">Ruby</a> and <a href = "https://cran.r-project.org/">R</a>.  Read my <a href="/about/acknowledgements.html">acknowledgements</a> for a little more on how.  I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+
+			<div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="true" data-share="false"></div>
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Peter's stats stuff</span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			
+			
+
+			</footer>
+    </div>
+
+
+
+  
+</body>
+</html>
+   
+
+
+
+
+         

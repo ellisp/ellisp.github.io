@@ -1,0 +1,386 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Why time series forecasts prediction intervals aren't as good as we'd hope</title>
+      	
+         
+         
+            <meta name ="description" content ="A quick demonstration of the impact of inevitably random estimates of the parameters and meta-parameters in ARIMA time series modelling">
+            <meta property="og:description" content ="A quick demonstration of the impact of inevitably random estimates of the parameters and meta-parameters in ARIMA time series modelling">
+         
+         <meta property="og:site_name" content="Peter's stats stuff" />
+         <meta property="og:title" content="Why time series forecasts prediction intervals aren't as good as we'd hope" />
+         
+            <meta property="og:image" content="http://ellisp.github.io/img/0072-results.png" />
+         
+         <meta property="og:url" content="http://ellisp.github.io/blog/2016/12/07/arima-prediction-intervals/" />
+         <meta property="og:author" content= "https://www.facebook.com/peter.ellis.353" />
+         <meta property="og:type" content="article" />
+           
+          <link href="/css/bootstrap.min.css" rel ="stylesheet">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet">
+            <link href="/css/custom.css" rel ="stylesheet">     
+		<link href="/css/syntax.css" rel ="stylesheet">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="Peter's stats stuff by Peter Ellis"
+      href="/feed.xml">
+
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Peter's stats stuff</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">All blog posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">Ordered by date</a></li>
+                  <li><a href="/blog/index_by_tag.html">Grouped by subject matter</a></li>
+                  <li><a href = /blog/2016/12/31/sparse-bags>Most recent post</a></li>
+                 </ul>
+            </li>
+              <li><a href="/blog/showcase.html">Showcase</a></li>
+              <li><a href="/presentations/index.html">Presentations</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			    <div class="jumbotron">
+      <div class="container">
+        <h1>Why time series forecasts prediction intervals aren't as good as we'd hope</h1>
+         <p class="meta">07 Dec 2016</p>
+        
+      </div>
+    </div>
+
+
+
+
+<div class = "post-summary">
+<h2>At a glance:</h2>
+   A quick demonstration of the impact of inevitably random estimates of the parameters and meta-parameters in ARIMA time series modelling
+   <hr></hr>
+</div>
+
+<div class="post">
+<div class="col-md-2">
+
+</div>
+  <div class="col-md-8">
+
+  <h2 id="five-different-sources-of-error">Five different sources of error</h2>
+
+<p>When it comes to time series forecasts from a statistical model we have five sources of error:</p>
+
+<ol>
+  <li>Random individual errors</li>
+  <li>Random estimates of parameters (eg the coefficients for each autoregressive term)</li>
+  <li>Uncertain meta-parameters (eg number of autoregressive terms)</li>
+  <li>Unsure if the model was right for the historical data</li>
+  <li>Even given #4, unsure if the model will continue to be right</li>
+</ol>
+
+<p>A <em>confidence interval</em> is an estimate of the statistical uncertainty of the estimated parameters in the model.  It usually estimates the uncertainty source #2 above, not interested in #1 and conditional on the uncertainty of sources #3, #4 and #5 all being taken out of the picture.  A <em>prediction interval</em> should ideally take all five sources into account (see Rob Hyndman for more on <a href="http://robjhyndman.com/hyndsight/intervals/">the distinction between prediction and confidence intervals</a>).</p>
+
+<p>Unfortunately, the standard ways of providing time series prediction intervals <a href="http://robjhyndman.com/hyndsight/narrow-pi/">typically only take  source #1 into account</a> - random individual errors.  This differs from standard prediction intervals from more straightforward regression and generalized linear models, which at least usually factor in uncertainty of the estimates of parameters.</p>
+
+<p>The problem is that <strong>for all but the most trivial time series forecasting method there is no simple way of estimating the uncertainty that comes from having estimated the parameters from the data, and much less so the values of meta-parameters</strong> like the amount of differencing needed, how many autoregressive terms, how many moving average terms, etc (those example meta-parameters come from the Box-Jenkins ARIMA approach, but other forecasting methods have their own meta-parameters to estimate too).</p>
+
+<h2 id="demonstration-of-the-cost-of-estimating-meta-parameters">Demonstration of the cost of estimating meta-parameters</h2>
+
+<p>Here’s a simple simulation to show the cost of estimating the meta-parameters, even when sources of error #4 and #5 can be discounted.  I generated 10,000 time series, each 100 observations long, from an ARIMA(1, 1, 1) process and split them into a 90 observation training set and 10 observation test set.  This creates data that looks like this (just four examples shown):</p>
+
+<p><img src="/img/0072-examples.svg" alt="examples" /></p>
+
+<p>For each one of those datasets, I fit an ARIMA model to the 90 observation test set two ways:</p>
+
+<ul>
+  <li>using <code class="highlighter-rouge">forecast::Arima</code> and advising the algorithm that the model to use is (1,1,1)</li>
+  <li>using <code class="highlighter-rouge">forecast::auto.arima</code> and forcing the algorithm to estimate from the data the correct level of differencing, number of autoregression terms, and number of moving average terms.</li>
+</ul>
+
+<p>Then I compared the resulting forecast prediction intervals (at 80% and 95% confidence levels) of the last 10 observations to see what percentage of forecasts actually had the true values in their range.  Here’s the result:</p>
+
+<p><img src="/img/0072-results.svg" alt="result" /></p>
+
+<p>As we can see, the <code class="highlighter-rouge">Arima</code> model which knew in advance the correct meta-parameter specification didn’t do too badly.  Its prediction intervals contain the correct values only just below the promised 80% and 95% of times.  But the <code class="highlighter-rouge">auto.arima</code> method, which had to estimate the meta-parameters itself, did noticeably worse.  Not only that, as the forecast horizon increases, its prediction intervals got increasingly over-optimistic.  Having the wrong meta-parameters for your model becomes more of a problem the further you go out (I suspect this is particularly the case for the amount of differencing that needs to be done - an unlucky choice here would have big implications for estimating the trend).</p>
+
+<p>An important thing to remember is that out in the wild, results will generally be worse than this.  In this occasion, both methods had the luxury of fitting the same family of models that had generated the data, and knowing that the final ten observations were generated the same way.  No outliers, black swans, or changes in data generating process to worry about.  One way of partially dealing with this problem with careful use of the method implemented in the <a href="https://cran.r-project.org/package=forecastHybrid"><code class="highlighter-rouge">forecastHybrid</code></a> R package by David Shaub and myself was the subject of <a href="/presentations/ellis-prediction-intervals-for-ensemble-forecasts.pptx">my talk yesterday at the Australian Statistical Conference</a>.</p>
+
+<h2 id="code">Code</h2>
+<p>Here’s the code that does the simulation above:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">forecast</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">foreach</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">doParallel</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">dplyr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">tidyr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">ggplot2</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">stringr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">grid</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">colorspace</span><span class="p">)</span><span class="w">
+
+
+</span><span class="c1">#=============prediction interval functions===================
+</span><span class="cd">#' takes a forecast object, and the actual results, and returns a data frame
+#' binary indicator of success as well as the horizon for each row and an optional
+#' "type" column.
+</span><span class="n">accuracy_pi</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">fc</span><span class="p">,</span><span class="w"> </span><span class="n">actual</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">NULL</span><span class="p">,</span><span class="w"> </span><span class="n">labs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"80%"</span><span class="p">,</span><span class="w"> </span><span class="s2">"95%"</span><span class="p">)){</span><span class="w">
+   </span><span class="k">if</span><span class="p">(</span><span class="n">nrow</span><span class="p">(</span><span class="n">fc</span><span class="o">$</span><span class="n">upper</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">actual</span><span class="p">)){</span><span class="w">
+      </span><span class="n">stop</span><span class="p">(</span><span class="s2">"`fc` must be a forecast object with `upper` and `lower` objects that are matrices with number of rows equal to length of `actual`"</span><span class="p">)</span><span class="w">
+   </span><span class="p">}</span><span class="w">
+   </span><span class="n">actual</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.vector</span><span class="p">(</span><span class="n">actual</span><span class="p">)</span><span class="w">
+   </span><span class="n">h</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">actual</span><span class="p">)</span><span class="w">
+   </span><span class="c1"># take advantage of actual being a vector that will recycle, going down each
+</span><span class="w">   </span><span class="c1"># column of the two matrices of logical conditions we superimpose here:
+</span><span class="w">   </span><span class="n">tmp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.data.frame</span><span class="p">(</span><span class="n">fc</span><span class="o">$</span><span class="n">lower</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">actual</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">fc</span><span class="o">$</span><span class="n">upper</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">actual</span><span class="p">)</span><span class="w">
+   </span><span class="nf">names</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">labs</span><span class="w">
+   </span><span class="n">tmp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">cbind</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span><span class="w"> 
+                </span><span class="s2">"h"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">h</span><span class="p">,</span><span class="w">
+                </span><span class="s2">"type"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="n">type</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">))</span><span class="w">
+   </span><span class="nf">return</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="c1">#===================simulations=======================
+</span><span class="n">n</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="c1"># size of full series
+</span><span class="n">h</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">10</span><span class="w">  </span><span class="c1"># how much of the series to forecast forward
+</span><span class="n">R</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">10000</span><span class="w"> </span><span class="c1"># how many datasets to try this with
+</span><span class="n">the_model</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="n">ar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">,</span><span class="w"> </span><span class="n">ma</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">)</span><span class="w">
+
+</span><span class="n">cluster</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">makeCluster</span><span class="p">(</span><span class="m">7</span><span class="p">)</span><span class="w"> </span><span class="c1"># only any good if you have at least 7 processors :)
+</span><span class="n">registerDoParallel</span><span class="p">(</span><span class="n">cluster</span><span class="p">)</span><span class="w">
+
+</span><span class="n">clusterEvalQ</span><span class="p">(</span><span class="n">cluster</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w">
+   </span><span class="n">library</span><span class="p">(</span><span class="n">forecast</span><span class="p">)</span><span class="w">
+   
+</span><span class="p">})</span><span class="w">
+
+</span><span class="n">results</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">foreach</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="n">R</span><span class="p">,</span><span class="w"> </span><span class="n">.combine</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rbind</span><span class="p">)</span><span class="w"> </span><span class="o">%dopar%</span><span class="w"> </span><span class="p">{</span><span class="w">
+   </span><span class="n">sim_data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ts</span><span class="p">(</span><span class="nf">cumsum</span><span class="p">(</span><span class="n">arima.sim</span><span class="p">(</span><span class="n">model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_model</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">)))</span><span class="w">
+   
+   </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sim_data</span><span class="p">[</span><span class="m">1</span><span class="o">:</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">h</span><span class="p">)]</span><span class="w">
+   </span><span class="n">actual</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sim_data</span><span class="p">[(</span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="o">:</span><span class="n">n</span><span class="p">]</span><span class="w">
+   </span><span class="n">mod1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">auto.arima</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w">
+   </span><span class="n">fc1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">forecast</span><span class="p">(</span><span class="n">mod1</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">h</span><span class="p">)</span><span class="w">
+   
+   </span><span class="n">mod2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">Arima</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">order</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">))</span><span class="w">
+   </span><span class="n">fc2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">forecast</span><span class="p">(</span><span class="n">mod2</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">h</span><span class="p">)</span><span class="w">
+   </span><span class="n">rbind</span><span class="p">(</span><span class="w">
+      </span><span class="n">accuracy_pi</span><span class="p">(</span><span class="n">fc1</span><span class="p">,</span><span class="w"> </span><span class="n">actual</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">actual</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"auto"</span><span class="p">),</span><span class="w">
+      </span><span class="n">accuracy_pi</span><span class="p">(</span><span class="n">fc2</span><span class="p">,</span><span class="w"> </span><span class="n">actual</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">actual</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"pre-knowledge"</span><span class="p">)</span><span class="w">
+   </span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+
+</span><span class="n">stopCluster</span><span class="p">(</span><span class="n">cluster</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#==========present results==================
+</span><span class="n">pal</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">rainbow_hcl</span><span class="p">(</span><span class="m">2</span><span class="p">)</span><span class="w">
+
+</span><span class="n">targetlines</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.frame</span><span class="p">(</span><span class="w">
+   </span><span class="n">limit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"80%"</span><span class="p">,</span><span class="w"> </span><span class="s2">"95%"</span><span class="p">),</span><span class="w">
+   </span><span class="n">yintercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">0.8</span><span class="p">,</span><span class="w"> </span><span class="m">0.95</span><span class="p">)</span><span class="w">
+</span><span class="p">)</span><span class="w">
+
+</span><span class="n">results</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">gather</span><span class="p">(</span><span class="n">limit</span><span class="p">,</span><span class="w"> </span><span class="n">success</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">type</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">group_by</span><span class="p">(</span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="p">,</span><span class="w"> </span><span class="n">limit</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">summarise</span><span class="p">(</span><span class="n">success</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">success</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">success</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">type</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">limit</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_line</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Prediction interval coverage of two modelling methods"</span><span class="p">,</span><span class="w">
+           </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Comparing auto.arima with pre-knowledge of the true data generating process"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Number of periods forecast forward"</span><span class="p">,</span><span class="w">
+        </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Data generated with an ARIMA(1,1,1) process, which is much more regular than real life data."</span><span class="p">,</span><span class="w">
+        </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Modelling approach:"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_colour_manual</span><span class="p">(</span><span class="n">values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pal</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_x_continuous</span><span class="p">(</span><span class="n">breaks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="o">:</span><span class="m">5</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_hline</span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">targetlines</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">yintercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">yintercept</span><span class="p">),</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"violet"</span><span class="p">,</span><span class="w"> </span><span class="n">linetype</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1.1</span><span class="p">)</span><span class="w">
+
+</span><span class="n">grid.text</span><span class="p">(</span><span class="m">0.3</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="o">=</span><span class="w"> </span><span class="m">0.65</span><span class="p">,</span><span class="w">
+          </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">str_wrap</span><span class="p">(</span><span class="s2">"When the true model family and the true meta-parameters p, d, q are known, coverage is close to the 80% and 95% promised."</span><span class="p">,</span><span class="w"> </span><span class="m">33</span><span class="p">),</span><span class="w">
+          </span><span class="n">gp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gpar</span><span class="p">(</span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"myfont"</span><span class="p">,</span><span class="w"> </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pal</span><span class="p">[</span><span class="m">2</span><span class="p">],</span><span class="w"> </span><span class="n">cex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.8</span><span class="p">))</span><span class="w">
+</span><span class="n">grid.text</span><span class="p">(</span><span class="m">0.8</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="o">=</span><span class="w"> </span><span class="m">0.45</span><span class="p">,</span><span class="w">
+          </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">str_wrap</span><span class="p">(</span><span class="s2">"When the meta parameters p, d and q are estimated from the data, coverage is materially less."</span><span class="p">,</span><span class="w"> </span><span class="m">33</span><span class="p">),</span><span class="w">
+          </span><span class="n">gp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gpar</span><span class="p">(</span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"myfont"</span><span class="p">,</span><span class="w"> </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pal</span><span class="p">[</span><span class="m">1</span><span class="p">],</span><span class="w"> </span><span class="n">cex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.8</span><span class="p">))</span><span class="w">
+
+</span><span class="n">grid.text</span><span class="p">(</span><span class="m">0.9</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.779</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Gap from estimating\nmeta-parameters"</span><span class="p">,</span><span class="w">
+          </span><span class="n">gp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gpar</span><span class="p">(</span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"myfont"</span><span class="p">,</span><span class="w"> </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey50"</span><span class="p">,</span><span class="w"> </span><span class="n">cex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.7</span><span class="p">))</span><span class="w">
+
+</span><span class="n">grid.text</span><span class="p">(</span><span class="m">0.85</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.840</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Gap from estimating parameters"</span><span class="p">,</span><span class="w">
+          </span><span class="n">gp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gpar</span><span class="p">(</span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"myfont"</span><span class="p">,</span><span class="w"> </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey50"</span><span class="p">,</span><span class="w"> </span><span class="n">cex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.7</span><span class="p">))</span><span class="w">
+ 
+</span><span class="c1">#=================demo data============
+# four example datasets
+</span><span class="n">set.seed</span><span class="p">(</span><span class="m">123</span><span class="p">)</span><span class="w"> </span><span class="c1"># for reproducibility
+</span><span class="n">par</span><span class="p">(</span><span class="n">mfrow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">),</span><span class="w"> </span><span class="n">bty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"l"</span><span class="p">,</span><span class="w"> </span><span class="n">font.main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+</span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">4</span><span class="p">){</span><span class="w">
+   
+   </span><span class="n">sim_data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ts</span><span class="p">(</span><span class="nf">cumsum</span><span class="p">(</span><span class="n">arima.sim</span><span class="p">(</span><span class="n">model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_model</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">)))</span><span class="w">
+   
+   </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sim_data</span><span class="p">[</span><span class="m">1</span><span class="o">:</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">h</span><span class="p">)]</span><span class="w">
+   </span><span class="n">actual</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sim_data</span><span class="p">[(</span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="o">:</span><span class="n">n</span><span class="p">]</span><span class="w">
+   
+   </span><span class="n">mod2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">Arima</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">order</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">))</span><span class="w">
+   </span><span class="n">fc2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">forecast</span><span class="p">(</span><span class="n">mod2</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">h</span><span class="p">)</span><span class="w">   
+   </span><span class="n">plot</span><span class="p">(</span><span class="n">fc2</span><span class="p">,</span><span class="w"> </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">paste0</span><span class="p">(</span><span class="s2">"Simulated ARIMA(1,1,1) data: "</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">))</span><span class="w">
+   </span><span class="n">lines</span><span class="p">((</span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="o">:</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">actual</span><span class="p">,</span><span class="w"> </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"red"</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span></code></pre></figure>
+
+
+
+</div>
+
+<div class = "container">
+   <div class="col-md-4">
+    
+        <a rel="prev" href="/blog/2016/11/27/ets-friends">
+        <p>&larr; Older</p>
+        <p>Error, trend, seasonality -  ets and its forecast model friends</p>
+        
+        </a>
+    
+    </div>
+    <div class="col-md-4">
+    </div>
+    <div class="col-md-4" style="text-align: right;">
+     
+        <a rel="next" href="/blog/2016/12/10/extrapolation">
+        <p>Newer &rarr;</p>
+        <p>Extrapolation is tough for trees!</p>
+        
+        </a>
+    
+      </div>
+      </div>
+      
+      
+      
+</div>
+
+
+   
+    <div id="disqus_thread"></div>
+
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+    
+    
+   
+			
+			</div><!-- /.container -->
+
+         
+
+   <div class = "container footer">
+			<footer>
+	    		
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.  Or follow <a href = "/feed.r.xml">posts in this blog featuring R with RSS</a>.</p>
+			
+            <p>This blog is built with <a href = "http://jekyllrb.com/">Jekyll</a>, <a href = "http://getbootstrap.com/">Bootstrap</a>, <a href = "https://www.ruby-lang.org/en/">Ruby</a> and <a href = "https://cran.r-project.org/">R</a>.  Read my <a href="/about/acknowledgements.html">acknowledgements</a> for a little more on how.  I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+
+			<div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="true" data-share="false"></div>
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Peter's stats stuff</span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			
+			
+
+			</footer>
+    </div>
+
+
+
+  
+</body>
+</html>
+   
+
+
+
+
+         
