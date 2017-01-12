@@ -14,7 +14,7 @@ socialimage: http://ellisp.github.io/img/0022-shiny-screenshot1.png
 category: R
 ---
 ## World Development Indicators
-After my [last post](http://ellisp.github.io/blog/2015/11/26/violent-deaths/) on deaths from assault, I got a few comments both on and off-line asking for exploration of developing country issues, in contrast to the OECD focus of the previous post.  I'd always intended at some point to do something with the World Bank's [World Development Indicators](http://databank.worldbank.org/data/reports.aspx?source=world-development-indicators) so now seems a good time to at least get started.
+After my [last post](/blog/2015/11/26/violent-deaths.html) on deaths from assault, I got a few comments both on and off-line asking for exploration of developing country issues, in contrast to the OECD focus of the previous post.  I'd always intended at some point to do something with the World Bank's [World Development Indicators](http://databank.worldbank.org/data/reports.aspx?source=world-development-indicators) so now seems a good time to at least get started.
 
 > "World Development Indicators (WDI) is the primary World Bank collection of development indicators, compiled from officially recognized international sources. It presents the most current and accurate global development data available, and includes national, regional and global estimates"
 
@@ -72,7 +72,7 @@ There are five measures that I found in the WDI that are related to income inequ
 
 With these, I'll also create two other common measures: the P80P20 and P90P10 measures.  The first of these is the income share of the highest earning 20% divided by that of the lowest earning 20%; the second is the same but for the 10th percentile instead.
 
-I've talked a bit about the definitions of these measures in [an earlier post](http://ellisp.github.io/blog/2015/09/12/inequality-stats-distributions/).
+I've talked a bit about the definitions of these measures in [an earlier post](/blog/2015/09/12/inequality-stats-distributions.html).
 
 Once we've brought in the data and created our two new variables we can have a look at what we've got.  I do this by picking six countries at random and looking at the full data for those six:
 

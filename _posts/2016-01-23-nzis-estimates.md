@@ -44,12 +44,12 @@ The job's a tricky one because the survey data available doesn't go to anywhere 
 
 I also wanted to emphasise the *distribution* of income, not just a single measure like mean or median - something I think that we statisticians should do much more than we do, with all sorts of variables.  And in particular I wanted to find a good way of dealing with the significant number of people in many categories (particularly but not only "no occupation") who have zero income; and also the people who have negative income in any given week.
 
-My data source is the New Zealand Income Survey 2011 simulated record file published by Statistics New Zealand.  An [earlier post](http://ellisp.github.io/blog/2015/08/15/importing-nzis-surf/) by me describes how I accessed this, normalised it and put it into a database.  I've also written several posts about dealing with the tricky distribution of individual incomes, listed [here](http://ellisp.github.io/blog/index_by_tag.html) under the "NZIS2011" heading.
+My data source is the New Zealand Income Survey 2011 simulated record file published by Statistics New Zealand.  An [earlier post](/blog/2015/08/15/importing-nzis-surf.html) by me describes how I accessed this, normalised it and put it into a database.  I've also written several posts about dealing with the tricky distribution of individual incomes, listed [here](http://ellisp.github.io/blog/index_by_tag.html) under the "NZIS2011" heading.
 
 This is a longer post than usual, with a digression into the use of Random Forests (tm) to predict continuous variables, an attempt at producing a more polished plot of a regression tree than usually available, and some reflections on strengths and weakness of several different approaches to estimating distributions.
 
 ## Data import and shape
-I begin by setting up the environment and importing the data I'd placed in the data base in that [earlier post](http://ellisp.github.io/blog/2015/08/15/importing-nzis-surf/).  There's a big chunk of R packages needed for all the things I'm doing  here.  I also re-create some helper functions for transforming skewed continuous variables that include zero and negative values, which I first created in [another post back in September 2015](http://ellisp.github.io/blog/2015/09/07/transforming-breaks-in-a-scale/).
+I begin by setting up the environment and importing the data I'd placed in the data base in that [earlier post](/blog/2015/08/15/importing-nzis-surf.html).  There's a big chunk of R packages needed for all the things I'm doing  here.  I also re-create some helper functions for transforming skewed continuous variables that include zero and negative values, which I first created in [another post back in September 2015](/blog/2015/09/07/transforming-breaks-in-a-scale.html).
 
 {% highlight R lineanchors %}
 #------------------setup------------------------

@@ -14,7 +14,7 @@ category: R
 ---
 
 ## A better transformation than my better transformation
-In [an earlier post](http://ellisp.github.io/blog/2015/08/21/visualising-distributions/) I put forward the idea of a modulus power transform - basically the square root (or other similar power transformation) of the absolute value of a variable like income, followed by restoring the sign to it.  The idea is to avoid throwing away values of zero or less, which happens with the logarithm transform that is most commonly used for this sort of data.  In a tweet, Hadley Wickham pointed out the 1980 article in the Journal of the Royal Statistical Society [An Alternative Family of Transformations by J. A. John and N. R. Draper](http://t.co/vC5b8d4OUh) (behind the paywall but a guest logon is available) in which they proposed a very similar idea:
+In [an earlier post](/blog/2015/08/21/visualising-distributions.html) I put forward the idea of a modulus power transform - basically the square root (or other similar power transformation) of the absolute value of a variable like income, followed by restoring the sign to it.  The idea is to avoid throwing away values of zero or less, which happens with the logarithm transform that is most commonly used for this sort of data.  In a tweet, Hadley Wickham pointed out the 1980 article in the Journal of the Royal Statistical Society [An Alternative Family of Transformations by J. A. John and N. R. Draper](http://t.co/vC5b8d4OUh) (behind the paywall but a guest logon is available) in which they proposed a very similar idea:
 
 ![journal-excerpt](/img/0006-john-draper-snip.PNG)
 
@@ -53,7 +53,7 @@ modulus_trans <- function(lambda){
 {% endhighlight %}
 It hasn't been peer reviewed or anything so use at your own risk.  Please let me know if you find anything wrong with it.
 
-Here's that function in use, re-creating the density plot of income from my previous post, with the zero and negative values showing up nicely but without the crampedness of showing the income on an unadjusted scale.  I haven't done polishing necessary to have axis labels at the various modal points, which is what I would do for a serious use.  This code assumes the existence of a database called nzis11, created as described in [this post](http://ellisp.github.io/blog/2015/08/15/importing-nzis-surf/).
+Here's that function in use, re-creating the density plot of income from my previous post, with the zero and negative values showing up nicely but without the crampedness of showing the income on an unadjusted scale.  I haven't done polishing necessary to have axis labels at the various modal points, which is what I would do for a serious use.  This code assumes the existence of a database called nzis11, created as described in [this post](/blog/2015/08/15/importing-nzis-surf.html).
 ![density-plot](/img/0006_better_density_plot.svg)
 {% highlight R lineanchors %}
 library(RODBC)

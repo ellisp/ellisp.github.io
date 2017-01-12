@@ -28,7 +28,7 @@ These methods are alternatives to ordinary least squares that can provide estima
 
 ## New Zealand Income Survey 2011
 
-To explore this I use the simulated unit record file from the New Zealand Income Survey 2011 that I've used in a lot of blog posts in the past year.  My [first post on this dataset](http://ellisp.github.io/blog/2015/08/15/importing-nzis-surf/) sets out how to import this data and tidy it up into a database.  The data shows weekly individual income from all sources for New Zealanders aged over 15, as well as hours worked and a range of demographic information I won't be using today.  For looking at robust regression estimation methods, I'm going to pretend that I only ever have a sample of thirty observations from this dataset.
+To explore this I use the simulated unit record file from the New Zealand Income Survey 2011 that I've used in a lot of blog posts in the past year.  My [first post on this dataset](/blog/2015/08/15/importing-nzis-surf.html) sets out how to import this data and tidy it up into a database.  The data shows weekly individual income from all sources for New Zealanders aged over 15, as well as hours worked and a range of demographic information I won't be using today.  For looking at robust regression estimation methods, I'm going to pretend that I only ever have a sample of thirty observations from this dataset.
 
 To illustrate the data, here's an animation showing the full dataset (in grey) and repeated different samples of thirty data points, as well as lines representing linear models fit to those small samples with ordinary least squares (`lm`) and the two robust regression methods I'm investigating today.
 ![animation](/img/0041-rtm-lqs.gif)

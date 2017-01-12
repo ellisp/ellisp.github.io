@@ -64,7 +64,7 @@ font-family: 'Poppins', 'Lucida Grande', Verdana, Lucida, Helvetica, Arial, Cali
       p(textOutput("txt3")),
       p(textOutput("txt2")),
       p("All estimates should be treated with great caution!  Effective confidence intervals are in many cases around +/- 20% or higher."),
-      HTML("<p><strong>Puzzled about how I did this, or got suggestions/comments? Check out the <a href = 'http://ellisp.github.io/blog/2016/01/23/nzis-estimates/'> blog post</a> that explains it. </strong></p>")
+      HTML("<p><strong>Puzzled about how I did this, or got suggestions/comments? Check out the <a href = 'http://ellisp.github.io/blog/2016/01/23/nzis-estimates.html'> blog post</a> that explains it. </strong></p>")
     )
   )
 ))

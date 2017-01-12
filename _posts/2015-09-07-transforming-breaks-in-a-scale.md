@@ -14,7 +14,7 @@ category: R
 ---
 
 ## Something missing
-In [my last post](http://ellisp.github.io/blog/2015/09/05/creating-a-scale-transformation/) I developed a new scale transformation for R using the approach and platform from the `ggplot2` and `scales`. I implemented a method proposed in 1980 by John and Draper that does some of the job of a logarithmic transform in reducing the dominance on the page of the large values, but is also continuous through zero and works for negative numbers.  Here's the image where I demonstrated that:
+In [my last post](/blog/2015/09/05/creating-a-scale-transformation.html) I developed a new scale transformation for R using the approach and platform from the `ggplot2` and `scales`. I implemented a method proposed in 1980 by John and Draper that does some of the job of a logarithmic transform in reducing the dominance on the page of the large values, but is also continuous through zero and works for negative numbers.  Here's the image where I demonstrated that:
 
 ![regions-plot](/img/0006_income_by_region.png)
 

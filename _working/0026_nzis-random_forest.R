@@ -9,6 +9,7 @@ library(tidyr)
 library(stringr)
 library(gridExtra)
 library(GGally)
+library(rsconnect)
 
 library(rpart)
 library(rpart.plot)   # for prp()
@@ -638,7 +639,7 @@ if(round(sum(nzis_pop$pop), -4) != 3460000){
 }
 
 save(nzis_pop, file = "_output/0026-shiny/nzis_pop.rda")
-shinyapps::deployApp("_output/0026-shiny", "NZIS", account = "ellisp")
+deployApp("_output/0026-shiny", appTitle = "NZIS", account = "ellisp")
 
 #------------------save expensive stuff---------------
 

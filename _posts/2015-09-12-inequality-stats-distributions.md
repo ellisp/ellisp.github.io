@@ -16,7 +16,7 @@ category: R
 
 ## Inequality measures
 
-Part of my motivation for [importing the New Zealand Income Survey](/blog/2015/08/15/importing-nzis-surf/)(NZIS) simulated unit record file provided by Statistics New Zealand was to explore the characteristics of various measures of inequality.  In particular, I'm interested in what happens to the [sampling distributions](https://en.wikipedia.org/wiki/Sampling_distribution) as sample size changes of the following summary statistics:
+Part of my motivation for [importing the New Zealand Income Survey](/blog/2015/08/15/importing-nzis-surf.html)(NZIS) simulated unit record file provided by Statistics New Zealand was to explore the characteristics of various measures of inequality.  In particular, I'm interested in what happens to the [sampling distributions](https://en.wikipedia.org/wiki/Sampling_distribution) as sample size changes of the following summary statistics:
 
 * Gini coefficient (ie the area between a Lorenz curve and the line of perfect equality)
 * P90/P10 (ie income at the 90% richest percentile divided by that at the 10% percentile)
@@ -28,7 +28,7 @@ A Lorenz curve is an attempt to show the full shape of the income distribution a
 
 ![lorenz-plot](/img/0008-lorenz.svg)
 
-This plot was produced with the following R code, which requires the data to have been imported to a database called PlayPen in accordance with the [previous post](/blog/2015/08/15/importing-nzis-surf/).
+This plot was produced with the following R code, which requires the data to have been imported to a database called PlayPen in accordance with the [previous post](/blog/2015/08/15/importing-nzis-surf.html).
 {% highlight R lineanchors %}
 library(RODBC)
 library(ineq)     # for Lc and Gini
@@ -113,7 +113,7 @@ Gini(random_incomes$income) # 0.09
 {% endhighlight %}
 
 ### "Must be positive non zero"?
-The literature on Gini coefficients says it can only be fitted to positive, non zero data but I see no practical problem with fitting them to a dataset with zeroes and negative values, even one with a [large number of zeroes like the NZIS](http://ellisp.github.io/blog/2015/09/05/creating-a-scale-transformation/).  Including negative numbers means the Lorenz curve briefly dips below zero, and it becomes possible to have a Gini coefficient greater than 1 (for example, if one person has a positive income and everyone else has negative), but this doesn't strike me as a reason for not using it.  The result is intuitively ok and there are no computational difficulties so long as at least one number is positive and the sum of the positive numbers is enough to outweigh the sum of the negative numbers.  If anyone can think of a reason for only applying Gini coefficients and Lorenz curves to strictly positive data let me know.
+The literature on Gini coefficients says it can only be fitted to positive, non zero data but I see no practical problem with fitting them to a dataset with zeroes and negative values, even one with a [large number of zeroes like the NZIS](/blog/2015/09/05/creating-a-scale-transformation.html).  Including negative numbers means the Lorenz curve briefly dips below zero, and it becomes possible to have a Gini coefficient greater than 1 (for example, if one person has a positive income and everyone else has negative), but this doesn't strike me as a reason for not using it.  The result is intuitively ok and there are no computational difficulties so long as at least one number is positive and the sum of the positive numbers is enough to outweigh the sum of the negative numbers.  If anyone can think of a reason for only applying Gini coefficients and Lorenz curves to strictly positive data let me know.
 
 ### Sampling distribution of a Gini coefficient
 So the question I'm seeking to answer is, how do inequality statistics like the Gini coefficient and the others stand up with small samples of real data?  Putting aside non-sampling error (like people misleading the interviewers), what happens with a smaller survey?  I know from [various sources online](http://www.statsdirect.com/help/default.htm#nonparametric_methods/gini.htm) that "The small sample variance properties of G are not known, and large sample approximations to the variance of G are poor".

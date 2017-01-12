@@ -139,7 +139,7 @@ data.frame(thetaf = f3$mean, thetam = f3$mean) %>%
 
 The `forecastHybrid` method of setting prediction intervals is conservative.  It takes the widest range of values covered by any of the component models.  In a [blog post on different ways of setting forecast combinations](http://robjhyndman.com/hyndsight/forecast-combinations/), Rob Hyndman points out that, using the monthly `co2` dataset of Mauna Loa Atmospheric CO2 Concentration distributed with R, the prediction intervals for the `forecastHybrid` method with six component models look too conservative ie sufficiently wide that they look very likely to contain the correct values much more than aimed for.  In this particular case I agree - the method should be used with a bit of caution.  
 
-In practice, I often use only the `auto.arima` and `ets` forecasts in combination rather than all six possibilities.  Even then, the method is sometimes too conservative with data that of monthly or higher frequency, particularly at the 80% level.  Here's the conclusions from [my recent presentation on this topic]((/presentations/ellis-prediction-intervals-for-ensemble-forecasts.pptx)) (apologies for the screenshot from PowerPoint):
+In practice, I often use only the `auto.arima` and `ets` forecasts in combination rather than all six possibilities.  Even then, the method is sometimes too conservative with data that of monthly or higher frequency, particularly at the 80% level.  Here's the conclusions from [my recent presentation on this topic](/presentations/ellis-prediction-intervals-for-ensemble-forecasts.pptx) (apologies for the screenshot from PowerPoint):
 
 <img src='/img/0074-table.png' width='500'>
 

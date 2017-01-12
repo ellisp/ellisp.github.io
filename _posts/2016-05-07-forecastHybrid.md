@@ -14,7 +14,7 @@ category: R
 ---
 
 ## Background and motivation
-In an [earlier post](/blog/2016/01/30/hybrid-forecasts/) I explored ways that might improve on standard methods for prediction intervals from univariate time series forecasting.  One of the tools I used was a convenience function to combine forecasts from Rob Hyndman's `ets` and `auto.arima` functions.  David Shaub (with a small contribution from myself) has now built and published an R package `forecastHybrid` that expands on this idea to create ensembles from other forecasting methods from Hyndman's `forecast` package.  
+In an [earlier post](/blog/2016/01/30/hybrid-forecasts.html) I explored ways that might improve on standard methods for prediction intervals from univariate time series forecasting.  One of the tools I used was a convenience function to combine forecasts from Rob Hyndman's `ets` and `auto.arima` functions.  David Shaub (with a small contribution from myself) has now built and published an R package `forecastHybrid` that expands on this idea to create ensembles from other forecasting methods from Hyndman's `forecast` package.  
 
 The motivation is to make it easy to improve forecasts, both their point estimates and their prediction intervals.  It has been well known for many years that taking the average of rival forecast methods improves the performance of forecasts.  This new R package aims to make it as easy for people to do this as to fit the individual models in the first place.
 
@@ -50,7 +50,7 @@ Jul 1961       642.3351 550.5136 710.4620 517.2336 747.2133
 <truncated>
 {% endhighlight %}    
 
-Prediction intervals are based on the conservative (and accurate, at least for the auto.arima / ets combination and the M3 competition data) method I set out in my [earlier post](/blog/2016/01/30/hybrid-forecasts/) on hybrid methods.  That is, at each time period of the forecast, the points of the prediction intervals of all the component models in the ensemble that are highest in absolute magnitude are used for the boundaries of the ensemble prediction interval.  This method seems to give truer prediction intervals than any individual model's prediction intervals, which are usually too narrow (ie give a false sense of precision) because they don't take model uncertainty into account.  This is an active area of investigation; [we're not sure we're going to keep them calculated this way](https://github.com/ellisp/forecastHybrid/issues/19).
+Prediction intervals are based on the conservative (and accurate, at least for the auto.arima / ets combination and the M3 competition data) method I set out in my [earlier post](/blog/2016/01/30/hybrid-forecasts.html) on hybrid methods.  That is, at each time period of the forecast, the points of the prediction intervals of all the component models in the ensemble that are highest in absolute magnitude are used for the boundaries of the ensemble prediction interval.  This method seems to give truer prediction intervals than any individual model's prediction intervals, which are usually too narrow (ie give a false sense of precision) because they don't take model uncertainty into account.  This is an active area of investigation; [we're not sure we're going to keep them calculated this way](https://github.com/ellisp/forecastHybrid/issues/19).
 
 The object created by the above procedure is of class `forecast` and the base graphics plotting method from Hyndman's `forecast` package applies:
 

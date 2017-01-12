@@ -126,7 +126,7 @@ expect_equal(nrow(enron_dtm), nrow(enron_dense))
 expect_equal(rownames(enron_dtm), enron_dense$id)
 
 #================import to h2o and join up there============
-h2o.init(nthreads = -1, max_mem_size = "10G")
+h2o.init(nthreads = -1, max_mem_size = "8G")
 
 # Load up the dense matrix:
 enron_dense_h2o <- as.h2o(enron_dense)

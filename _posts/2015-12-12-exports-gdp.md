@@ -21,7 +21,7 @@ The relationship is made particularly strong by the small, rich countries in the
 
 However, today, I'm looking at a different aspect of the relationship - changes over time.  Partly this is because I'm genuinely interested, but mostly because I needed an example demonstrating fitting a mixed effects model to longitudinal data with a time series component.  
 
-The data come from the World Bank's [World Development Indicators](http://databank.worldbank.org/data/reports.aspx?source=world-development-indicators) (WDI), which I explored recently in [my last post](http://ellisp.github.io/blog/2015/12/05/wdi-inequality/).  I'm comparing "Exports of goods and services (% of GDP)" with "GDP per capita (constant 2000 US$)".  The WDI have at least some data on these variables for 186 countries, but different starting years for each (earliest being 1962).  The data look like this, in a connected scatterplot showing the relationship between the two variables for 12 randomly chosen countries:
+The data come from the World Bank's [World Development Indicators](http://databank.worldbank.org/data/reports.aspx?source=world-development-indicators) (WDI), which I explored recently in [my last post](/blog/2015/12/05/wdi-inequality.html).  I'm comparing "Exports of goods and services (% of GDP)" with "GDP per capita (constant 2000 US$)".  The WDI have at least some data on these variables for 186 countries, but different starting years for each (earliest being 1962).  The data look like this, in a connected scatterplot showing the relationship between the two variables for 12 randomly chosen countries:
 
 ![csp1](/img/0023-p1.svg)
 
