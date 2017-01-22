@@ -8,6 +8,7 @@ library(broom)
 library(stringr)
 library(stargazer)
 library(lme4)
+library(forcats)
 
 
 #=========================analysis functions=======================
@@ -67,8 +68,8 @@ eval_forecasts <- function(data_collection){
       
       data.frame(mase = ac,
                  model = rep(c("ARIMA", "ETS"), 4),
-                 transform = rep(c("Transformed", "Transformed", "Untransformed", "Untransformed"), 2),
-                 seasadj = rep(c("Seasonally adjusted", "Unadjusted"), each = 4),
+                 transform = rep(c("BoxCox", "BoxCox", "None", "None"), 2),
+                 seasadj = rep(c("Seasonal in model", "Seasonally adjusted first"), each = 4),
                  series = i)
    }
    return(results)
@@ -76,21 +77,10 @@ eval_forecasts <- function(data_collection){
 
 #=============plotting and summary functions====================
 # Functions for summarising the results of eval_forecasts()
-
-p1 <- function(results){
-   results %>%
-      ggplot(aes(y = mase, x = transform, colour = seasadj)) +
-      facet_wrap(~model) +
-      geom_boxplot() +
-      coord_flip() +
-      scale_y_log10()
-}
-
 p2 <- function(results){
    results %>%
-      mutate(seasadj = ifelse(grepl("Seasonal", seasadj), "SeasonallyAdjustedFirst", "Unadjusted")) %>%
       spread(seasadj, mase) %>% 
-      ggplot(aes(y = SeasonallyAdjustedFirst, x = Unadjusted, colour = transform)) +
+      ggplot(aes(y = `Seasonally adjusted first`, x = `Seasonal in model`, colour = transform)) +
       geom_point(alpha = 0.2) +
       geom_abline(slope = 1, intercept = 0) +
       geom_smooth(se = FALSE) +
@@ -119,26 +109,22 @@ t_results_quarterly <- eval_forecasts(subset(tourism, "QUARTERLY"))
 
 #-----------------plots of individual results--------------
 
-p1(m_results_monthly)
-p2(m_results_monthly)
+p2(m_results_monthly);
 t1(m_results_monthly)
 
-p1(m_results_quarterly)
 p2(m_results_quarterly)
 t1(m_results_quarterly)
 
 svg("../img/0079-m-results-quarterly-2.svg", 8, 5)
 p2(m_results_quarterly ) +
-   ggtitle("Marginally worse results on average from seasonally adjusting\na series prior to modelling and forecasting",
+   ggtitle("Marginally better results on average from seasonally adjusting\na series prior to modelling and forecasting",
            "... and little obvious change from choosing to Box-Cox transform or not") +
    labs(caption = "Quarterly data from the M3 forecasting competition")
 dev.off()
 
-p1(t_results_monthly)
 p2(t_results_monthly)
 t1(t_results_monthly)
 
-p1(t_results_quarterly)
 p2(t_results_quarterly)
 t1(t_results_quarterly)
 
@@ -162,7 +148,7 @@ all_results <- rbind(
    ) %>%
    as_tibble()
 
-svg("../img/0079-all-boxplot.svg", 9, 6)
+svg("../img/0079-all-boxplot.svg", 8, 6)
 ggplot(all_results, aes(x = transform, colour = seasadj, y = mase)) +
    facet_grid(model ~ collection_frequency) +
    geom_boxplot()  +
@@ -176,18 +162,42 @@ dev.off()
 
 #==========modelling of results======================
 model <- lmer(mase ~ model + transform + seasadj + frequency + collection + (1|dataset_series), data = all_results)
+model_inters <- lmer(mase ~ model * (transform * seasadj + frequency + collection) + (1|dataset_series), data = all_results)
+
+AIC(model_inters, model)
 
 stargazer(model, type = "html")
+stargazer(model_inters, type = "html")
 
 
-effects <- cbind(tidy(confint(model))[-(1:3), ],
-                 tidy(model)[2:6, ])
+
+# Interpreting all those interactions is basically impossible as-is, so just for
+# illustrating results I fit models separately to ETS and ARIMA
+model_ets <- lmer(mase ~ transform * seasadj + frequency + collection + (1|dataset_series), 
+                  data = subset(all_results, model == "ETS"))
+model_arima <- lmer(mase ~ transform * seasadj + frequency + collection + (1|dataset_series), 
+                  data = subset(all_results, model == "ARIMA"))
+
+
+stargazer(model_ets, type = "html")
+stargazer(model_arima, type = "html")
+
+effects_ets <- cbind(tidy(confint(model_ets))[-(1:3), ],
+                 tidy(model_ets)[2:6, ],
+                 model = "ETS")
+
+effects_arima <- cbind(tidy(confint(model_arima))[-(1:3), ],
+                     tidy(model_arima)[2:6, ],
+                     model = "ARIMA")
+
+effects <- rbind(effects_ets, effects_arima)
 
 names(effects)[1:3] <- c("variable", "lower", "upper")
 
 svg("../img/0079-lmer-results.svg", 11, 5)
 effects %>%
    ggplot(aes(x = variable, y = estimate)) +
+   facet_wrap(~model) +
    geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.4)  +
    geom_point() +
    coord_flip() +
@@ -195,9 +205,16 @@ effects %>%
    labs(y = "Impact on forecasting, measured by mean absolute scaled error", x = "",
         caption = "Tested on all 2,977 quarterly and monthly datasets from the M3 and Tourism forecasting competitions") +
    ggtitle("Small but noticeable impact of different forecasting methods",
-           "Best results from using the ETS model (rather than ARIMA), on data without a Box-Cox transformation or prior seasonal adjustment.
-More noticeable are the increased error on quarterly (compared to monthly) data, and Tourism (compared to M3) data.")
+"ARIMA works best when seasonally adjusted beforehand rather than seasonality included in the model.
+For ETS, no significant evidence either seasonal adjustment strategy is better.
+For both models, it seems better not to automatically use a Box-Cox transformation.")
 dev.off()
+
+all_results %>%
+   group_by(model, transform, seasadj) %>%
+   summarise(mase = round(mean(mase, tr = 0.1), 3)) %>%
+   spread(model, mase) %>%
+   knitr::kable("html")
 
 
 #=========save PNG versions=======
@@ -211,3 +228,9 @@ for(i in files){
    
 }
 setwd("../_working")
+
+
+summary(sapply(subset(tourism, "MONTHLY"), function(x){x$h}))
+summary(sapply(subset(tourism, "QUARTERLY"), function(x){x$h}))
+summary(sapply(subset(M3, "MONTHLY"), function(x){x$h}))
+summary(sapply(subset(M3, "QUARTERLY"), function(x){x$h}))
