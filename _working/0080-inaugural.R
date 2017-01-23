@@ -6,23 +6,24 @@ library(stringr)
 library(wordcloud)
 library(viridis)
 library(grid)
-library(SnowballC)
 library(testthat)
 
 projdir <- getwd()
 
+#==============data downloads and prep========================
 # The Democratic-Republican party colours were red, white and blue but I need something distinctive.
 parties <- c(None = "grey50", Federalist = "black", `Democratic-Republican` = "darkgreen",
              Whig = "orange", Republican = "red", Democrat = "blue")
 
 
 # originally copied this from http://abcnews.go.com/Politics/full-text-president-donald-trumps-inauguration-speech/story?id=44915821
-trump <- paste(readLines("../data/trump_inauguration.txt"), collapse = " ")
+trump <- paste(readLines("https://raw.githubusercontent.com/ellisp/ellisp.github.io/source/data/trump_inauguration.txt"),
+               collapse = " ")
 trump_df <- data_frame(fulltext = trump,
                        inauguration = "2017-Trump")
 
 inaugural <- data_frame(fulltext = data_char_inaugural,
-   inauguration = names(data_char_inaugural)) %>%
+                        inauguration = names(data_char_inaugural)) %>%
    rbind(trump_df) %>%
    mutate(year = as.numeric(str_sub(inauguration, 1, 4)),
           president = str_sub(inauguration, start = 6)) %>%
@@ -52,6 +53,53 @@ words <- words %>%
    left_join(all_usage, by = "word")
 
 inaugs <- unique(inaugural$inauguration)
+
+
+#=====================references to particular words================
+# time series chart
+
+# these were originally sourced from http://www.enchantedlearning.com/history/us/pres/list.shtml and re-typed
+
+presidents <- read.csv("https://raw.githubusercontent.com/ellisp/ellisp.github.io/source/data/presidents.csv",
+                       skip = 3, stringsAsFactors = FALSE) %>%
+   filter(!is.na(year)) %>%
+   select(inauguration, party)
+
+annotations <- data_frame(word = c("america", "democracy", "protect", "free"),
+                          lab = c("Peaks post cold-war:",
+                                  "First peaks with the war against fascism:",
+                                  "Barely used in the 20th century.",
+                                  "First peaks during the cold war:"),
+                          y = c(2, .5, 0.4, 1.2) / 100
+)
+
+svg("../img/0080-overtime.svg", 9, 8.5)
+words %>%
+   mutate(word = ifelse(grepl("americ", word), "america", word),
+          word = ifelse(grepl("democra", word), "democracy", word),
+          word = ifelse(grepl("protect", word), "protect", word),
+          word = ifelse(grepl("free", word), "free", word)) %>%
+   group_by(inauguration, president, year, word) %>%
+   summarise(count = sum(count)) %>% 
+   group_by(inauguration, president, year) %>%
+   mutate(relative_count = count / sum(count)) %>%
+   filter(word %in% c("america", "free", "democracy", "protect")) %>%
+   left_join(presidents, by = "inauguration") %>% 
+   ggplot(aes(x = year, y = relative_count, label = president)) +
+   #   geom_line(alpha = 0.3) +
+   geom_text(size = 3, aes(colour = party)) +
+   facet_wrap(~word, ncol = 1, scales = "free_y") +
+   ggtitle("Changing use of selected words in inaugural Presidential addresses",
+           "Presidents labelled if they used the word or a variant.") +
+   labs(x = "", y = "Number of times used as a percentage of all words", caption = "http://ellisp.github.io") +
+   scale_colour_manual("", values = parties) +
+   scale_y_continuous(label = percent) +
+   geom_text(data = annotations, x = 1935, aes(y = y, label = lab), colour = "grey50", hjust = 1) +
+   theme(strip.text = element_text(size = 15, face = "bold"))
+dev.off()
+
+
+
 #===============wordcloud by unique words for each speech============
 # ok analysis of distinct words at http://www.vocativ.com/394280/first-words-inaugural-address-trump-break-tradition/
 # analysis of most common words at https://qz.com/889611/the-most-frequently-used-words-in-donald-trumps-inauguration-speech-and-every-previous-one/
@@ -120,44 +168,6 @@ file.copy("distinctive-presid-words.gif", paste0(projdir, "/../img/0080-distinct
 setwd(projdir)
 
 
-#=====================references to particular words================
-
-presidents <- read.csv("../data/presidents.csv", skip = 3, stringsAsFactors = FALSE) %>%
-   filter(!is.na(year)) %>%
-   select(inauguration, party)
-
-annotations <- data_frame(word = c("america", "democracy", "protect", "free"),
-                          lab = c("Peaks post cold-war:",
-                                  "First peaks with the war against fascism:",
-                                  "Barely used in the 20th century.",
-                                  "First peaks during the cold war:"),
-                          y = c(2, .5, 0.4, 1.2) / 100
-)
-
-svg("../img/0080-overtime.svg", 9, 8.5)
-words %>%
-   mutate(word = ifelse(grepl("americ", word), "america", word),
-          word = ifelse(grepl("democra", word), "democracy", word),
-          word = ifelse(grepl("protect", word), "protect", word),
-          word = ifelse(grepl("free", word), "free", word)) %>%
-   group_by(inauguration, president, year, word) %>%
-   summarise(count = sum(count)) %>% 
-   group_by(inauguration, president, year) %>%
-   mutate(relative_count = count / sum(count)) %>%
-   filter(word %in% c("america", "free", "democracy", "protect")) %>%
-   left_join(presidents, by = "inauguration") %>% 
-   ggplot(aes(x = year, y = relative_count, label = president)) +
-#   geom_line(alpha = 0.3) +
-   geom_text(size = 3, aes(colour = party)) +
-   facet_wrap(~word, ncol = 1, scales = "free_y") +
-   ggtitle("Changing use of selected words in inaugural Presidential addresses",
-           "Presidents labelled if they used the word or a variant.") +
-   labs(x = "", y = "Number of times used as a percentage of all words", caption = "http://ellisp.github.io") +
-   scale_colour_manual("", values = parties) +
-   scale_y_continuous(label = percent) +
-   geom_text(data = annotations, x = 1935, aes(y = y, label = lab), colour = "grey50", hjust = 1) +
-   theme(strip.text = element_text(size = 15, face = "bold"))
-dev.off()
 
 #================Three most distinctive words==============
 # don't think I'll use this
@@ -192,3 +202,11 @@ for(i in files){
    
 }
 setwd("../_working")
+
+#=====checks==
+words %>%
+   filter(inauguration == "2017-Trump") %>%
+   mutate(prop = round(count / sum(count) * 100, 2)) %>%
+   arrange(desc(prop)) %>%
+   select(word, count, prop, total_count) %>% 
+   summarise(prop = sum(prop), count = sum(count))
