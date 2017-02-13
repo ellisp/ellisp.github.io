@@ -56,21 +56,21 @@ shinyServer(function(input, output) {
              eta_a = input$eta_a ^ 2,
              eta_w = input$eta_w ^ 2, eta_p = input$eta_p ^ 2,
              eta_G = input$eta_G ^ 2, eta_R = input$eta_R ^ 2, eta_pi = input$eta_pi ^ 2)
-      tmp  <- set_shock_cov_mat(sw_gecon(), shock_matrix = diag(a), shock_order = names(a))
+      tmp  <- set_shock_cov_mat(sw_gecon(), cov_matrix = diag(a), shock_order = names(a))
       
       # compute the moments with that covariance matrix
-      tmp <- compute_moments(tmp)
+      tmp <- compute_model_stats(tmp)
       return(tmp)
    })
    
    sw_gecon_irf <- reactive({
       shock_row <- which(shocks$longer_name == input$shock_var)
-      compute_irf(sw_gecon_shocked(), var_list = c('C', 'Y', 'K', 'I', 'L'), chol = T,
-                               shock_list = list(shocks[shock_row, "param"]), path_length = 40)
+      compute_irf(sw_gecon_shocked(), variables = c('C', 'Y', 'K', 'I', 'L'), chol = T,
+                               shocks = shocks[shock_row, "param"], sim_length = 40)
    })
       
    output$irf_plot <- renderPlot(
-      plot_simulation(sw_gecon_irf(), to_tex = FALSE)
+      plot_simulation(sw_gecon_irf())
    )
    
    
