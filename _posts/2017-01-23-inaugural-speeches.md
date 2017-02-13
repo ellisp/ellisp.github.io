@@ -75,6 +75,7 @@ library(wordcloud)
 library(viridis)
 library(grid)
 library(testthat)
+library(magrittr)
 
 #==============data downloads and prep========================
 # Create a named vector of colours for representing the different parties, using
