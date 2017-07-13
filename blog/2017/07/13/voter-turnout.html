@@ -1,0 +1,588 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Who turned out to vote in the 2014 New Zealand general election?</title>
+      	
+         
+         
+            <meta name ="description" content ="I explore the demographic characteristics of who voted (and who didn't), out of people on the electoral roll, in the 2014 New Zealand general election.  I use multiple imputation and a generalized linear model with a quasibinomial response.  The people who vote tend to have characteristics associated with doing ok out of society (owning a home, having a partner, university qualifications, etc).">
+            <meta property="og:description" content ="I explore the demographic characteristics of who voted (and who didn't), out of people on the electoral roll, in the 2014 New Zealand general election.  I use multiple imputation and a generalized linear model with a quasibinomial response.  The people who vote tend to have characteristics associated with doing ok out of society (owning a home, having a partner, university qualifications, etc).">
+         
+         <meta property="og:site_name" content="Peter's stats stuff" />
+         <meta property="og:title" content="Who turned out to vote in the 2014 New Zealand general election?" />
+         
+            <meta property="og:image" content="http://ellisp.github.io/img/0104-model-results.png" />
+         
+		 
+			<meta property="og:url" content="http://ellisp.github.io/blog/2017/07/13/voter-turnout.html" />
+		 
+         <meta property="og:author" content= "https://www.facebook.com/peterstats" />
+         <meta property="og:type" content="article" />
+           
+          <link href="/css/bootstrap.min.css" rel ="stylesheet">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet">
+            <link href="/css/custom.css" rel ="stylesheet">     
+		<link href="/css/syntax.css" rel ="stylesheet">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="Peter's stats stuff by Peter Ellis"
+      href="/feed.xml">
+
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+  <script>
+  (function() {
+    var cx = '015640467633673901770:pk3v2c95baw';
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+  })();
+</script>
+
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Peter's stats stuff</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">All blog posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">Ordered by date</a></li>
+                  <li><a href="/blog/index_by_tag.html">Grouped by subject matter</a></li>
+                  <li><a href = /blog/2017/07/13/voter-turnout>Most recent post</a></li>
+				  <li><a href="/blog/nz.html">All blog posts with data about New Zealand</a></li>
+				  <li><a href="/blog/voting.html">All blog posts on voting behaviour</a></li>
+                 </ul>
+            </li>
+              <li><a href="/blog/showcase.html">Showcase</a></li>
+              <li><a href="/presentations/index.html">Presentations</a></li>
+			  <li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">NZ Election forecasts<span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/elections/elections.html">Model A (recommended)</a></li>
+				  <li><a href="https://ellisp.shinyapps.io/nz-election-2017/">Explore coalitions and assumptions</a></li>
+				  <li><a href = "/elections/state-space.html">Model B ("state space")</a></li>
+				  <li><a href = "/elections/combined.html">Combined model</a></li>
+                  <li><a href="/elections/changelog.html">Log of changes to forecasts</a></li>
+				  <li><a href="https://github.com/ellisp/nz-election-forecast">Source code on GitHub (external site)</a></li>
+				  <li><a href="/blog/voting.html">All blog posts on voting behaviour</a></li>
+                </ul>				
+			  </li>
+			  
+			  
+		    </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			    <div class="jumbotron">
+      <div class="container">
+        <h1>Who turned out to vote in the 2014 New Zealand general election?</h1>
+         <p class="meta">13 Jul 2017</p>
+        
+      </div>
+    </div>
+
+
+
+
+<div class = "post-summary">
+<h2>At a glance:</h2>
+   I explore the demographic characteristics of who voted (and who didn't), out of people on the electoral roll, in the 2014 New Zealand general election.  I use multiple imputation and a generalized linear model with a quasibinomial response.  The people who vote tend to have characteristics associated with doing ok out of society (owning a home, having a partner, university qualifications, etc).
+   <hr></hr>
+</div>
+
+<div class="post">
+<div class="col-md-2">
+
+</div>
+  <div class="col-md-8">
+
+  <h2 id="motivation">Motivation</h2>
+
+<p>This <a href="https://twitter.com/ellis2013nz/status/884653816368422912">thread on Twitter</a> prompted some questions for me about who actually turns up to vote in New Zealand’s elections.  With limited time, I can’t answer many of the important questions raised in that thread and the article it refers to critically.  However, I can use the <a href="http://www.nzes.org/">New Zealand Election Study</a> to look into the specific question raised about the demographics of people on the electoral roll who fail to vote, and in particular if income is a significant factor.</p>
+
+<p>To do this I adapted code from an <a href="http://ellisp.github.io/blog/2017/05/06/nz-first">earlier post</a> where I modelled party vote based on individual socio-economic characteristics.  For the main analysis, I used “Voted” as the response variable in a regression model with about 20 possible explanatory variables; this lets us see the impact of each variable while simultaneously controlling for the others.  Based on thinking that I was interested in behaviour rather than reasons, I wrapped up into one category those who claimed they “chose not to vote” and those who just “didn’t manage to vote”.</p>
+
+<p>The NZES sample is drawn from the electoral roll, which means the important question of who gets enrolled in the first place can’t be analysed from it.</p>
+
+<h2 id="results">Results</h2>
+
+<p>To cut to the chase, it’s not <em>clear</em> that household income is a factor.  However, there are so many people who did not tell the surveyors their income that in this analysis and in my earlier post I was obliged to code these people separately; in the chart below they show up as “HHIncome don’t know / NA”.  Unlike the two “lower” and “higher” income groups they are contrasted to, this variable does show up as negatively related to likelihood to turn up to vote, even after controlling for all the other variables in the chart:</p>
+
+<p><img src="/img/0104-model-results.svg" width="100%" /></p>
+
+<p>To be clear on the interpretation of this chart, the following are characteristics for which there was significant evidence of a relationship with <em>more</em> likely to vote:</p>
+
+<ul>
+  <li>Own their own house or flat</li>
+  <li>Someone in the household is a member of a professional association</li>
+  <li>Live in a city</li>
+  <li>Work part time (this is the only one that surprised me)</li>
+  <li>Has a university qualification</li>
+  <li>Older</li>
+  <li>Married or with a long term partner</li>
+</ul>
+
+<p>Generally speaking, these are mostly things associated with people who are doing well out of society.</p>
+
+<p>The following factors are associated with being <em>less</em> likely to vote:</p>
+
+<ul>
+  <li>Male</li>
+  <li>Young</li>
+  <li>Not European</li>
+  <li>Income not known (ie not told to the interviewer)</li>
+</ul>
+
+<p>I was interested that being Māori did <em>not</em> show up as significantly related to non-voting, above and beyond the general “non-European” factor (remembering that multiple ethnicities are usually allowed in New Zealand surveys and censuses).  Assuming the chart in the Twitter thread referred to above is correct, this must mean that the Māori indicator is conflated with some of the other variables - such as being younger, not owning one’s own house or flat, not living in a city, not European, not having a university qualification, etc.  I re-ran a regression, this time with “being Māori” as the response variable, to check that and found this conflation was indeed happening.</p>
+
+<p>All up, this is pretty strong evidence for socio-economic disadvantage being a unifying factor in non-voting behaviour by people on the electoral roll.   The fact that the “being Māori” non-voting effect disappears when we control for these other factors probably counts as a real finding of interest.</p>
+
+<p>It’s a shame that we can’t see a clear income effect in itself (other than the people who don’t report income to surveyors), but income is notoriously difficult to measure in any social science context, so not that surprising.</p>
+
+<h2 id="more-exploration">More exploration</h2>
+
+<p>I poked around the data just a little more before writing up.</p>
+
+<h3 id="more-granular-exploration-of-income">More granular exploration of income</h3>
+
+<p>Here is a mosaic plot of the original survey question on income matched to whether the respondent voted in the 2014 election:</p>
+
+<p><img src="/img/0104-mosaic-dhhincome.svg" width="100%" /></p>
+
+<p>Once one is familiar with these charts, they are a powerful way of visualising a two-way cross-tab.  They are conceptually related to the basic Chi-square test used to test for independence of the two variables in a cross-tab like this.  The cells coloured blue indicate a “surprisingly” high number of people in that cell, relative to the null hypothesis of no relationship between the two variables.  Red means a surprisingly low number.  The area of each box indicates the number of people in that particular cell of the table.  For this “income by voting” plot we see:</p>
+
+<ul>
+  <li>there are less people in the “don’t know income and did vote” category than would be expected if the two variables were unrelated</li>
+  <li>there are more people in the “don’t know income” and “chose not to vote” or “didn’t manage to vote” categories than would be expected</li>
+  <li>people with incomes between $31,000 and $55,000 turned up in “chose not to vote” more than would have been expected</li>
+  <li>people with incomes between $76,000 and $148,000 were less likely to be in “chose not to vote” than would have been expected</li>
+</ul>
+
+<p>All up, those exploratory findings broadly match an expectation that people with lower incomes didn’t vote, and those with higher incomes did; albeit with some complications in the detail.</p>
+
+<p>This mosaic plot gives a more nuanced view of income than my regression, where I had to lump together categories from both variables.  For example, a regression that differentiated between those who “chose not to vote” and those “didn’t manage to vote” would have been interesting but taken us into the world of multinomial responses which are extremely hard to explain visually, and which suck up more degrees of freedom from our fairly small sample size.</p>
+
+<p>There’s not a lot of people in many of the cells in this table.  With a bit more data, and a preparedness for some modelling complexity, I suspect we’d find an income effect somewhere.  To tackle this seriously and with a big enough sample size I’d want to use all the election studies from previous years.</p>
+
+<h3 id="some-attitudinal-variables">Some attitudinal variables</h3>
+
+<p>Here I present without comment some similar graphics comparing voting behaviour to some of the attitudinal questions in this survey:</p>
+
+<p><img src="/img/0104-mosaic-dinterest.svg" width="100%" />
+<img src="/img/0104-mosaic-ddiffvoting.svg" width="100%" />
+<img src="/img/0104-mosaic-ddiffpower.svg" width="100%" />
+<img src="/img/0104-mosaic-ddemo.svg" width="100%" />
+<img src="/img/0104-mosaic-dbigbus.svg" width="100%" /></p>
+
+<p>There’s lots to say here but to do it justice would require engaging much more with the political science literature than I have time for  just now.</p>
+
+<h2 id="method">Method</h2>
+
+<p>Around a third of the 2,835 rows of data are missing at least one of the variables I wanted to include in my regression, so I needed to think carefully about my modelling strategy.  Choosing a simpler variant of the different methods I tried in my <a href="http://ellisp.github.io/blog/2017/05/06/nz-first">earlier post on party vote</a>, I used:</p>
+
+<ul>
+  <li>the survey weights provided by the NZES organizers</li>
+  <li>multiple imputations by chained equations (with the R <code class="highlighter-rouge">mice</code> package), imputing five alternative values for each missing value so we can fit five regressions and pool the results</li>
+  <li><code class="highlighter-rouge">glm</code> (with a quasi-binomial response to be safe) from the standard <code class="highlighter-rouge">stats</code> package with R, because it plays nicely with <code class="highlighter-rouge">mice</code> and my previous experience suggested there wasn’t much to gain by using <code class="highlighter-rouge">svyglm</code> from the <code class="highlighter-rouge">survey</code> package with this particular dataset.</li>
+</ul>
+
+<p>If I had more time and it was more important to me, I would have used <code class="highlighter-rouge">survey::svyglm</code> in combination with a bootstrap that encompasses the imputation process, as per the previous post.  My experience suggests that this is unlikely to change the result materially.</p>
+
+<h2 id="code">Code</h2>
+
+<p>Here’s the R code that did the analysis.  Two small points to note were that since my last post using this data, with the upgrade to R3.4.x,</p>
+
+<ul>
+  <li>the <code class="highlighter-rouge">foreign</code> package seems to import the SPSS data slightly differently, which required a tweak to some of the code handling factors (on the plus side, I <em>think</em> it preserves more information from the SPSS version in doing so)</li>
+  <li>the <code class="highlighter-rouge">mice</code> package stores the contrasts for factors it used in imputation in a different spot</li>
+</ul>
+
+<p>Both these issues were food for thought and required a small amount of bug hunting.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">foreign</span><span class="p">)</span><span class="w">   </span><span class="c1"># for importing SPSS data
+</span><span class="n">library</span><span class="p">(</span><span class="n">survey</span><span class="p">)</span><span class="w">    </span><span class="c1"># for survey weighting and analysis
+</span><span class="n">library</span><span class="p">(</span><span class="n">forcats</span><span class="p">)</span><span class="w">   </span><span class="c1"># for manipulating factor levels
+</span><span class="n">library</span><span class="p">(</span><span class="n">mice</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#-------------convenience functions--------------
+</span><span class="n">camel_to_english</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">camelCase</span><span class="p">){</span><span class="w">
+  </span><span class="nf">return</span><span class="p">(</span><span class="n">gsub</span><span class="p">(</span><span class="s2">"([a-z])([A-Z])"</span><span class="p">,</span><span class="w"> </span><span class="s2">"\\1 \\L\\2"</span><span class="p">,</span><span class="w"> </span><span class="n">camelCase</span><span class="p">,</span><span class="w"> </span><span class="n">perl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">))</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="c1"># Convert five category membership question (for trade unions, business
+# associations, etc) into Yes or No.
+</span><span class="n">membership</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">){</span><span class="w">
+  </span><span class="n">tmp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">fct_recode</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w">
+                    </span><span class="n">Yes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"I belong, but no one else in the house does"</span><span class="p">,</span><span class="w">
+                    </span><span class="n">Yes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"I do, plus another in the house"</span><span class="p">,</span><span class="w">
+                    </span><span class="n">Yes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Another person belongs, but not me"</span><span class="p">,</span><span class="w">
+                    </span><span class="n">No</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="s2">"No, no one belongs"</span><span class="p">,</span><span class="w">
+                    </span><span class="n">No</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="s2">"Don't know"</span><span class="p">)</span><span class="w"> 
+  </span><span class="n">tmp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">tmp</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Yes"</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w">
+  </span><span class="c1"># Uncomment the next line if we want to turn NA into 0.
+</span><span class="w">  </span><span class="c1"># tmp &lt;- ifelse(is.na(tmp), 0, tmp)
+</span><span class="w">  </span><span class="nf">return</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="c1">#------------------data download-----------------
+</span><span class="w">
+</span><span class="c1"># Data downloaded from http://www.nzes.org/exec/show/data and because
+# they want you to fill in a form to know who is using the data, I
+# won't re-publish it myself
+</span><span class="n">unzip</span><span class="p">(</span><span class="s2">"D:/Downloads/NZES2014GeneralReleaseApril16.sav.zip"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">nzes_orig</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">read.spss</span><span class="p">(</span><span class="s2">"NZES2014GeneralReleaseApril16.sav"</span><span class="p">,</span><span class="w"> 
+                       </span><span class="n">to.data.frame</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> </span><span class="n">trim.factor.names</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w">
+</span><span class="n">varlab</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">cbind</span><span class="p">(</span><span class="nf">attributes</span><span class="p">(</span><span class="n">nzes_orig</span><span class="p">)</span><span class="o">$</span><span class="n">variable.labels</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#============rationalised version of feature creation===========
+# This is a single longish command to aggregate various answers into
+# simpler cateogrisations, because we don't have enough data to 
+# analyse the original granular detail.
+</span><span class="n">nzes</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">nzes_orig</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  
+  </span><span class="c1"># Two degrees of freedom for ethnicity:
+</span><span class="w">  </span><span class="c1"># Oddly, this has changed since a few months ago.  An upgrade to foreign (I think)
+</span><span class="w">  </span><span class="c1"># means that the SPSS data comes in with its labels.  So this bit of code is slightly
+</span><span class="w">  </span><span class="c1"># different to some I'd previously blogged about:
+</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">NotEuropean</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="p">(</span><span class="n">dethnicity_e</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"NZ European"</span><span class="p">),</span><span class="w">
+         </span><span class="n">Maori</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">dethnicity_m</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">2</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  
+  </span><span class="c1"># Two degrees of freedom for income (lower, higher, don't know):
+</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">HHIncome</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_recode</span><span class="p">(</span><span class="n">dhhincome</span><span class="p">,</span><span class="w">
+                               </span><span class="n">Lower</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"No income"</span><span class="p">,</span><span class="w">
+                               </span><span class="n">Lower</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"$NZ23,000 or less"</span><span class="p">,</span><span class="w">
+                               </span><span class="n">Lower</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"$NZ23,001-$NZ31,000"</span><span class="p">,</span><span class="w">
+                               </span><span class="n">Lower</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"$NZ31,001-$NZ39,800"</span><span class="p">,</span><span class="w">
+                               </span><span class="n">Lower</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"$NZ39,801-$NZ55,000"</span><span class="p">,</span><span class="w">
+                               </span><span class="n">Higher</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"$NZ55,001-$NZ76,100"</span><span class="p">,</span><span class="w">
+                               </span><span class="n">Higher</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"$NZ76,101-$NZ110,800"</span><span class="p">,</span><span class="w">
+                               </span><span class="n">Higher</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"$NZ110,801-$NZ147,699"</span><span class="p">,</span><span class="w">
+                               </span><span class="n">Higher</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"$NZ147,700 or over"</span><span class="p">,</span><span class="w">
+                               </span><span class="n">`Don't know / NA`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Don't know"</span><span class="p">),</span><span class="w">
+         </span><span class="n">HHIncome</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="nf">is.na</span><span class="p">(</span><span class="n">HHIncome</span><span class="p">),</span><span class="w"> </span><span class="s2">"Don't know / NA"</span><span class="p">,</span><span class="w"> </span><span class="nf">as.character</span><span class="p">(</span><span class="n">HHIncome</span><span class="p">)),</span><span class="w">
+         </span><span class="n">HHIncome</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_infreq</span><span class="p">(</span><span class="n">HHIncome</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  
+  </span><span class="c1">## Two - four degrees of freedom for associations?
+</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">HHMemberTradeUnion</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">membership</span><span class="p">(</span><span class="n">dtradeunion</span><span class="p">),</span><span class="w">
+         </span><span class="n">HHMemberProfAssoc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">membership</span><span class="p">(</span><span class="n">dprofassoc</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  
+  </span><span class="c1">## One degree of freedom for born in NZ
+</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">NZBorn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">dnzborn</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"New Zealand"</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w">
+         </span><span class="c1"># uncomment the next line if you want to turn NA into zero:
+</span><span class="w">         </span><span class="c1"># , NZBorn = ifelse(is.na(NZBorn), 0, NZBorn)
+</span><span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  
+  </span><span class="c1">## One for sex
+</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">Male</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">dsex</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Male"</span><span class="p">),</span><span class="w">
+         </span><span class="n">Male</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">dsex</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Transsexual or transgender"</span><span class="p">,</span><span class="w"> </span><span class="kc">NA</span><span class="p">,</span><span class="w"> </span><span class="n">Male</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  
+  </span><span class="c1">## Two-four for age
+</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">Age</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_collapse</span><span class="p">(</span><span class="nf">as.character</span><span class="p">(</span><span class="n">dage</span><span class="p">),</span><span class="w">
+                            </span><span class="n">`18-29`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.character</span><span class="p">(</span><span class="m">18</span><span class="o">:</span><span class="m">29</span><span class="p">),</span><span class="w">
+                            </span><span class="n">`30-55`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.character</span><span class="p">(</span><span class="m">30</span><span class="o">:</span><span class="m">55</span><span class="p">),</span><span class="w">
+                            </span><span class="n">`56+`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.character</span><span class="p">(</span><span class="m">56</span><span class="o">:</span><span class="m">100</span><span class="p">)),</span><span class="w">
+         </span><span class="c1"># Uncomment the next line if you want to explicitly code the NAs
+</span><span class="w">         </span><span class="c1"># Age = ifelse(is.na(dage), "unknown", as.character(Age)),
+</span><span class="w">         </span><span class="n">Age</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_relevel</span><span class="p">(</span><span class="n">Age</span><span class="p">,</span><span class="w"> </span><span class="s2">"30-55"</span><span class="p">)</span><span class="w">
+  </span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  
+  </span><span class="c1">## One for housing.  Note there is also an alternative question "do you or any family member own a residence"
+</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">OwnHouseOrFlat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">grepl</span><span class="p">(</span><span class="s2">"Own house or flat"</span><span class="p">,</span><span class="w"> </span><span class="n">dhousing</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  
+  </span><span class="c1"># Two for religion
+</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">Religion</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_lump</span><span class="p">(</span><span class="n">dreligion</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  
+  </span><span class="c1"># One for marital status
+</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">Marital</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">dmarital</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Married, in a civil union, or living with a partner"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  
+  </span><span class="c1"># One for self-identified class
+</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">IdentifyWorkingClass</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">dclass</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Working class"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  
+  </span><span class="c1">## Two for education (University, None, Other)
+</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">HighestQual</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_collapse</span><span class="p">(</span><span class="n">dedcons</span><span class="p">,</span><span class="w"> </span><span class="n">University</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Undergraduate Degree"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Postgraduate degree"</span><span class="p">,</span><span class="w"> </span><span class="s2">"PhD"</span><span class="p">)),</span><span class="w">
+         </span><span class="n">HighestQual</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_lump</span><span class="p">(</span><span class="n">HighestQual</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">),</span><span class="w">
+         </span><span class="n">HighestQual</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">dedcons</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Not known"</span><span class="p">,</span><span class="w"> </span><span class="kc">NA</span><span class="p">,</span><span class="w"> </span><span class="nf">as.character</span><span class="p">(</span><span class="n">HighestQual</span><span class="p">)),</span><span class="w">
+         </span><span class="n">HighestQual</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_relevel</span><span class="p">(</span><span class="n">HighestQual</span><span class="p">,</span><span class="w"> </span><span class="s2">"Other"</span><span class="p">)</span><span class="w">
+  </span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  
+  </span><span class="c1">## Two for working status
+</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">WorkStatus</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="o">!</span><span class="nf">is.na</span><span class="p">(</span><span class="n">dwkpt</span><span class="p">),</span><span class="w"> </span><span class="s2">"Part time"</span><span class="p">,</span><span class="w"> </span><span class="kc">NA</span><span class="p">),</span><span class="w">
+         </span><span class="n">WorkStatus</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="o">!</span><span class="nf">is.na</span><span class="p">(</span><span class="n">dwkft</span><span class="p">),</span><span class="w"> </span><span class="s2">"Full time"</span><span class="p">,</span><span class="w"> </span><span class="n">WorkStatus</span><span class="p">),</span><span class="w">
+         </span><span class="n">WorkStatus</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="nf">is.na</span><span class="p">(</span><span class="n">WorkStatus</span><span class="p">),</span><span class="w"> </span><span class="s2">"Other or unknown"</span><span class="p">,</span><span class="w"> </span><span class="n">WorkStatus</span><span class="p">),</span><span class="w">
+         </span><span class="n">WorkStatus</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_infreq</span><span class="p">(</span><span class="n">WorkStatus</span><span class="p">),</span><span class="w">
+         </span><span class="n">Student</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="nf">is.na</span><span class="p">(</span><span class="n">dwksch</span><span class="p">)))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  
+  </span><span class="c1">## One for occupation
+</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">SuperviseAnyone</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">dsupervise</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Yes"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="c1"># Note there is detailed occupation information (for respondent and partner)
+</span><span class="w">  </span><span class="c1"># but I don't think we hav eneough data to use this in the model.
+</span><span class="w">  
+  </span><span class="c1">## One degree of freedom for area lived in?
+</span><span class="w">  </span><span class="c1"># Five nice categories here, not enough data so we'll split into one
+</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">City</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">dregsize</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"A major city (over 100,000 population)"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">Voted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">ddidvote</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Did cast a vote"</span><span class="p">))</span><span class="w">
+
+</span><span class="c1"># Mysterious Code 9 from outer space (in the original, see http://www.jackvowles.com/SectionD2014.htm)
+</span><span class="nf">is.na</span><span class="p">(</span><span class="n">nzes</span><span class="o">$</span><span class="n">Voted</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="p">(</span><span class="n">nzes</span><span class="o">$</span><span class="n">ddidvote</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"9"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#==============descriptive stats==================
+# create a survey design object that understand the weights:
+</span><span class="n">nzes_svy</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">svydesign</span><span class="p">(</span><span class="o">~</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">weights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">~</span><span class="n">dwtfin</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nzes</span><span class="p">)</span><span class="w">
+
+
+</span><span class="cd">#' Function to estimate a survey cross tab and draw a mosaic plot, comparing
+#' a given variable to whether the person voted (excluding those who said "9"
+#' in response to the question on whether they voted)
+</span><span class="n">mp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">ylab</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">){</span><span class="w">
+  </span><span class="n">form</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.formula</span><span class="p">(</span><span class="n">paste</span><span class="p">(</span><span class="s2">"~"</span><span class="p">,</span><span class="w"> </span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="s2">"+ ddidvote"</span><span class="p">))</span><span class="w">
+  </span><span class="n">tab</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">svytable</span><span class="p">(</span><span class="n">form</span><span class="p">,</span><span class="w"> </span><span class="n">nzes_svy</span><span class="p">)</span><span class="w">
+  </span><span class="n">oldpar</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">par</span><span class="p">(</span><span class="n">font.main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+  </span><span class="n">mosaicplot</span><span class="p">(</span><span class="n">t</span><span class="p">(</span><span class="n">tab</span><span class="p">[</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="m">-4</span><span class="p">]),</span><span class="w"> </span><span class="n">shade</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> </span><span class="n">las</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> 
+             </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"New Zealand Election Study 2014"</span><span class="p">,</span><span class="w">
+             </span><span class="n">xlab</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"D2: Did you vote or not vote?"</span><span class="p">,</span><span class="w">
+             </span><span class="n">ylab</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ylab</span><span class="p">)</span><span class="w">
+  </span><span class="n">par</span><span class="p">(</span><span class="n">oldpar</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="c1"># Draw the mosaic plots used in the post:
+</span><span class="n">mp</span><span class="p">(</span><span class="s2">"dinterest"</span><span class="p">,</span><span class="w"> </span><span class="s2">"A1: how interested in politics"</span><span class="p">)</span><span class="w">
+</span><span class="n">mp</span><span class="p">(</span><span class="s2">"ddiffpower"</span><span class="p">,</span><span class="w"> </span><span class="s2">"A10: does it make a difference who is in power"</span><span class="p">)</span><span class="w">
+</span><span class="n">mp</span><span class="p">(</span><span class="s2">"ddemo"</span><span class="p">,</span><span class="w"> </span><span class="s2">"A12: how satisfied with how democracy works in NZ"</span><span class="p">)</span><span class="w">
+</span><span class="n">mp</span><span class="p">(</span><span class="s2">"ddiffvoting"</span><span class="p">,</span><span class="w"> </span><span class="s2">"A11: does voting make any difference to what happens"</span><span class="p">)</span><span class="w">
+</span><span class="n">mp</span><span class="p">(</span><span class="s2">"dbigbus"</span><span class="p">,</span><span class="w"> </span><span class="s2">"C7m: big business in NZ has too much power"</span><span class="p">)</span><span class="w">
+</span><span class="n">mp</span><span class="p">(</span><span class="s2">"dhhincome"</span><span class="p">,</span><span class="w"> </span><span class="s2">"F26: household income between 1 April 2013 and 31 March 2014"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># too much missing data - nearly a third of rows missing a column - for this to be any use, but as a taster:
+</span><span class="n">mod1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">svyglm</span><span class="p">(</span><span class="n">Voted</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">NotEuropean</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Maori</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">HHIncome</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">HHMemberTradeUnion</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">HHMemberProfAssoc</span><span class="w"> </span><span class="o">+</span><span class="w">
+                 </span><span class="n">NZBorn</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Male</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Age</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">OwnHouseOrFlat</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Religion</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Marital</span><span class="w"> </span><span class="o">+</span><span class="w">
+                 </span><span class="n">IdentifyWorkingClass</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">HighestQual</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">WorkStatus</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+                 </span><span class="n">Student</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">SuperviseAnyone</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">City</span><span class="p">,</span><span class="w"> 
+               </span><span class="n">design</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nzes_svy</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"quasibinomial"</span><span class="p">)</span><span class="w">
+</span><span class="n">summary</span><span class="p">(</span><span class="n">mod1</span><span class="p">)</span><span class="w">
+</span><span class="n">anova</span><span class="p">(</span><span class="n">mod1</span><span class="p">)</span><span class="w">
+
+
+</span><span class="c1">#============modelling with imputation===============
+# create a dataset of just the variables we're using:
+</span><span class="n">nzes_subset</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">nzes</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">select</span><span class="p">(</span><span class="n">Voted</span><span class="p">,</span><span class="w"> </span><span class="n">NotEuropean</span><span class="p">,</span><span class="w"> </span><span class="n">Maori</span><span class="p">,</span><span class="w"> </span><span class="n">HHIncome</span><span class="p">,</span><span class="w"> </span><span class="n">HHMemberTradeUnion</span><span class="p">,</span><span class="w">
+         </span><span class="n">HHMemberProfAssoc</span><span class="p">,</span><span class="w"> </span><span class="n">NZBorn</span><span class="p">,</span><span class="w"> </span><span class="n">Male</span><span class="p">,</span><span class="w"> </span><span class="n">Age</span><span class="p">,</span><span class="w"> </span><span class="n">OwnHouseOrFlat</span><span class="p">,</span><span class="w">
+         </span><span class="n">Religion</span><span class="p">,</span><span class="w"> </span><span class="n">Marital</span><span class="p">,</span><span class="w"> </span><span class="n">IdentifyWorkingClass</span><span class="p">,</span><span class="w"> </span><span class="n">HighestQual</span><span class="p">,</span><span class="w"> </span><span class="n">WorkStatus</span><span class="p">,</span><span class="w">
+         </span><span class="n">Student</span><span class="p">,</span><span class="w"> </span><span class="n">SuperviseAnyone</span><span class="p">,</span><span class="w"> </span><span class="n">City</span><span class="p">,</span><span class="w"> </span><span class="n">dwtfin</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># check how many complete cases there are:
+</span><span class="nf">sum</span><span class="p">(</span><span class="n">complete.cases</span><span class="p">(</span><span class="n">nzes_subset</span><span class="p">))</span><span class="w">
+</span><span class="n">nrow</span><span class="p">(</span><span class="n">nzes_subset</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># create 5 different datasets with (different) imputed values where missing
+</span><span class="n">nzes_imp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">mice</span><span class="p">(</span><span class="n">nzes_subset</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># remove contrasts to make it easier to interpret once the model is fit
+# note that these contrasts are now in the $data object - some time in the 
+# last year this changed, compared to what worked in my 6 May 2017 blog.
+</span><span class="nf">attributes</span><span class="p">(</span><span class="n">nzes_imp</span><span class="o">$</span><span class="n">data</span><span class="o">$</span><span class="n">Religion</span><span class="p">)</span><span class="o">$</span><span class="n">contrasts</span><span class="w">    </span><span class="o">&lt;-</span><span class="w"> </span><span class="kc">NULL</span><span class="w">
+</span><span class="nf">attributes</span><span class="p">(</span><span class="n">nzes_imp</span><span class="o">$</span><span class="n">data</span><span class="o">$</span><span class="n">WorkStatus</span><span class="p">)</span><span class="o">$</span><span class="n">contrasts</span><span class="w">  </span><span class="o">&lt;-</span><span class="w"> </span><span class="kc">NULL</span><span class="w">
+</span><span class="nf">attributes</span><span class="p">(</span><span class="n">nzes_imp</span><span class="o">$</span><span class="n">data</span><span class="o">$</span><span class="n">HHIncome</span><span class="p">)</span><span class="o">$</span><span class="n">contrasts</span><span class="w">    </span><span class="o">&lt;-</span><span class="w"> </span><span class="kc">NULL</span><span class="w">
+</span><span class="nf">attributes</span><span class="p">(</span><span class="n">nzes_imp</span><span class="o">$</span><span class="n">data</span><span class="o">$</span><span class="n">HighestQual</span><span class="p">)</span><span class="o">$</span><span class="n">contrasts</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="kc">NULL</span><span class="w">
+</span><span class="nf">attributes</span><span class="p">(</span><span class="n">nzes_imp</span><span class="o">$</span><span class="n">data</span><span class="o">$</span><span class="n">Age</span><span class="p">)</span><span class="o">$</span><span class="n">contrasts</span><span class="w">         </span><span class="o">&lt;-</span><span class="w"> </span><span class="kc">NULL</span><span class="w">
+
+</span><span class="c1"># fit model
+</span><span class="n">mod2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">with</span><span class="p">(</span><span class="n">nzes_imp</span><span class="p">,</span><span class="w"> 
+             </span><span class="n">glm</span><span class="p">(</span><span class="n">Voted</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">NotEuropean</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Maori</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">HHIncome</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">HHMemberTradeUnion</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">HHMemberProfAssoc</span><span class="w"> </span><span class="o">+</span><span class="w">
+                              </span><span class="n">NZBorn</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Male</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Age</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">OwnHouseOrFlat</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Religion</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Marital</span><span class="w"> </span><span class="o">+</span><span class="w">
+                              </span><span class="n">IdentifyWorkingClass</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">HighestQual</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">WorkStatus</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+                              </span><span class="n">Student</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">SuperviseAnyone</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">City</span><span class="p">,</span><span class="w"> 
+                 </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"quasibinomial"</span><span class="p">,</span><span class="w"> </span><span class="n">weights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dwtfin</span><span class="p">))</span><span class="w">
+
+</span><span class="c1"># turn into a graphic:
+</span><span class="n">coefs</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.data.frame</span><span class="p">(</span><span class="n">summary</span><span class="p">(</span><span class="n">pool</span><span class="p">(</span><span class="n">mod2</span><span class="p">)))</span><span class="w">
+</span><span class="n">coefs</span><span class="o">$</span><span class="n">variable</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">camel_to_english</span><span class="p">(</span><span class="n">row.names</span><span class="p">(</span><span class="n">coefs</span><span class="p">))</span><span class="w">
+
+</span><span class="n">coefs</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="c1"># remove intercept as uninteresting:
+</span><span class="w">  </span><span class="n">slice</span><span class="p">(</span><span class="m">-1</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="c1"># reorder:
+</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_reorder</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">t</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="c1"># draw graphic:
+</span><span class="w">  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">`lo 95`</span><span class="p">,</span><span class="w"> </span><span class="n">xend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">`hi 95`</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">yend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">variable</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_vline</span><span class="p">(</span><span class="n">xintercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2.5</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"orange"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_segment</span><span class="p">(</span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.8</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Who voted in New Zealand's Election 2014?"</span><span class="p">,</span><span class="w">
+          </span><span class="s2">"Of those enrolled to vote, when controlling for other variables, which variables were associated with voting.
+Width of blue bars indicates uncertainty associated with sampling and imputation."</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Less likely to vote                        -----------------                            More likely to vote                           "</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Compared to enrollees of no religion, aged 30-55, 
+high household income, school qualification, 
+working full time"</span><span class="p">,</span><span class="w">
+       </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Source: New Zealand Election Study; analysis at http://ellisp.github.io"</span><span class="p">)</span><span class="w">
+
+
+</span><span class="c1">#=================who is Maori=======================
+</span><span class="n">mod3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">with</span><span class="p">(</span><span class="n">nzes_imp</span><span class="p">,</span><span class="w"> 
+             </span><span class="n">glm</span><span class="p">(</span><span class="n">Maori</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">NotEuropean</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">HHIncome</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">HHMemberTradeUnion</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">HHMemberProfAssoc</span><span class="w"> </span><span class="o">+</span><span class="w">
+                   </span><span class="n">NZBorn</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Male</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Age</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">OwnHouseOrFlat</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Religion</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Marital</span><span class="w"> </span><span class="o">+</span><span class="w">
+                   </span><span class="n">IdentifyWorkingClass</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">HighestQual</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">WorkStatus</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+                   </span><span class="n">Student</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">SuperviseAnyone</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">City</span><span class="p">,</span><span class="w"> 
+                 </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"quasibinomial"</span><span class="p">,</span><span class="w"> </span><span class="n">weights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dwtfin</span><span class="p">))</span><span class="w">
+
+
+</span><span class="n">coefs3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.data.frame</span><span class="p">(</span><span class="n">summary</span><span class="p">(</span><span class="n">pool</span><span class="p">(</span><span class="n">mod3</span><span class="p">)))</span><span class="w">
+</span><span class="n">coefs3</span><span class="o">$</span><span class="n">variable</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">camel_to_english</span><span class="p">(</span><span class="n">row.names</span><span class="p">(</span><span class="n">coefs3</span><span class="p">))</span><span class="w">
+
+</span><span class="n">coefs3</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">arrange</span><span class="p">(</span><span class="n">t</span><span class="p">)</span></code></pre></figure>
+
+
+
+</div>
+
+<div class = "container">
+   <div class="col-md-4">
+    
+        <a rel="prev" href="/blog/2017/07/09/oz-polls-revisited">
+        <p>&larr; Older</p>
+        <p>Improving state-space modelling of the Australian 2007 federal election</p>
+        
+        </a>
+    
+    </div>
+    <div class="col-md-4">
+    </div>
+    <div class="col-md-4" style="text-align: right;">
+    
+      </div>
+      </div>
+      
+      
+      
+</div>
+
+
+   
+    <div id="disqus_thread"></div>
+
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+    
+    
+   
+			
+			</div><!-- /.container -->
+
+         
+
+   <div class = "container footer">
+			<footer>
+	    		<gcse:search></gcse:search>
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.  Or follow <a href = "/feed.r.xml">posts in this blog featuring R with RSS</a>.</p>
+			
+            <p>This blog is built with <a href = "http://jekyllrb.com/">Jekyll</a>, <a href = "http://getbootstrap.com/">Bootstrap</a>, <a href = "https://www.ruby-lang.org/en/">Ruby</a> and <a href = "https://cran.r-project.org/">R</a>.  Read my <a href="/about/acknowledgements.html">acknowledgements</a> for a little more on how.  I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+
+			<div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="true" data-share="false"></div>
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Peter's stats stuff</span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			
+
+			</footer>
+    </div>
+
+
+
+  
+</body>
+</html>
+   
+
+
+
+
+         
