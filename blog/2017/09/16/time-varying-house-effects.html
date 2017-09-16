@@ -5,20 +5,20 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-			<title>More cartograms of New Zealand census data (district and city level)!</title>
+			<title>Time-varying house effects in New Zealand political polls</title>
       	
          
          
-            <meta name ="description" content ="Shapefiles for cartogram by New Zealand Territorial Authority (ie District or City), with area proportional to population in 2013, have been added to the nzcensus package on GitHub.">
-            <meta property="og:description" content ="Shapefiles for cartogram by New Zealand Territorial Authority (ie District or City), with area proportional to population in 2013, have been added to the nzcensus package on GitHub.">
+            <meta name ="description" content ="I adjust my state-space model of New Zealand voting behaviour to allow for the house effect of one of the pollsters to change from the time they started including an on-line sample, and get some interesting results.">
+            <meta property="og:description" content ="I adjust my state-space model of New Zealand voting behaviour to allow for the house effect of one of the pollsters to change from the time they started including an on-line sample, and get some interesting results.">
          
          <meta property="og:site_name" content="Peter's stats stuff" />
-         <meta property="og:title" content="More cartograms of New Zealand census data (district and city level)!" />
+         <meta property="og:title" content="Time-varying house effects in New Zealand political polls" />
          
-            <meta property="og:image" content="http://ellisp.github.io/img/0094-ta1.png" />
+            <meta property="og:image" content="http://ellisp.github.io/img/0111-reid-methodology-change-impact.png" />
          
 		 
-			<meta property="og:url" content="http://ellisp.github.io/blog/2017/04/25/more-cartograms.html" />
+			<meta property="og:url" content="http://ellisp.github.io/blog/2017/09/16/time-varying-house-effects.html" />
 		 
          <meta property="og:author" content= "https://www.facebook.com/peterstats" />
          <meta property="og:type" content="article" />
@@ -134,8 +134,8 @@
 			
 			    <div class="jumbotron">
       <div class="container">
-        <h1>More cartograms of New Zealand census data (district and city level)!</h1>
-         <p class="meta">25 Apr 2017</p>
+        <h1>Time-varying house effects in New Zealand political polls</h1>
+         <p class="meta">16 Sep 2017</p>
         
       </div>
     </div>
@@ -145,7 +145,7 @@
 
 <div class = "post-summary">
 <h2>At a glance:</h2>
-   Shapefiles for cartogram by New Zealand Territorial Authority (ie District or City), with area proportional to population in 2013, have been added to the nzcensus package on GitHub.
+   I adjust my state-space model of New Zealand voting behaviour to allow for the house effect of one of the pollsters to change from the time they started including an on-line sample, and get some interesting results.
    <hr></hr>
 </div>
 
@@ -155,56 +155,58 @@
 </div>
   <div class="col-md-8">
 
-  <p>Just a short note to say that I’ve finished creating an experimental map of New Zealand by the 66 Territorial Authorities (districts and cities), with area expanded or shrunk to be proportional to population at the 2013 census.  This is in addition to the 16 Regional Council divisions I blogged about a couple of days ago.  It’s available in the <a href="https://github.com/ellisp/nzelect"><code class="highlighter-rouge">nzcensus</code> R package</a>.</p>
+  <h2 id="house-effects-in-state-space-models-of-voting-intention">House effects in state space models of voting intention</h2>
 
-<p>So some static plots:</p>
+<p>“House effects” is the term commonly used in models of voting intention to refer to the different statistical biases of different pollsters.  In my <a href="/elections/state-space.html">Model B state space model of the New Zealand 2017 election</a>, the estimated house effects look like this:</p>
 
-<p><img src="/img/0094-ta1.svg" width="100%" /></p>
+<p><img src="/img/state-space-house-effects.svg" width="100%" /></p>
 
-<p><img src="/img/0094-ta2.svg" width="100%" /></p>
+<p>What these mean, to pick the largest example, is that Bauer Media Insights are estimated to over-estimate the party vote for Greens by about four percentage points.  This is taken into account when the model simultaneously estimates the unobserved latent voting intention for every day in the observed period - and the house effects for all the other pollsters.  Only one type of observation has no house effect, and that’s the elections on the day.  Those particular results are definitive!</p>
 
-<p>And an enhanced Shiny web-app:</p>
+<p>For those wondering about the presence of six pollsters, including some that are no longer active in New Zealand - my model starts with the 2011 election and any pollster with two or more public polls since then is included.  Even though Digipoll and Ipsos are not publishing polls for the 2017 election, they did leading up to 2014, and hence they go into the mix for estimating the latent voting intention every day leading up to the 2014 election day, which is useful for understanding the house effects of those pollsters that are still publishing polls.</p>
 
-<iframe width="950" height="700" src="https://ellisp.shinyapps.io/nzcensus-cartograms/" frameborder="0" scrolling="no"></iframe>
+<h2 id="what-happens-when-the-pollster-changes-their-method">What happens when the pollster changes their method?</h2>
 
-<p>Code for producing the static images:</p>
+<p>Peter Green drew my attention (<a href="https://twitter.com/ellis2013nz/status/908463168581599232">on Twitter</a>) to a recent change in the Newshub - Reid Research poll - in 2017, 25% of the sample has been online, rather than the full sample being recruited and questioned over “land” telephone lines.  With a lot of scrutiny recently on volatility and disagreement between the polls as we head to election day in a week’s time, Dr Green wondered if the change in method could have led to a detectable change in the Reid Research house effect.</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># Latest version of nzcensus package:
-</span><span class="n">devtools</span><span class="o">::</span><span class="n">install_github</span><span class="p">(</span><span class="s2">"ellisp/nzelect/pkg2"</span><span class="p">)</span><span class="w">
+<p>Trying to detect this is a fairly straightforward addition to my state space model; I just added to the data a dummy variable that was 1 for Reid Research polls in 2017 and 0 otherwise, and a parameter “additional house effect” for each party to apply when that indicator is 1.  Seven more parameters to estimate in a model that already has more than 20,000 (because there is a parameter for the voting intent for each party, every day since September 2011) doesn’t add too much to the estimation difficulty.</p>
 
-</span><span class="n">library</span><span class="p">(</span><span class="n">nzcensus</span><span class="p">)</span><span class="w">
-</span><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
-</span><span class="n">library</span><span class="p">(</span><span class="n">viridis</span><span class="p">)</span><span class="w">
+<p>We get this result:</p>
 
-</span><span class="c1"># we need make_legend() and colour_scale() as defined in
-# http://ellisp.github.io/blog/2017/04/23/cartograms
-</span><span class="w">
-</span><span class="n">comb_data_ta</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ta_cart</span><span class="o">@</span><span class="n">data</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-   </span><span class="n">left_join</span><span class="p">(</span><span class="n">TA2013</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Name"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"TA2013_NAM"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-   </span><span class="n">as_tibble</span><span class="p">()</span><span class="w">
+<p><img src="/img/0111-reid-methodology-change-impact.svg" width="100%" /></p>
 
-</span><span class="n">par</span><span class="p">(</span><span class="n">font.main</span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">fg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey75"</span><span class="p">)</span><span class="w">
-</span><span class="n">plot</span><span class="p">(</span><span class="n">ta_cart</span><span class="p">,</span><span class="w">
-     </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">colour_scale</span><span class="p">(</span><span class="n">comb_data_ta</span><span class="o">$</span><span class="n">PropNoQualification2013</span><span class="p">))</span><span class="w">
-</span><span class="n">title</span><span class="p">(</span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"People with no qualification; areas sized by usual resident population"</span><span class="p">)</span><span class="w">
-</span><span class="n">make_legend</span><span class="p">(</span><span class="n">comb_data_ta</span><span class="o">$</span><span class="n">PropNoQualification2013</span><span class="p">,</span><span class="w"> 
-            </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Percentage of all individuals\nwith no qualification"</span><span class="p">,</span><span class="w">
-            </span><span class="n">location</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"left"</span><span class="p">,</span><span class="w"> </span><span class="n">cex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.8</span><span class="p">)</span><span class="w">
+<p>We can interpret this as the change in Reid Research’s house effect in 2017, compared to their house effect in 2016 and earlier.  Remember that all this is estimated in the light of how the other pollsters are estimating the unobservable voting intention; those other house effects are assumed to stay the same over this period.  So it looks like since the change in method is leading to the reported estimated vote for National going <em>up</em> by about 1.5 percentage points (but really, anwhere between 0 and 3%) and Labour <em>down</em> by about 1 percentage point; Greens and Māori Party vote down by a little less.</p>
 
-</span><span class="n">par</span><span class="p">(</span><span class="n">font.main</span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">fg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey75"</span><span class="p">)</span><span class="w">
-</span><span class="n">plot</span><span class="p">(</span><span class="n">ta_cart</span><span class="p">,</span><span class="w">
-     </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">colour_scale</span><span class="p">(</span><span class="n">comb_data_ta</span><span class="o">$</span><span class="n">PropLabourers2013</span><span class="p">))</span><span class="w">
-</span><span class="n">title</span><span class="p">(</span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Labourers as a percentage of those with occupation;\nareas sized by usual resident population"</span><span class="p">)</span><span class="w">
-</span><span class="n">make_legend</span><span class="p">(</span><span class="n">comb_data_ta</span><span class="o">$</span><span class="n">PropLabourers2013</span><span class="p">,</span><span class="w"> 
-            </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Percentage of all individuals\nwho are labourers"</span><span class="p">,</span><span class="w">
-            </span><span class="n">location</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"left"</span><span class="p">,</span><span class="w"> </span><span class="n">cex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.8</span><span class="p">)</span></code></pre></figure>
+<p>These effects are additional to the “2016 and earlier” effects shown in the first chart of this post.  So the <em>net</em> Reid Research house effect for the Greens is that Reid Research polls are probably still <em>over</em>estimating the vote but only by about one percentage point (less than the two points in 2016 and earlier); and for the National Party, Reid’s reported values should probably be discounted by about 1.5 percentage points (as the 2016 and earlier effect is basically zero).  The house effect for New Zealand First doesn’t change - our best estimate is that Reid Research continue to understate the vote for New Zealand First by about 1.5 percentage points.</p>
 
-<p>Also available for the Shiny app:</p>
+<p>The operative line of code, written in Stan is this:</p>
+
+<figure class="highlight"><pre><code class="language-stan" data-lang="stan">for(j in 1:n_parties){
+    
+    ...
+                              
+    for(t in 1:y5_n)
+        y5_values[t, j] ~ normal(mu[y5_days[t], j] + 
+					d[5, j] + 
+					reid_impact[j] * reid_method[t], 
+				 y5_se[j] * inflator);
+        
+    ...
+        
+  }</code></pre></figure>
+
+<p>I’m not terribly proud of my Stan coding (everyone’s learning, right) and think this could be optimised in various ways, but it’s fairly transparent.  The <code class="highlighter-rouge">y5_n</code> number of random values of polls by the 5th pollster (Reid Research - 5th in alphabetical order), for the <code class="highlighter-rouge">j</code>th party on the <code class="highlighter-rouge">t</code>th day since the election are normally distributed.  The mean of that distribution is the appropriate value of <code class="highlighter-rouge">mu</code> for that day (<code class="highlighter-rouge">mu</code> is the unobserved, latent voting intention), plus the appropriate value of <code class="highlighter-rouge">d</code> (ie the standard house effect), plus the <code class="highlighter-rouge">reid_impact</code> adjustment if and only if the dummy variable <code class="highlighter-rouge">reid_method</code> is 1 for that particular day.</p>
+
+<p>The impact on my prediction for election day is pretty marginal; it’s only one pollster among several, and we nudge <em>down</em> National’s chances a bit compared to my last publication, and <em>up</em> Labour and Greens.  The overwhelming probability at the time of writing is forecast to be with a coalition led by either Labour or National but needing New Zealand First as one of its members.</p>
+
+<p>Check out:</p>
 
 <ul>
-  <li><a href="https://ellisp.shinyapps.io/nzcensus-cartograms/">Full screen version</a></li>
-  <li><a href="https://github.com/ellisp/ellisp.github.io/tree/source/_working/0094-cartograms">Source code</a></li>
+  <li>the <a href="/elections/state-space.html">latest forecast with Model B</a>, or my <a href="/elections/combined.html">combined forecast</a> (recommended) that averages my two models</li>
+  <li><a href="https://github.com/ellisp/nz-election-forecast">source code</a> for the New Zealand election forecasting project</li>
+  <li>Latest version of my <a href="https://github.com/ellisp/nzelect">nzelect R package</a>, with poll data from 2002 to the current day and detailed results for the 2014 election.</li>
 </ul>
+
 
 
 </div>
@@ -212,9 +214,9 @@
 <div class = "container">
    <div class="col-md-4">
     
-        <a rel="prev" href="/blog/2017/04/23/cartograms">
+        <a rel="prev" href="/blog/2017/09/09/rmarkdown">
         <p>&larr; Older</p>
-        <p>Cartograms of New Zealand census data</p>
+        <p>R Markdown for documents with logos, watermarks, and corporate styles</p>
         
         </a>
     
@@ -222,12 +224,6 @@
     <div class="col-md-4">
     </div>
     <div class="col-md-4" style="text-align: right;">
-     
-        <a rel="next" href="/blog/2017/04/30/micromaps">
-        <p>Newer &rarr;</p>
-        <p>Luke-warm about micromaps</p>
-        
-        </a>
     
       </div>
       </div>
