@@ -1,0 +1,677 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>New Zealand fatal traffic crashes</title>
+      	
+         
+         
+            <meta name ="description" content ="I explorer half a million rows of disaggregated crash data for New Zealand, and along the way illustrate geo-spatial projections, maps, forecasting with ensembles of methods, a state space model for change over time, and a generalized linear model for understanding interactions in a three-way cross tab.">
+            <meta property="og:description" content ="I explorer half a million rows of disaggregated crash data for New Zealand, and along the way illustrate geo-spatial projections, maps, forecasting with ensembles of methods, a state space model for change over time, and a generalized linear model for understanding interactions in a three-way cross tab.">
+         
+         <meta property="og:site_name" content="Peter's stats stuff" />
+         <meta property="og:title" content="New Zealand fatal traffic crashes" />
+         
+            <meta property="og:image" content="http://ellisp.github.io/img/0113-model-results.png" />
+         
+		 
+			<meta property="og:url" content="http://ellisp.github.io/blog/2017/10/15/traffic-crashes.html" />
+		 
+         <meta property="og:author" content= "https://www.facebook.com/peterstats" />
+         <meta property="og:type" content="article" />
+           
+          <link href="/css/bootstrap.min.css" rel ="stylesheet">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet">
+            <link href="/css/custom.css" rel ="stylesheet">     
+		<link href="/css/syntax.css" rel ="stylesheet">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="Peter's stats stuff by Peter Ellis"
+      href="/feed.xml">
+
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+  <script>
+  (function() {
+    var cx = '015640467633673901770:pk3v2c95baw';
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+  })();
+</script>
+
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Peter's stats stuff</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">All blog posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">Ordered by date</a></li>
+				  <li><a href="/blog/most-popular.html">Ordered by popularity</a></li>
+                  <li><a href="/blog/index_by_tag.html">Grouped by subject matter</a></li>
+                  <li><a href = /blog/2017/10/15/traffic-crashes>Most recent post</a></li>
+				  <li><a href="/blog/nz.html">All blog posts with data about New Zealand</a></li>
+				  <li><a href="/blog/voting.html">All blog posts on voting behaviour</a></li>
+                 </ul>
+            </li>
+              <li><a href="/blog/showcase.html">Showcase</a></li>
+              <li><a href="/presentations/index.html">Presentations</a></li>
+			  <li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">NZ Election forecasts<span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href = "/elections/combined.html">Combined model (recommended)</a></li>
+                  <li><a href="https://ellisp.shinyapps.io/nz-election-2017/">Explore coalitions and assumptions</a></li>
+				  <li><a href="/elections/elections.html">Model A ("generalized additive model")</a></li>
+				  <li><a href = "/elections/state-space.html">Model B ("state space")</a></li>
+				  <li><a href="/elections/changelog.html">Log of changes to forecasts</a></li>
+				  <li><a href="https://github.com/ellisp/nz-election-forecast">Source code on GitHub (external site)</a></li>
+				  <li><a href="/blog/voting.html">All blog posts on voting behaviour</a></li>
+                </ul>				
+			  </li>
+			  
+			  
+		    </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			    <div class="jumbotron">
+      <div class="container">
+        <h1>New Zealand fatal traffic crashes</h1>
+         <p class="meta">15 Oct 2017</p>
+        
+      </div>
+    </div>
+
+
+
+
+<div class = "post-summary">
+<h2>At a glance:</h2>
+   I explorer half a million rows of disaggregated crash data for New Zealand, and along the way illustrate geo-spatial projections, maps, forecasting with ensembles of methods, a state space model for change over time, and a generalized linear model for understanding interactions in a three-way cross tab.
+   <hr></hr>
+</div>
+
+<div class="post">
+<div class="col-md-2">
+
+</div>
+  <div class="col-md-8">
+
+  <h2 id="traffic-fatalities-in-the-news">Traffic fatalities in the news</h2>
+
+<p>Fatalities from traffic crashes have been in the news in New Zealand recently, for <a href="http://www.nzherald.co.nz/tags/road-accidents/663/">tragic reasons</a>.  For once, data beyond the short term have come into the debate.  Sam Warburton has written <a href="http://www.interest.co.nz/opinion/90323/sam-warburton-welcomes-public-debate-over-road-toll-bemoans-it-has-taken-horrific">two good articles</a> on the topic, with good consideration of the data.  He has also, via Twitter, <a href="https://twitter.com/Economissive/status/918690224867196928">made his compilation of NZTA and other data and his considerable workings available</a>.</p>
+
+<p>Traffic, and crashes in particular, are characterised by large volumes of high quality data.  Sam Warburton’s workings can be supplemented with a range of data from the NZTA. I know little about the subject and thought it seemed a good one to explore.  This is a long blog post but I still feel I’ve barely touched the surface.  I nearly split this into a series of posts but decided I won’t get back to this for months at least, so best to get down what I fiddled around with straight away.</p>
+
+<h2 id="long-term">Long term</h2>
+
+<p>I always like to see as long term a picture as I can in a new area.  In one of the tabs in Sam Warburton’s Excel book is a table with annual data back to 1950.  Check this out:</p>
+
+<p><img src="/img/0113-longterm.svg" width="100%" /></p>
+
+<p>Interesting!</p>
+
+<p>Here’s the R code that draws that graph, plus what’s needed in terms of R packages for the rest of the post:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">mapproj</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">proj4</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">ggmap</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">ggthemes</span><span class="p">)</span><span class="w"> </span><span class="c1"># for theme_map
+</span><span class="n">library</span><span class="p">(</span><span class="n">stringr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">forcats</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">viridis</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">leaflet</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">htmltools</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">broom</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">openxlsx</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">forecastHybrid</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">rstan</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#=================long term picture========================
+</span><span class="n">longterm</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">read.xlsx</span><span class="p">(</span><span class="s2">"../data/vkt2.1.xlsx"</span><span class="p">,</span><span class="w"> </span><span class="n">sheet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"safety (2)"</span><span class="p">,</span><span class="w"> 
+                      </span><span class="n">cols</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">),</span><span class="w"> </span><span class="n">rows</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="o">:</span><span class="m">69</span><span class="p">)</span><span class="w">
+
+</span><span class="n">ggplot</span><span class="p">(</span><span class="n">longterm</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Year</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Deaths</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_line</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Road deaths in New Zealand 1950 - 2016"</span><span class="p">,</span><span class="w">
+          </span><span class="s2">"Not adjusted for population or vehicle kilometres travelled"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Source: NZTA data compiled by Sam Warburton"</span><span class="p">)</span></code></pre></figure>
+
+<h2 id="spatial-elements">Spatial elements</h2>
+
+<p>There have been a few charts going around of crashes and fatalities over time aggregated by region, but I was curious to see a more granular picture.  It turns out the NZTA <a href="https://www.nzta.govt.nz/safety/safety-resources/road-safety-information-and-tools/disaggregated-crash-data/">publish a CSV of all half a million recorded crashes (fatal and non-fatal) back to 2000</a>.  The data is cut back a bit - it doesn’t have comments on what may have caused the crash for example, or the exact date - but it does have the exact NZTM coordinates of the crash location, which we can convert to latitude and longitude and use for maps.</p>
+
+<p>So I started as always with the big picture - where have all the fatal crashes been since 2000?</p>
+
+<p><img src="/img/0113-all-nz.svg" width="100%" /></p>
+
+<p>Unsurprisingly, they are heavily concentrated in the population centres and along roads.  What happens when we look at this view over time?</p>
+
+<p><img src="/img/0113-map-over-time.svg" width="100%" /></p>
+
+<p>So, turns out a map isn’t a great way to see subtle trends.  In fact, I doubt there’s an effective simple visualisation that would show changing spatial patterns here; it’s definitely a job for a sophisticated model first, followed by a visualisation of its results.  Outside today’s scope.</p>
+
+<p>A map <em>is</em> a good way to just get to understand what is in some data though.  Here are another couple of variables the NZTA provide.  First, whether the accidents happened on a public holiday:</p>
+
+<p><img src="/img/0113-map-by-holiday.svg" width="100%" /></p>
+
+<p>… and combination of vehicles they involved:</p>
+
+<p><img src="/img/0113-map-by-multi.svg" width="100%" /></p>
+
+<p>Here’s the code for downloading the individual crash data, converting coordinates from NZTM to latitude and longitude, and building those maps.  This is a nice example of the power of the <code class="highlighter-rouge">ggplot2</code> universe.  Once I’ve defined my basic map and its theme, redrawing it with new faceting variables is just one line of code in each case.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#============download data and tidy up a bit======================
+# The individual crash data come from 
+# https://www.nzta.govt.nz/safety/safety-resources/road-safety-information-and-tools/disaggregated-crash-data/
+</span><span class="w">
+
+</span><span class="c1"># caution, largish file - 27 MB
+</span><span class="n">download.file</span><span class="p">(</span><span class="s2">"https://www.nzta.govt.nz/assets/Safety/docs/disaggregated-crash-data.zip"</span><span class="p">,</span><span class="w">
+              </span><span class="n">destfile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"disaggregated-crash-data.zip"</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"wb"</span><span class="p">)</span><span class="w">
+</span><span class="n">unzip</span><span class="p">(</span><span class="s2">"disaggregated-crash-data.zip"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">crash</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">read.csv</span><span class="p">(</span><span class="s2">"disaggregated-crash-data.csv"</span><span class="p">,</span><span class="w"> </span><span class="n">check.names</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w">
+</span><span class="nf">dim</span><span class="p">(</span><span class="n">crash</span><span class="p">)</span><span class="w"> </span><span class="c1"># 586,189 rows
+</span><span class="w">
+</span><span class="c1"># I prefer lower case names, and underscores rather than dots:
+</span><span class="nf">names</span><span class="p">(</span><span class="n">crash</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">" "</span><span class="p">,</span><span class="w"> </span><span class="s2">"_"</span><span class="p">,</span><span class="w"> </span><span class="n">str_trim</span><span class="p">(</span><span class="n">tolower</span><span class="p">(</span><span class="nf">names</span><span class="p">(</span><span class="n">crash</span><span class="p">))),</span><span class="w"> </span><span class="n">fixed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># Convert the NZTM coordinates to latitude and longitude:
+# see https://gis.stackexchange.com/questions/20389/converting-nzmg-or-nztm-to-latitude-longitude-for-use-with-r-map-library
+</span><span class="n">p</span><span class="m">4</span><span class="n">str</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"+proj=tmerc +lat_0=0.0 +lon_0=173.0 +k=0.9996 +x_0=1600000.0 +y_0=10000000.0 +datum=WGS84 +units=m"</span><span class="w">
+</span><span class="n">p</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">proj4</span><span class="o">::</span><span class="n">project</span><span class="p">(</span><span class="n">crash</span><span class="p">[</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"easting"</span><span class="p">,</span><span class="w"> </span><span class="s2">"northing"</span><span class="p">)],</span><span class="w"> </span><span class="n">proj</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">4</span><span class="n">str</span><span class="p">,</span><span class="w"> </span><span class="n">inverse</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w">
+</span><span class="n">crash</span><span class="o">$</span><span class="n">longitude</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">p</span><span class="o">$</span><span class="n">x</span><span class="w">
+</span><span class="n">crash</span><span class="o">$</span><span class="n">latitude</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">p</span><span class="o">$</span><span class="n">y</span><span class="w">
+
+
+</span><span class="c1">#====================NZ maps========================
+</span><span class="n">my_map_theme</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">theme_map</span><span class="p">(</span><span class="n">base_family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"myfont"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">theme</span><span class="p">(</span><span class="n">strip.background</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_blank</span><span class="p">(),</span><span class="w">
+        </span><span class="n">strip.text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_text</span><span class="p">(</span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rel</span><span class="p">(</span><span class="m">1</span><span class="p">),</span><span class="w"> </span><span class="n">face</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"bold"</span><span class="p">),</span><span class="w">
+        </span><span class="n">plot.caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_text</span><span class="p">(</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey50"</span><span class="p">))</span><span class="w"> 
+
+</span><span class="n">m</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">crash</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">as_tibble</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">fatal_count</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">longitude</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">latitude</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fatal_count</span><span class="p">))</span><span class="w">  </span><span class="o">+</span><span class="w">
+  </span><span class="n">borders</span><span class="p">(</span><span class="s2">"nz"</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">NA</span><span class="p">,</span><span class="w"> </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"darkgreen"</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_point</span><span class="p">(</span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.2</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">coord_map</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">my_map_theme</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">theme</span><span class="p">(</span><span class="n">legend.position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">0.9</span><span class="p">,</span><span class="w"> </span><span class="m">0.05</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Fatalities"</span><span class="p">,</span><span class="w">
+       </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Source: NZTA Disaggregated Crash Data"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Fatal crashes in New Zealand, 2000 - 2017"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">m</span><span class="w">
+
+</span><span class="n">m</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">crash_year</span><span class="p">)</span><span class="w">
+
+</span><span class="n">m</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">multi_veh</span><span class="p">,</span><span class="w"> </span><span class="n">ncol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="p">)</span><span class="w">
+
+</span><span class="n">m</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">holiday</span><span class="p">)</span><span class="w">  </span></code></pre></figure>
+
+<h2 id="closer-up-maps">Closer up maps</h2>
+
+<p>I live in New Zealand’s capital, Wellington, and was interested in a closer view of accidents in there.  <code class="highlighter-rouge">ggmap</code> makes it easy to do this with a street map in the background:</p>
+
+<p><img src="/img/0113-wellington.png" width="100%" /></p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">wtn</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">get_map</span><span class="p">(</span><span class="s2">"Wellington, New Zealand"</span><span class="p">,</span><span class="w"> </span><span class="n">maptype</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"roadmap"</span><span class="p">,</span><span class="w"> </span><span class="n">zoom</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">11</span><span class="p">)</span><span class="w">
+
+</span><span class="n">png</span><span class="p">(</span><span class="s2">"../img/0113-wellington.png"</span><span class="p">,</span><span class="w"> </span><span class="m">7</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">300</span><span class="p">,</span><span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">300</span><span class="p">,</span><span class="w"> </span><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">300</span><span class="p">)</span><span class="w">
+</span><span class="n">ggmap</span><span class="p">(</span><span class="n">wtn</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_point</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">longitude</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">latitude</span><span class="p">),</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">crash</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.2</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">my_map_theme</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Crashes in Wellington, 2000 to 2017"</span><span class="p">,</span><span class="w">
+          </span><span class="s2">"(Including non-fatal)"</span><span class="p">)</span></code></pre></figure>
+
+<p>But clearly there’s a limit to how many small, static maps I’ll want to make.  So I made an interactive version covering the whole country:</p>
+
+<iframe width="700" height="700" src="/img/0113-crashes.html" frameborder="0" scrolling="no"></iframe>
+
+<p>You can zoom in and out, move the map around, and hover or click on points to get more information.  <a href="/img/0113-crashes.html">Full screen version also available.</a></p>
+
+<h2 id="is-there-a-trend-over-time">Is there a trend over time?</h2>
+
+<p>Much of the public discussion is about whether there is significant evidence of the recent uptick in deaths being more than the usual year-on-year variation.  The most thorough discussion was in Thomas Lumley’s <a href="https://www.statschat.org.nz/2017/10/13/road-deaths-up/">StatsChat</a>.  He fit a state space model to the fatality counts, allowing latent tendency for fatalities per kilometres travelled to change at random over time as a Markov chain, with extra randomness each year on top of the randomness coming from a Poisson distribution of the actual count of deaths.  He concluded that there is strong evidence of a minimum some time around 2013 or 2014, and growth since then.</p>
+
+<p>To keep the Bayesian modelling part of my brain in practice I set out to repeat and expand this, using six monthly data rather than annual.  The disaggregated crash data published by NZTA has both calendar year and financial year for each crash, which we can use to deduce the six month period it was in.  The vehicle kilometres travelled in Sam Warburton’s data is at a quarterly grain, although it looks like the quarters are rolling annual averages.</p>
+
+<p>First, to get that data into shape and check out the vehicle kilometres travelled data.  I decided to divide the original numbers by four on the assumption they are rolling annual averages to convert them to a quarterly grain.  I might be missing something, but it looked to me that the kilometres travelled data stop in first quarter of 2016, so I forecast forward another couple of years using the <code class="highlighter-rouge">forecastHybrid</code> R package as a simple way to get an average of ARIMA and exponential state space smoothing models.  The forecast looks like this:</p>
+
+<p><img src="/img/0113-vkt.svg" width="100%" /></p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#------------------vehicle kilometres travelled--------------------------
+</span><span class="n">vkt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">read.xlsx</span><span class="p">(</span><span class="s2">"../data/vkt2.1.xlsx"</span><span class="p">,</span><span class="w"> </span><span class="n">sheet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"VKT forecasts (2)"</span><span class="p">,</span><span class="w">
+                 </span><span class="n">cols</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="n">rows</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">6</span><span class="o">:</span><span class="m">62</span><span class="p">,</span><span class="w"> </span><span class="n">colNames</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">4</span><span class="w">
+
+</span><span class="n">vkt_ts</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ts</span><span class="p">(</span><span class="n">vkt</span><span class="o">$</span><span class="n">X</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">2001</span><span class="p">,</span><span class="w"> </span><span class="m">4</span><span class="p">),</span><span class="w"> </span><span class="n">frequency</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="p">)</span><span class="w">
+</span><span class="n">vkt_mod</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">hybridModel</span><span class="p">(</span><span class="n">vkt_ts</span><span class="p">,</span><span class="w"> </span><span class="n">models</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"ae"</span><span class="p">))</span><span class="w">
+</span><span class="n">vkt_fc</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">forecast</span><span class="p">(</span><span class="n">vkt_mod</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">8</span><span class="p">)</span><span class="w">
+
+</span><span class="n">autoplot</span><span class="p">(</span><span class="n">vkt_fc</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Vehicle kilometres travelled per quarter in New Zealand, 2001 to 2017"</span><span class="p">,</span><span class="w">
+          </span><span class="s2">"Forecasts from 2016 second quarter are an average of auto.arima and ets"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Billions of vehicle kilometres travelled"</span><span class="p">,</span><span class="w">
+       </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Prediction\nintervals"</span><span class="p">,</span><span class="w">
+       </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Source: NZTA data compiled by Sam Warburton;\nForecasts by Peter's Stats Stuff"</span><span class="p">)</span></code></pre></figure>
+
+<p>Then there’s a bit of mucking about to get the data in a six monthly state and ready for modelling but it wasn’t too fiddly.  I adapted <a href="https://gist.github.com/tslumley/b73d54d1505a3d4478998c79ef271d39">Professor Lumley’s model</a> to Stan (which I’m more familiar with than JAGS which he used) to a six monthly observations.  Here’s the end result</p>
+
+<p><img src="/img/0113-model-results.svg" width="100%" /></p>
+
+<p>Consistent with Professor Lumley, I find that 88% of simulations show the first half of 2017 (where my data stops) having a higher latent crash rate per km travelled than the second half of 2013.</p>
+
+<p>Fitting a model like this takes three steps:</p>
+
+<ul>
+  <li>data management in R</li>
+  <li>model fitting in Stan</li>
+  <li>presentation of results in R</li>
+</ul>
+
+<p>First, here’s the code for the two R stages.  The trick here is that I make one column with <code class="highlighter-rouge">year</code> (eg 2005) and one called <code class="highlighter-rouge">six_month_period</code> which is <code class="highlighter-rouge">a</code> for the first six months of the year, and <code class="highlighter-rouge">b</code> for the rest.  I do this separately for the vehicle kilometres travelled (which needs to be aggregated up from quarterly) and the deaths (which needs to be aggregated up from individual, taking advantage of the fact that we know both calendar and financial years in which it occurred).</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#==================combining vkt and crashes============
+</span><span class="n">vkt_df</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data_frame</span><span class="p">(</span><span class="n">vkt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">vkt</span><span class="p">[</span><span class="w"> </span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">drop</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">],</span><span class="w"> </span><span class="n">vkt_fc</span><span class="o">$</span><span class="n">mean</span><span class="p">),</span><span class="w">
+                     </span><span class="n">t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">time</span><span class="p">(</span><span class="n">vkt_ts</span><span class="p">),</span><span class="w"> </span><span class="n">time</span><span class="p">(</span><span class="n">vkt_fc</span><span class="o">$</span><span class="n">mean</span><span class="p">)))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">six_month_period</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.character</span><span class="p">(</span><span class="n">ifelse</span><span class="p">(</span><span class="n">t</span><span class="w"> </span><span class="o">%%</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">0.4</span><span class="p">,</span><span class="w"> </span><span class="s2">"a"</span><span class="p">,</span><span class="w"> </span><span class="s2">"b"</span><span class="p">)),</span><span class="w">
+         </span><span class="n">year</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.integer</span><span class="p">(</span><span class="n">t</span><span class="w"> </span><span class="o">%/%</span><span class="w"> </span><span class="m">1</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">year</span><span class="p">,</span><span class="w"> </span><span class="n">six_month_period</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">summarise</span><span class="p">(</span><span class="n">vkt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">vkt</span><span class="p">))</span><span class="w">
+
+</span><span class="n">crash_six_month</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">crash</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">as_tibble</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">fatal_count</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">fin_year_end</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">str_sub</span><span class="p">(</span><span class="n">crash_fin_year</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">-4</span><span class="p">)),</span><span class="w">
+         </span><span class="n">six_month_period</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">fin_year_end</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">crash_year</span><span class="p">,</span><span class="w"> </span><span class="s2">"a"</span><span class="p">,</span><span class="w"> </span><span class="s2">"b"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">rename</span><span class="p">(</span><span class="n">year</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">crash_year</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">year</span><span class="p">,</span><span class="w"> </span><span class="n">six_month_period</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">summarise</span><span class="p">(</span><span class="n">fatal_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">fatal_count</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">left_join</span><span class="p">(</span><span class="n">vkt_df</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"year"</span><span class="p">,</span><span class="w"> </span><span class="s2">"six_month_period"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">deaths_per_billion_vkt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fatal_count</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">vkt</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">year</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">2001</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">arrange</span><span class="p">(</span><span class="n">year</span><span class="p">,</span><span class="w"> </span><span class="n">six_month_period</span><span class="p">)</span><span class="w">
+
+</span><span class="n">dpbv_ts</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ts</span><span class="p">(</span><span class="n">crash_six_month</span><span class="o">$</span><span class="n">deaths_per_billion_vkt</span><span class="p">,</span><span class="w"> </span><span class="n">frequency</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">2002</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">))</span><span class="w">
+
+</span><span class="c1"># high autocorrelation, as we'd expect:
+</span><span class="n">ggtsdisplay</span><span class="p">(</span><span class="n">dpbv_ts</span><span class="p">,</span><span class="w"> 
+            </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Crash deaths per billion vehicle kilometres travelled, six monthly aggregation"</span><span class="p">)</span><span class="w"> 
+
+</span><span class="c1"># fit an ARIMA model just to see what we get:
+</span><span class="n">auto.arima</span><span class="p">(</span><span class="n">dpbv_ts</span><span class="p">)</span><span class="w"> </span><span class="c1"># ARIMA(1,1,0)(0,0,1)[2] with drift
+</span><span class="w">
+</span><span class="c1">#===============bayesian model=====================
+</span><span class="n">d</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="w">
+  </span><span class="n">n</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">crash_six_month</span><span class="p">),</span><span class="w">
+  </span><span class="n">deaths</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">crash_six_month</span><span class="o">$</span><span class="n">fatal_count</span><span class="p">,</span><span class="w">
+  </span><span class="n">vkt</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="n">crash_six_month</span><span class="o">$</span><span class="n">vkt</span><span class="w">
+</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># fit model
+</span><span class="n">stan_mod</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">stan</span><span class="p">(</span><span class="n">file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"0113-crashes.stan"</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">d</span><span class="p">,</span><span class="w"> 
+                 </span><span class="n">control</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="n">adapt_delta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.99</span><span class="p">,</span><span class="w"> </span><span class="n">max_treedepth</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">15</span><span class="p">))</span><span class="w">
+
+
+</span><span class="c1"># extract and reshape results:
+</span><span class="n">mu</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">t</span><span class="p">(</span><span class="n">as.data.frame</span><span class="p">(</span><span class="n">extract</span><span class="p">(</span><span class="n">stan_mod</span><span class="p">,</span><span class="w"> </span><span class="s2">"mu"</span><span class="p">)))</span><span class="w">
+
+</span><span class="n">mu_gathered</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">mu</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">as_tibble</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">period</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">time</span><span class="p">(</span><span class="n">dpbv_ts</span><span class="p">)))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">gather</span><span class="p">(</span><span class="n">run</span><span class="p">,</span><span class="w"> </span><span class="n">mu</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">period</span><span class="p">)</span><span class="w">
+
+</span><span class="n">mu_summarised</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">mu_gathered</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">period</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">summarise</span><span class="p">(</span><span class="n">low80</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">quantile</span><span class="p">(</span><span class="n">mu</span><span class="p">,</span><span class="w"> </span><span class="m">0.1</span><span class="p">),</span><span class="w">
+            </span><span class="n">high80</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">quantile</span><span class="p">(</span><span class="n">mu</span><span class="p">,</span><span class="w"> </span><span class="m">0.9</span><span class="p">),</span><span class="w">
+            </span><span class="n">low95</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">quantile</span><span class="p">(</span><span class="n">mu</span><span class="p">,</span><span class="w"> </span><span class="m">0.025</span><span class="p">),</span><span class="w">
+            </span><span class="n">high95</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">quantile</span><span class="p">(</span><span class="n">mu</span><span class="p">,</span><span class="w"> </span><span class="m">0.975</span><span class="p">),</span><span class="w">
+            </span><span class="n">middle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">mu</span><span class="p">))</span><span class="w">
+
+</span><span class="c1"># chart results:
+</span><span class="n">mu_gathered</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">period</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_line</span><span class="p">(</span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.02</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">group</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">run</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mu</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_ribbon</span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mu_summarised</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">ymin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">low80</span><span class="p">,</span><span class="w"> </span><span class="n">ymax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">high80</span><span class="p">),</span><span class="w"> 
+              </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_line</span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mu_summarised</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">middle</span><span class="p">),</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"white"</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_point</span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">crash_six_month</span><span class="p">,</span><span class="w"> 
+             </span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">year</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">six_month_period</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"b"</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">0.5</span><span class="p">,</span><span class="w"> 
+                 </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">deaths_per_billion_vkt</span><span class="p">),</span><span class="w"> 
+             </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"white"</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"black"</span><span class="p">,</span><span class="w"> </span><span class="n">shape</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">21</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Latent rate of deaths per billion km"</span><span class="p">,</span><span class="w">
+       </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Source: data from NZTA and Sam Warburton;
+Analysis by Peter's Stats Stuff"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"State space model of crash deaths in New Zealand"</span><span class="p">,</span><span class="w">
+          </span><span class="s2">"Six monthly observations"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">mu_gathered</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">period</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">2017.0</span><span class="p">,</span><span class="w"> </span><span class="m">2013.5</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">summarise</span><span class="p">(</span><span class="n">mean</span><span class="p">(</span><span class="n">mu</span><span class="p">[</span><span class="n">period</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">2017.0</span><span class="p">]</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">mu</span><span class="p">[</span><span class="n">period</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">2013.5</span><span class="p">]))</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="m">88</span><span class="o">%</span></code></pre></figure>
+
+<p>…and here’s the model specification in Stan:</p>
+
+<figure class="highlight"><pre><code class="language-stan" data-lang="stan">// save as 0113-crashes.stan
+
+// Simple Bayesian model for traffic deaths in New Zealand at six monthly intervals
+// Peter Ellis, 15 October 2017
+
+// State space model with random walk in the latent variable and actual measurements
+// are log normal - Poisson combination.
+// Adapted from Thomas Lumley's model for the same data (but annual) at 
+// https://gist.github.com/tslumley/b73d54d1505a3d4478998c79ef271d39
+
+
+data {
+  int n;          // number of six-monthly observations
+  int deaths[n];  // deaths (actual count), six month period
+  real vkt[n];    // vehicle kilometres travelled in billions
+}
+
+parameters {
+  real mu1;            // value of mu in the first period
+  real delta[n - 1];  // innovation in mu from period to period
+  vector[n] epsilon;         // the 'bonus' deviation in each period
+  real &lt;lower=0&gt; tau;   // variance of delta
+  real &lt;lower=0&gt; sigma; // variance of epsilon
+  
+}
+
+transformed parameters {
+  real mu[n];         // the amount to multiply km travelled by to get lambda.  In other words, death per billion vkt
+  real lambda[n];    // lambda is the expected mean death count in any year
+  
+  mu[1] = mu1;
+  for(i in 2:n) mu[i] = mu[i - 1] * exp(delta[ i - 1] * tau);
+  
+  for(i in 1:n)  lambda[i] = mu[i] * vkt[i] * exp(epsilon[i] * sigma);
+  
+}
+
+model {
+  // priors
+  mu1 ~ gamma(2, 1.0 / 10);
+  tau ~ gamma(1, 1);
+  sigma ~ gamma(1, 1);
+  
+  // innovation each period:
+  delta ~ normal(0, 1);
+  
+  // bonus deviation each period:
+  epsilon ~ normal(0, 1);
+  
+  //measurement
+  deaths ~ poisson(lambda);
+}</code></pre></figure>
+
+<h2 id="objects-hit-during-crashes">Objects hit during crashes</h2>
+
+<p>Finally, there were a few things I spotted along the way I wanted to explore.</p>
+
+<p>Here is a graphic of the objects (excluding other vehicles and pedestrians) hit during crashes.</p>
+
+<p><img src="/img/0113-factors.svg" width="100%" /></p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">crash</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">as_tibble</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">fatal_count</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">fin_year_end</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">str_sub</span><span class="p">(</span><span class="n">crash_fin_year</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">-4</span><span class="p">)))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">select</span><span class="p">(</span><span class="n">fin_year_end</span><span class="p">,</span><span class="w"> </span><span class="n">post_or_pole</span><span class="o">:</span><span class="n">other</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">n</span><span class="p">())</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">gather</span><span class="p">(</span><span class="n">cause</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">fin_year_end</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">fin_year_end</span><span class="p">,</span><span class="w"> </span><span class="n">cause</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">summarise</span><span class="p">(</span><span class="n">prop_accidents</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">value</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">unique</span><span class="p">(</span><span class="n">id</span><span class="p">)))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ungroup</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">cause</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"_"</span><span class="p">,</span><span class="w"> </span><span class="s2">" "</span><span class="p">,</span><span class="w"> </span><span class="n">cause</span><span class="p">),</span><span class="w">
+         </span><span class="n">cause</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_reorder</span><span class="p">(</span><span class="n">cause</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">prop_accidents</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fin_year_end</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">prop_accidents</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_point</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_smooth</span><span class="p">(</span><span class="n">se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">cause</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="s2">"Proportion of accidnets with this as a factor\n"</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Factors relating to fatal crashes 2000 - 2017"</span><span class="p">,</span><span class="w">
+          </span><span class="s2">"Ordered from most commonly recorded to least"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Source: NZTA disaggregated crash data"</span><span class="p">,</span><span class="w">
+       </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Year ending June"</span><span class="p">)</span></code></pre></figure>
+
+<h2 id="regional-relationship-with-holidays">Regional relationship with holidays</h2>
+
+<p>I expected there to be a relationship between region and holidays - some regions would see a higher proportion of their accidents in particular periods than others.  I was only able to scratch the surface of this, as everything else, of course.</p>
+
+<p>I started by creating a three-way cross tab of year, region and holiday (four holidays plus “none”).  I used the frequency count in each cell of this cross tab as the response in a generalized linear model and tested for an interaction effect between region and holiday.  It’s there but it’s marginal; a Chi square test shows up as definitely significant (p value &lt; 0.01), but on other criteria the simpler model could easily be the better one.</p>
+
+<p>I extracted the interaction effects and presented them in this chart:
+<img src="/img/0113-glm-holidays.svg" width="100%" /></p>
+
+<p>So we can see, for example, that the West Coast (on the South Island) has a particularly strong Christmas time effect (expected); Gisborne gets disproportionate rate of its fatal accidents on Labour Day Weekend (not expected, by me anyway); and so on.  The horizontal lines indicate 95% confidence intervals.</p>
+
+<p>To check this wasn’t out to lunch, I also did the simpler calculation of just looking at what percentage of each region’s fatal accidents were on each of the four holidays:</p>
+
+<p><img src="/img/0113-props-holidays.svg" width="100%" /></p>
+
+<p>This is much easier to interpret and explain!</p>
+
+<p>Here’s the code for that region-holiday analysis:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#=========================changing relationship between holidays and numbers==============
+</span><span class="w">
+</span><span class="n">crash_counts</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">crash</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">crash_fin_year</span><span class="p">,</span><span class="w"> </span><span class="n">lg_region_desc</span><span class="p">,</span><span class="w"> </span><span class="n">holiday</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">summarise</span><span class="p">(</span><span class="n">fatal_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">fatal_count</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">lg_region_desc</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">holiday</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">relevel</span><span class="p">(</span><span class="n">holiday</span><span class="p">,</span><span class="w"> </span><span class="s2">"None"</span><span class="p">))</span><span class="w">
+
+
+</span><span class="n">mod1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">glm</span><span class="p">(</span><span class="n">fatal_count</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">crash_fin_year</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">lg_region_desc</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">holiday</span><span class="p">,</span><span class="w"> 
+            </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"poisson"</span><span class="p">,</span><span class="w"> 
+            </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">crash_counts</span><span class="p">)</span><span class="w">
+
+</span><span class="n">mod2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">glm</span><span class="p">(</span><span class="n">fatal_count</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">crash_fin_year</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">lg_region_desc</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">holiday</span><span class="p">,</span><span class="w"> 
+            </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"poisson"</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">crash_counts</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># marginal choice between these two models - there's a lot of extra degrees of freedom
+# used up in mod2 for marginal improvement in deviance.  AIC suggests use the simpler 
+# model; Chi square test says the interaction effect is "significant" and use the complex one.
+</span><span class="n">anova</span><span class="p">(</span><span class="n">mod1</span><span class="p">,</span><span class="w"> </span><span class="n">mod2</span><span class="p">,</span><span class="w"> </span><span class="n">test</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Chi"</span><span class="p">)</span><span class="w">
+</span><span class="n">AIC</span><span class="p">(</span><span class="n">mod1</span><span class="p">,</span><span class="w"> </span><span class="n">mod2</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># tidy up coefficients:
+</span><span class="n">cfs</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tidy</span><span class="p">(</span><span class="n">mod2</span><span class="p">)</span><span class="w">
+
+</span><span class="n">cfs</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">grepl</span><span class="p">(</span><span class="s2">":"</span><span class="p">,</span><span class="w"> </span><span class="n">term</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">extract</span><span class="p">(</span><span class="n">term</span><span class="p">,</span><span class="w"> </span><span class="n">into</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"region"</span><span class="p">,</span><span class="w"> </span><span class="s2">"holiday"</span><span class="p">),</span><span class="w"> </span><span class="n">regex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"(.+):(.+)"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">region</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"lg_region_desc"</span><span class="p">,</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">region</span><span class="p">),</span><span class="w">
+         </span><span class="n">holiday</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"holiday"</span><span class="p">,</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">holiday</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">estimate</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">region</span><span class="p">,</span><span class="w"> 
+             </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">p.value</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">0.05</span><span class="p">,</span><span class="w"> </span><span class="nf">as.character</span><span class="p">(</span><span class="n">region</span><span class="p">),</span><span class="w"> </span><span class="s2">""</span><span class="p">)))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_vline</span><span class="p">(</span><span class="n">xintercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey50"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_segment</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">yend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">region</span><span class="p">,</span><span class="w"> 
+                   </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">estimate</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">std.error</span><span class="p">,</span><span class="w"> 
+                   </span><span class="n">xend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">estimate</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">std.error</span><span class="p">),</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey20"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_text</span><span class="p">(</span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3.5</span><span class="p">,</span><span class="w"> </span><span class="n">nudge_y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.34</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Distinctive region - holiday interactions from a statistical model"</span><span class="p">,</span><span class="w">
+          </span><span class="s2">"Higher values indicate the holiday has a higher relative accident rate in that particular region than in Auckland"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Source: NZTA Disaggregated Crash Data"</span><span class="p">,</span><span class="w">
+       </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Estimated interaction effect in a generalized linear model with Poisson response:
+frequency ~ year + holiday * region"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">holiday</span><span class="p">)</span><span class="w">
+
+</span><span class="n">crash</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">lg_region_desc</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">lg_region_desc</span><span class="p">,</span><span class="w"> </span><span class="n">holiday</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">summarise</span><span class="p">(</span><span class="n">fatal_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">fatal_count</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">lg_region_desc</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">share</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fatal_count</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">fatal_count</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">holiday</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">"None"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">share</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lg_region_desc</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">holiday</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_point</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_x_continuous</span><span class="p">(</span><span class="s2">"\nProportion of all fatalities in region that occur in this holiday"</span><span class="p">,</span><span class="w">
+                     </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Source: NZTA Disaggregated Crash Data"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Proportion of each regions fatalities on various holidays"</span><span class="p">,</span><span class="w">
+          </span><span class="s2">"This simpler calculation is designed as a check on the modelled results in the previous chart"</span><span class="p">)</span><span class="w">
+
+
+</span><span class="c1">#==========clean up===========
+</span><span class="n">unlink</span><span class="p">(</span><span class="s2">"disaggregated-crash-data.zip"</span><span class="p">)</span><span class="w">
+</span><span class="n">unlink</span><span class="p">(</span><span class="s2">"disaggregated-crash-data.csv"</span><span class="p">)</span></code></pre></figure>
+
+<p>That will do for now.  Interesting data, very unsatisfactory state of the world.</p>
+
+
+
+</div>
+
+<div class = "container">
+   <div class="col-md-4">
+    
+        <a rel="prev" href="/blog/2017/10/07/election-results">
+        <p>&larr; Older</p>
+        <p>New Zealand 2017 election results</p>
+        
+        </a>
+    
+    </div>
+    <div class="col-md-4">
+    </div>
+    <div class="col-md-4" style="text-align: right;">
+    
+      </div>
+      </div>
+      
+      
+      
+</div>
+
+
+   
+    <div id="disqus_thread"></div>
+
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+    
+    
+   
+			
+			</div><!-- /.container -->
+
+         
+
+   <div class = "container footer">
+			<footer>
+	    		<gcse:search></gcse:search>
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.  Or follow <a href = "/feed.r.xml">posts in this blog featuring R with RSS</a>.</p>
+			
+            <p>This blog is built with <a href = "http://jekyllrb.com/">Jekyll</a>, <a href = "http://getbootstrap.com/">Bootstrap</a>, <a href = "https://www.ruby-lang.org/en/">Ruby</a> and <a href = "https://cran.r-project.org/">R</a>.  Read my <a href="/about/acknowledgements.html">acknowledgements</a> for a little more on how.  I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+
+			<div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="true" data-share="false"></div>
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Peter's stats stuff</span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			
+
+			</footer>
+    </div>
+
+
+
+  
+</body>
+</html>
+   
+
+
+
+
+         
