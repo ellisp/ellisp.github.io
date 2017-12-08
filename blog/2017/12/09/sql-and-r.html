@@ -1,0 +1,534 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Some quirks with R and SQL Server</title>
+      	
+         
+         
+            <meta name ="description" content ="I note for future use a couple of things to be aware of in using R to schedule the execution of SQL scripts.">
+            <meta property="og:description" content ="I note for future use a couple of things to be aware of in using R to schedule the execution of SQL scripts.">
+         
+         <meta property="og:site_name" content="Peter's stats stuff" />
+         <meta property="og:title" content="Some quirks with R and SQL Server" />
+         
+            <meta property="og:image" content="http://ellisp.github.io/img/0115-r-and-sql.png" />
+         
+		 
+			<meta property="og:url" content="http://ellisp.github.io/blog/2017/12/09/sql-and-r.html" />
+		 
+         <meta property="og:author" content= "https://www.facebook.com/peterstats" />
+         <meta property="og:type" content="article" />
+           
+          <link href="/css/bootstrap.min.css" rel ="stylesheet">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet">
+            <link href="/css/custom.css" rel ="stylesheet">     
+		<link href="/css/syntax.css" rel ="stylesheet">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="Peter's stats stuff by Peter Ellis"
+      href="/feed.xml">
+
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+  <script>
+  (function() {
+    var cx = '015640467633673901770:pk3v2c95baw';
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+  })();
+</script>
+
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Peter's stats stuff</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">All blog posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">Ordered by date</a></li>
+				  <li><a href="/blog/most-popular.html">Ordered by popularity</a></li>
+                  <li><a href="/blog/index_by_tag.html">Grouped by subject matter</a></li>
+                  <li><a href = /blog/2017/12/09/sql-and-r>Most recent post</a></li>
+				  <li><a href="/blog/nz.html">All blog posts with data about New Zealand</a></li>
+				  <li><a href="/blog/voting.html">All blog posts on voting behaviour</a></li>
+                 </ul>
+            </li>
+              <li><a href="/blog/showcase.html">Showcase</a></li>
+              <li><a href="/presentations/index.html">Presentations</a></li>
+			  <li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">NZ Election forecasts<span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href = "/elections/combined.html">Combined model (recommended)</a></li>
+                  <li><a href="https://ellisp.shinyapps.io/nz-election-2017/">Explore coalitions and assumptions</a></li>
+				  <li><a href="/elections/elections.html">Model A ("generalized additive model")</a></li>
+				  <li><a href = "/elections/state-space.html">Model B ("state space")</a></li>
+				  <li><a href="/elections/changelog.html">Log of changes to forecasts</a></li>
+				  <li><a href="https://github.com/ellisp/nz-election-forecast">Source code on GitHub (external site)</a></li>
+				  <li><a href="/blog/voting.html">All blog posts on voting behaviour</a></li>
+                </ul>				
+			  </li>
+			  
+			  
+		    </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			    <div class="jumbotron">
+      <div class="container">
+        <h1>Some quirks with R and SQL Server</h1>
+         <p class="meta">09 Dec 2017</p>
+        
+      </div>
+    </div>
+
+
+
+
+<div class = "post-summary">
+<h2>At a glance:</h2>
+   I note for future use a couple of things to be aware of in using R to schedule the execution of SQL scripts.
+   <hr></hr>
+</div>
+
+<div class="post">
+<div class="col-md-2">
+
+</div>
+  <div class="col-md-8">
+
+  <p>I’ve been writing on this blog less frequently in the past few months.  Mostly this is because I’ve been working on a very intensive and engaging professional project that is much more hands-on (ie coding) than I’ve been at work for a while.  So a lot of energy has been going into that.  One interesting side effect for me has been diving deep into Structured Query Language (SQL), and the Microsoft-flavoured <a href="https://en.wikipedia.org/wiki/Transact-SQL">Transact SQL</a> in particular.  I’ve used SQL for a long time, but usually with the attitude of “get it out of the database as quickly as possible”.  In a situation where this didn’t make sense, I’ve been pleasantly surprised at how powerful and flexible SQL is for the right sort of jobs.</p>
+
+<p>The bulk of the work project is in SQL, but there is an R flavour with a Shiny front end and a bunch of testing and semi-automation of the build process going on in R (long story).  Here are a couple of quirky and useful things relating to using R and SQL Server in combination.</p>
+
+<h2 id="using-r-to-schedule-sql-scripts">Using R to schedule SQL scripts</h2>
+
+<p>Imagine a project that combines SQL and R.  For example, SQL is used to do a bunch of heavy lifting data management and complex queries in the database; and R is used for statistical modelling and producing polished outputs.  This is actually a very common scenario.  Relational databases are very powerful tools with many decades of optimisation embedded in them.  They aren’t going anywhere soon.</p>
+
+<blockquote>
+  <p>“Whether your first data analysis language is R, Python, Julia or SAS, your <em>second</em> language should be SQL”</p>
+</blockquote>
+
+<p><em>Quote by me - something I just thought of.</em></p>
+
+<p>It’s good practice to keep any non-trivial SQL queries in their own files with a .sql suffix, and develop them in a database-aware environment.  With SQL Server, this will often mean SQL Server Management Studio.  But when you come to doing the final stage of reproducible analysis, you don’t want to be flicking between two applications; certainly not in terms of actually <em>running</em> anything.  Although SQL Server since 2016 can include R code in a stored procedure, if it’s basically a statistical project it’s still going to have the workflow of “database first, R second”, with the statistical and presentation stage probably developed in RStudio or similar.  So it’s very useful to be able to run bunch of .sql scripts from R.  This is commonly done by reading in the script with <code class="highlighter-rouge">readLines()</code> and executing it on the database via RODBC or other database connection software.</p>
+
+<p>I developed an R function <code class="highlighter-rouge">sql_execute()</code> to make this process efficient.  The version below is available in my <a href="https://github.com/ellisp/pssmisc-r-package"><code class="highlighter-rouge">pssmisc</code> R package</a> (only on GitHub at this point) which is a grab-bag of multi-use functionality associated with this blog.  The <a href="https://github.com/StatisticsNZ/population-explorer/blob/master/build-db/00-src/sql_execute.R">original version</a> had a few project-specific features as well as a few cut corners.  It also had an accompanying simple function that uses <code class="highlighter-rouge">sql_execute()</code> to run all the SQL scripts in a given folder in order.</p>
+
+<p>The <code class="highlighter-rouge">sql_execute()</code> function provides the following benefits:</p>
+
+<ul>
+  <li>combines the multiple steps of reading in SQL scripts and executing them in a single command</li>
+  <li>handles a common problem where files developed in Management Studio often aren’t saved in an encoding automatically recognised by R</li>
+  <li>allows the use of the <code class="highlighter-rouge">GO</code> batch separator, a Microsoft-specific addition to SQL that will cause problems if included in a ODBC query</li>
+  <li>lets you specify a search-and-replace for a string - very useful sometimes if you’re running lots of SQL scripts to be able to say something like “oh by the way, can you change all references to database X to database Y while you’re at it”</li>
+  <li>lets you specify if an error in one batch should be fatal, or whether to proceed with the rest of the batches from that script</li>
+  <li>logs execution and results in a table in the databse.</li>
+</ul>
+
+<p>Dealing with <code class="highlighter-rouge">GO</code> was particularly important, because it’s common (and often essential) in T-SQL development.  <code class="highlighter-rouge">GO</code> divides a single script into batches.  The <code class="highlighter-rouge">sql_execute()</code> function below embraces this, by splitting the original file into separate queries based on the location of <code class="highlighter-rouge">GO</code>, and sending the individual batches one at a time to the server.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># Helper function to convert the output of Sys.time() into a character string
+# without the time zone on it
+# 
+# @details Not exported.
+# @keywords internal
+# @param dt an object of class \code{POSIXCT}
+# @examples
+# datetime_ch(Sys.time())
+</span><span class="n">datetime_ch</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">dt</span><span class="p">){</span><span class="w">
+  </span><span class="n">dt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">" [A-Z]*$"</span><span class="p">,</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="nf">as.character</span><span class="p">(</span><span class="n">dt</span><span class="p">))</span><span class="w">
+  </span><span class="n">dt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">paste0</span><span class="p">(</span><span class="s2">"CAST ('"</span><span class="p">,</span><span class="w"> </span><span class="n">dt</span><span class="p">,</span><span class="w"> </span><span class="s2">"' AS DATETIME)"</span><span class="p">)</span><span class="w">
+  </span><span class="nf">return</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+
+
+</span><span class="cd">#' Execute SQL
+#'
+#' Execute T-SQL in a script, split into batches
+#' 
+#' @export
+#' @importFrom RODBC sqlQuery
+#' @importFrom stringr str_split str_length 
+#' @details Reads a script of SQL, splits it into separate queries on the basis of any occurrences of \code{GO}
+#' in the script, and passes it to the database server for execution.  While the initial use case was for SQL Server, there's no
+#' reason why it wouldn't work with other ODBC connections.
+#' 
+#' The case of \code{GO} is ignored but it has to be the first non-space word on its line of code.
+#' 
+#' If any batch at any point returns rows of data (eg via a \code{SELECT} statement that does not \code{INSERT} the
+#' results into another table or variable on the database), the rest of that batch is not executed.  
+#' If that batch was the last batch of SQL
+#' in the original file, the results are returned as a data.frame, otherwise it is discarded.
+#' 
+#' Example SQL code for creating a log suitable for this function:
+#' \preformatted{
+#' CREATE TABLE some_database.dbo.sql_executed_by_r_log
+#' (
+#'   log_event_code INT NOT NULL IDENTITY PRIMARY KEY, 
+#'   start_time     DATETIME, 
+#'   end_time       DATETIME,
+#'   sub_text       NVARCHAR(200),
+#'   script_name    NVARCHAR(1000),
+#'   batch_number   INT,
+#'   result         NCHAR(30),
+#'   err_mess       VARCHAR(8000),
+#'   duration       NUMERIC(18, 2)
+#' );
+#' }
+#' 
+#' @param channel connection handle as returned by RODBC::odbcConnect() of class RODBC
+#' @param filename file name of an SQL script
+#' @param sub_in character string that you want to be replaced with \code{sub_out}.  Useful if you want to do a bulk search
+#' and replace.  This is useful if you have a bunch of scripts that you maybe want
+#' to run on one schema sometimes, and on another schema other times - just automate the search and replace.  Use with caution.
+#' @param sub_out character string that you want to replace \code{sub_in} with.
+#' @param fixed logical.  If TRUE, \code{sub_in} is a string to be matched as is.  Otherwise it is treated as a regular expression 
+#' (eg if fixed = FALSE, then . is a wild card)
+#' @param error_action should you stop with an error if a batch gets an error message back from the database?  Any alternative
+#' to "stop" means we just keep ploughing on, which may or may not be a bad idea.  Use "stop" unless you know that failure
+#' in one part of a script isn't fatal.
+#' @param log_table table in the database to record a log of what happened.  Set to NULL if no log table available.  The log_table
+#' needs to have (at least) the following columns: event_time, sub_out, script_name, batch_number, result, err_mess and duration. 
+#' See Details for example SQL to create such a log table.
+#' @param verbose Logical, gives some control over messages
+#' @param ... other arguments to be passed to \code{sqlQuery()}, such as \code{stringsAsFactors = FALSE}.
+#' @examples
+#' \dontrun{
+#' ch &lt;- odbcConnect("some_dsn")
+#' sql_execute(ch, "some_file.sql", log_table = "some_database.dbo.sql_executed_by_r_log")
+#' }
+#' @author Peter Ellis
+</span><span class="n">sql_execute</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span><span class="w"> </span><span class="n">filename</span><span class="p">,</span><span class="w"> </span><span class="n">sub_in</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">NULL</span><span class="p">,</span><span class="w"> </span><span class="n">sub_out</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">NULL</span><span class="p">,</span><span class="w"> </span><span class="n">fixed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> 
+                        </span><span class="n">error_action</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"stop"</span><span class="p">,</span><span class="w"> </span><span class="n">log_table</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">NULL</span><span class="p">,</span><span class="w"> 
+                        </span><span class="n">verbose</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p">){</span><span class="w">
+  
+  </span><span class="c1"># we can't tell in advance what encoding the .sql files are in, so we read it in
+</span><span class="w">  </span><span class="c1"># in two ways (one of which is certain to return gibberish) and choose the version that is recognised as a proper string:
+</span><span class="w">  
+  </span><span class="c1"># encoding method 1 (weird Windows encoding):
+</span><span class="w">  </span><span class="n">file_con</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">file</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="w"> </span><span class="n">encoding</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"UCS-2LE"</span><span class="p">)</span><span class="w">
+  </span><span class="n">sql1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">paste</span><span class="p">(</span><span class="n">readLines</span><span class="p">(</span><span class="n">file_con</span><span class="p">,</span><span class="w"> </span><span class="n">warn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">),</span><span class="w"> </span><span class="n">collapse</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"\n"</span><span class="p">)</span><span class="w">
+  </span><span class="n">close</span><span class="p">(</span><span class="n">file_con</span><span class="p">)</span><span class="w">
+  
+  </span><span class="c1"># encoding method 2 (let R work it out - works in most cases):
+</span><span class="w">  </span><span class="n">file_con</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">file</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span><span class="w">
+  </span><span class="n">sql2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">paste</span><span class="p">(</span><span class="n">readLines</span><span class="p">(</span><span class="n">file_con</span><span class="p">,</span><span class="w"> </span><span class="n">warn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">),</span><span class="w"> </span><span class="n">collapse</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"\n"</span><span class="p">)</span><span class="w">
+  </span><span class="n">close</span><span class="p">(</span><span class="n">file_con</span><span class="p">)</span><span class="w">
+  
+  </span><span class="c1"># choose between the two encodings, based on which one has a legitimate string length:
+</span><span class="w">  </span><span class="n">suppressWarnings</span><span class="p">({</span><span class="w">
+    </span><span class="k">if</span><span class="p">(</span><span class="nf">is.na</span><span class="p">(</span><span class="n">stringr</span><span class="o">::</span><span class="n">str_length</span><span class="p">(</span><span class="n">sql2</span><span class="p">))){</span><span class="w">
+      </span><span class="n">sql</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sql1</span><span class="w">
+    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">
+      </span><span class="n">sql</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sql2</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+  </span><span class="p">})</span><span class="w">
+  
+  </span><span class="c1"># do the find and replace that are needed
+</span><span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nf">is.null</span><span class="p">(</span><span class="n">sub_in</span><span class="p">)){</span><span class="w">
+    </span><span class="n">sql</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="n">sub_in</span><span class="p">,</span><span class="w"> </span><span class="n">sub_out</span><span class="p">,</span><span class="w"> </span><span class="n">sql</span><span class="p">,</span><span class="w"> </span><span class="n">fixed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fixed</span><span class="p">)</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+  
+  </span><span class="c1"># split the SQL into separate commands wherever there is a "GO" at the beginning of a line
+</span><span class="w">  </span><span class="c1"># ("GO" is not ANSI SQL, only works for SQL Server - it indicates the lines above are a batch)
+</span><span class="w">  </span><span class="n">sql_split</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">stringr</span><span class="o">::</span><span class="n">str_split</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span><span class="w"> </span><span class="s2">"\\n *[Gg][Oo]"</span><span class="p">,</span><span class="w"> </span><span class="n">simplify</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w">
+  
+  </span><span class="n">base_log_entry</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.frame</span><span class="p">(</span><span class="w">
+    </span><span class="n">sub_out</span><span class="w">         </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="nf">is.null</span><span class="p">(</span><span class="n">sub_out</span><span class="p">),</span><span class="w"> </span><span class="s2">"none"</span><span class="p">,</span><span class="w"> </span><span class="n">sub_out</span><span class="p">),</span><span class="w">
+    </span><span class="n">script_name</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="n">filename</span><span class="p">,</span><span class="w">
+    </span><span class="n">stringsAsFactors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="w">
+  </span><span class="p">)</span><span class="w">
+  
+  </span><span class="n">n_batches</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">sql_split</span><span class="p">)</span><span class="w">
+  
+  </span><span class="c1"># execute the various separate commands
+</span><span class="w">  </span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">n_batches</span><span class="p">){</span><span class="w">
+    </span><span class="n">log_entry</span><span class="w">              </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">base_log_entry</span><span class="w">
+    </span><span class="n">log_entry</span><span class="o">$</span><span class="n">batch_number</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">i</span><span class="w">
+    </span><span class="n">log_entry</span><span class="o">$</span><span class="n">result</span><span class="w">       </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"no error"</span><span class="w">
+    </span><span class="n">log_entry</span><span class="o">$</span><span class="n">err_mess</span><span class="w">     </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">""</span><span class="w">
+    </span><span class="n">log_entry</span><span class="o">$</span><span class="n">start_time</span><span class="w">   </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">datetime_ch</span><span class="p">(</span><span class="n">Sys.time</span><span class="p">())</span><span class="w">
+    
+    </span><span class="k">if</span><span class="p">(</span><span class="n">verbose</span><span class="p">){</span><span class="n">message</span><span class="p">(</span><span class="n">paste</span><span class="p">(</span><span class="s2">"Executing batch"</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">"of"</span><span class="p">,</span><span class="w"> </span><span class="n">n_batches</span><span class="p">))}</span><span class="w">
+    
+    </span><span class="n">duration</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">system.time</span><span class="p">({</span><span class="n">res</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sqlQuery</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span><span class="w"> </span><span class="n">sql_split</span><span class="p">[[</span><span class="n">i</span><span class="p">]],</span><span class="w"> </span><span class="n">...</span><span class="p">)})</span><span class="w">
+    </span><span class="n">log_entry</span><span class="o">$</span><span class="n">duration</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">duration</span><span class="p">[</span><span class="m">3</span><span class="p">]</span><span class="w">
+    
+    </span><span class="k">if</span><span class="p">(</span><span class="nf">class</span><span class="p">(</span><span class="n">res</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"data.frame"</span><span class="p">){</span><span class="w">
+      </span><span class="n">txt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">paste</span><span class="p">(</span><span class="s2">"Downloaded a data.frame with"</span><span class="p">,</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">res</span><span class="p">),</span><span class="w"> </span><span class="s2">"rows and"</span><span class="p">,</span><span class="w">
+                   </span><span class="n">ncol</span><span class="p">(</span><span class="n">res</span><span class="p">),</span><span class="w"> </span><span class="s2">"columns in batch"</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">". Any commands left in batch"</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">"were not run."</span><span class="p">)</span><span class="w">
+      </span><span class="k">if</span><span class="p">(</span><span class="n">verbose</span><span class="p">){</span><span class="n">message</span><span class="p">(</span><span class="n">txt</span><span class="p">)}</span><span class="w">
+      </span><span class="n">log_entry</span><span class="o">$</span><span class="n">result</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"data.frame"</span><span class="w">
+      
+    </span><span class="p">}</span><span class="w"> 
+    </span><span class="k">if</span><span class="p">(</span><span class="nf">class</span><span class="p">(</span><span class="n">res</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"character"</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">res</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0</span><span class="p">){</span><span class="w">
+      </span><span class="n">message</span><span class="p">(</span><span class="s2">"\n\nI got this error message:"</span><span class="p">)</span><span class="w">
+      </span><span class="n">cat</span><span class="p">(</span><span class="n">res</span><span class="p">)</span><span class="w">
+      </span><span class="n">log_entry</span><span class="o">$</span><span class="n">result</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"error"</span><span class="w">
+      </span><span class="n">log_entry</span><span class="o">$</span><span class="n">err_mess</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">paste</span><span class="p">(</span><span class="n">gsub</span><span class="p">(</span><span class="s2">"'"</span><span class="p">,</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">res</span><span class="p">),</span><span class="w"> </span><span class="n">collapse</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"\n"</span><span class="p">)</span><span class="w">
+      </span><span class="n">message</span><span class="p">(</span><span class="n">paste0</span><span class="p">(</span><span class="s2">"\n\nSomething went wrong with the SQL execution of batch "</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> 
+                     </span><span class="s2">" in "</span><span class="p">,</span><span class="w"> </span><span class="n">filename</span><span class="p">,</span><span class="w"> </span><span class="s2">". \n\nError message from the database is shown above\n\n"</span><span class="p">))</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+    
+    </span><span class="n">log_entry</span><span class="o">$</span><span class="n">end_time</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">datetime_ch</span><span class="p">(</span><span class="n">Sys.time</span><span class="p">())</span><span class="w">
+    
+    </span><span class="c1"># Update the log in the database, if we have been given one:
+</span><span class="w">    </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nf">is.null</span><span class="p">(</span><span class="n">log_table</span><span class="p">)){</span><span class="w">
+      </span><span class="c1"># couldn't get sqlSave to append to a table even when append = TRUE... 
+</span><span class="w">      </span><span class="c1"># see https://stackoverflow.com/questions/36913664/rodbc-error-sqlsave-unable-to-append-to-table
+</span><span class="w">      </span><span class="c1"># so am writing the SQL to update the log by hand:
+</span><span class="w">      </span><span class="n">sql</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">with</span><span class="p">(</span><span class="n">log_entry</span><span class="p">,</span><span class="w"> </span><span class="n">paste0</span><span class="p">(</span><span class="s2">"INSERT INTO "</span><span class="p">,</span><span class="w"> 
+                                    </span><span class="n">log_table</span><span class="p">,</span><span class="w"> 
+                                    </span><span class="s2">"(start_time, end_time, sub_out, script_name, batch_number, 
+                                    result, err_mess, duration)"</span><span class="p">,</span><span class="w">
+                                    </span><span class="s2">" VALUES ("</span><span class="p">,</span><span class="w"> </span><span class="n">start_time</span><span class="p">,</span><span class="w"> </span><span class="s2">", "</span><span class="p">,</span><span class="w"> </span><span class="n">end_time</span><span class="p">,</span><span class="w"> </span><span class="s2">", '"</span><span class="p">,</span><span class="w"> 
+                                    </span><span class="n">sub_out</span><span class="p">,</span><span class="w"> </span><span class="s2">"', '"</span><span class="p">,</span><span class="w"> </span><span class="n">script_name</span><span class="p">,</span><span class="w"> </span><span class="s2">"', "</span><span class="p">,</span><span class="w"> </span><span class="n">batch_number</span><span class="p">,</span><span class="w"> </span><span class="s2">", '"</span><span class="p">,</span><span class="w"> </span><span class="n">result</span><span class="p">,</span><span class="w"> </span><span class="s2">"', '"</span><span class="p">,</span><span class="w">
+                                    </span><span class="n">err_mess</span><span class="p">,</span><span class="w"> </span><span class="s2">"', "</span><span class="p">,</span><span class="w"> </span><span class="n">duration</span><span class="p">,</span><span class="w"> </span><span class="s2">");"</span><span class="p">))</span><span class="w">
+      
+      </span><span class="n">log_res</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sqlQuery</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span><span class="w"> </span><span class="n">sql</span><span class="p">)</span><span class="w">
+      
+      
+    </span><span class="p">}</span><span class="w">
+    </span><span class="k">if</span><span class="p">(</span><span class="n">error_action</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"stop"</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">log_entry</span><span class="o">$</span><span class="n">result</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"error"</span><span class="p">){</span><span class="w">
+      </span><span class="n">stop</span><span class="p">(</span><span class="n">paste</span><span class="p">(</span><span class="s2">"Stopping due to an error in"</span><span class="p">,</span><span class="w"> </span><span class="n">filename</span><span class="p">))</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+    </span><span class="k">if</span><span class="p">(</span><span class="nf">class</span><span class="p">(</span><span class="n">res</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"data.frame"</span><span class="p">){</span><span class="w">
+      </span><span class="k">if</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">n_batches</span><span class="p">){</span><span class="w">
+        </span><span class="nf">return</span><span class="p">(</span><span class="n">res</span><span class="p">)</span><span class="w">  
+      </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">
+        </span><span class="n">warning</span><span class="p">(</span><span class="s2">"Downloaded a data frame from batch "</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">" of SQL, which wasn't the \nlast batch in the file.  This data frame is not kept."</span><span class="p">)</span><span class="w">
+      </span><span class="p">}</span><span class="w">
+      
+    </span><span class="p">}</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span></code></pre></figure>
+
+<p>One of the things to watch out for in this situation is how running a script via ODBC can get different results from hitting F5 in Management Studio.  One key thing to trip up on is what happens if the SQL includes a <code class="highlighter-rouge">SELECT</code> statement that doesn’t <code class="highlighter-rouge">INSERT</code> the results into another table or variable, but returns them as a table.  In this case, ODBC considers its work done and will not continue to execute anything else in the batch beyond that <code class="highlighter-rouge">SELECT</code> statement.</p>
+
+<p>To clarify how this works, here is a potentially problematic SQL file:</p>
+
+<figure class="highlight"><pre><code class="language-sql" data-lang="sql"><span class="cm">/*
+eg-sql.sql
+
+for testing the sql_execute R function
+
+*/</span>
+
+<span class="c1">-- this will return five rows but sql_execute discards them</span>
+<span class="k">SELECT</span> <span class="n">TOP</span> <span class="mi">5</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">some_table</span>
+<span class="k">GO</span>
+
+<span class="c1">-- this will return an error</span>
+<span class="k">some</span> <span class="n">non</span><span class="o">-</span><span class="n">legitimate</span> <span class="k">SQL</span> <span class="n">here</span> <span class="n">that</span> <span class="n">causes</span> <span class="n">an</span> <span class="n">error</span>
+<span class="k">go</span>
+
+<span class="c1">-- next batch will only get as far as the first seven rows</span>
+<span class="k">SELECT</span> <span class="n">TOP</span> <span class="mi">7</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">some_table</span>
+<span class="k">SELECT</span> <span class="n">TOP</span> <span class="mi">10</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">some_table</span>
+<span class="k">GO</span></code></pre></figure>
+
+<p>If I run that file via <code class="highlighter-rouge">sql_execute(ch, "examples/eg-sql.sql")</code>, it does the following:</p>
+
+<ul>
+  <li>executes the <code class="highlighter-rouge">SELECT TOP 5</code> statement and returns the results as a data frame, which is discarded as it is not the result of the last batch of the script</li>
+  <li>tries to execute the <code class="highlighter-rouge">some non-legitimate SQL</code>, gets an error and stops.</li>
+</ul>
+
+<p>Alternatively, if I run it via <code class="highlighter-rouge">sql_execute(ch, "examples/eg-sql.sql", error_action = "continue")</code> it does the following</p>
+
+<ul>
+  <li>executes the <code class="highlighter-rouge">SELECT TOP 5</code> statement and returns the results as a data frame, which is discarded as it is not the result of the last batch of the script</li>
+  <li>tries to execute the <code class="highlighter-rouge">some non-legitimate SQL</code>, gets an error and prints it to the screen.</li>
+  <li>executes the <code class="highlighter-rouge">SELECT TOP 7</code> statement, returns the results as a data frame, and stops.  The <code class="highlighter-rouge">SELECT TOP 10</code> statement isn’t returned.</li>
+</ul>
+
+<h2 id="an-odd-quirk-with-sql-loops-cutting-short-with-odbc">An odd quirk with SQL loops cutting short with ODBC</h2>
+
+<p>A second quirk that had me puzzled for a while (and indeed I am still puzzled and can’t get a fully reproducible example) seems to relate to the use of SQL <code class="highlighter-rouge">WHILE</code> loops in a script executed on the database from R via ODBC.  I found many such SQL programs would silently stop after about 20 iterations of the loop under ODBC, even if they worked perfectly in Management Studio.  The examples all look like this:</p>
+
+<figure class="highlight"><pre><code class="language-sql" data-lang="sql"><span class="k">DECLARE</span> <span class="o">@</span><span class="n">i</span> <span class="n">INT</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">WHILE</span> <span class="o">@</span><span class="n">i</span> <span class="o">&lt;=</span> <span class="mi">50</span>
+<span class="k">BEGIN</span>
+	<span class="c1">-- do something that needs looping</span>
+	
+	
+	<span class="k">SET</span> <span class="o">@</span><span class="n">i</span> <span class="o">=</span> <span class="o">@</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span>
+<span class="k">END</span>
+<span class="k">GO</span></code></pre></figure>
+
+<p>BTW, SQL is one of those languages where you avoid loops if you can, and think instead in terms of joining, aggregating and filtering tables.  But there are times when it is necessary (for example, performing an action on each table in a database, such as creating a carefully chosen random sample of it in another database - one of the things we had to do in the work project mentioned above).</p>
+
+<p>The solution to this mysterious refusal to go beyond about 20 (it varied) iterations in some loops was to wrap the whole action in a user-defined stored procedure, then execute the procedure.  This seems satisfyingly secure in all sorts of ways.  The procedure can be kept permanently or blown away depending on what makes sense:</p>
+
+<figure class="highlight"><pre><code class="language-sql" data-lang="sql"><span class="k">CREATE</span> <span class="k">PROCEDURE</span> <span class="n">do_stuff</span>
+<span class="k">AS</span> 
+<span class="k">BEGIN</span>
+	<span class="k">DECLARE</span> <span class="o">@</span><span class="n">i</span> <span class="n">INT</span> <span class="o">=</span> <span class="mi">1</span>
+	<span class="n">WHILE</span> <span class="o">@</span><span class="n">i</span> <span class="o">&lt;=</span> <span class="mi">50</span>
+	<span class="k">BEGIN</span>
+		<span class="c1">-- do something that needs looping</span>
+	
+	
+		<span class="k">SET</span> <span class="o">@</span><span class="n">i</span> <span class="o">=</span> <span class="o">@</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span>
+	<span class="k">END</span>
+<span class="k">END</span>
+<span class="k">GO</span>
+
+<span class="k">EXECUTE</span> <span class="n">do_stuff</span>
+<span class="k">DROP</span> <span class="k">PROCEDURE</span> <span class="n">do_stuff</span></code></pre></figure>
+
+<p>Worth noting - T-SQL distinguishes between its functions and stored procedures, whereas R lumps the two types of functionality together.  Functions in SQL are true computer-science-defined functions, that take inputs and return outputs, with strictly no side effects.  Stored procedures can have side effects (like creating or modifying tables).  In R, functions can have side effects (and frequently do eg drawing plots), not just return outputs based on inputs.</p>
+
+<p>No graphic today…</p>
+
+
+</div>
+
+<div class = "container">
+   <div class="col-md-4">
+    
+        <a rel="prev" href="/blog/2017/11/19/plague-seasonality">
+        <p>&larr; Older</p>
+        <p>Seasonality of plagues</p>
+        
+        </a>
+    
+    </div>
+    <div class="col-md-4">
+    </div>
+    <div class="col-md-4" style="text-align: right;">
+    
+      </div>
+      </div>
+      
+      
+      
+</div>
+
+
+   
+    <div id="disqus_thread"></div>
+
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+    
+    
+   
+			
+			</div><!-- /.container -->
+
+         
+
+   <div class = "container footer">
+			<footer>
+	    		<gcse:search></gcse:search>
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.  Or follow <a href = "/feed.r.xml">posts in this blog featuring R with RSS</a>.</p>
+			
+            <p>This blog is built with <a href = "http://jekyllrb.com/">Jekyll</a>, <a href = "http://getbootstrap.com/">Bootstrap</a>, <a href = "https://www.ruby-lang.org/en/">Ruby</a> and <a href = "https://cran.r-project.org/">R</a>.  Read my <a href="/about/acknowledgements.html">acknowledgements</a> for a little more on how.  I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+
+			<div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="true" data-share="false"></div>
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Peter's stats stuff</span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			
+
+			</footer>
+    </div>
+
+
+
+  
+</body>
+</html>
+   
+
+
+
+
+         
