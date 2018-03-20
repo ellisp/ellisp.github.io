@@ -1,0 +1,382 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Truncated Poisson distributions in R and Stan</title>
+      	
+         
+         
+            <meta name ="description" content ="Two ways of fitting a model to truncated data.">
+            <meta property="og:description" content ="Two ways of fitting a model to truncated data.">
+         
+         <meta property="og:site_name" content="Peter's stats stuff" />
+         <meta property="og:title" content="Truncated Poisson distributions in R and Stan" />
+         
+            <meta property="og:image" content="http://ellisp.github.io/img/0120-truncated-poisson.png" />
+         
+		 
+			<meta property="og:url" content="http://ellisp.github.io/blog/2018/03/20/truncated-poisson.html" />
+		 
+         <meta property="og:author" content= "https://www.facebook.com/peterstats" />
+         <meta property="og:type" content="article" />
+           
+          <link href="/css/bootstrap.min.css" rel ="stylesheet">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet">
+            <link href="/css/custom.css" rel ="stylesheet">     
+		<link href="/css/syntax.css" rel ="stylesheet">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="Peter's stats stuff by Peter Ellis"
+      href="/feed.xml">
+
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+  <script>
+  (function() {
+    var cx = '015640467633673901770:pk3v2c95baw';
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+  })();
+</script>
+
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Peter's stats stuff</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">All blog posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">Ordered by date</a></li>
+				  <li><a href="/blog/most-popular.html">Ordered by popularity</a></li>
+                  <li><a href="/blog/index_by_tag.html">Grouped by subject matter</a></li>
+                  <li><a href = /blog/2018/03/20/truncated-poisson>Most recent post</a></li>
+				  <li><a href="/blog/nz.html">All blog posts with data about New Zealand</a></li>
+				  <li><a href="/blog/voting.html">All blog posts on voting behaviour</a></li>
+                 </ul>
+            </li>
+              <li><a href="/blog/showcase.html">Showcase</a></li>
+              <li><a href="/presentations/index.html">Presentations</a></li>
+			  <li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">NZ Election forecasts<span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href = "/elections/combined.html">Combined model (recommended)</a></li>
+                  <li><a href="https://ellisp.shinyapps.io/nz-election-2017/">Explore coalitions and assumptions</a></li>
+				  <li><a href="/elections/elections.html">Model A ("generalized additive model")</a></li>
+				  <li><a href = "/elections/state-space.html">Model B ("state space")</a></li>
+				  <li><a href="/elections/changelog.html">Log of changes to forecasts</a></li>
+				  <li><a href="https://github.com/ellisp/nz-election-forecast">Source code on GitHub (external site)</a></li>
+				  <li><a href="/blog/voting.html">All blog posts on voting behaviour</a></li>
+                </ul>				
+			  </li>
+			  
+			  
+		    </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			    <div class="jumbotron">
+      <div class="container">
+        <h1>Truncated Poisson distributions in R and Stan</h1>
+         <p class="meta">20 Mar 2018</p>
+        
+      </div>
+    </div>
+
+
+
+
+<div class = "post-summary">
+<h2>At a glance:</h2>
+   Two ways of fitting a model to truncated data.
+   <hr></hr>
+</div>
+
+<div class="post">
+<div class="col-md-2">
+
+</div>
+  <div class="col-md-8">
+
+  <h2 id="data-thats-been-only-partially-observed">Data that’s been only partially observed</h2>
+
+<p>I’ve been updating my skills in fitting models to truncated data and was pleased to find that, like so much else in statistics, it’s easier than it used to be.</p>
+
+<p>First, some definitions:</p>
+
+<ul>
+  <li><em>censored</em> data is where some observations are cut off at some maximum or minimum level; those data points are “off the scale” but at least we know they exist and we know which direction they are off the scale.  For example, if we were analysing the life span of people born in 1980, anyone who has survived to the end of 2017 has their age at death recorded as “37 or higher”.  We know they’re in the data, and their value is at least some minimum amount, but we don’t know with precision what it will end up being.</li>
+  <li><em>truncated</em> data is where data beyond some maximum or minimum level is just missing.  Typically this is because of some feature of the measurement process eg anything smaller than X just doesn’t show up.</li>
+</ul>
+
+<p>I’ve got some future blog posts on a more substantive real life issue where I have count data for which, in some situations, I only see the observations with a count higher than some threshold.  Let’s imagine, for example, we are looking at deaths per vehicle crash, and are dependent for measurement on newspapers that only report crashes with at least two deaths, even though many crashes have one or zero deaths.</p>
+
+<p>Here’s a greatly simplified example.  I generate 1,000 observations of counts, with an average value of 1.3.  Then I compare that original distribution with what I’d get if only those of two or higher were observed.  It looks like this:</p>
+
+<p><img src="/img/0120-truncated-poisson.svg" width="100%" /></p>
+
+<p>…generated by this code:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">fitdistrplus</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">rstan</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">truncdist</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># original data:
+</span><span class="n">set.seed</span><span class="p">(</span><span class="m">321</span><span class="p">)</span><span class="w">
+</span><span class="n">a</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">rpois</span><span class="p">(</span><span class="m">1000</span><span class="p">,</span><span class="w"> </span><span class="m">1.3</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># truncated version of data:
+</span><span class="n">b</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">a</span><span class="p">[</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">1</span><span class="p">]</span><span class="w">
+
+</span><span class="c1"># graphic:
+</span><span class="n">data_frame</span><span class="p">(</span><span class="n">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">),</span><span class="w">
+           </span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="nf">c</span><span class="p">(</span><span class="s2">"Original data"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Truncated so only observations of 2 or more show up"</span><span class="p">),</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="nf">length</span><span class="p">(</span><span class="n">a</span><span class="p">),</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">b</span><span class="p">))))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_histogram</span><span class="p">(</span><span class="n">binwidth</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"white"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">ncol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Comparing full and truncated datasets from a Poisson distribution"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Number of observations"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># fitting a model to original works well:
+</span><span class="n">mean</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="w">
+</span><span class="n">fitdistr</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="s2">"Poisson"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># but obviously not if naively done to the truncated version:
+</span><span class="n">mean</span><span class="p">(</span><span class="n">b</span><span class="p">)</span><span class="w">
+</span><span class="n">fitdistr</span><span class="p">(</span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="s2">"Poisson"</span><span class="p">)</span></code></pre></figure>
+
+<p>Estimating the key parameter <code class="highlighter-rouge">lambda</code> for the full data (<code class="highlighter-rouge">a</code>) works well, giving an estimate of 1.347 that is just over one standard error from the true value of 1.3.  The <code class="highlighter-rouge">fitdistr</code> function from the <code class="highlighter-rouge">MASS</code> package distributed with base R does a nice job in such circumstances.</p>
+
+<p>But the mean value of <code class="highlighter-rouge">b</code> is badly biased upwards if used to estimate <code class="highlighter-rouge">lambda</code>; at 2.6 the mean of <code class="highlighter-rouge">b</code> is roughly twice the correct value of the mean of the underlying distribution.  Obviously, removing a whole bunch of data at one end of the distribution is going to make naive estimation methods biased.  So we need specialist methods that try to estimate lambda on the assumption that the data come from a Poisson distribution, but only the right-most part of it.</p>
+
+<h2 id="maximum-likelihood">Maximum likelihood</h2>
+
+<p>The <code class="highlighter-rouge">fitdistrplus</code> package by Aurélie Siberchicot, Marie Laure Delignette-Muller and Christophe Dutang  in combination with <code class="highlighter-rouge">truncdist</code> by Frederick Novomestky and Saralees Nadarajah gives a straightforward way to implement maximum likelihood estimation of a truncated distribution.  Methods other than maximum likelihood are also available if required.</p>
+
+<p>You need to make truncated versions of the <code class="highlighter-rouge">dpois</code> and <code class="highlighter-rouge">ppois</code> functions (or their equivalents for whatever distribution you are modelling) and use these within <code class="highlighter-rouge">fitdistrplus::fitdist</code>, which has some added functionality over <code class="highlighter-rouge">MASS::fitdistr</code> used in the previous chunk of code.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#-------------MLE fitting in R-------------------
+# adapted from https://stackoverflow.com/questions/16947799/fitting-a-lognormal-distribution-to-truncated-data-in-r
+</span><span class="n">dtruncated_poisson</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">lambda</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+  </span><span class="n">dtrunc</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="s2">"pois"</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1.5</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">Inf</span><span class="p">,</span><span class="w"> </span><span class="n">lambda</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span><span class="n">ptruncated_poisson</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">lambda</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+  </span><span class="n">ptrunc</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="s2">"pois"</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1.5</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">Inf</span><span class="p">,</span><span class="w"> </span><span class="n">lambda</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">fitdist</span><span class="p">(</span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="s2">"truncated_poisson"</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">lambda</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">))</span><span class="w"> </span></code></pre></figure>
+
+<p>Note that to do this I specified the lower threshold as 1.5; as all the data are integers this effectively means we only observe the observations of 2 or more, as is the case.  We also needed to specify a reasonably starting value for the estimate of <code class="highlighter-rouge">lambda</code> - getting this too far out will lead to errors.</p>
+
+<p>This method gives us an estimate of 1.34 with a standard error of 0.08, which is pretty good given we’ve only got 398 observations now.   Of course, we’ve got the luxury of knowing for sure the true data generating process was Poisson.</p>
+
+<h2 id="bayesian">Bayesian</h2>
+
+<p>For an alternative Bayesian method, Stan makes it easy to describe data and probability distributions as truncated.  The Stan manual has an entire chapter on truncated or censored data.  Here’s an example Stan program to estimate the mean of the original Poisson distribution from  our truncated data.  As well as the original data, which I call <code class="highlighter-rouge">x</code> in this program, we need to tell it how many observations (<code class="highlighter-rouge">n</code>), the <code class="highlighter-rouge">lower_limit</code> that it was truncated by, and whatever is needed to characterise a prior distribution for the parameter we’re estimating.</p>
+
+<p>The key bits of the program below are:</p>
+
+<ul>
+  <li>In the <code class="highlighter-rouge">data</code> chunk, specify that the data for <code class="highlighter-rouge">x</code> has a lower limit of <code class="highlighter-rouge">lower_limit</code></li>
+  <li>In the <code class="highlighter-rouge">model</code> chunk, specify that distribution of <code class="highlighter-rouge">x</code> is truncated via <code class="highlighter-rouge">T[lower_limit, ]</code></li>
+</ul>
+
+<figure class="highlight"><pre><code class="language-stan" data-lang="stan">data {
+  int n;
+  int lower_limit;
+  int &lt;lower = lower_limit&gt; x[n];
+  real lambda_start_mu;
+  real lambda_start_sigma;
+}
+
+parameters {
+  real&lt;lower = 0&gt;lambda;
+}
+
+model {
+  lambda ~ normal(lambda_start_mu, lambda_start_sigma);
+  
+  for(i in 1:n){
+    x[i] ~ poisson(lambda) T[lower_limit, ];
+  }
+}</code></pre></figure>
+
+<p>With a little more effort it’s possible to extend this by making Stan estimate <code class="highlighter-rouge">lower_limit</code> from the data; not necessary in my hypothetical example because I know where the minimum cut-off point of observed data lies.</p>
+
+<p>Here’s how the data are fed to Stan from R:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#-------------Calling Stan from R--------------
+</span><span class="n">data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="w">
+  </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">b</span><span class="p">,</span><span class="w">
+  </span><span class="n">lower_limit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w">
+  </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">b</span><span class="p">),</span><span class="w">
+  </span><span class="n">lambda_start_mu</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w">
+  </span><span class="n">lambda_start_sigma</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="w">
+</span><span class="p">)</span><span class="w">
+
+</span><span class="n">fit</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">stan</span><span class="p">(</span><span class="s2">"0120-trunc.stan"</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">cores</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="p">)</span><span class="w">
+</span><span class="n">fit</span><span class="w">
+
+</span><span class="n">plot</span><span class="p">(</span><span class="n">fit</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Credibility interval for lambda, estimated by Stan from truncated data"</span><span class="p">,</span><span class="w">
+                    </span><span class="s2">"(Correct value is 1.3)"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Estimated parameters"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">theme_minimal</span><span class="p">(</span><span class="n">base_family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"myfont"</span><span class="p">)</span></code></pre></figure>
+
+<p>This gives us a posterior distribution for <code class="highlighter-rouge">lambda</code> that matches that from the <code class="highlighter-rouge">fitdistrplus</code> method: 1.35 with a standard deviation of 0.08.  The <code class="highlighter-rouge">rstan</code> package automatically turns this into a <code class="highlighter-rouge">ggplot2</code> image of a credibility interval:</p>
+
+<p><img src="/img/0120-stan-fit.svg" width="100%" /></p>
+
+<p>So, nice.  Two simple ways to estimate the original distribution from truncated data.</p>
+
+
+
+</div>
+
+<div class = "container">
+   <div class="col-md-4">
+    
+        <a rel="prev" href="/blog/2018/02/24/following-followers">
+        <p>&larr; Older</p>
+        <p>Do tweeps with more followers follow tweeps with more followers?</p>
+        
+        </a>
+    
+    </div>
+    <div class="col-md-4">
+    </div>
+    <div class="col-md-4" style="text-align: right;">
+    
+      </div>
+      </div>
+      
+      
+      
+</div>
+
+
+   
+    <div id="disqus_thread"></div>
+
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+    
+    
+   
+			
+			</div><!-- /.container -->
+
+         
+
+   <div class = "container footer">
+			<footer>
+	    		<gcse:search></gcse:search>
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.  Or follow <a href = "/feed.r.xml">posts in this blog featuring R with RSS</a>.</p>
+			
+            <p>This blog is built with <a href = "http://jekyllrb.com/">Jekyll</a>, <a href = "http://getbootstrap.com/">Bootstrap</a>, <a href = "https://www.ruby-lang.org/en/">Ruby</a> and <a href = "https://cran.r-project.org/">R</a>.  Read my <a href="/about/acknowledgements.html">acknowledgements</a> for a little more on how.  I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+
+			<div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="true" data-share="false"></div>
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Peter's stats stuff</span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			
+
+			</footer>
+    </div>
+
+
+
+  
+</body>
+</html>
+   
+
+
+
+
+         
