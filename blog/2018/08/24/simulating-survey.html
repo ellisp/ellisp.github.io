@@ -1,0 +1,874 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Estimating relative risk in a simulated complex survey</title>
+      	
+         
+         
+            <meta name ="description" content ="Simulating complex survey data in order to fit slightly mis-specified relative risk models, we find that confidence intervals' coverage is pretty much as advertised if we use appropriate methods that adjust for the complex survey data, but under-perform if the data is treated naively as coming from a simple random sample.">
+            <meta property="og:description" content ="Simulating complex survey data in order to fit slightly mis-specified relative risk models, we find that confidence intervals' coverage is pretty much as advertised if we use appropriate methods that adjust for the complex survey data, but under-perform if the data is treated naively as coming from a simple random sample.">
+         
+         <meta property="og:site_name" content="free range statistics" />
+         <meta property="og:title" content="Estimating relative risk in a simulated complex survey" />
+         
+            <meta property="og:image" content="http://freerangestats.info/img/0131-comparisons.png" />
+         
+		 
+			<meta property="og:url" content="http://freerangestats.info/blog/2018/08/24/simulating-survey.html" />
+		 
+         <meta property="og:author" content= "https://www.facebook.com/peterstats" />
+         <meta property="og:type" content="article" />
+      
+
+<link href='https://fonts.googleapis.com/css?family=Sarala' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Prosto+One' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Ubuntu+Mono' rel='stylesheet'>
+	  
+          <link href="/css/bootstrap.min.css" rel ="stylesheet" type="text/css">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet" type="text/css">
+            <link href="/css/custom.css" rel ="stylesheet" type="text/css">     
+		<link href="/css/syntax.css" rel ="stylesheet" type="text/css">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="free range statistics by Peter Ellis"
+      href="/feed.xml">
+
+	  
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+  <script>
+  (function() {
+    var cx = '015640467633673901770:pk3v2c95baw';
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+  })();
+</script>
+
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">free range statistics</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/about">about</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">all posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">ordered by date</a></li>
+				  <li><a href="/blog/most-popular.html">ordered by popularity</a></li>
+                  <li><a href="/blog/index_by_tag.html">grouped by subject matter</a></li>
+                  <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
+				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
+				  <li><a href = /blog/2018/08/24/simulating-survey>most recent post</a></li>
+				</ul>
+            </li>
+              <li><a href="/blog/showcase.html">showcase</a></li>
+              <li><a href="/presentations/index.html">presentations</a></li>
+			  <li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">nz election forecasts<span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href = "/elections/combined.html">combined model (recommended)</a></li>
+                  <li><a href="https://ellisp.shinyapps.io/nz-election-2017/">explore coalitions and assumptions</a></li>
+				  <li><a href="/elections/elections.html">model A "generalized additive model"</a></li>
+				  <li><a href = "/elections/state-space.html">model B "state space"</a></li>
+				  <li><a href="/elections/changelog.html">log of changes to forecasts</a></li>
+				  <li><a href="https://github.com/ellisp/nz-election-forecast">source code on GitHub</a></li>
+				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
+                </ul>				
+			  </li>
+			  
+			  
+			  
+		    </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			<div class="jumbotron">
+  <div class="container">
+	<center><h1>Estimating relative risk in a simulated complex survey</h1></center>
+  </div>
+</div>
+
+
+
+	<div class = "post-summary">
+	<h2>At a glance:</h2>
+	   <p>Simulating complex survey data in order to fit slightly mis-specified relative risk models, we find that confidence intervals' coverage is pretty much as advertised if we use appropriate methods that adjust for the complex survey data, but under-perform if the data is treated naively as coming from a simple random sample.</p>
+	   <p class="meta">24 Aug 2018</p>
+	   <hr></hr>
+	</div>
+
+
+<div class="col-md-7">
+
+	<div class="post">
+		
+	  <p>In this post I simulate a population and a complex survey of it.  The survey has stratification, two-stage sampling and post-collection calibration to marginal population totals.  The original idea was to follow up on <a href="http://freerangestats.info/blog/2018/08/17/risk-ratios">last week’s post</a> on relative risk ratios and odds ratios and in particular to explore the use of the <code class="highlighter-rouge">quasipoisson(log)</code> family compared to the <code class="highlighter-rouge">quasibinomial(log)</code> family when modelling a binary outcome with categorical data.</p>
+
+<p>In the end, the more interesting thing (for me) was the general challenge of simulating a population and complex survey process and doing some basic comparison of the success of different estimation strategies.  In particular, I was interested in how different the results are if we treat the sample with appropriate complex survey methods (ie Thomas Lumley’s <code class="highlighter-rouge">survey</code> R package) in contrast to naively fitting the same model while ignoring the cluster sampling, stratification, post-stratification, etc.</p>
+
+<p>To cut to the chase, this chart compares those two approaches fit to 100 different samples of 2,100 individuals:</p>
+
+<p><img src="/img/0132-comparisons.svg" width="100%" /></p>
+
+<p>What we see is that there isn’t much to choose between them when it comes to point estimates.  The mean squared errors of the point estimates of effect sizes from both methods, compared to fitting the model to the full population of 1 million people, are similar.  However, the complex survey methods do better in terms of confidence intervals.  The 95% confidence intervals delivered by survey methods contained the true values 94% of the time, nearly as good as advertised; whereas the naive method’s confidence intervals contained the true values only 89% of the time.</p>
+
+<h2 id="simulating-data">Simulating data</h2>
+
+<p>I wanted to simulate data that resembled real-life survey data that I often work with - mostly categorical values, some unknown variables, some reasonable models of behaviour available but certainly at least partly mis-specified.  The one complication I left out for now was missing data.</p>
+
+<p>I created data in 14 regions, with 100 neighbourhoods or PSUs (primary sampling units) in each region that were going to be used for cluster sampling.  I made variables for people’s “shape” (circle, square, triangle or hexagon), “colour” (red, blue, etc), a mystery unobserved variable, an unobserved latent continuous variable that depends on all the other variables mentioned so far, and a single target or response variable of interest called <code class="highlighter-rouge">y</code> which is TRUE or FALSE with probability depending on that latent variable.</p>
+
+<p>In the end we are going to use these variables in these ways:</p>
+
+<ul>
+  <li>We’ll use <code class="highlighter-rouge">region</code> as strata and <code class="highlighter-rouge">psu</code> as primary sampling unit in a cluster sampling approach</li>
+  <li>We’ll use the marginal population counts by <code class="highlighter-rouge">region</code>, <code class="highlighter-rouge">shape</code> and <code class="highlighter-rouge">colour</code> in a weighting scheme</li>
+  <li>We’ll use <code class="highlighter-rouge">region</code>, <code class="highlighter-rouge">shape</code> and <code class="highlighter-rouge">colour</code> as explanatory variables in a model with <code class="highlighter-rouge">y</code>.  This model is slightly mis-specified because it doesn’t include the “mystery variable” which is unobserved, and the relationship of the variables to y isn’t exactly as such variables normally work together in a logistic regression.</li>
+</ul>
+
+<p>Once I’ve generated the data, here is how it looks for the full population of one million:</p>
+
+<p><img src="/img/0132-proportions.svg" width="100%" /></p>
+
+<p>Or here is the correlation matrix, showing the relationships of underlying unobserved continuous variables (rather than their categorical manifestations) with eachother and with <code class="highlighter-rouge">y</code>:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="text-align: left"> </th>
+      <th style="text-align: right">mystery_var</th>
+      <th style="text-align: right">region_y</th>
+      <th style="text-align: right">psu_y</th>
+      <th style="text-align: right">shape_y</th>
+      <th style="text-align: right">colour_y</th>
+      <th style="text-align: right">latent</th>
+      <th style="text-align: right">y</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: left">mystery_var</td>
+      <td style="text-align: right">1.00</td>
+      <td style="text-align: right">0.00</td>
+      <td style="text-align: right">0.02</td>
+      <td style="text-align: right">0.00</td>
+      <td style="text-align: right">0.01</td>
+      <td style="text-align: right">0.09</td>
+      <td style="text-align: right">0.01</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">region_y</td>
+      <td style="text-align: right">0.00</td>
+      <td style="text-align: right">1.00</td>
+      <td style="text-align: right">0.00</td>
+      <td style="text-align: right">0.00</td>
+      <td style="text-align: right">-0.01</td>
+      <td style="text-align: right">0.31</td>
+      <td style="text-align: right">0.07</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">psu_y</td>
+      <td style="text-align: right">0.02</td>
+      <td style="text-align: right">0.00</td>
+      <td style="text-align: right">1.00</td>
+      <td style="text-align: right">0.01</td>
+      <td style="text-align: right">-0.01</td>
+      <td style="text-align: right">0.73</td>
+      <td style="text-align: right">0.18</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">shape_y</td>
+      <td style="text-align: right">0.00</td>
+      <td style="text-align: right">0.00</td>
+      <td style="text-align: right">0.01</td>
+      <td style="text-align: right">1.00</td>
+      <td style="text-align: right">0.07</td>
+      <td style="text-align: right">0.55</td>
+      <td style="text-align: right">0.11</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">colour_y</td>
+      <td style="text-align: right">0.01</td>
+      <td style="text-align: right">-0.01</td>
+      <td style="text-align: right">-0.01</td>
+      <td style="text-align: right">0.07</td>
+      <td style="text-align: right">1.00</td>
+      <td style="text-align: right">0.23</td>
+      <td style="text-align: right">0.05</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">latent</td>
+      <td style="text-align: right">0.09</td>
+      <td style="text-align: right">0.31</td>
+      <td style="text-align: right">0.73</td>
+      <td style="text-align: right">0.55</td>
+      <td style="text-align: right">0.23</td>
+      <td style="text-align: right">1.00</td>
+      <td style="text-align: right">0.22</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">y</td>
+      <td style="text-align: right">0.01</td>
+      <td style="text-align: right">0.07</td>
+      <td style="text-align: right">0.18</td>
+      <td style="text-align: right">0.11</td>
+      <td style="text-align: right">0.05</td>
+      <td style="text-align: right">0.22</td>
+      <td style="text-align: right">1.00</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>For example, <code class="highlighter-rouge">region_y</code> in the above is a variable that takes a given continuous value for each of regions A, B, C, etc.  The value of <code class="highlighter-rouge">region_y</code> isn’t observed, I just generate it as part of the simulation process.  The underlying value of <code class="highlighter-rouge">region_y</code> has a correlation of 0.31 with the unobserved underlying value of <code class="highlighter-rouge">latent</code>. <code class="highlighter-rouge">latent</code> itself is the direct driver of the probability of <code class="highlighter-rouge">y</code> being TRUE, but <code class="highlighter-rouge">y</code> is a random variable so the correlation of <code class="highlighter-rouge">region_y</code> with <code class="highlighter-rouge">y</code> is 0.07 (ie less than 0.31), still more than zero but not as strong as <code class="highlighter-rouge">region_y</code>’s correlation with the unobserved <em>probability</em> of y.</p>
+
+<p><code class="highlighter-rouge">psu_y</code> has the highest correlation with <code class="highlighter-rouge">y</code> and I did this by design - I wanted there to be a lot of intra-class correlation at the PSU level, to give distinction to the complex survey sampling and estimation strategy I’m exploring here.  So knowing the PSU (which I think of as a suburb or meshblock) tells you a lot about whether an individual has <code class="highlighter-rouge">y</code> or not - more so than the individual’s shape or colour.  Perhaps <code class="highlighter-rouge">y</code> is some highly spatially correlated indicator like a contagious disease.</p>
+
+<p>To sum up - in my simulated population, there is a definite relationship between each categorical variable and <code class="highlighter-rouge">y</code>, via unobserved latent continuous variables, but it’s not dramatic.</p>
+
+<p>I wrote an R function to generate this population; even though I only use it once in this blog post, it was very useful to have it as a function with clear parameter choices when I was playing around.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">boot</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">testthat</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">survey</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">broom</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">gridExtra</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">kable</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#--------------------create a simulated population------------------------
+</span><span class="cd">#' @param N total population size
+#' @param n_regions number of regions (which will be used in sampling as strata)
+#' @param psu_sd standard deviation of random contribution to latent variable under y at the PSU 
+#' (primary sampling unit eg suburb or meshblock) level.  Higher values lead to higher intra-class
+#' correlation, and hence higher design effects when we use psu as the primary sampling unit in a
+#' sampling design
+#' @param region_sd as psu_sd but at region level
+#' @param mystery_sd extra random continuous variable that contributes to the latent variable under y.
+</span><span class="n">make_population</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">N</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">100000</span><span class="p">,</span><span class="w"> 
+                            </span><span class="n">n_regions</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">14</span><span class="p">,</span><span class="w">
+                            </span><span class="n">psu_sd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w">
+                            </span><span class="n">region_sd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w">
+                            </span><span class="n">colours_sd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w">
+                            </span><span class="n">shapes_sd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w">
+                            </span><span class="n">mystery_sd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w">
+                            </span><span class="n">colours_v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"red"</span><span class="p">,</span><span class="w"> </span><span class="s2">"blue"</span><span class="p">,</span><span class="w"> </span><span class="s2">"green"</span><span class="p">,</span><span class="w"> </span><span class="s2">"yellow"</span><span class="p">,</span><span class="w"> </span><span class="s2">"orange"</span><span class="p">,</span><span class="w"> </span><span class="s2">"grey"</span><span class="p">),</span><span class="w">
+                            </span><span class="n">shapes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"square"</span><span class="p">,</span><span class="w"> </span><span class="s2">"circle"</span><span class="p">,</span><span class="w"> </span><span class="s2">"triangle"</span><span class="p">,</span><span class="w"> </span><span class="s2">"hexagon"</span><span class="p">),</span><span class="w">
+                            </span><span class="n">seed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">123</span><span class="p">){</span><span class="w">
+
+  </span><span class="n">set.seed</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span><span class="w">
+  
+  
+  </span><span class="n">population1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data_frame</span><span class="p">(</span><span class="w">
+    </span><span class="n">region</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sample</span><span class="p">(</span><span class="nb">LETTERS</span><span class="p">[</span><span class="m">1</span><span class="o">:</span><span class="n">n_regions</span><span class="p">],</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="n">replace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> </span><span class="n">prob</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">runif</span><span class="p">(</span><span class="n">n_regions</span><span class="p">)))</span><span class="w">
+  </span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">group_by</span><span class="p">(</span><span class="n">region</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">mutate</span><span class="p">(</span><span class="n">psu</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">paste</span><span class="p">(</span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">sample</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="p">(</span><span class="n">n</span><span class="p">()</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">100</span><span class="p">)</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">(),</span><span class="w"> </span><span class="n">replace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)),</span><span class="w">
+           </span><span class="n">shape</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sample</span><span class="p">(</span><span class="n">shapes</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">(),</span><span class="w"> </span><span class="n">replace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">ungroup</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="c1"># we want colours and shapes to be crosscorrelated, so we make generation of colour dependent on shape:
+</span><span class="w">    </span><span class="n">mutate</span><span class="p">(</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">case_when</span><span class="p">(</span><span class="w">
+      </span><span class="n">shape</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">shapes</span><span class="p">[</span><span class="m">1</span><span class="p">]</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">sample</span><span class="p">(</span><span class="n">colours_v</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">(),</span><span class="w"> </span><span class="n">prob</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="nf">c</span><span class="p">(</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">4</span><span class="p">),</span><span class="w"> </span><span class="n">replace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">),</span><span class="w">
+      </span><span class="n">shape</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">shapes</span><span class="p">[</span><span class="m">2</span><span class="p">]</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">sample</span><span class="p">(</span><span class="n">colours_v</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">(),</span><span class="w"> </span><span class="n">prob</span><span class="w"> </span><span class="o">=</span><span class="w">   </span><span class="nf">c</span><span class="p">(</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">),</span><span class="w"> </span><span class="n">replace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">),</span><span class="w">
+      </span><span class="n">shape</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">shapes</span><span class="p">[</span><span class="m">3</span><span class="p">]</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">sample</span><span class="p">(</span><span class="n">colours_v</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">(),</span><span class="w"> </span><span class="n">prob</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="w"> </span><span class="m">4</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">),</span><span class="w"> </span><span class="n">replace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">),</span><span class="w">
+      </span><span class="n">shape</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">shapes</span><span class="p">[</span><span class="m">4</span><span class="p">]</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">sample</span><span class="p">(</span><span class="n">colours_v</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">(),</span><span class="w"> </span><span class="n">prob</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="nf">c</span><span class="p">(</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">4</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">),</span><span class="w"> </span><span class="n">replace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w">
+    </span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">mutate</span><span class="p">(</span><span class="n">mystery_var</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">as.vector</span><span class="p">(</span><span class="n">scale</span><span class="p">(</span><span class="n">rnorm</span><span class="p">(</span><span class="n">n</span><span class="p">(),</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">as.factor</span><span class="p">(</span><span class="n">region</span><span class="p">)))</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">mystery_sd</span><span class="p">))</span><span class="w">
+  
+  </span><span class="c1"># numeric values to add for each particular value of region, psu, colour, and shape:
+</span><span class="w">  </span><span class="n">regions</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">population1</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">distinct</span><span class="p">(</span><span class="n">region</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">mutate</span><span class="p">(</span><span class="n">region_y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">as.vector</span><span class="p">(</span><span class="n">scale</span><span class="p">(</span><span class="n">runif</span><span class="p">(</span><span class="n">n</span><span class="p">()))</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">region_sd</span><span class="p">))</span><span class="w">
+  
+  </span><span class="n">psus</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">population1</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">distinct</span><span class="p">(</span><span class="n">psu</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">mutate</span><span class="p">(</span><span class="n">psu_y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rnorm</span><span class="p">(</span><span class="n">n</span><span class="p">())</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">psu_sd</span><span class="p">)</span><span class="w">
+  
+  </span><span class="n">shapes</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">population1</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">distinct</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">mutate</span><span class="p">(</span><span class="n">shape_y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">as.vector</span><span class="p">(</span><span class="n">scale</span><span class="p">(</span><span class="n">rgamma</span><span class="p">(</span><span class="n">n</span><span class="p">(),</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">0.1</span><span class="p">))</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">shapes_sd</span><span class="p">))</span><span class="w">
+  
+  </span><span class="n">colours</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">population1</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">distinct</span><span class="p">(</span><span class="n">colour</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">mutate</span><span class="p">(</span><span class="n">colour_y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">as.vector</span><span class="p">(</span><span class="n">scale</span><span class="p">(</span><span class="n">rnorm</span><span class="p">(</span><span class="n">n</span><span class="p">()))</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">colours_sd</span><span class="p">))</span><span class="w">
+  
+  </span><span class="n">population</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">population1</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">left_join</span><span class="p">(</span><span class="n">regions</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"region"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">left_join</span><span class="p">(</span><span class="n">psus</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"psu"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">left_join</span><span class="p">(</span><span class="n">shapes</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"shape"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">left_join</span><span class="p">(</span><span class="n">colours</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"colour"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">mutate</span><span class="p">(</span><span class="n">latent</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">inv.logit</span><span class="p">(</span><span class="n">as.vector</span><span class="p">(</span><span class="n">scale</span><span class="p">(</span><span class="n">mystery_var</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">region_y</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">psu_y</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">shape_y</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">colour_y</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+                                               </span><span class="n">rnorm</span><span class="p">(</span><span class="n">n</span><span class="p">(),</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">0.05</span><span class="p">))))</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">mutate</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.logical</span><span class="p">(</span><span class="n">rbinom</span><span class="p">(</span><span class="n">n</span><span class="p">(),</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">prob</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">latent</span><span class="p">)))</span><span class="w">
+  
+  </span><span class="nf">return</span><span class="p">(</span><span class="n">population</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="c1"># Simulate the actual population I'll be using for the blog:
+</span><span class="n">population</span><span class="w"> </span><span class="o">&lt;-</span><span class="n">make_population</span><span class="p">(</span><span class="n">N</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="m">6</span><span class="p">,</span><span class="w">
+                             </span><span class="n">psu_sd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="p">,</span><span class="w">
+                             </span><span class="n">region_sd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w">
+                             </span><span class="n">mystery_sd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">,</span><span class="w">
+                             </span><span class="n">shapes_sd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="p">,</span><span class="w">
+                             </span><span class="n">colours_sd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1.5</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># draw graphic
+</span><span class="n">population</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">select</span><span class="p">(</span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">shape</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">gather</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">y</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">scales</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"free_y"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_bar</span><span class="p">(</span><span class="n">position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"fill"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="s2">"Prevalence of 'y'"</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">coord_flip</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Prevalence of y in simulated population"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># correlation matrix
+</span><span class="n">population</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">select</span><span class="p">(</span><span class="n">mystery_var</span><span class="o">:</span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">sample_n</span><span class="p">(</span><span class="m">10000</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">cor</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="nf">round</span><span class="p">(</span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">kable</span><span class="p">()</span></code></pre></figure>
+
+<h2 id="sampling-and-processing">Sampling and processing</h2>
+
+<p>Next step is to write a function that takes a two-stage cluster-based sample from this population.  This means we first select a sample of clusters (in this case <code class="highlighter-rouge">psu</code>); and then from those clusters we select a sample of individuals. I did this in a way that selects a set number of PSUs (defaults to 10, but most of this blog I use 5) from each and every region, then a set random number of people (15 people if we have 10 PSUs per region, 30 people if we have 5) per PSU to bring the total sample size up to 2,100. 2,100 feels an unremarkable sample size for the sorts of surveys I’ve been looking at this year.</p>
+
+<p>Because the regions have quite different sizes, and the PSUs have slightly different sizes, there are many different probabilities of an individual being selected.  Everyone has a non-zero chance; which we need to calculate for subsequent weighting purposes.  There are R packages that will perform this sort of sampling directly for you, but I’ve just done it from scratch in the code below for clarity.</p>
+
+<p>Once I’ve got the sample, I:</p>
+
+<ul>
+  <li>use the inverse of the selection probability as initial weights</li>
+  <li>create a set of jackknife replicate weights suitable for stratified sample designs</li>
+  <li>calibrate each set of weights to match the marginal population counts for each value of region, shape and colour.</li>
+</ul>
+
+<p>If replicate weights are new to you, they’re worth getting on top of.  When we use the jackknife or bootstrap with simple random samples, we create new samples in quite a simple way, by resampling with replacement from the original sample.  When we have a complex survey, we instead create (and save) new sets of weights reflecting which points are in and which are out, and the new calibrated survey weights for that particular resample.  Compared to doing all the resampling from scratch each time you do an analysis, this puts a lot of the computational load up front in the creation of multiple sets of (expensively) calibrated weights.  These can be re-used repeatedly, for reproducibility and efficiency purposes.</p>
+
+<p>Here’s my function, which as well as containing my home-made sampling algorithm, uses Lumley’s <code class="highlighter-rouge">survey</code> package to specify the design, replicate weights, and calibration to population totals for the analysis stage:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#==================sampling======================
+</span><span class="w">
+</span><span class="cd">#' Two stage sample from a "population" data frame
+#' 
+#' @param population a data frame to be sampled from, must include columns with name region, psu,
+#' shape and colour
+#' @param npsu number of PSUs (primary sampling units - think suburbs or meshblocks) per region (strata) to
+#' saple
+#' @param n total sample size
+#' @param npeop number of people to sample per PSU
+#' @value a survey design object, calibrated to population totals for region, shape and colour; with primary
+#' selection by psu and stratified by region; with Jackknife replicate weights.
+</span><span class="n">samp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">population</span><span class="p">,</span><span class="w"> 
+                 </span><span class="n">npsu</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10</span><span class="p">,</span><span class="w"> 
+                 </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2100</span><span class="p">,</span><span class="w"> 
+                 </span><span class="n">npeop</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">npsu</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">unique</span><span class="p">(</span><span class="n">population</span><span class="o">$</span><span class="n">region</span><span class="p">))),</span><span class="w">
+                 </span><span class="n">seed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">123</span><span class="p">){</span><span class="w">
+
+  </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nf">is.null</span><span class="p">(</span><span class="n">seed</span><span class="p">)){</span><span class="w">
+    </span><span class="n">set.seed</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+  
+  </span><span class="c1"># Population totals for margins, which we presume are known from a census or similar.  We are
+</span><span class="w">  </span><span class="c1"># pretending we know the marginal totals for these dimensions, but not a full cross tabulation
+</span><span class="w">  </span><span class="c1"># (ie we know the total number of circles, and of red people, but not of red circular people):
+</span><span class="w">  </span><span class="n">shape_tots</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">population</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">group_by</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">summarise</span><span class="p">(</span><span class="n">Freq</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">())</span><span class="w">
+  
+  </span><span class="n">colour_tots</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">population</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">group_by</span><span class="p">(</span><span class="n">colour</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">summarise</span><span class="p">(</span><span class="n">Freq</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">())</span><span class="w">
+  
+  </span><span class="n">region_tots</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">population</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">group_by</span><span class="p">(</span><span class="n">region</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">summarise</span><span class="p">(</span><span class="n">Freq</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">())</span><span class="w">
+  
+  </span><span class="c1"># number of people in each psu, which we will use for our weighting:
+</span><span class="w">  </span><span class="n">region_psu_pops</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">population</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">group_by</span><span class="p">(</span><span class="n">region</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">mutate</span><span class="p">(</span><span class="n">psus_in_region</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">unique</span><span class="p">(</span><span class="n">psu</span><span class="p">)))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">group_by</span><span class="p">(</span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">psu</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">summarise</span><span class="p">(</span><span class="w">
+              </span><span class="c1"># how many people in each PSU:
+</span><span class="w">              </span><span class="n">people_in_psu</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">(),</span><span class="w">
+              </span><span class="c1"># given the PSU is sampled, what's the chance of an individual from that PSU being in sample:
+</span><span class="w">              </span><span class="n">prob_from_psu</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">npeop</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">people_in_psu</span><span class="p">,</span><span class="w">
+              </span><span class="c1"># so what's the a total priori probability for an individual being sampled:
+</span><span class="w">              </span><span class="n">prob</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">npsu</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">unique</span><span class="p">(</span><span class="n">psus_in_region</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">prob_from_psu</span><span class="p">,</span><span class="w">
+              </span><span class="c1"># inverse of that probability for use as weight:
+</span><span class="w">              </span><span class="n">wt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">prob</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">left_join</span><span class="p">(</span><span class="n">region_tots</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"region"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">rename</span><span class="p">(</span><span class="n">people_in_region</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Freq</span><span class="p">)</span><span class="w">
+    
+  </span><span class="c1"># check that the total sum of probabilities of being selected times people in psus 
+</span><span class="w">  </span><span class="c1"># equals our desired sample size:
+</span><span class="w">  </span><span class="n">expect_equal</span><span class="p">(</span><span class="nf">round</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="m">-1</span><span class="p">),</span><span class="w"> 
+               </span><span class="nf">round</span><span class="p">(</span><span class="n">with</span><span class="p">(</span><span class="n">region_psu_pops</span><span class="p">,</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">prob</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">people_in_psu</span><span class="p">)),</span><span class="w"> </span><span class="m">-1</span><span class="p">))</span><span class="w">
+  
+  </span><span class="c1"># we sample PSUs with equal probability within each region (ie not proportionate to size, 
+</span><span class="w">  </span><span class="c1"># which would be a better sampling strategy):
+</span><span class="w">  </span><span class="n">psu_sampled</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">population</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">distinct</span><span class="p">(</span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">psu</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="c1"># group by region, so each region acts as a stratum and we get the same number of
+</span><span class="w">    </span><span class="c1"># of PSUs per region (again, this isn't efficient sampling, but part of the
+</span><span class="w">    </span><span class="c1"># point of this exercise is to have a complex non-optimal sample):
+</span><span class="w">    </span><span class="n">group_by</span><span class="p">(</span><span class="n">region</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">mutate</span><span class="p">(</span><span class="n">seq</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rnorm</span><span class="p">(</span><span class="n">n</span><span class="p">()))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">arrange</span><span class="p">(</span><span class="n">seq</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">slice</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="n">npsu</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">select</span><span class="p">(</span><span class="o">-</span><span class="n">seq</span><span class="p">)</span><span class="w">
+    
+  </span><span class="n">sampled</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">population</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">select</span><span class="p">(</span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">psu</span><span class="p">,</span><span class="w"> </span><span class="n">shape</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="c1"># limit ourselves to just the PSUs we have chosen for our sample:
+</span><span class="w">    </span><span class="n">inner_join</span><span class="p">(</span><span class="n">psu_sampled</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"region"</span><span class="p">,</span><span class="w"> </span><span class="s2">"psu"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="c1"># within each PSU, pick `npeop` people at random:
+</span><span class="w">    </span><span class="n">group_by</span><span class="p">(</span><span class="n">psu</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">mutate</span><span class="p">(</span><span class="n">seq</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rnorm</span><span class="p">(</span><span class="n">n</span><span class="p">()))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">slice</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="n">npeop</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">left_join</span><span class="p">(</span><span class="n">region_psu_pops</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"region"</span><span class="p">,</span><span class="w"> </span><span class="s2">"psu"</span><span class="p">))</span><span class="w">
+  
+  </span><span class="c1"># Specify the survey design.
+</span><span class="w">  </span><span class="c1"># we will simplify things by ignoring any finite population corrections, either
+</span><span class="w">  </span><span class="c1"># for PSUs within region, or for individuals within PSUs.  This is ok if the sample
+</span><span class="w">  </span><span class="c1"># is small compared to population (which it is).
+</span><span class="w">  
+  </span><span class="c1"># Sampling scheme:
+</span><span class="w">  </span><span class="n">des</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">svydesign</span><span class="p">(</span><span class="o">~</span><span class="n">psu</span><span class="p">,</span><span class="w"> </span><span class="n">strata</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">~</span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sampled</span><span class="p">,</span><span class="w"> </span><span class="n">weights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">~</span><span class="n">wt</span><span class="p">)</span><span class="w">
+  
+  </span><span class="c1"># Replicate weights:
+</span><span class="w">  </span><span class="n">des</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.svrepdesign</span><span class="p">(</span><span class="n">des</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"JKn"</span><span class="p">)</span><span class="w">
+  
+  </span><span class="c1"># Post stratification calibration to marginal population totals:
+</span><span class="w">  </span><span class="n">des</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">calibrate</span><span class="p">(</span><span class="n">des</span><span class="p">,</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="o">~</span><span class="n">shape</span><span class="p">,</span><span class="w"> </span><span class="o">~</span><span class="n">colour</span><span class="p">,</span><span class="w"> </span><span class="o">~</span><span class="n">region</span><span class="p">),</span><span class="w">
+              </span><span class="n">population</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="n">shape_tots</span><span class="p">,</span><span class="w"> </span><span class="n">colour_tots</span><span class="p">,</span><span class="w"> </span><span class="n">region_tots</span><span class="p">))</span><span class="w">
+
+  </span><span class="nf">return</span><span class="p">(</span><span class="n">des</span><span class="p">)</span><span class="w">
+  </span><span class="p">}</span></code></pre></figure>
+
+<p>Like most real world complex surveys, this sampling design has a couple of inefficiencies compared to a simple random sample:</p>
+
+<ul>
+  <li>Because we sample equally from each region, some points (from larger regions) are representing many more population individuals than others.  A typical reason for this strategy would be when we are prepared to sacrifice some efficiency in estimating population totals because we want good estimates of totals for each region, even smaller regions.</li>
+  <li>Because we first pick a PSU (think of these as a suburb or meshblock), then sample individuals from that PSU, the individual values are correlated.  Once you’ve interviewed someone in the PSU, their neighbours are less valuable statistically than people chosen at random.  A typical reason for following this strategy is cost and convenience of moving interviewers around.</li>
+</ul>
+
+<p>All this means that the variance of estimates from our complex survey sample is higher than if we had a sample of the same size that was selected by simple random sampling.  In fact, if the number of PSUs selected per region is the default of 10, an estimated “design effect” for this particular population and sampling strategy is 1.8.  That is, the variance of our estimates is 1.8 times larger than a hypothetical simple random sample.  Another way to look at this is that if a simple random sample were possible, we would need only 2,100 / 1.8 = 1,167 members in the sample to get the same quality estimate of total (population) <code class="highlighter-rouge">y</code> as from our cluster sample.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>&gt; des &lt;- samp(population, npsu = 10, seed = 123)
+&gt; svymean(~y, des, deff = TRUE)
+          mean      SE   DEff
+yFALSE 0.74814 0.01282 1.8346
+yTRUE  0.25186 0.01282 1.8346
+</code></pre>
+</div>
+
+<p>The design effect comes mostly from the clustering of individuals in PSUs.  The more PSUs we select (and hence, less individuals per PSU for the same overall sample size), the lower the design effect, as seen in this chart:</p>
+
+<p><img src="/img/0132-design-effects.svg" width="100%" /></p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">npsus</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="m">2</span><span class="o">:</span><span class="m">40</span><span class="p">,</span><span class="w"> </span><span class="m">6</span><span class="p">)</span><span class="w">
+
+</span><span class="n">deffs_l</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lapply</span><span class="p">(</span><span class="n">npsus</span><span class="p">,</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">i</span><span class="p">){</span><span class="w">
+  </span><span class="n">des</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">samp</span><span class="p">(</span><span class="n">population</span><span class="p">,</span><span class="w"> </span><span class="n">npsu</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">seed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">NULL</span><span class="p">)</span><span class="w">
+  </span><span class="n">X</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">svymean</span><span class="p">(</span><span class="o">~</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">des</span><span class="p">,</span><span class="w"> </span><span class="n">deff</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w">
+  </span><span class="nf">return</span><span class="p">(</span><span class="nf">c</span><span class="p">(</span><span class="n">npsu</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">deff</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">attributes</span><span class="p">(</span><span class="n">X</span><span class="p">)</span><span class="o">$</span><span class="s2">"deff"</span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="m">1</span><span class="p">]))</span><span class="w">
+  </span><span class="p">})</span><span class="w">
+</span><span class="n">deffs</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.data.frame</span><span class="p">(</span><span class="n">do.call</span><span class="p">(</span><span class="s2">"rbind"</span><span class="p">,</span><span class="w"> </span><span class="n">deffs_l</span><span class="p">))</span><span class="w">
+
+</span><span class="n">ggplot</span><span class="p">(</span><span class="n">deffs</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">npsu</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">deff</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_point</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_smooth</span><span class="p">(</span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"loess"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Number of PSUs selected per stratum"</span><span class="p">,</span><span class="w"> 
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Design effect for mean(y)"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Design effect is higher when we rely on fewer primary sampling units"</span><span class="p">)</span></code></pre></figure>
+
+<h2 id="modelling">Modelling</h2>
+
+<p>OK, so we’ve got a function to produce our complex sample.  Let’s get into the business of modelling <code class="highlighter-rouge">y</code> based on <code class="highlighter-rouge">region</code>, <code class="highlighter-rouge">colour</code> and <code class="highlighter-rouge">shape</code>.  From now on, I’ll be selecting 5 PSUs per region and 30 people per PSU, which gives us a relatively high design effect, but still a total of 14 x 5 = 70 PSUs for the whole sample.  This is a plausibly realistic number of PSUs if the sampling process involves moving around a whole country and interviewing people face to face.  By way of comparison, Lumley’s book <em>Complex Surveys: A Guide to Analysis Using R</em> cites (page 40) the example of the National Health and Nutrition Examination Survey, NHANES II, which sampled 64 locations and 440 participants in each location, for a relatively intensive and expensive interview/examination process.</p>
+
+<p>Because I’m following on from <a href="http://freerangestats.info/blog/2018/08/17/risk-ratios">last week’s post</a>, I’m interested in relative risks comparing one category to another (eg the probability of a “circle” having <code class="highlighter-rouge">y</code>, compared to the probability of a “square” having it).  So in the generalized linear model I’m going to fit, I need to use a logarithm link function connecting the expected value of the response variable with the linear predictor of the explanatory variables (<em>if asking why?  I don’t have time to explain that now</em>).  Two of the best candidates for this are <code class="highlighter-rouge">family = quasibinomial(log)</code> and <code class="highlighter-rouge">family = quasipoisson(log)</code>. Taking e to the power of coefficients or other contrast in the linear predictor will give us relative risks in this case.  It’s the <code class="highlighter-rouge">log</code> that’s particularly important; the default link function for <code class="highlighter-rouge">quasibinomial</code> would be <code class="highlighter-rouge">logit</code>, which would give us odds ratios, not risk ratios.</p>
+
+<p>Here’s an example of the sort of outcome I get from two such risk models, fitted to a single sample of 2,100 drawn with my functions set out above.  We can see the relative risks of different levels of my categorical variables (compared to the base levels of the variable in each case).  “1” would mean the given risk level of the value is the same as for the reference level.  So we would conclude, for example, that “square” people have 1.4 to 2.5 times the relative risk of getting <code class="highlighter-rouge">y</code> as do “circle” people (circle is the reference level for shape).</p>
+
+<p><img src="/img/0132-example-cis.svg" width="100%" /></p>
+
+<p>I’ve marked the “true” values of the coefficients with dots, and shown the 95% confidence intervals from two <code class="highlighter-rouge">quasibinomial(log)</code> options.  One of these is what I’m calling “naive” (although it’s still some fairly sophisticated stats) because it ignores the complex survey nature of the data and just uses R’s <code class="highlighter-rouge">glm</code> function as though we had a simple random sample.  The other method uses Lumley’s <code class="highlighter-rouge">svyglm</code> to appropriately take the sampling and weighting into account.  The clustering will tend to increase standard errors (and hence the width of confidence intervals); the use of auxiliary information in weighting to match population totals for shape, colour and region will decrease them.  In this case, the net effect of treating the survey design with respect is to increase standard errors and the width of confidence intervals, as seen by the longer blue lines compared to the red lines.</p>
+
+<p>Here’s the code that creates that one sample and fits the two models to it, comparing the results to the “correct” values from fitting a model to the full population of 1 million people:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#===========modelling============
+# First, we model the full population to get the "true" values (note that these are not
+# really "true" as the model is somewhat mis-specified, but they are as true as can be done
+# given the imperfection of the model, and hence form a good benchmark for the same model
+# fit to a sample).  As we have the full population, we don't need to worry about survey methods
+# and can just use stats::glm rather than survey::svyglm
+</span><span class="n">full_pop_model_bin</span><span class="w"> </span><span class="o">&lt;-</span><span class="w">  </span><span class="n">glm</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">region</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">shape</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">colour</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">quasibinomial</span><span class="p">(</span><span class="n">log</span><span class="p">),</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">population</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#-------------compare a single example-------
+# Survey design, for use with svyglm:
+</span><span class="n">des</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">samp</span><span class="p">(</span><span class="n">population</span><span class="p">,</span><span class="w"> </span><span class="n">npsu</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="n">seed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">999</span><span class="p">)</span><span class="w">
+</span><span class="c1"># Extract just the data from the design for use with glm:
+</span><span class="n">data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">des</span><span class="o">$</span><span class="n">variables</span><span class="w">
+
+</span><span class="n">samp_model_bin</span><span class="w"> </span><span class="o">&lt;-</span><span class="w">  </span><span class="n">glm</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">region</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">shape</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">colour</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">quasibinomial</span><span class="p">(</span><span class="n">log</span><span class="p">),</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">)</span><span class="w">
+
+</span><span class="n">samp_model_bin_svy</span><span class="w"> </span><span class="o">&lt;-</span><span class="w">  </span><span class="n">svyglm</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">region</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">shape</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">colour</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">quasibinomial</span><span class="p">(</span><span class="n">log</span><span class="p">),</span><span class="w"> </span><span class="n">design</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">des</span><span class="p">)</span><span class="w">
+
+
+</span><span class="c1"># Combine results for graphic:
+</span><span class="n">res</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">mutate</span><span class="p">(</span><span class="n">tidy</span><span class="p">(</span><span class="nf">exp</span><span class="p">(</span><span class="n">confint</span><span class="p">(</span><span class="n">samp_model_bin</span><span class="p">))),</span><span class="w"> </span><span class="n">model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"naive"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">rbind</span><span class="p">(</span><span class="n">mutate</span><span class="p">(</span><span class="n">tidy</span><span class="p">(</span><span class="nf">exp</span><span class="p">(</span><span class="n">confint</span><span class="p">(</span><span class="n">samp_model_bin_svy</span><span class="p">))),</span><span class="w"> </span><span class="n">model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"survey"</span><span class="p">))</span><span class="w">  </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">rename</span><span class="p">(</span><span class="n">lower</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">X</span><span class="m">2.5</span><span class="n">..</span><span class="p">,</span><span class="w">
+         </span><span class="n">upper</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">X</span><span class="m">97.5</span><span class="n">..</span><span class="p">,</span><span class="w">
+         </span><span class="n">names</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">.rownames</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">left_join</span><span class="p">(</span><span class="n">tidy</span><span class="p">(</span><span class="nf">exp</span><span class="p">(</span><span class="n">coef</span><span class="p">(</span><span class="n">full_pop_model_bin</span><span class="p">)),</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"names"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">name_number</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">as.factor</span><span class="p">(</span><span class="n">names</span><span class="p">)),</span><span class="w">
+         </span><span class="n">true_value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w">
+         </span><span class="n">y_pos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">model</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"naive"</span><span class="p">,</span><span class="w"> 
+                        </span><span class="n">name_number</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">0.1</span><span class="p">,</span><span class="w">
+                        </span><span class="n">name_number</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">0.1</span><span class="p">),</span><span class="w">
+         </span><span class="n">names</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"colour"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Colour: "</span><span class="p">,</span><span class="w"> </span><span class="n">names</span><span class="p">),</span><span class="w">
+         </span><span class="n">names</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"region"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Region: "</span><span class="p">,</span><span class="w"> </span><span class="n">names</span><span class="p">),</span><span class="w">
+         </span><span class="n">names</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"shape"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Shape: "</span><span class="p">,</span><span class="w"> </span><span class="n">names</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">arrange</span><span class="p">(</span><span class="n">model</span><span class="p">,</span><span class="w"> </span><span class="n">name_number</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># Draw graphic:
+</span><span class="n">res</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_segment</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">yend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">y_pos</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">y_pos</span><span class="p">,</span><span class="w">
+                   </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lower</span><span class="p">,</span><span class="w"> </span><span class="n">xend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">upper</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">model</span><span class="p">),</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1.7</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_point</span><span class="p">(</span><span class="n">aes</span><span class="w"> </span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">as.factor</span><span class="p">(</span><span class="n">names</span><span class="p">)),</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">),</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="n">labels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">res</span><span class="p">[</span><span class="m">1</span><span class="o">:</span><span class="m">22</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">names</span><span class="p">,</span><span class="w"> </span><span class="n">breaks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">22</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Relative risk ratios"</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Variable"</span><span class="p">,</span><span class="w">
+       </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Estimation method"</span><span class="p">,</span><span class="w">
+       </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Complex sample of around 2,100 drawn from a population of a million.  Black points show the true values"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Example confidence intervals for risk ratios from a quasi-binomial model"</span><span class="p">,</span><span class="w">
+          </span><span class="s2">"Two modelling methods from the same sample, compared to true values from total population."</span><span class="p">)</span></code></pre></figure>
+
+<p>That’s just one sample of course.  How about if we do this 100 times?  That brings us to the graphic I started the blog with.  We can see that both methods are fair performers when it comes to point estimates, and indeed aren’t too bad even for confidence interval coverage (I would be pleased and surprised if 85% of one’s “95%” time series prediction intervals contained the true value, by comparison, but even the naive method exceeds that for these confidence intervals).  But the coverage of the survey method very nearly matches the advertised 95% design, which is excellent, particularly as the model is slightly mis-specified compared to the data generation process.</p>
+
+<p><img src="/img/0132-comparisons.svg" width="100%" /></p>
+
+<p>Finally, the question I thought this blog was going to be all about - quasi-poisson versus quasi-binomial families with a log link when using logistic regression to get relative risks?  There’s an oldish but good thread on this on <a href="http://grokbase.com/t/r/r-help/109dad6km5/r-relative-risk-regression-with-survey-data">R-help</a>.</p>
+
+<p>My own experience so far with these two options is that they give similar results, but that the <code class="highlighter-rouge">quasipoisson(log)</code> method is less likely to fall over (ie fail to converge to a solution) than is <code class="highlighter-rouge">quasibinomial(log)</code>.  I don’t know why this is.  <code class="highlighter-rouge">quasibinomial</code> will be modelling variance as proportional to <code class="highlighter-rouge">mu(1 - mu)</code> (where <code class="highlighter-rouge">mu</code> is the expected value of the response, given the linear predictor) whereas <code class="highlighter-rouge">quasipoisson</code> will be modelling it as proportional to <code class="highlighter-rouge">mu</code>.  In effect, this will mean the <code class="highlighter-rouge">quasipoisson</code> expects high variance when the probability of <code class="highlighter-rouge">y</code> is close to 1 and will down-weight those points; whereas <code class="highlighter-rouge">quasibinomial</code> will do the opposite.  In data like that I’ve been using today, the expected values don’t get that high so it makes very little difference.</p>
+
+<p>In the simulations I’ve done for this blog, I got around the problem of the occasional non-convergence of the <code class="highlighter-rouge">quasibinomial</code> model by first fitting it with the <code class="highlighter-rouge">quasipoisson</code> option and then using the estimated coefficient values from that model as starting values for the <code class="highlighter-rouge">quasibinomial</code> model.  This seems to work well; we get the natural (or so it seems to me) treatment of variance as being proportional to <code class="highlighter-rouge">mu(1-mu)</code> of the binomial approach while still being robust enough to work without human intervention on a wide range of samples.</p>
+
+<p>[As an aside, the use of <em>quasi</em> Poisson is particularly important if we are modelling binary outcomes as we are here.  With the response constrained to being 0 or 1, the variance will often be less (and nearly always different) from being <em>exactly</em> <code class="highlighter-rouge">mu</code> which would be expected for the straight Poisson family.  So we will have under-dispersion (or less likely, over-dispersion) relative to the Poisson distribution.  Use of <code class="highlighter-rouge">quasipoisson</code> allows this dispersion parameter to be estimated rather than forced onto the model.]</p>
+
+<p>Here’s a comparison of the confidence interval coverage of those two methods; we can see it’s virtually identical in the long run, with this particular population and model:</p>
+
+<p><img src="/img/0132-bin-pois.svg" width="100%" /></p>
+
+<p>So, to conclude (bearing in mind that this is only with one set of simulated population data, but the principles seem plausible):</p>
+
+<ul>
+  <li>ignoring the complex survey nature of the data and just using <code class="highlighter-rouge">glm()</code> out of the box can still mean that you get ok point estimates</li>
+  <li>however, your standard errors (and hence confidence interval widths, and statistical inferences in general) run the risk of understating the uncertainty and overstating the information, particularly when the original data is clustered</li>
+  <li>there’s not much to choose from in weighing up the use of <code class="highlighter-rouge">quasibinomial(log)</code> or <code class="highlighter-rouge">quasipoisson(log)</code> when setting out get get relative risks from a generalized linear model with a binary response.  They give similar results, and similarly successful confidence intervals.</li>
+</ul>
+
+<p>Here’s the last chunk of code - for those more systematic checks of “naive” versus survey methods, and quasipoisson versus quasibinomial:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#------------systematically compare lots of different samples' point estimates--------
+</span><span class="w">
+</span><span class="n">compare_mse</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">npsu</span><span class="p">,</span><span class="w"> </span><span class="n">seed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">NULL</span><span class="p">){</span><span class="w">
+  </span><span class="n">des</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">samp</span><span class="p">(</span><span class="n">population</span><span class="p">,</span><span class="w"> </span><span class="n">npsu</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">npsu</span><span class="p">,</span><span class="w"> </span><span class="n">seed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">seed</span><span class="p">)</span><span class="w">
+  </span><span class="n">data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">des</span><span class="o">$</span><span class="n">variables</span><span class="w">
+
+  </span><span class="c1"># The quasibinomial response isn't robust enough for either glm or svyglm, so we get some starting
+</span><span class="w">  </span><span class="c1"># values with quasipoisson to ensure we can always get a response:
+</span><span class="w">  </span><span class="n">samp_model_pois_svy</span><span class="w"> </span><span class="o">&lt;-</span><span class="w">  </span><span class="n">svyglm</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">region</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">shape</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">colour</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">quasipoisson</span><span class="p">(</span><span class="n">log</span><span class="p">),</span><span class="w"> </span><span class="n">design</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">des</span><span class="p">)</span><span class="w">
+  
+    
+  </span><span class="n">samp_model_bin</span><span class="w"> </span><span class="o">&lt;-</span><span class="w">  </span><span class="n">glm</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">region</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">shape</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">colour</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">quasibinomial</span><span class="p">(</span><span class="n">log</span><span class="p">),</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">,</span><span class="w">
+                         </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coef</span><span class="p">(</span><span class="n">samp_model_pois_svy</span><span class="p">))</span><span class="w">
+
+  </span><span class="n">samp_model_bin_svy</span><span class="w"> </span><span class="o">&lt;-</span><span class="w">  </span><span class="n">svyglm</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">region</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">shape</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">colour</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">quasibinomial</span><span class="p">(</span><span class="n">log</span><span class="p">),</span><span class="w"> </span><span class="n">design</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">des</span><span class="p">,</span><span class="w">
+                                </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coef</span><span class="p">(</span><span class="n">samp_model_pois_svy</span><span class="p">))</span><span class="w">
+  
+  </span><span class="nf">return</span><span class="p">(</span><span class="w">
+    </span><span class="nf">c</span><span class="p">(</span><span class="n">survey</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mean</span><span class="p">((</span><span class="n">coef</span><span class="p">(</span><span class="n">samp_model_bin_svy</span><span class="p">)[</span><span class="m">-1</span><span class="p">]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">coef</span><span class="p">(</span><span class="n">full_pop_model_bin</span><span class="p">)[</span><span class="m">-1</span><span class="p">])</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="m">2</span><span class="p">),</span><span class="w">
+      </span><span class="n">naive</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mean</span><span class="p">((</span><span class="n">coef</span><span class="p">(</span><span class="n">samp_model_bin</span><span class="p">)[</span><span class="m">-1</span><span class="p">]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">coef</span><span class="p">(</span><span class="n">full_pop_model_bin</span><span class="p">)[</span><span class="m">-1</span><span class="p">])</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="m">2</span><span class="p">))</span><span class="w">
+  </span><span class="p">)}</span><span class="w">
+
+</span><span class="n">mses</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lapply</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">100</span><span class="p">,</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">i</span><span class="p">){</span><span class="n">compare_mse</span><span class="p">(</span><span class="n">npsu</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="n">seed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="p">)})</span><span class="w">
+</span><span class="n">mses_df</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.data.frame</span><span class="p">(</span><span class="n">do.call</span><span class="p">(</span><span class="s2">"rbind"</span><span class="p">,</span><span class="w"> </span><span class="n">mses</span><span class="p">))</span><span class="w">
+
+</span><span class="n">mse</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="n">apply</span><span class="p">(</span><span class="n">mses_df</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">mean</span><span class="p">),</span><span class="w"> </span><span class="m">3</span><span class="p">)</span><span class="w">
+
+</span><span class="n">p</span><span class="m">1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ggplot</span><span class="p">(</span><span class="n">mses_df</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">naive</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">survey</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_abline</span><span class="p">(</span><span class="n">intercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">slope</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_point</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">coord_equal</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Mean square error of coefficients"</span><span class="p">,</span><span class="w">
+          </span><span class="s2">"Two methods of modelling, compared to correct (full\npopulation) values for all coefficients except the intercept."</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">paste0</span><span class="p">(</span><span class="s2">"Complex survey methods\nAverage mean squared error: "</span><span class="p">,</span><span class="w"> </span><span class="n">mse</span><span class="p">[</span><span class="m">1</span><span class="p">]),</span><span class="w">
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">paste0</span><span class="p">(</span><span class="s2">"Naive methods.\nAverage mean squared error: "</span><span class="p">,</span><span class="w"> </span><span class="n">mse</span><span class="p">[</span><span class="m">2</span><span class="p">]))</span><span class="w">
+
+
+</span><span class="c1">#========compare confidence interval coverage========
+</span><span class="w">
+</span><span class="c1">#------------systematically compare lots of different samples' point estimates--------
+</span><span class="w">
+</span><span class="n">ci_rate</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">correct_mod</span><span class="p">,</span><span class="w"> </span><span class="n">ci_mod</span><span class="p">){</span><span class="w">
+  </span><span class="n">X</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.data.frame</span><span class="p">(</span><span class="n">cbind</span><span class="p">(</span><span class="n">coef</span><span class="p">(</span><span class="n">correct_mod</span><span class="p">),</span><span class="w"> </span><span class="n">confint</span><span class="p">(</span><span class="n">ci_mod</span><span class="p">)))</span><span class="w">
+  </span><span class="nf">names</span><span class="p">(</span><span class="n">X</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"correct"</span><span class="p">,</span><span class="w"> </span><span class="s2">"lower"</span><span class="p">,</span><span class="w"> </span><span class="s2">"upper"</span><span class="p">)</span><span class="w">
+  </span><span class="nf">return</span><span class="p">(</span><span class="nf">sum</span><span class="p">(</span><span class="n">with</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="n">correct</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">lower</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">correct</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">upper</span><span class="p">))</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">X</span><span class="p">))</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">compare_ci</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">npsu</span><span class="p">,</span><span class="w"> </span><span class="n">seed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">NULL</span><span class="p">){</span><span class="w">
+  </span><span class="n">des</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">samp</span><span class="p">(</span><span class="n">population</span><span class="p">,</span><span class="w"> </span><span class="n">npsu</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">npsu</span><span class="p">,</span><span class="w"> </span><span class="n">seed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">seed</span><span class="p">)</span><span class="w">
+  </span><span class="n">data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">des</span><span class="o">$</span><span class="n">variables</span><span class="w">
+  
+  </span><span class="c1"># The quasibinomial response isn't robust enough for either glm or svyglm, so we get some starting
+</span><span class="w">  </span><span class="c1"># values with quasipoisson to ensure we can always get a response:
+</span><span class="w">  </span><span class="n">samp_model_pois_svy</span><span class="w"> </span><span class="o">&lt;-</span><span class="w">  </span><span class="n">svyglm</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">region</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">shape</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">colour</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">quasipoisson</span><span class="p">(</span><span class="n">log</span><span class="p">),</span><span class="w"> </span><span class="n">design</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">des</span><span class="p">)</span><span class="w">
+  
+  
+  </span><span class="n">samp_model_bin</span><span class="w"> </span><span class="o">&lt;-</span><span class="w">  </span><span class="n">glm</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">region</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">shape</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">colour</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">quasibinomial</span><span class="p">(</span><span class="n">log</span><span class="p">),</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">,</span><span class="w">
+                         </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coef</span><span class="p">(</span><span class="n">samp_model_pois_svy</span><span class="p">))</span><span class="w">
+  
+  </span><span class="n">samp_model_bin_svy</span><span class="w"> </span><span class="o">&lt;-</span><span class="w">  </span><span class="n">svyglm</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">region</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">shape</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">colour</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">quasibinomial</span><span class="p">(</span><span class="n">log</span><span class="p">),</span><span class="w"> </span><span class="n">design</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">des</span><span class="p">,</span><span class="w">
+                                </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coef</span><span class="p">(</span><span class="n">samp_model_pois_svy</span><span class="p">))</span><span class="w">
+  
+    
+  </span><span class="nf">return</span><span class="p">(</span><span class="w">
+    </span><span class="nf">c</span><span class="p">(</span><span class="n">binomial_svy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ci_rate</span><span class="p">(</span><span class="n">full_pop_model_bin</span><span class="p">,</span><span class="w"> </span><span class="n">samp_model_bin_svy</span><span class="p">),</span><span class="w">
+      </span><span class="n">poisson_svy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ci_rate</span><span class="p">(</span><span class="n">full_pop_model_bin</span><span class="p">,</span><span class="w"> </span><span class="n">samp_model_pois_svy</span><span class="p">),</span><span class="w">
+      </span><span class="n">naive</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ci_rate</span><span class="p">(</span><span class="n">full_pop_model_bin</span><span class="p">,</span><span class="w"> </span><span class="n">samp_model_bin</span><span class="p">))</span><span class="w">
+  </span><span class="p">)}</span><span class="w">
+
+</span><span class="n">cis</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lapply</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">100</span><span class="p">,</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">i</span><span class="p">){</span><span class="n">compare_ci</span><span class="p">(</span><span class="n">npsu</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="n">seed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="p">)})</span><span class="w">
+</span><span class="n">cis_df</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.data.frame</span><span class="p">(</span><span class="n">do.call</span><span class="p">(</span><span class="s2">"rbind"</span><span class="p">,</span><span class="w"> </span><span class="n">cis</span><span class="p">))</span><span class="w">
+
+</span><span class="n">successes</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="n">apply</span><span class="p">(</span><span class="n">cis_df</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">mean</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">100</span><span class="p">)</span><span class="w">
+
+</span><span class="n">p</span><span class="m">2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ggplot</span><span class="p">(</span><span class="n">cis_df</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">binomial_svy</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">naive</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_abline</span><span class="p">(</span><span class="n">intercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">slope</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">annotate</span><span class="p">(</span><span class="s2">"rect"</span><span class="p">,</span><span class="w"> </span><span class="n">xmin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="kc">Inf</span><span class="p">,</span><span class="w"> </span><span class="n">xmax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">ymin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.95</span><span class="p">,</span><span class="w"> </span><span class="n">ymax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">annotate</span><span class="p">(</span><span class="s2">"rect"</span><span class="p">,</span><span class="w"> </span><span class="n">xmin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.95</span><span class="p">,</span><span class="w"> </span><span class="n">xmax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">ymin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="kc">Inf</span><span class="p">,</span><span class="w"> </span><span class="n">ymax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.95</span><span class="p">,</span><span class="w"> </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_jitter</span><span class="p">(</span><span class="n">width</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.01</span><span class="p">,</span><span class="w"> </span><span class="n">height</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.01</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">coord_equal</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Confidence intervals' coverage"</span><span class="p">,</span><span class="w">
+          </span><span class="s2">"Two methods of modelling, showing proportion that\ncontain the correct value (should be 95%)."</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">paste0</span><span class="p">(</span><span class="s2">"Complex survey methods.\nAverage coverage: "</span><span class="p">,</span><span class="w"> </span><span class="n">successes</span><span class="p">[</span><span class="m">1</span><span class="p">],</span><span class="w"> </span><span class="s2">"%"</span><span class="p">),</span><span class="w">
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">paste0</span><span class="p">(</span><span class="s2">"Naive methods.\nAverage coverage: "</span><span class="p">,</span><span class="w"> </span><span class="n">successes</span><span class="p">[</span><span class="m">3</span><span class="p">],</span><span class="w"> </span><span class="s2">"%"</span><span class="p">),</span><span class="w">
+       </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">str_wrap</span><span class="p">(</span><span class="s2">"Source for both diagrams: complex samples of around 2,100 each, drawn from a 
+population of 1 million stratified by 14 unequal regions with 
+5 out of 100 potential primary sampling units chosen per region.  Model has three categorical explanatory variables and a single binary (quasi-binomial family) response.
+Points have been jittered."</span><span class="p">,</span><span class="w"> </span><span class="m">90</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_x_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">)</span><span class="w">
+
+</span><span class="n">grid.arrange</span><span class="p">(</span><span class="n">p</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">ncol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w">
+
+</span><span class="n">ggplot</span><span class="p">(</span><span class="n">cis_df</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">binomial_svy</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">poisson_svy</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_abline</span><span class="p">(</span><span class="n">intercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">slope</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">annotate</span><span class="p">(</span><span class="s2">"rect"</span><span class="p">,</span><span class="w"> </span><span class="n">xmin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="kc">Inf</span><span class="p">,</span><span class="w"> </span><span class="n">xmax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">ymin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.95</span><span class="p">,</span><span class="w"> </span><span class="n">ymax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">annotate</span><span class="p">(</span><span class="s2">"rect"</span><span class="p">,</span><span class="w"> </span><span class="n">xmin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.95</span><span class="p">,</span><span class="w"> </span><span class="n">xmax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">ymin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="kc">Inf</span><span class="p">,</span><span class="w"> </span><span class="n">ymax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.95</span><span class="p">,</span><span class="w"> </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_jitter</span><span class="p">(</span><span class="n">width</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.01</span><span class="p">,</span><span class="w"> </span><span class="n">height</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.01</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">coord_equal</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Confidence intervals' coverage"</span><span class="p">,</span><span class="w">
+          </span><span class="s2">"Two methods of modelling, showing proportion that\ncontain the correct value (should be 95%)."</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">paste0</span><span class="p">(</span><span class="s2">"Quasi-binomial family\nAverage coverage: "</span><span class="p">,</span><span class="w"> </span><span class="n">successes</span><span class="p">[</span><span class="m">1</span><span class="p">],</span><span class="w"> </span><span class="s2">"%"</span><span class="p">),</span><span class="w">
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">paste0</span><span class="p">(</span><span class="s2">"Quasi-poisson family\nAverage coverage: "</span><span class="p">,</span><span class="w"> </span><span class="n">successes</span><span class="p">[</span><span class="m">2</span><span class="p">],</span><span class="w"> </span><span class="s2">"%"</span><span class="p">),</span><span class="w">
+       </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">str_wrap</span><span class="p">(</span><span class="s2">"Source: complex samples of around 2,100 each, drawn from a 
+population of 1 million stratified by 14 unequal regions with 
+5 out of 100 potential primary sampling units chosen per region.  Model has three categorical 
+explanatory variables and a single binary response from either the quasi-binomial or quasi-poisson family.
+Points have been jittered."</span><span class="p">,</span><span class="w"> </span><span class="m">90</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_x_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">)</span></code></pre></figure>
+
+<p>Finally and slightly off the point, for a great example of the importance of reporting <em>absolute</em> risks as well as relative risks, check out <a href="https://medium.com/wintoncentre/the-risks-of-alcohol-again-2ae8cb006a4a">this blog</a> on the recent Lancet article arguing “no safe level of alcohol usage”.  The statistics in the original article look to be sound, but while the relative risk of any alcohol is indeed above 1, the actual increase in absolute risk is small.   For example:</p>
+
+<blockquote>
+  <p>“So a total of 50,000 bottles of gin among these 1,600 people is associated with one extra health problem.”</p>
+</blockquote>
+
+<p>Read the full blog for more.</p>
+
+
+		
+	</div>
+</div>
+
+<div class="col-md-1"></div>
+<div class="col-md-4">
+	<div class="side-banner">
+	
+
+
+	<div>
+	   
+	    
+			
+			<p>&larr; Previous post</p>
+			<p><a rel="prev" href="/blog/2018/08/17/risk-ratios">Relative risk ratios and odds ratios</a></p>
+		
+		
+		
+		
+		
+		
+	</div>
+	
+	 
+
+   <div class = "side-footer">
+			
+			<hr></hr>
+			<p><gcse:search></gcse:search></p>
+			<hr></hr>
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.</p>
+			<hr></hr>
+			
+       <div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="false" data-share="false"></div>
+			
+			<hr></hr>
+			<p>I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+			<hr></hr>
+
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title"><i>free range statistics</i></span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			<hr></hr>
+			
+
+
+    </div>
+
+
+
+  
+   
+
+
+
+
+		  
+		  
+
+
+
+	   
+	<div id="disqus_thread"></div>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function() {
+				var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+				dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+				(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+			})();
+		</script>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function () {
+				var s = document.createElement('script'); s.async = true;
+				s.type = 'text/javascript';
+				s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+				(document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+			}());
+		</script>
+
+	<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+	</div>	
+</div>    
+   
+   
+
+			
+			</div><!-- /.container -->
+         
+   <!-- Default Statcounter code for Free Range Statistics
+http://Http://freerangestats.info -->
+<script type="text/javascript">
+var sc_project=11673245; 
+var sc_invisible=1; 
+var sc_security="5b7111a4"; 
+</script>
+<script type="text/javascript"
+src="https://www.statcounter.com/counter/counter.js" async></script>
+<noscript><div class="statcounter"><a title="Web Analytics"
+href="http://statcounter.com/" target="_blank"><img class="statcounter"
+src="//c.statcounter.com/11673245/0/5b7111a4/1/" alt="Web
+Analytics"></a></div></noscript>
+<!-- End of Statcounter Code -->
+
+</body>   
+</html>
