@@ -1,0 +1,700 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Seasonality in NZ voting preference?</title>
+      	
+         
+         
+            <meta name ="description" content ="I update the nzelect R package with the latest New Zealand polling data, and use a generalized additive model to look for a seasonal impact on support for the current government.">
+            <meta property="og:description" content ="I update the nzelect R package with the latest New Zealand polling data, and use a generalized additive model to look for a seasonal impact on support for the current government.">
+         
+         <meta property="og:site_name" content="free range statistics" />
+         <meta property="og:title" content="Seasonality in NZ voting preference?" />
+         
+            <meta property="og:image" content="http://freerangestats.info/img/0144-pro-pm.png" />
+         
+		 
+			<meta property="og:url" content="http://freerangestats.info/blog/2019/02/20/voting-seasonality.html" />
+		 
+         <meta property="og:author" content= "https://www.facebook.com/peterstats" />
+         <meta property="og:type" content="article" />
+      
+
+<link href='https://fonts.googleapis.com/css?family=Sarala' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Prosto+One' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Ubuntu+Mono' rel='stylesheet'>
+	  
+          <link href="/css/bootstrap.min.css" rel ="stylesheet" type="text/css">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet" type="text/css">
+            <link href="/css/custom.css" rel ="stylesheet" type="text/css">     
+		<link href="/css/syntax.css" rel ="stylesheet" type="text/css">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="free range statistics by Peter Ellis"
+      href="/feed.xml">
+
+	  
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+  <script>
+  (function() {
+    var cx = '015640467633673901770:pk3v2c95baw';
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+  })();
+</script>
+
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">free range statistics</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/about">about</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">all posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">ordered by date</a></li>
+				  <li><a href="/blog/most-popular.html">ordered by popularity</a></li>
+                  <li><a href="/blog/index_by_tag.html">grouped by subject matter</a></li>
+                  <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
+				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
+				  <li><a href = /blog/2019/02/20/voting-seasonality>most recent post</a></li>
+				</ul>
+            </li>
+              <li><a href="/blog/showcase.html">showcase</a></li>
+              <li><a href="/presentations/index.html">presentations</a></li>
+			  <li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">nz election forecasts<span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href = "/elections/combined.html">combined model (recommended)</a></li>
+                  <li><a href="https://ellisp.shinyapps.io/nz-election-2017/">explore coalitions and assumptions</a></li>
+				  <li><a href="/elections/elections.html">model A "generalized additive model"</a></li>
+				  <li><a href = "/elections/state-space.html">model B "state space"</a></li>
+				  <li><a href="/elections/changelog.html">log of changes to forecasts</a></li>
+				  <li><a href="https://github.com/ellisp/nz-election-forecast">source code on GitHub</a></li>
+				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
+                </ul>				
+			  </li>
+			  
+			  
+			  
+		    </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			<div class="jumbotron">
+  <div class="container">
+	<center><h1>Seasonality in NZ voting preference?</h1></center>
+  </div>
+</div>
+
+
+
+	<div class = "post-summary">
+	<h2>At a glance:</h2>
+	   <p>I update the nzelect R package with the latest New Zealand polling data, and use a generalized additive model to look for a seasonal impact on support for the current government.</p>
+	   <p class="meta">20 Feb 2019</p>
+	   <hr></hr>
+	</div>
+
+
+<div class="col-md-7">
+
+	<div class="post">
+		
+	  <p>There was a flurry of activity in the last couple of days on <a href="https://twitter.com/Thoughtfulnz/status/1097734918115799040">Twitter</a> and the blogosphere, most notably <a href="https://www.statschat.org.nz/2019/02/19/summer-polling/">Thomas Lumley’s excellent Stats Chat</a>, relating to whether there is a pro-government bias in surveys of New Zealand voting intention in the summer. As the analysis I’ve seen used my <code class="highlighter-rouge">nzelect</code> R package, this motivated me to update it for recent polls.</p>
+
+<h2 id="the-nzelect-update">The <code class="highlighter-rouge">nzelect</code> update</h2>
+
+<p><code class="highlighter-rouge">nzelect</code> hasn’t been updated on CRAN for some time, because about a year ago I made some major changes to the data model for the historical election results by voting place and I haven’t been able to complete testing and stabilisation of the result. I do hope to do this some time in the next few months. In the meantime, the version on GitHub has the current polling data, and I intend to keep it current. Political polls are very thin on the ground these days for New Zealand, so that’s not too big an ask! I’ve now spent a bit of time tidying it up and adding the three most recent polls, which I’d previously neglected.</p>
+
+<p>Let’s start with the basics. One of the reasons I first put the package together several years ago was to help facilitate analysis of the relatively long run in political opinion. I wanted to lift up analysis from over-interpretation of the last few noisy data points. Here’s the expressed voting intention of New Zealanders for the four currently largest parties in Parliament over time:</p>
+
+<p><img src="/img/0144-four-parties.svg" width="100%" /></p>
+
+<p>It’s striking, but unsurprising, how the Greens and New Zealand First support has collapsed since coming into government with Labour (or just before, in the case of the Greens and their disappointing 2017 election campaign). The junior party in a coalition often suffers, as attention and kudos goes to the leaders of the large party (in this case, Prime Minister Jacinda Ardern) and the smaller parties’ own base deals with the realities and compromises of being in government.</p>
+
+<p>The other interesting (and disappointing, for statisticians and political scientists) observation from this chart  is how obviously the number of polls has decreased. Topic for another day (or more likely, someone else to write about).</p>
+
+<p>Here’s the R code for that chart:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># install latest version of nzelect:
+</span><span class="n">devtools</span><span class="o">::</span><span class="n">install_github</span><span class="p">(</span><span class="s2">"ellisp/nzelect/pkg1"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># load packages needed including for rest of session
+</span><span class="n">library</span><span class="p">(</span><span class="n">nzelect</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">lubridate</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">gridExtra</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">broom</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">mgcv</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#-----------------------------polling overview---------------------
+</span><span class="w">
+</span><span class="n">p</span><span class="m">1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">polls</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">MidDate</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">as.Date</span><span class="p">(</span><span class="s2">"2014-11-20"</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="o">!</span><span class="nf">is.na</span><span class="p">(</span><span class="n">VotingIntention</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">Party</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"National"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Labour"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">Party</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_reorder</span><span class="p">(</span><span class="n">Party</span><span class="p">,</span><span class="w"> </span><span class="n">VotingIntention</span><span class="p">,</span><span class="w"> </span><span class="n">.desc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">),</span><span class="w">
+         </span><span class="n">Party</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_drop</span><span class="p">(</span><span class="n">Party</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MidDate</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">VotingIntention</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Party</span><span class="p">,</span><span class="w"> </span><span class="n">linetype</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Pollster</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_line</span><span class="p">(</span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_point</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">shape</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Pollster</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_smooth</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">group</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Party</span><span class="p">),</span><span class="w"> </span><span class="n">se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey15"</span><span class="p">,</span><span class="w"> </span><span class="n">span</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">.4</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_colour_manual</span><span class="p">(</span><span class="n">values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">parties_v</span><span class="p">,</span><span class="w"> </span><span class="n">guide</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"none"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="s2">"Voting intention"</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_x_date</span><span class="p">(</span><span class="s2">""</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">Party</span><span class="p">,</span><span class="w"> </span><span class="n">scales</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"fixed"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">theme</span><span class="p">(</span><span class="n">panel.grid.minor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_blank</span><span class="p">(),</span><span class="w">
+        </span><span class="n">legend.position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"none"</span><span class="p">)</span><span class="w"> 
+
+</span><span class="n">p</span><span class="m">2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">polls</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">MidDate</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">as.Date</span><span class="p">(</span><span class="s2">"2014-11-20"</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="o">!</span><span class="nf">is.na</span><span class="p">(</span><span class="n">VotingIntention</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">Party</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Green"</span><span class="p">,</span><span class="w"> </span><span class="s2">"NZ First"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">Party</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_reorder</span><span class="p">(</span><span class="n">Party</span><span class="p">,</span><span class="w"> </span><span class="n">VotingIntention</span><span class="p">,</span><span class="w"> </span><span class="n">.desc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">),</span><span class="w">
+         </span><span class="n">Party</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_drop</span><span class="p">(</span><span class="n">Party</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MidDate</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">VotingIntention</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Party</span><span class="p">,</span><span class="w"> </span><span class="n">linetype</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Pollster</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_line</span><span class="p">(</span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_point</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">shape</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Pollster</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_smooth</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">group</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Party</span><span class="p">),</span><span class="w"> </span><span class="n">se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey15"</span><span class="p">,</span><span class="w"> </span><span class="n">span</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">.4</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_colour_manual</span><span class="p">(</span><span class="n">values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">parties_v</span><span class="p">,</span><span class="w"> </span><span class="n">guide</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"none"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="s2">"Voting intention"</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_x_date</span><span class="p">(</span><span class="s2">""</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">Party</span><span class="p">,</span><span class="w"> </span><span class="n">scales</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"fixed"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">theme</span><span class="p">(</span><span class="n">panel.grid.minor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_blank</span><span class="p">())</span><span class="w"> 
+
+</span><span class="n">grid.arrange</span><span class="p">(</span><span class="n">p</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="m">2</span><span class="p">)</span></code></pre></figure>
+
+<p>There’s obvious interest for supporters of the left-of-centre parties in the combined vote for Labour and the Greens. That suggests the importance of this chart:</p>
+
+<p><img src="/img/0144-lab-green-comb.svg" width="100%" /></p>
+
+<p>(Apologies for red-green colour blind people in the use of these party colours; the Greens are the lowest of the three lines and Labour the middle.)</p>
+
+<p>It’s clear that to a significant degree electoral support for the two is substitutable, with the green and red lines moving in scissors-like counter directions at several key times since 2010, with the last 24 months just the most dramatic example.</p>
+
+<p>It’s also clear that the combined support for the centre-left in New Zealand is pretty strong, recovered to a point it hasn’t been since several years before the end of the government led by Helen Clarke in the 2000s.</p>
+
+<p>Here’s the code for that chart. Note how I use the dates of elections to make a simple data frame of who is in power when, for the background rectangles; and leverage the <code class="highlighter-rouge">parties_v</code> vector of colours in <code class="highlighter-rouge">nzelect</code> to allocate the official party colours to both the parties’ lines and to the background fill.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#----------------long run-------------
+</span><span class="n">elections</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">polls</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">Pollster</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Election result"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">distinct</span><span class="p">(</span><span class="n">MidDate</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">rename</span><span class="p">(</span><span class="n">start_date</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MidDate</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">end_date</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lead</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span><span class="w"> </span><span class="n">default</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">as.Date</span><span class="p">(</span><span class="s2">"2020-10-01"</span><span class="p">)),</span><span class="w">
+         </span><span class="n">pm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Labour"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Labour"</span><span class="p">,</span><span class="w"> </span><span class="s2">"National"</span><span class="p">,</span><span class="w"> </span><span class="s2">"National"</span><span class="p">,</span><span class="w"> </span><span class="s2">"National"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Labour"</span><span class="p">))</span><span class="w">
+
+</span><span class="n">p</span><span class="m">3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">polls</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">as_tibble</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="o">!</span><span class="nf">is.na</span><span class="p">(</span><span class="n">VotingIntention</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">Party</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Green"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Labour"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">select</span><span class="p">(</span><span class="n">Party</span><span class="p">,</span><span class="w"> </span><span class="n">MidDate</span><span class="p">,</span><span class="w"> </span><span class="n">VotingIntention</span><span class="p">,</span><span class="w"> </span><span class="n">Pollster</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">spread</span><span class="p">(</span><span class="n">Party</span><span class="p">,</span><span class="w"> </span><span class="n">VotingIntention</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">Combined</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Labour</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Green</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">gather</span><span class="p">(</span><span class="n">Party</span><span class="p">,</span><span class="w"> </span><span class="n">VotingIntention</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">MidDate</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">Pollster</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">Party</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_relevel</span><span class="p">(</span><span class="n">Party</span><span class="p">,</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Combined"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Labour"</span><span class="p">)))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_rect</span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">elections</span><span class="p">,</span><span class="w"> </span><span class="n">ymin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="kc">Inf</span><span class="p">,</span><span class="w"> </span><span class="n">ymax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">Inf</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.1</span><span class="p">,</span><span class="w"> 
+            </span><span class="n">aes</span><span class="p">(</span><span class="n">xmin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">start_date</span><span class="p">,</span><span class="w"> </span><span class="n">xmax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">end_date</span><span class="p">,</span><span class="w"> </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pm</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_line</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MidDate</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">VotingIntention</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Party</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_colour_manual</span><span class="p">(</span><span class="n">values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">parties_v</span><span class="p">,</span><span class="w"> </span><span class="s2">"Combined"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"black"</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_fill_manual</span><span class="p">(</span><span class="n">values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">parties_v</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Survey date"</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Voting intention"</span><span class="p">,</span><span class="w"> 
+       </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Surveyed voting intention:"</span><span class="p">,</span><span class="w"> </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Prime Minister's party:"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent_format</span><span class="p">(</span><span class="n">accuracy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Voting intention in New Zealand over a longer period than usually presented"</span><span class="p">,</span><span class="w">
+          </span><span class="s2">"Labour, Greens, and combined"</span><span class="p">)</span></code></pre></figure>
+
+<h2 id="seasonality">Seasonality</h2>
+
+<p>Now, on to the question of seasonality. I don’t have much to add to the analysis of David Hood on Twitter and Thomas Lumley on StatsChat; I basically agree with their conclusions. I have the advantage of a few more polls because of the update to <code class="highlighter-rouge">nzelect</code> this morning.</p>
+
+<p>Here is the expressed intended vote for the party of the Prime Minister over time:</p>
+
+<p><img src="/img/0144-pro-pm.svg" width="100%" /></p>
+
+<p>The blue line for the National Party is higher than the equivalent for Labour Prime Ministers because National has tended to form a larger proportion of its governing coalitions than Labour in this time period. I could (and probably should) have added the intended vote for all parties currently in coalition government, but this is actually a pretty complicated thing to do so I’ve gone for the simpler approach for now. So long as we don’t make simplistic comparisons forgetting that New Zealand has a proportional representation system, that is ok for our purposes.</p>
+
+<p>We obviously can’t tell anything from this chart about the seasonality; there are two many data points and too much noise. Actually, one thing we can say for sure is that seasonality isn’t strong. For very seasonal data such as tourist numbers, the seasonality would be obvious even in a chart like this.</p>
+
+<p>To see if there is a subtle seasonality effect, I tried modelling voting intention for the Prime Minister’s party on the month of the year, controlling for the party in power, a smooth trend over time, and whether or not it is an election month (otherwise September and November, with five of the six elections in this period, would certainly cloud the data). I used (as I nearly always do in this situation) Simon Woods excellent <code class="highlighter-rouge">mgcv</code> R package.</p>
+
+<p>Having done that, we can approximate confidence intervals for the impact on voting preference of the month of the year. The next chart shows those estimates:</p>
+
+<p><img src="/img/0144-seasonality.svg" width="100%" /></p>
+
+<p>As the title says, it’s weak evidence of a weak effect, which might be around half a percentage point more positive for the Prime Minister’s party in the summer months than it is in June. Or it might be more than that, or even negative.</p>
+
+<p>Here’s the code for that model and the last two charts:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#------------------------seasonality of govt support------------------
+# data frame of voting intention for the lead party of the government 
+</span><span class="n">d</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">polls</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">as_tibble</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">left_join</span><span class="p">(</span><span class="n">elections</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"MidDate"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"start_date"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">select</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">WikipediaDates</span><span class="o">:</span><span class="n">EndDate</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">fill</span><span class="p">(</span><span class="n">pm</span><span class="p">,</span><span class="w"> </span><span class="n">end_date</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="c1"># limit to the party that has the Prime Minister:
+</span><span class="w">  </span><span class="n">filter</span><span class="p">(</span><span class="n">Party</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">pm</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">survey_month</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.character</span><span class="p">(</span><span class="n">month</span><span class="p">(</span><span class="n">MidDate</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)),</span><span class="w">
+         </span><span class="n">survey_month</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_relevel</span><span class="p">(</span><span class="n">survey_month</span><span class="p">,</span><span class="w"> </span><span class="s2">"Jun"</span><span class="p">),</span><span class="w">
+         </span><span class="n">election_month</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">month</span><span class="p">(</span><span class="n">MidDate</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">month</span><span class="p">(</span><span class="n">end_date</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">year</span><span class="p">(</span><span class="n">MidDate</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">year</span><span class="p">(</span><span class="n">end_date</span><span class="p">)))</span><span class="w">
+
+</span><span class="n">ggplot</span><span class="p">(</span><span class="n">d</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_rect</span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">elections</span><span class="p">,</span><span class="w"> </span><span class="n">ymin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="kc">Inf</span><span class="p">,</span><span class="w"> </span><span class="n">ymax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">Inf</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.1</span><span class="p">,</span><span class="w"> 
+           </span><span class="n">aes</span><span class="p">(</span><span class="n">xmin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">start_date</span><span class="p">,</span><span class="w"> </span><span class="n">xmax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">end_date</span><span class="p">,</span><span class="w"> </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pm</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_line</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MidDate</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">VotingIntention</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Party</span><span class="p">,</span><span class="w"> </span><span class="n">group</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">end_date</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_colour_manual</span><span class="p">(</span><span class="n">values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">parties_v</span><span class="p">,</span><span class="w"> </span><span class="s2">"Combined"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"black"</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_fill_manual</span><span class="p">(</span><span class="n">values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">parties_v</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Survey date"</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Voting intention for PM's party"</span><span class="p">,</span><span class="w"> 
+       </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Surveyed voting intention:"</span><span class="p">,</span><span class="w"> </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Prime Minister's party:"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent_format</span><span class="p">(</span><span class="n">accuracy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Voting intention for the Prime Minister's party"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># model of vote for govt's lead party, controlling for trend (the smooth term) and for which
+# party is in government, looking for effects from month of year.
+</span><span class="n">mod</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">gam</span><span class="p">(</span><span class="n">VotingIntention</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">election_month</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">survey_month</span><span class="w"> </span><span class="o">+</span><span class="w">  </span><span class="n">Party</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">s</span><span class="p">(</span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">MidDate</span><span class="p">)),</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">d</span><span class="p">)</span><span class="w">
+</span><span class="n">anova</span><span class="p">(</span><span class="n">mod</span><span class="p">)</span><span class="w"> </span><span class="c1"># yes, the survey_month is 'statistically significant'
+</span><span class="w">
+</span><span class="n">tibble</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">names</span><span class="p">(</span><span class="n">coef</span><span class="p">(</span><span class="n">mod</span><span class="p">)),</span><span class="w">
+       </span><span class="n">estimate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coef</span><span class="p">(</span><span class="n">mod</span><span class="p">),</span><span class="w">
+       </span><span class="n">se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">summary</span><span class="p">(</span><span class="n">mod</span><span class="p">)</span><span class="o">$</span><span class="n">se</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="c1"># very approximate confidence intervals:
+</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">lower</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">estimate</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">se</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">1.96</span><span class="p">,</span><span class="w">
+         </span><span class="n">upper</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">estimate</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">se</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">1.96</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">grepl</span><span class="p">(</span><span class="s2">"month"</span><span class="p">,</span><span class="w"> </span><span class="n">variable</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">survey_month</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"survey_month"</span><span class="p">,</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">variable</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">survey_month</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">factor</span><span class="p">(</span><span class="n">survey_month</span><span class="p">,</span><span class="w"> 
+                               </span><span class="n">levels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"election_monthTRUE"</span><span class="p">,</span><span class="w"> </span><span class="nf">as.character</span><span class="p">(</span><span class="n">month</span><span class="p">(</span><span class="nf">c</span><span class="p">(</span><span class="m">7</span><span class="o">:</span><span class="m">12</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">6</span><span class="p">),</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)))))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lower</span><span class="p">,</span><span class="w"> </span><span class="n">xend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">upper</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">survey_month</span><span class="p">,</span><span class="w"> </span><span class="n">yend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">survey_month</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_vline</span><span class="p">(</span><span class="n">xintercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"red"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_segment</span><span class="p">(</span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.7</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_point</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">estimate</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_x_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Estimated impact (in percentage points) on intended vote for PM's party, relative to June"</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Survey month"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Seasonality of voting preference for the New Zealand PM's party?"</span><span class="p">,</span><span class="w">
+          </span><span class="s2">"Weak evidence of a very weak pro-government effect from late Spring to early Autumn"</span><span class="p">)</span></code></pre></figure>
+
+<p>It’s very motivating to see others using the <code class="highlighter-rouge">nzelect</code> package. Please tag me in Twitter, or let me know some other way, if you use this and it will encourage me for further enhancements, and to get the new version with better historical data onto CRAN!</p>
+
+<h2 id="thanksgiving">Thanksgiving</h2>
+
+<p>I’m going to try to get into the habit of this at the end of each blog post. Without the hard work, innovation and sheer smarts of the open source community my blog (and many much more important things!) wouldn’t be possible. Here are just those in the R world whose code I used in this session (not all of it made it into the excerpt above, but that’s all the more reason to give thanks below).</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">thankr</span><span class="o">::</span><span class="n">shoulders</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="n">knitr</span><span class="o">::</span><span class="n">kable</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="n">clipr</span><span class="o">::</span><span class="n">write_clip</span><span class="p">()</span></code></pre></figure>
+
+<table>
+  <thead>
+    <tr>
+      <th style="text-align: left">maintainer</th>
+      <th style="text-align: right">no_packages</th>
+      <th style="text-align: left">packages</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: left">Hadley Wickham <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#104;&#097;&#100;&#108;&#101;&#121;&#064;&#114;&#115;&#116;&#117;&#100;&#105;&#111;&#046;&#099;&#111;&#109;">&#104;&#097;&#100;&#108;&#101;&#121;&#064;&#114;&#115;&#116;&#117;&#100;&#105;&#111;&#046;&#099;&#111;&#109;</a></td>
+      <td style="text-align: right">17</td>
+      <td style="text-align: left">assertthat, dplyr, forcats, ggplot2, gtable, haven, httr, lazyeval, modelr, plyr, rvest, scales, stringr, testthat, tidyr, tidyverse, usethis</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">R Core Team <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#082;&#045;&#099;&#111;&#114;&#101;&#064;&#114;&#045;&#112;&#114;&#111;&#106;&#101;&#099;&#116;&#046;&#111;&#114;&#103;">&#082;&#045;&#099;&#111;&#114;&#101;&#064;&#114;&#045;&#112;&#114;&#111;&#106;&#101;&#099;&#116;&#046;&#111;&#114;&#103;</a></td>
+      <td style="text-align: right">10</td>
+      <td style="text-align: left">base, compiler, datasets, graphics, grDevices, grid, methods, stats, tools, utils</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Gábor Csárdi <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#099;&#115;&#097;&#114;&#100;&#105;&#046;&#103;&#097;&#098;&#111;&#114;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;">&#099;&#115;&#097;&#114;&#100;&#105;&#046;&#103;&#097;&#098;&#111;&#114;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;</a></td>
+      <td style="text-align: right">9</td>
+      <td style="text-align: left">callr, cli, crayon, desc, pkgconfig, processx, ps, remotes, sessioninfo</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Kirill Müller &lt;krlmlr+r@mailbox.org&gt;</td>
+      <td style="text-align: right">6</td>
+      <td style="text-align: left">bindr, bindrcpp, hms, pillar, rprojroot, tibble</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Jim Hester <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#106;&#097;&#109;&#101;&#115;&#046;&#104;&#101;&#115;&#116;&#101;&#114;&#064;&#114;&#115;&#116;&#117;&#100;&#105;&#111;&#046;&#099;&#111;&#109;">&#106;&#097;&#109;&#101;&#115;&#046;&#104;&#101;&#115;&#116;&#101;&#114;&#064;&#114;&#115;&#116;&#117;&#100;&#105;&#111;&#046;&#099;&#111;&#109;</a></td>
+      <td style="text-align: right">4</td>
+      <td style="text-align: left">devtools, pkgbuild, pkgload, readr</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Winston Chang <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#119;&#105;&#110;&#115;&#116;&#111;&#110;&#064;&#115;&#116;&#100;&#111;&#117;&#116;&#046;&#111;&#114;&#103;">&#119;&#105;&#110;&#115;&#116;&#111;&#110;&#064;&#115;&#116;&#100;&#111;&#117;&#116;&#046;&#111;&#114;&#103;</a></td>
+      <td style="text-align: right">4</td>
+      <td style="text-align: left">extrafont, extrafontdb, R6, Rttf2pt1</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Jim Hester <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#106;&#097;&#109;&#101;&#115;&#046;&#102;&#046;&#104;&#101;&#115;&#116;&#101;&#114;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;">&#106;&#097;&#109;&#101;&#115;&#046;&#102;&#046;&#104;&#101;&#115;&#116;&#101;&#114;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;</a></td>
+      <td style="text-align: right">3</td>
+      <td style="text-align: left">fs, glue, withr</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Lionel Henry <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#108;&#105;&#111;&#110;&#101;&#108;&#064;&#114;&#115;&#116;&#117;&#100;&#105;&#111;&#046;&#099;&#111;&#109;">&#108;&#105;&#111;&#110;&#101;&#108;&#064;&#114;&#115;&#116;&#117;&#100;&#105;&#111;&#046;&#099;&#111;&#109;</a></td>
+      <td style="text-align: right">3</td>
+      <td style="text-align: left">purrr, rlang, tidyselect</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Dirk Eddelbuettel <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#101;&#100;&#100;&#064;&#100;&#101;&#098;&#105;&#097;&#110;&#046;&#111;&#114;&#103;">&#101;&#100;&#100;&#064;&#100;&#101;&#098;&#105;&#097;&#110;&#046;&#111;&#114;&#103;</a></td>
+      <td style="text-align: right">3</td>
+      <td style="text-align: left">digest, Rcpp, x13binary</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Yixuan Qiu <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#121;&#105;&#120;&#117;&#097;&#110;&#046;&#113;&#105;&#117;&#064;&#099;&#111;&#115;&#046;&#110;&#097;&#109;&#101;">&#121;&#105;&#120;&#117;&#097;&#110;&#046;&#113;&#105;&#117;&#064;&#099;&#111;&#115;&#046;&#110;&#097;&#109;&#101;</a></td>
+      <td style="text-align: right">3</td>
+      <td style="text-align: left">showtext, showtextdb, sysfonts</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Jeroen Ooms <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#106;&#101;&#114;&#111;&#101;&#110;&#064;&#098;&#101;&#114;&#107;&#101;&#108;&#101;&#121;&#046;&#101;&#100;&#117;">&#106;&#101;&#114;&#111;&#101;&#110;&#064;&#098;&#101;&#114;&#107;&#101;&#108;&#101;&#121;&#046;&#101;&#100;&#117;</a></td>
+      <td style="text-align: right">2</td>
+      <td style="text-align: left">curl, jsonlite</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Yihui Xie <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#120;&#105;&#101;&#064;&#121;&#105;&#104;&#117;&#105;&#046;&#110;&#097;&#109;&#101;">&#120;&#105;&#101;&#064;&#121;&#105;&#104;&#117;&#105;&#046;&#110;&#097;&#109;&#101;</a></td>
+      <td style="text-align: right">2</td>
+      <td style="text-align: left">knitr, xfun</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">R-core <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#082;&#045;&#099;&#111;&#114;&#101;&#064;&#082;&#045;&#112;&#114;&#111;&#106;&#101;&#099;&#116;&#046;&#111;&#114;&#103;">&#082;&#045;&#099;&#111;&#114;&#101;&#064;&#082;&#045;&#112;&#114;&#111;&#106;&#101;&#099;&#116;&#046;&#111;&#114;&#103;</a></td>
+      <td style="text-align: right">1</td>
+      <td style="text-align: left">nlme</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Vitalie Spinu <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#115;&#112;&#105;&#110;&#117;&#118;&#105;&#116;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;">&#115;&#112;&#105;&#110;&#117;&#118;&#105;&#116;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;</a></td>
+      <td style="text-align: right">1</td>
+      <td style="text-align: left">lubridate</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Michel Lang <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#109;&#105;&#099;&#104;&#101;&#108;&#108;&#097;&#110;&#103;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;">&#109;&#105;&#099;&#104;&#101;&#108;&#108;&#097;&#110;&#103;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;</a></td>
+      <td style="text-align: right">1</td>
+      <td style="text-align: left">backports</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Patrick O. Perry <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#112;&#097;&#116;&#112;&#101;&#114;&#114;&#121;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;">&#112;&#097;&#116;&#112;&#101;&#114;&#114;&#121;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;</a></td>
+      <td style="text-align: right">1</td>
+      <td style="text-align: left">utf8</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Simon Wood <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#115;&#105;&#109;&#111;&#110;&#046;&#119;&#111;&#111;&#100;&#064;&#114;&#045;&#112;&#114;&#111;&#106;&#101;&#099;&#116;&#046;&#111;&#114;&#103;">&#115;&#105;&#109;&#111;&#110;&#046;&#119;&#111;&#111;&#100;&#064;&#114;&#045;&#112;&#114;&#111;&#106;&#101;&#099;&#116;&#046;&#111;&#114;&#103;</a></td>
+      <td style="text-align: right">1</td>
+      <td style="text-align: left">mgcv</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Achim Zeileis <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#065;&#099;&#104;&#105;&#109;&#046;&#090;&#101;&#105;&#108;&#101;&#105;&#115;&#064;&#082;&#045;&#112;&#114;&#111;&#106;&#101;&#099;&#116;&#046;&#111;&#114;&#103;">&#065;&#099;&#104;&#105;&#109;&#046;&#090;&#101;&#105;&#108;&#101;&#105;&#115;&#064;&#082;&#045;&#112;&#114;&#111;&#106;&#101;&#099;&#116;&#046;&#111;&#114;&#103;</a></td>
+      <td style="text-align: right">1</td>
+      <td style="text-align: left">colorspace</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Baptiste Auguie <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#098;&#097;&#112;&#116;&#105;&#115;&#116;&#101;&#046;&#097;&#117;&#103;&#117;&#105;&#101;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;">&#098;&#097;&#112;&#116;&#105;&#115;&#116;&#101;&#046;&#097;&#117;&#103;&#117;&#105;&#101;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;</a></td>
+      <td style="text-align: right">1</td>
+      <td style="text-align: left">gridExtra</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Gabor Csardi <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#099;&#115;&#097;&#114;&#100;&#105;&#046;&#103;&#097;&#098;&#111;&#114;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;">&#099;&#115;&#097;&#114;&#100;&#105;&#046;&#103;&#097;&#098;&#111;&#114;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;</a></td>
+      <td style="text-align: right">1</td>
+      <td style="text-align: left">prettyunits</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Peter Ellis <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#112;&#101;&#116;&#101;&#114;&#046;&#101;&#108;&#108;&#105;&#115;&#050;&#048;&#049;&#051;&#110;&#122;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;">&#112;&#101;&#116;&#101;&#114;&#046;&#101;&#108;&#108;&#105;&#115;&#050;&#048;&#049;&#051;&#110;&#122;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;</a></td>
+      <td style="text-align: right">1</td>
+      <td style="text-align: left">nzelect</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Simon Urbanek <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#083;&#105;&#109;&#111;&#110;&#046;&#085;&#114;&#098;&#097;&#110;&#101;&#107;&#064;&#114;&#045;&#112;&#114;&#111;&#106;&#101;&#099;&#116;&#046;&#111;&#114;&#103;">&#083;&#105;&#109;&#111;&#110;&#046;&#085;&#114;&#098;&#097;&#110;&#101;&#107;&#064;&#114;&#045;&#112;&#114;&#111;&#106;&#101;&#099;&#116;&#046;&#111;&#114;&#103;</a></td>
+      <td style="text-align: right">1</td>
+      <td style="text-align: left">Cairo</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">James Hester <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#106;&#097;&#109;&#101;&#115;&#046;&#104;&#101;&#115;&#116;&#101;&#114;&#064;&#114;&#115;&#116;&#117;&#100;&#105;&#111;&#046;&#099;&#111;&#109;">&#106;&#097;&#109;&#101;&#115;&#046;&#104;&#101;&#115;&#116;&#101;&#114;&#064;&#114;&#115;&#116;&#117;&#100;&#105;&#111;&#046;&#099;&#111;&#109;</a></td>
+      <td style="text-align: right">1</td>
+      <td style="text-align: left">xml2</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Justin Talbot <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#106;&#117;&#115;&#116;&#105;&#110;&#116;&#097;&#108;&#098;&#111;&#116;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;">&#106;&#117;&#115;&#116;&#105;&#110;&#116;&#097;&#108;&#098;&#111;&#116;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;</a></td>
+      <td style="text-align: right">1</td>
+      <td style="text-align: left">labeling</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Torsten Hothorn <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#084;&#111;&#114;&#115;&#116;&#101;&#110;&#046;&#072;&#111;&#116;&#104;&#111;&#114;&#110;&#064;&#082;&#045;&#112;&#114;&#111;&#106;&#101;&#099;&#116;&#046;&#111;&#114;&#103;">&#084;&#111;&#114;&#115;&#116;&#101;&#110;&#046;&#072;&#111;&#116;&#104;&#111;&#114;&#110;&#064;&#082;&#045;&#112;&#114;&#111;&#106;&#101;&#099;&#116;&#046;&#111;&#114;&#103;</a></td>
+      <td style="text-align: right">1</td>
+      <td style="text-align: left">mvtnorm</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Christoph Sax <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#099;&#104;&#114;&#105;&#115;&#116;&#111;&#112;&#104;&#046;&#115;&#097;&#120;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;">&#099;&#104;&#114;&#105;&#115;&#116;&#111;&#112;&#104;&#046;&#115;&#097;&#120;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;</a></td>
+      <td style="text-align: right">1</td>
+      <td style="text-align: left">seasonal</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Jennifer Bryan <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#106;&#101;&#110;&#110;&#121;&#064;&#114;&#115;&#116;&#117;&#100;&#105;&#111;&#046;&#099;&#111;&#109;">&#106;&#101;&#110;&#110;&#121;&#064;&#114;&#115;&#116;&#117;&#100;&#105;&#111;&#046;&#099;&#111;&#109;</a></td>
+      <td style="text-align: right">1</td>
+      <td style="text-align: left">readxl</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Kevin Ushey <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#107;&#101;&#118;&#105;&#110;&#064;&#114;&#115;&#116;&#117;&#100;&#105;&#111;&#046;&#099;&#111;&#109;">&#107;&#101;&#118;&#105;&#110;&#064;&#114;&#115;&#116;&#117;&#100;&#105;&#111;&#046;&#099;&#111;&#109;</a></td>
+      <td style="text-align: right">1</td>
+      <td style="text-align: left">rstudioapi</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Max Kuhn <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#109;&#097;&#120;&#064;&#114;&#115;&#116;&#117;&#100;&#105;&#111;&#046;&#099;&#111;&#109;">&#109;&#097;&#120;&#064;&#114;&#115;&#116;&#117;&#100;&#105;&#111;&#046;&#099;&#111;&#109;</a></td>
+      <td style="text-align: right">1</td>
+      <td style="text-align: left">generics</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Stefan Milton Bache <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#115;&#116;&#101;&#102;&#097;&#110;&#064;&#115;&#116;&#101;&#102;&#097;&#110;&#098;&#097;&#099;&#104;&#101;&#046;&#100;&#107;">&#115;&#116;&#101;&#102;&#097;&#110;&#064;&#115;&#116;&#101;&#102;&#097;&#110;&#098;&#097;&#099;&#104;&#101;&#046;&#100;&#107;</a></td>
+      <td style="text-align: right">1</td>
+      <td style="text-align: left">magrittr</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Martin Maechler &lt;mmaechler+Matrix@gmail.com&gt;</td>
+      <td style="text-align: right">1</td>
+      <td style="text-align: left">Matrix</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Charlotte Wickham <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#099;&#119;&#105;&#099;&#107;&#104;&#097;&#109;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;">&#099;&#119;&#105;&#099;&#107;&#104;&#097;&#109;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;</a></td>
+      <td style="text-align: right">1</td>
+      <td style="text-align: left">munsell</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Brodie Gaslam <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#098;&#114;&#111;&#100;&#105;&#101;&#046;&#103;&#097;&#115;&#108;&#097;&#109;&#064;&#121;&#097;&#104;&#111;&#111;&#046;&#099;&#111;&#109;">&#098;&#114;&#111;&#100;&#105;&#101;&#046;&#103;&#097;&#115;&#108;&#097;&#109;&#064;&#121;&#097;&#104;&#111;&#111;&#046;&#099;&#111;&#109;</a></td>
+      <td style="text-align: right">1</td>
+      <td style="text-align: left">fansi</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Matthew Lincoln <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#109;&#097;&#116;&#116;&#104;&#101;&#119;&#046;&#100;&#046;&#108;&#105;&#110;&#099;&#111;&#108;&#110;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;">&#109;&#097;&#116;&#116;&#104;&#101;&#119;&#046;&#100;&#046;&#108;&#105;&#110;&#099;&#111;&#108;&#110;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;</a></td>
+      <td style="text-align: right">1</td>
+      <td style="text-align: left">clipr</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Gavin L. Simpson <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#117;&#099;&#102;&#097;&#103;&#108;&#115;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;">&#117;&#099;&#102;&#097;&#103;&#108;&#115;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;</a></td>
+      <td style="text-align: right">1</td>
+      <td style="text-align: left">gratia</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Marek Gagolewski <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#103;&#097;&#103;&#111;&#108;&#101;&#119;&#115;&#064;&#114;&#101;&#120;&#097;&#109;&#105;&#110;&#101;&#046;&#099;&#111;&#109;">&#103;&#097;&#103;&#111;&#108;&#101;&#119;&#115;&#064;&#114;&#101;&#120;&#097;&#109;&#105;&#110;&#101;&#046;&#099;&#111;&#109;</a></td>
+      <td style="text-align: right">1</td>
+      <td style="text-align: left">stringi</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Jeremy Stephens <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#106;&#101;&#114;&#101;&#109;&#121;&#046;&#102;&#046;&#115;&#116;&#101;&#112;&#104;&#101;&#110;&#115;&#064;&#118;&#117;&#109;&#099;&#046;&#111;&#114;&#103;">&#106;&#101;&#114;&#101;&#109;&#121;&#046;&#102;&#046;&#115;&#116;&#101;&#112;&#104;&#101;&#110;&#115;&#064;&#118;&#117;&#109;&#099;&#046;&#111;&#114;&#103;</a></td>
+      <td style="text-align: right">1</td>
+      <td style="text-align: left">yaml</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Brian Ripley <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#114;&#105;&#112;&#108;&#101;&#121;&#064;&#115;&#116;&#097;&#116;&#115;&#046;&#111;&#120;&#046;&#097;&#099;&#046;&#117;&#107;">&#114;&#105;&#112;&#108;&#101;&#121;&#064;&#115;&#116;&#097;&#116;&#115;&#046;&#111;&#120;&#046;&#097;&#099;&#046;&#117;&#107;</a></td>
+      <td style="text-align: right">1</td>
+      <td style="text-align: left">MASS</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Deepayan Sarkar <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#100;&#101;&#101;&#112;&#097;&#121;&#097;&#110;&#046;&#115;&#097;&#114;&#107;&#097;&#114;&#064;&#114;&#045;&#112;&#114;&#111;&#106;&#101;&#099;&#116;&#046;&#111;&#114;&#103;">&#100;&#101;&#101;&#112;&#097;&#121;&#097;&#110;&#046;&#115;&#097;&#114;&#107;&#097;&#114;&#064;&#114;&#045;&#112;&#114;&#111;&#106;&#101;&#099;&#116;&#046;&#111;&#114;&#103;</a></td>
+      <td style="text-align: right">1</td>
+      <td style="text-align: left">lattice</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Claus O. Wilke <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#119;&#105;&#108;&#107;&#101;&#064;&#097;&#117;&#115;&#116;&#105;&#110;&#046;&#117;&#116;&#101;&#120;&#097;&#115;&#046;&#101;&#100;&#117;">&#119;&#105;&#108;&#107;&#101;&#064;&#097;&#117;&#115;&#116;&#105;&#110;&#046;&#117;&#116;&#101;&#120;&#097;&#115;&#046;&#101;&#100;&#117;</a></td>
+      <td style="text-align: right">1</td>
+      <td style="text-align: left">cowplot</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Rasmus Bååth <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#114;&#097;&#115;&#109;&#117;&#115;&#046;&#098;&#097;&#097;&#116;&#104;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;">&#114;&#097;&#115;&#109;&#117;&#115;&#046;&#098;&#097;&#097;&#116;&#104;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;</a></td>
+      <td style="text-align: right">1</td>
+      <td style="text-align: left">beepr</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Jennifer Bryan <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#106;&#101;&#110;&#110;&#121;&#064;&#115;&#116;&#097;&#116;&#046;&#117;&#098;&#099;&#046;&#099;&#097;">&#106;&#101;&#110;&#110;&#121;&#064;&#115;&#116;&#097;&#116;&#046;&#117;&#098;&#099;&#046;&#099;&#097;</a></td>
+      <td style="text-align: right">1</td>
+      <td style="text-align: left">cellranger</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Alex Hayes <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#097;&#108;&#101;&#120;&#112;&#103;&#104;&#097;&#121;&#101;&#115;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;">&#097;&#108;&#101;&#120;&#112;&#103;&#104;&#097;&#121;&#101;&#115;&#064;&#103;&#109;&#097;&#105;&#108;&#046;&#099;&#111;&#109;</a></td>
+      <td style="text-align: right">1</td>
+      <td style="text-align: left">broom</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Simon Urbanek <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#115;&#105;&#109;&#111;&#110;&#046;&#117;&#114;&#098;&#097;&#110;&#101;&#107;&#064;&#114;&#045;&#112;&#114;&#111;&#106;&#101;&#099;&#116;&#046;&#111;&#114;&#103;">&#115;&#105;&#109;&#111;&#110;&#046;&#117;&#114;&#098;&#097;&#110;&#101;&#107;&#064;&#114;&#045;&#112;&#114;&#111;&#106;&#101;&#099;&#116;&#046;&#111;&#114;&#103;</a></td>
+      <td style="text-align: right">1</td>
+      <td style="text-align: left">audio</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Jim Hester <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#106;&#105;&#109;&#046;&#104;&#101;&#115;&#116;&#101;&#114;&#064;&#114;&#115;&#116;&#117;&#100;&#105;&#111;&#046;&#099;&#111;&#109;">&#106;&#105;&#109;&#046;&#104;&#101;&#115;&#116;&#101;&#114;&#064;&#114;&#115;&#116;&#117;&#100;&#105;&#111;&#046;&#099;&#111;&#109;</a></td>
+      <td style="text-align: right">1</td>
+      <td style="text-align: left">memoise</td>
+    </tr>
+  </tbody>
+</table>
+
+
+		
+	</div>
+</div>
+
+<div class="col-md-1"></div>
+<div class="col-md-4">
+	<div class="side-banner">
+	
+
+
+	<div>
+	   
+	    
+			
+			<p>&larr; Previous post</p>
+			<p><a rel="prev" href="/blog/2019/01/26/world-agreeing">What the world agrees with</a></p>
+		
+		
+		
+		
+		
+		
+	</div>
+	
+	 
+
+   <div class = "side-footer">
+			
+			<hr></hr>
+			<p><gcse:search></gcse:search></p>
+			<hr></hr>
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.</p>
+			<hr></hr>
+			
+       <div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="false" data-share="false"></div>
+			
+			<hr></hr>
+			<p>I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+			<hr></hr>
+
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title"><i>free range statistics</i></span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			<hr></hr>
+			
+
+
+    </div>
+
+
+
+  
+   
+
+
+
+
+		  
+		  
+
+
+
+	   
+	<div id="disqus_thread"></div>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function() {
+				var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+				dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+				(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+			})();
+		</script>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function () {
+				var s = document.createElement('script'); s.async = true;
+				s.type = 'text/javascript';
+				s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+				(document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+			}());
+		</script>
+
+	<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+	</div>	
+</div>    
+   
+   
+
+			
+			</div><!-- /.container -->
+         
+   <!-- Default Statcounter code for Free Range Statistics
+http://Http://freerangestats.info -->
+<script type="text/javascript">
+var sc_project=11673245; 
+var sc_invisible=1; 
+var sc_security="5b7111a4"; 
+</script>
+<script type="text/javascript"
+src="https://www.statcounter.com/counter/counter.js" async></script>
+<noscript><div class="statcounter"><a title="Web Analytics"
+href="http://statcounter.com/" target="_blank"><img class="statcounter"
+src="//c.statcounter.com/11673245/0/5b7111a4/1/" alt="Web
+Analytics"></a></div></noscript>
+<!-- End of Statcounter Code -->
+
+</body>   
+</html>
