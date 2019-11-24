@@ -1,0 +1,630 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Cost-benefit analysis in R</title>
+      	
+         
+         
+            <meta name ="description" content ="I try to show that cost-benefit analysis is easy to perform in R, and that R lets you build in uncertainty in a much clearer way than is generally done; and to demystify the internal rate of return.">
+            <meta property="og:description" content ="I try to show that cost-benefit analysis is easy to perform in R, and that R lets you build in uncertainty in a much clearer way than is generally done; and to demystify the internal rate of return.">
+         
+         <meta property="og:site_name" content="free range statistics" />
+         <meta property="og:title" content="Cost-benefit analysis in R" />
+         
+            <meta property="og:image" content="http://freerangestats.info/img/0161-cumulative.png" />
+         
+		 
+			<meta property="og:url" content="http://freerangestats.info/blog/2019/11/24/cost-benefit-analysis.html" />
+		 
+         <meta property="og:author" content= "https://www.facebook.com/peterstats" />
+         <meta property="og:type" content="article" />
+      
+
+<link href='https://fonts.googleapis.com/css?family=Sarala' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Prosto+One' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Ubuntu+Mono' rel='stylesheet'>
+	  
+          <link href="/css/bootstrap.min.css" rel ="stylesheet" type="text/css">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet" type="text/css">
+            <link href="/css/custom.css" rel ="stylesheet" type="text/css">     
+		<link href="/css/syntax.css" rel ="stylesheet" type="text/css">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="free range statistics by Peter Ellis"
+      href="/feed.xml">
+
+	  
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+  <script>
+  (function() {
+    var cx = '015640467633673901770:pk3v2c95baw';
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+  })();
+</script>
+
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">free range statistics</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/about">about</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">all posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">ordered by date</a></li>
+				  <li><a href="/blog/most-popular.html">ordered by popularity</a></li>
+                  <li><a href="/blog/index_by_tag.html">grouped by subject matter</a></li>
+                  <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
+				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
+				  <li><a href = /blog/2019/11/24/cost-benefit-analysis>most recent post</a></li>
+				</ul>
+            </li>
+              <li><a href="/blog/showcase.html">showcase</a></li>
+              <li><a href="/presentations/index.html">presentations</a></li>
+			  <li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">election forecasts<span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href = "/elections/oz/index.html">Australia federal 2019</a></li>
+				  <li><a href = "/elections/combined.html">NZ 2016</a></li>
+                  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
+                </ul>				
+			  </li>
+			  
+			  
+			  
+		    </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			<div class="jumbotron">
+  <div class="container">
+	<center><h1>Cost-benefit analysis in R</h1></center>
+  </div>
+</div>
+
+
+
+	<div class = "post-summary">
+	<h2>At a glance:</h2>
+	   <p>I try to show that cost-benefit analysis is easy to perform in R, and that R lets you build in uncertainty in a much clearer way than is generally done; and to demystify the internal rate of return.</p>
+	   <p class="meta">24 Nov 2019</p>
+	   <hr></hr>
+	</div>
+
+
+<div class="col-md-7">
+
+	<div class="post">
+		
+	  <p>Even organisations and people that use a statistical package for hard-core data and econometric analysis might use spreadsheets for financial and economic scenario and evaluation models. There’s something about the ad hoc nature of financial models in particular that seems to tempt people towards Excel not only for prototyping but even for end products. This is a shame because it means missing out on the advantages of a programming language, such as ease of quality control, team-based development, and scaling up to running multiple simulations with different parameter choices.</p>
+
+<p>In particular, economic evaluative analysis such as cost-benefit analysis and cost effectiveness analysis is commonly undertaken in spreadsheets. While there is software out there - see the book <a href="https://www.springer.com/gp/book/9783319557168">Bayesian Cost-Effectiveness Analysis with the R package BCEA</a>, for example - that can provide more analytic grunt, particularly when adding probabilistic elements and estimates of uncertainty to such analyses, I think it is fair to say that Excel still rules in this world..</p>
+
+<p>In this post I’ll put forward a simple method of doing the number-crunching part of <a href="https://en.wikipedia.org/wiki/Cost%E2%80%93benefit_analysis">cost-benefit analysis</a>(CBA) in R. The <em>hard</em> part of CBA is data collection and the valuing of costs and benefits, but I’m not going to touch on that here. I’m just looking at turning the data you’ve generated into estimates of the standard outputs of CBA, with appropriate sensitivity and uncertainty bounds that are awkward to produce in Excel.</p>
+
+<p>Note that CBA is not the same as the cost-effectiveness analysis delivered in the BCEA R package mentioned above. Simply put, CBA requires the analyst to measure both benefits and costs on the same metric (monetary value). Cost-effectiveness analysis  EITHER allows the benefits to be taken as given and compares the costs of methods of achieving those benefits OR, if allowing different levels of benefit to come into the equation, measures benefits with a different metric to the costs. For example, if costs are in dollars, benefits in cost-effectiveness analysis might be measured in Quality-Adjusted Life Years; it’s still necessary in this case to put all the benefits on a common measurement basis, it just doesn’t have to be the same metric as costs.</p>
+
+<p>So the distinctive feature of CBA is that both costs and benefits are on the same monetary scale.  This allows the two common key metrics in CBA:</p>
+
+<ul>
+  <li>Net Present Value - the real value of benefits in today’s dollars minus the real value of costs (where the “real” value means future values are discounted by some arbitrarily chosen discount rate - the choice of which makes a big difference to how much the analysis values either the short term or the long term)</li>
+  <li>Internal Rate of Return - the discount rate at which benefits break even with costs</li>
+</ul>
+
+<p>A nice feature of the Internal Rate of Return as a measure is that it avoids the omnipresent <a href="https://grattan.edu.au/wp-content/uploads/2018/02/900-unfreezing-discount-rates.pdf">arguments about which discount rate to choose</a>. You calculate the discount rate at which you would break even, and if that is higher than your cost of capital, and higher than the rate of return of other uses of capital, then it is worth investing in. However, there’s no closed solution to calculate the Internal Rate of Return, which makes it “harder” to calculate and perhaps to explain, so it is perhaps less commonly presented than Net Present Value (casual observation only, I haven’t collected data on this). You can in fact use Excel’s solver functionality to estimate Internal Rate of Return, but it’s a step up in sophistication from general spreadsheet work, liable to human error, and (in my opinion) is going against the grain of how spreadsheets work, by reducing the instant flexibility of calculations you usually get.</p>
+
+<p>My approach to implementing CBA is to build in uncertainty from the ground up; allowing each parameter to be treated as a random variable. All the key analytical tasks will be separated into functions, which is good for maintainability, scaling up complexity, and efficient adaption to other cases.</p>
+
+<h2 id="calculating-net-present-value">Calculating net present value</h2>
+
+<p>Let’s start with a generic function to calculate the net present value of a stream of costs and benefits, given an arbitrary discount rate. Discount rates are normally described in percentage terms. 7% is a commonly chosen one, required by the <a href="https://www.pmc.gov.au/sites/default/files/publications/cosst-benefit-analysis.docx">Australian Department of Prime Minister and Cabinet</a> for regulatory interventions for instance - although why this should be the case given years of inflation and interest rates well below that level I’m not sure. Or for another example, see this <a href="https://treasury.govt.nz/information-and-services/state-sector-leadership/guidance/financial-reporting-policies-and-guidance/discount-rates">guidance from the New Zealand Treasury</a>, specifying 6.0% as the default, 4.0% to be used for office and accommodation buildings, and 7.0% for ICT-related investments.</p>
+
+<p>So here’s an R function for estimating the net present value of an investment, given two equally-lengthed vectors of annual costs and benefits (in current prices) and a discount rate:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="cd">#' Net present value
+#' 
+#' @param discount Discount rate, as a percentage (eg "7" means 7%)
+#' @param cost Vector of annual costs
+#' @param benefit Vector of annual benefits
+#' @param return_abs Whether or not to return the absolute value of the net present value (only likely to be
+#' used if you are using this function as part of an internal rate of return calculation)
+#' @details for a given stream of costs, benefits, number of years and discount rate, return the net
+#' present value (discounted benefits minus discounted costs)
+</span><span class="n">net_present_value</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">discount</span><span class="p">,</span><span class="w"> </span><span class="n">cost</span><span class="p">,</span><span class="w"> </span><span class="n">benefit</span><span class="p">,</span><span class="w"> </span><span class="n">return_abs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">){</span><span class="w">
+  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nf">length</span><span class="p">(</span><span class="n">discount</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nf">class</span><span class="p">(</span><span class="n">discount</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">"numeric"</span><span class="p">){</span><span class="w">
+    </span><span class="n">stop</span><span class="p">(</span><span class="s2">"discount should be a single number"</span><span class="p">)</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+  
+  </span><span class="k">if</span><span class="p">(</span><span class="nf">length</span><span class="p">(</span><span class="n">benefit</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">cost</span><span class="p">)){</span><span class="w">
+    </span><span class="n">stop</span><span class="p">(</span><span class="s2">"cost and benefit should be equally-lengthed numeric vectors"</span><span class="p">)</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+  
+  </span><span class="c1"># convert discount percentage into a multiplier
+</span><span class="w">  </span><span class="n">discount_m</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">discount</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">100</span><span class="w">
+  
+  </span><span class="c1"># number of years, other than year zero, which get discounted
+</span><span class="w">  </span><span class="n">m</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">benefit</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">1</span><span class="w">
+  
+  </span><span class="n">npv</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">benefit</span><span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">discount_m</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="p">(</span><span class="m">0</span><span class="o">:</span><span class="n">m</span><span class="p">))</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">cost</span><span class="w">  </span><span class="o">*</span><span class="w"> </span><span class="n">discount_m</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="p">(</span><span class="m">0</span><span class="o">:</span><span class="n">m</span><span class="p">))</span><span class="w">
+  </span><span class="k">if</span><span class="p">(</span><span class="n">return_abs</span><span class="p">){</span><span class="w">
+    </span><span class="n">npv</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">abs</span><span class="p">(</span><span class="n">npv</span><span class="p">)</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+  </span><span class="nf">return</span><span class="p">(</span><span class="n">npv</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span></code></pre></figure>
+
+<p>In action, here we can use it to calculate the net present value of an investment that costs $1,000,000 in its first year and $100 per year subsequently, and returns a benefit stream valued at $70,000 per year. I’ve done this with two different discount rates:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>&gt; costs &lt;- c(1000000, rep(100, 29))
+&gt; benefits &lt;- rep(70000, 30)
+&gt; net_present_value(discount = 7, cost = costs, benefit  = benefits)
+[1] -114534.1
+
+&gt; net_present_value(discount = 4, cost = costs, benefit  = benefits)
+[1] 234083.8
+</code></pre>
+</div>
+
+<p>So we see that depending on the discount rate, this same set of costs and benefits could be either minus $115k or positive $234k. If we followed New Zealand Treasury guidance, this investment would be worthwhile if it for an office building (discount rate of 4%) but not if it were in ICT (discount rate of 7%).</p>
+
+<p>One of the key reasons for using R (and in particular, functions) for this sort of analysis is how easy it makes it to explore assumptions systematically and at scale. In contrast, it is common for “sensitivity analysis” that uses Excel to laboriously run the CBA for a mere handful different scenarios. This is as tedious and error prone as you can imagine, and difficult to generalise to work for thousands of scenarios rather than just one or two.</p>
+
+<p>As an example, with R, instead of saying that we’re sure the ongoing costs will be $100 per year and the benefits $70,000 per year, we can easily make them both uncertain estimates with Gamma distributions (hence guaranteed to be positive) with $100 and $70,000 as the expected values. Maybe the benefits will be as low as $10,000 per year, maybe as high as $200,000; and similar for the costs around their central value of $100 per year.</p>
+
+<p>So here’s a little simulation, still only using our one function so far:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#----------with uncertain assumptions----------
+</span><span class="n">nsim</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">10000</span><span class="w">
+</span><span class="n">set.seed</span><span class="p">(</span><span class="m">123</span><span class="p">)</span><span class="w">
+</span><span class="n">sims</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.frame</span><span class="p">(</span><span class="w">
+  </span><span class="n">benefit_rand</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rgamma</span><span class="p">(</span><span class="n">nsim</span><span class="p">,</span><span class="w"> </span><span class="m">7</span><span class="p">,</span><span class="w"> </span><span class="m">0.0001</span><span class="p">),</span><span class="w">
+  </span><span class="n">cost_rand</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rgamma</span><span class="p">(</span><span class="n">nsim</span><span class="p">,</span><span class="w"> </span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="m">0.1</span><span class="p">)</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">nsim</span><span class="p">){</span><span class="w">
+  </span><span class="n">sims</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">"npv"</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">net_present_value</span><span class="p">(</span><span class="n">discount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="p">,</span><span class="w"> 
+                                      </span><span class="n">cost</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1000000</span><span class="p">,</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="n">sims</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">"cost_rand"</span><span class="p">],</span><span class="w"> </span><span class="m">29</span><span class="p">)),</span><span class="w">
+                                      </span><span class="n">benefit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="n">sims</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">"benefit_rand"</span><span class="p">],</span><span class="w"> </span><span class="m">30</span><span class="p">))</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">sims</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">npv</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_density</span><span class="p">(</span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_x_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dollar</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Net present value"</span><span class="p">,</span><span class="w">
+       </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Impact of randomness on net present value"</span><span class="p">,</span><span class="w">
+       </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Investment with initial cost of $1m, mean annual costs of around $100,\nand mean annual benefits of around $70,000\nAnnual costs and benefits are Gamma-distributed random variables"</span><span class="p">)</span></code></pre></figure>
+
+<object type="image/svg+xml" data="/img/0161-varying-npvs.svg" width="100%"><img src="/img/0161-varying-npvs.png" /></object>
+
+<p>The 80% credibility interval for the net present value in this case is that it is somewhere between minus $320k and positive $825k, but probably above zero. This is a much bigger range of uncertainty than we would like of course, but it captures the generous uncertainty of our assumptions.</p>
+
+<h2 id="relationship-of-discount-rate-to-internal-rate-of-return">Relationship of discount rate to internal rate of return</h2>
+
+<p>The functional approach to R programming also usefully facilitates visualising the relationship between discount rate and internal rate of return. Let’s go back to a fixed (non-random) value for the costs and benefits, and calculate the net present value for a whole range of discount rates:</p>
+
+<object type="image/svg+xml" data="/img/0161-discount-rates.svg" width="100%"><img src="/img/0161-discount-rates.png" /></object>
+
+<p>You pays your money, and you takes your choice. In this case we can see that the net present value line hits the negative area with a discount value of around 6%. If your discount rate or your cost of capital is higher than that, that’s a “no” for the project; if it’s lower, then it makes sense to undertake the project.</p>
+
+<p>Code for that chart:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">discounts</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">seq</span><span class="p">(</span><span class="n">from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="n">length.out</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">100</span><span class="p">)</span><span class="w">
+</span><span class="n">npvs</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sapply</span><span class="p">(</span><span class="n">discounts</span><span class="p">,</span><span class="w"> </span><span class="n">net_present_value</span><span class="p">,</span><span class="w"> </span><span class="n">cost</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">costs</span><span class="p">,</span><span class="w"> </span><span class="n">benefit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">benefits</span><span class="p">)</span><span class="w">
+
+</span><span class="n">tibble</span><span class="p">(</span><span class="n">npv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">npvs</span><span class="p">,</span><span class="w">
+       </span><span class="n">discount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">discounts</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">discount</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">npvs</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">annotate</span><span class="p">(</span><span class="n">geom</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"rect"</span><span class="p">,</span><span class="w"> </span><span class="n">xmin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="kc">Inf</span><span class="p">,</span><span class="w"> </span><span class="n">xmax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">Inf</span><span class="p">,</span><span class="w"> </span><span class="n">ymax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">ymin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="kc">Inf</span><span class="p">,</span><span class="w"> </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"red"</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.2</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_line</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dollar</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Discount rate"</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Net Present Value"</span><span class="p">,</span><span class="w">
+       </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Impact of discount rate on net present value"</span><span class="p">,</span><span class="w">
+       </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Investment with initial cost of $1m, annual costs of $100, and annual benefits of $70,000"</span><span class="p">)</span></code></pre></figure>
+
+<p>We can use the R <code class="highlighter-rouge">optimise()</code> function just like the Excel “solver” to calculate the actual value at which the net present value hits zero. For convenience (remember, this is all about why R is easier than Excel for this sort of thing), I’m going to wrap this in my own <code class="highlighter-rouge">internal_rate_return()</code> function:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>internal_rate_return &lt;- function(cost, benefit, interval = c(-25, 25)){
+  opt &lt;- optimise(net_present_value,
+                 interval = interval, 
+                 cost = cost,
+                 benefit = benefit,
+                 return_abs = TRUE)
+  return(opt$minimum)
+}
+
+internal_rate_return(costs, benefits)
+</code></pre>
+</div>
+
+<p>So our internal rate of return turns out to be 5.84. Because we’ve made a function out of this internal rate of return calculation, it’s just as easy to calculate this for our 10,000 simulations as it was the NPV. Try doing that in Excel (no, don’t really - I’m sure it can be done, my point is just that it would be fiddly).</p>
+
+<object type="image/svg+xml" data="/img/0161-varying-irr.svg" width="100%"><img src="/img/0161-varying-irr.png" /></object>
+
+<p>Produced with this code:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#-------------IRR with random costs and benefits--------
+</span><span class="w">
+</span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">nsim</span><span class="p">){</span><span class="w">
+  </span><span class="n">sims</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">"irr"</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">internal_rate_return</span><span class="p">(</span><span class="n">cost</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1000000</span><span class="p">,</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="n">sims</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">"cost_rand"</span><span class="p">],</span><span class="w"> </span><span class="m">29</span><span class="p">)),</span><span class="w">
+                                         </span><span class="n">benefit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="n">sims</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">"benefit_rand"</span><span class="p">],</span><span class="w"> </span><span class="m">30</span><span class="p">))</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">sims</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">irr</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">100</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_density</span><span class="p">(</span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_x_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Internal rate of return"</span><span class="p">,</span><span class="w">
+       </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Impact of randomness on internal rate of return"</span><span class="p">,</span><span class="w">
+       </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Investment with initial cost of $1m, mean annual costs of around $100, and mean annual benefits of around $70,000\nAnnual costs and benefits are Gamma-distributed random variables"</span><span class="p">)</span></code></pre></figure>
+
+<h2 id="functionalising-the-whole-process">Functionalising the whole process</h2>
+
+<p>So far we’ve worked with a very basic set of costs and benefits and I’ve examined uncertainty or scenarios in only an ad hoc way. In practice, any real-life example will be more complex than this. If we leave our costs and benefits as a bunch of ad hoc vectors and data frames lying around we might as well be working in Excel.</p>
+
+<p>To handle more complex scenarios and still be able to simulate many results with uncertainty built in, we will need to abstract the generation of our simulation costs and benefits into its own function. This will take a set of user-provided parameters and calculate the net present value and internal rate of return for just on simulation with those parameters, including whatever randomness is dictated by them. We’ll then be able to wrap that function in another, which will call the single-analysis function multiple times and collect the results for analysis.</p>
+
+<p>In the next chunk of code I’ll introduce these functions, and a little more complexity in the actual model. Key additions include:</p>
+
+<ul>
+  <li>the introduction of ad hoc costs, which happen with a given probability (10% chance in any one year in the example below) in any year other than year zero, and have a random cost when that happens. This is the sort of uncertainty that is handled particularly badly by the more manual models but which is commonplace in real life.</li>
+  <li>benefits are a product of the number of new customers and their spend. The customers goes up in year zero by a level shift, and then grows steadily from that point on; the average spend is a random variable.</li>
+</ul>
+
+<p>Obviously this is just scratching the surface, and in practice any useful CBA model will be more complex than this. But the approach is easy to extend, and importantly is easy to document and quality control. The end result we are aiming for is charts like these:</p>
+
+<object type="image/svg+xml" data="/img/0161-summaries.svg" width="100%"><img src="/img/0161-summaries.png" /></object>
+
+<object type="image/svg+xml" data="/img/0161-cost-benefit.svg" width="100%"><img src="/img/0161-cost-benefit.png" /></object>
+
+<object type="image/svg+xml" data="/img/0161-cumulative.svg" width="100%"><img src="/img/0161-cumulative.png" /></object>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="cd">#'  Cost benefit analysis of a single state of the world
+</span><span class="n">cba_single</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="w">
+  </span><span class="n">initial_cost</span><span class="p">,</span><span class="w">
+  </span><span class="n">initial_cost_se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">initial_cost</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">generic_uncertainty</span><span class="p">,</span><span class="w">
+  </span><span class="n">ongoing_cost</span><span class="p">,</span><span class="w">
+  </span><span class="n">ongoing_cost_se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ongoing_cost</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">generic_uncertainty</span><span class="p">,</span><span class="w">
+  </span><span class="n">prob_ad_hoc_cost</span><span class="p">,</span><span class="w">
+  </span><span class="n">ad_hoc_cost</span><span class="p">,</span><span class="w">
+  </span><span class="n">ad_hoc_cost_se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ad_hoc_cost</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">generic_uncertainty</span><span class="p">,</span><span class="w">
+  </span><span class="n">customer_level_shift</span><span class="p">,</span><span class="w">
+  </span><span class="n">customer_level_shift_se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">customer_level_shift</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">generic_uncertainty</span><span class="p">,</span><span class="w">
+  </span><span class="n">customer_growth</span><span class="p">,</span><span class="w">
+  </span><span class="n">customer_growth_se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">customer_growth</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">generic_uncertainty</span><span class="p">,</span><span class="w">
+  </span><span class="n">customer_spend</span><span class="p">,</span><span class="w">
+  </span><span class="n">customer_spend_se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">customer_spend</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">generic_uncertainty</span><span class="p">,</span><span class="w">
+  </span><span class="n">end_year</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">30</span><span class="p">,</span><span class="w">
+  </span><span class="n">discount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">7</span><span class="p">,</span><span class="w">
+  </span><span class="n">generic_uncertainty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.1</span><span class="w">
+</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+  
+  </span><span class="c1"># randomness
+</span><span class="w">  </span><span class="n">initial_cost_this</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">rnorm</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">initial_cost</span><span class="p">,</span><span class="w"> </span><span class="n">initial_cost_se</span><span class="p">)</span><span class="w">
+  </span><span class="n">ongoing_cost_this</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">rnorm</span><span class="p">(</span><span class="n">end_year</span><span class="p">,</span><span class="w"> </span><span class="n">ongoing_cost</span><span class="p">,</span><span class="w"> </span><span class="n">ongoing_cost_se</span><span class="p">)</span><span class="w">
+  </span><span class="n">ad_hoc_cost_this</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">rbinom</span><span class="p">(</span><span class="n">end_year</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">prob</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">prob_ad_hoc_cost</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w">
+    </span><span class="n">rnorm</span><span class="p">(</span><span class="n">end_year</span><span class="p">,</span><span class="w"> </span><span class="n">ad_hoc_cost</span><span class="p">,</span><span class="w"> </span><span class="n">ad_hoc_cost_se</span><span class="p">)</span><span class="w">
+  </span><span class="n">customer_level_shift_this</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rnorm</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">customer_level_shift</span><span class="p">,</span><span class="w"> </span><span class="n">customer_level_shift_se</span><span class="p">)</span><span class="w">
+  </span><span class="n">customer_growth_this</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rnorm</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">customer_growth</span><span class="p">,</span><span class="w"> </span><span class="n">customer_growth_se</span><span class="p">)</span><span class="w">
+  </span><span class="n">customer_spend_this</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rnorm</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">customer_spend</span><span class="p">,</span><span class="w"> </span><span class="n">customer_spend_se</span><span class="p">)</span><span class="w">
+                         
+  </span><span class="n">costs_current</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">initial_cost_this</span><span class="p">,</span><span class="w"> </span><span class="n">ongoing_cost_this</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">ad_hoc_cost_this</span><span class="p">)</span><span class="w">
+  
+  </span><span class="n">customers</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">customer_level_shift_this</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="m">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">customer_growth_this</span><span class="p">)</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="p">(</span><span class="m">0</span><span class="o">:</span><span class="n">end_year</span><span class="p">)</span><span class="w">
+  </span><span class="n">benefits_current</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">customer_spend_this</span><span class="w">
+  
+  </span><span class="n">npv</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">net_present_value</span><span class="p">(</span><span class="n">discount</span><span class="p">,</span><span class="w"> </span><span class="n">cost</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">costs_current</span><span class="p">,</span><span class="w"> </span><span class="n">benefit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">benefits_current</span><span class="p">)</span><span class="w">
+  </span><span class="n">irr</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">internal_rate_return</span><span class="p">(</span><span class="n">cost</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">costs_current</span><span class="p">,</span><span class="w"> </span><span class="n">benefit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">benefits_current</span><span class="p">)</span><span class="w">
+  
+  </span><span class="n">dm</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">discount</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">100</span><span class="w">
+  </span><span class="n">costs_discounted</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">costs_current</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">dm</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="p">(</span><span class="m">0</span><span class="o">:</span><span class="n">end_year</span><span class="p">)</span><span class="w">
+  </span><span class="n">benefits_discounted</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">benefits_current</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">dm</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="p">(</span><span class="m">0</span><span class="o">:</span><span class="n">end_year</span><span class="p">)</span><span class="w">
+  
+  </span><span class="n">time_series_output</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tibble</span><span class="p">(</span><span class="w">
+    </span><span class="s1">'Costs in current prices'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">costs_current</span><span class="p">,</span><span class="w">
+    </span><span class="s1">'Benefits in current prices'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">benefits_current</span><span class="p">,</span><span class="w">
+    </span><span class="s1">'Discounted costs'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">costs_discounted</span><span class="p">,</span><span class="w">
+    </span><span class="s1">'Discounted benefits'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">benefits_discounted</span><span class="p">,</span><span class="w">
+    </span><span class="s1">'Cumulative discounted costs'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">cumsum</span><span class="p">(</span><span class="n">costs_discounted</span><span class="p">),</span><span class="w">
+    </span><span class="s1">'Cumulative discounted benefits'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">cumsum</span><span class="p">(</span><span class="n">benefits_discounted</span><span class="p">),</span><span class="w">
+    </span><span class="s1">'Cumulative net value'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">cumsum</span><span class="p">(</span><span class="n">benefits_discounted</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">costs_discounted</span><span class="p">),</span><span class="w">
+    </span><span class="n">year</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="o">:</span><span class="n">end_year</span><span class="w">
+  </span><span class="p">)</span><span class="w">
+  
+  </span><span class="nf">return</span><span class="p">(</span><span class="nf">list</span><span class="p">(</span><span class="w">
+    </span><span class="s1">'Net Present Value'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">npv</span><span class="p">,</span><span class="w">
+    </span><span class="s1">'Internal Rate of Return'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">irr</span><span class="p">,</span><span class="w">
+    </span><span class="n">time_series_output</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">time_series_output</span><span class="w">
+  </span><span class="p">))</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="c1"># Example usage of the single CBA analysis; performs one run (with random results) for a given
+# set of parameters
+</span><span class="n">set.seed</span><span class="p">(</span><span class="m">321</span><span class="p">)</span><span class="w">
+</span><span class="n">cba_single</span><span class="p">(</span><span class="w">
+  </span><span class="n">initial_cost</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1000000</span><span class="p">,</span><span class="w">
+  </span><span class="n">ongoing_cost</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10000</span><span class="p">,</span><span class="w">
+  </span><span class="n">prob_ad_hoc_cost</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.1</span><span class="p">,</span><span class="w">
+  </span><span class="n">ad_hoc_cost</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">100000</span><span class="p">,</span><span class="w">
+  </span><span class="n">customer_level_shift</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1000</span><span class="p">,</span><span class="w">
+  </span><span class="n">customer_growth</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.02</span><span class="p">,</span><span class="w">
+  </span><span class="n">customer_spend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">100</span><span class="w">
+</span><span class="p">)</span><span class="w">
+
+</span><span class="cd">#' Cost benefit analysis of many simulations with a single set of parameters
+#' 
+#' @param nsim number of simulations to run
+#' @param seed random seed to fix so results are reproducible
+#' @param ... other parameters passed to \code{cba_single}
+</span><span class="n">cba_multi</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">nsim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1000</span><span class="p">,</span><span class="w"> </span><span class="n">seed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">123</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p">){</span><span class="w">
+  </span><span class="n">output_simple</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tibble</span><span class="p">(</span><span class="s1">'Net Present Value'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">numeric</span><span class="p">(</span><span class="n">nsim</span><span class="p">),</span><span class="w"> 
+                          </span><span class="s1">'Internal Rate of Return'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">numeric</span><span class="p">(</span><span class="n">nsim</span><span class="p">))</span><span class="w">
+  </span><span class="n">output_complex_l</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">list</span><span class="p">()</span><span class="w">
+  </span><span class="n">set.seed</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span><span class="w">
+  
+  </span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">nsim</span><span class="p">){</span><span class="w">
+    </span><span class="n">analysis</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">cba_single</span><span class="p">(</span><span class="n">...</span><span class="p">)</span><span class="w">  
+    </span><span class="n">output_simple</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">analysis</span><span class="o">$</span><span class="s1">'Net Present Value'</span><span class="p">,</span><span class="w"> </span><span class="n">analysis</span><span class="o">$</span><span class="s1">'Internal Rate of Return'</span><span class="p">)</span><span class="w">
+    </span><span class="n">tmp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">analysis</span><span class="o">$</span><span class="n">time_series_output</span><span class="w">
+    </span><span class="n">tmp</span><span class="o">$</span><span class="n">id</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">i</span><span class="w">
+    </span><span class="n">output_complex_l</span><span class="p">[[</span><span class="n">i</span><span class="p">]]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tmp</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+  
+  </span><span class="n">output_complex</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">do.call</span><span class="p">(</span><span class="n">rbind</span><span class="p">,</span><span class="w"> </span><span class="n">output_complex_l</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">gather</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">year</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">group_by</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">year</span><span class="p">)</span><span class="w">  </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">summarise</span><span class="p">(</span><span class="n">mid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">value</span><span class="p">),</span><span class="w">
+              </span><span class="n">lower</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">quantile</span><span class="p">(</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="m">0.1</span><span class="p">),</span><span class="w">
+              </span><span class="n">upper</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">quantile</span><span class="p">(</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="m">0.9</span><span class="p">))</span><span class="w">
+  
+  </span><span class="nf">return</span><span class="p">(</span><span class="nf">list</span><span class="p">(</span><span class="w">
+    </span><span class="n">output_simple</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">output_simple</span><span class="p">,</span><span class="w">
+    </span><span class="n">output_complex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">output_complex</span><span class="p">)</span><span class="w">
+  </span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="c1"># Example run
+</span><span class="n">results</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">cba_multi</span><span class="p">(</span><span class="w">
+              </span><span class="n">initial_cost</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1000000</span><span class="p">,</span><span class="w">
+              </span><span class="n">ongoing_cost</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10000</span><span class="p">,</span><span class="w">
+              </span><span class="n">prob_ad_hoc_cost</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.1</span><span class="p">,</span><span class="w">
+              </span><span class="n">ad_hoc_cost</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">100000</span><span class="p">,</span><span class="w">
+              </span><span class="n">customer_level_shift</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1000</span><span class="p">,</span><span class="w">
+              </span><span class="n">customer_growth</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.02</span><span class="p">,</span><span class="w">
+              </span><span class="n">customer_spend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">100</span><span class="w">
+            </span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># Summary plot
+</span><span class="n">results</span><span class="o">$</span><span class="n">output_simple</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">gather</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">scales</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"free"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_density</span><span class="p">(</span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_x_continuous</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="w"> </span><span class="n">comma</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Key summary results from CBA of a hypothetical project, with uncertainty built in"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># Costs and benefits plot
+</span><span class="n">results</span><span class="o">$</span><span class="n">output_complex</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="o">!</span><span class="n">grepl</span><span class="p">(</span><span class="s2">"^Cumulative"</span><span class="p">,</span><span class="w"> </span><span class="n">variable</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">year</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">scales</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"free_y"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_ribbon</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">ymin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lower</span><span class="p">,</span><span class="w"> </span><span class="n">ymax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">upper</span><span class="p">),</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.2</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_line</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mid</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dollar</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Year"</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Value"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Key time series results from CBA of a hypothetical project, with uncertainty built in"</span><span class="p">,</span><span class="w">
+       </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"80% credibility intervals shown"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># Cumulative plot
+</span><span class="n">results</span><span class="o">$</span><span class="n">output_complex</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">grepl</span><span class="p">(</span><span class="s2">"^Cumulative"</span><span class="p">,</span><span class="w"> </span><span class="n">variable</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">year</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">scales</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"fixed"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_ribbon</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">ymin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lower</span><span class="p">,</span><span class="w"> </span><span class="n">ymax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">upper</span><span class="p">),</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.2</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_line</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mid</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dollar</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Year"</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Value"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Cumulative costs and benefits from CBA of a hypothetical project, with uncertainty built in"</span><span class="p">,</span><span class="w">
+       </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"80% credibility intervals shown"</span><span class="p">)</span></code></pre></figure>
+
+<p>Close readers will observe that I’ve taken some shortcuts here, particularly by using a “generic uncertainty” parameter which by default gives each of my random parameters a standard deviation that is 10% of its expected value; and that all the random variables are Normally distributed. Obviously these are parts of the model that can be made more specific if better information is available, for example the the standard errors of estimates of willingness-to-pay from a survey could be used as the actual standard deviation of the relevant parameter in an appropriate model.</p>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>I’ve tried to at least begin to show:</p>
+
+<ol>
+  <li>how easy it is to do cost-benefit analysis calculations in R</li>
+  <li>how using R makes it much easier to simulate uncertainty by performing many runs with a given set of parameters and defined randomness</li>
+  <li>how building your model in an R function like <code class="highlighter-rouge">cba_single()</code> makes it easier to quality control and see at a glance exactly what the model is doing.</li>
+</ol>
+
+<p>The analysis is done with four functions:</p>
+
+<ul>
+  <li><code class="highlighter-rouge">net_present_value()</code> and <code class="highlighter-rouge">internal_rate_return()</code> apply to any analysis</li>
+  <li><code class="highlighter-rouge">cba_single()</code> is the guts of the model, and estimates a single set of costs and benefits, with defined areas of randomness, for a given set of parameters. It will vary greatly depending on the task at hand.</li>
+  <li><code class="highlighter-rouge">cba_multi()</code> is a wrapper to run <code class="highlighter-rouge">cba_single()</code> many times, with the same set of parameters, and collect the results for presentation and discussion.</li>
+</ul>
+
+<p>Happy cost-benefit analysing!</p>
+
+
+		
+	</div>
+</div>
+
+<div class="col-md-1"></div>
+<div class="col-md-4">
+	<div class="side-banner">
+	
+
+
+	<div>
+	   
+	    
+			
+			<p>&larr; Previous post</p>
+			<p><a rel="prev" href="/blog/2019/11/09/sampling-from-urns">A small simple random sample will often be better than a huge not-so-random one</a></p>
+		
+		
+		
+		
+		
+		
+	</div>
+	
+	 
+
+   <div class = "side-footer">
+			
+			<hr></hr>
+			<p><gcse:search></gcse:search></p>
+			<hr></hr>
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.</p>
+			<hr></hr>
+			
+       <div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="false" data-share="false"></div>
+			
+			<hr></hr>
+			<p>I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+			<hr></hr>
+
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title"><i>free range statistics</i></span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			<hr></hr>
+			
+
+
+    </div>
+
+
+
+  
+   
+
+
+
+
+		  
+		  
+
+
+
+	   
+	<div id="disqus_thread"></div>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function() {
+				var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+				dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+				(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+			})();
+		</script>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function () {
+				var s = document.createElement('script'); s.async = true;
+				s.type = 'text/javascript';
+				s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+				(document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+			}());
+		</script>
+
+	<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+	</div>	
+</div>    
+   
+   
+
+			
+			</div><!-- /.container -->
+         
+   <!-- Default Statcounter code for Free Range Statistics
+http://Http://freerangestats.info -->
+<script type="text/javascript">
+var sc_project=11673245; 
+var sc_invisible=1; 
+var sc_security="5b7111a4"; 
+</script>
+<script type="text/javascript"
+src="https://www.statcounter.com/counter/counter.js" async></script>
+<noscript><div class="statcounter"><a title="Web Analytics"
+href="http://statcounter.com/" target="_blank"><img class="statcounter"
+src="//c.statcounter.com/11673245/0/5b7111a4/1/" alt="Web
+Analytics"></a></div></noscript>
+<!-- End of Statcounter Code -->
+
+</body>   
+</html>
