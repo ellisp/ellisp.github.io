@@ -1,0 +1,768 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Estimating Covid-19 reproduction number with delays and right-truncation</title>
+      	
+         
+         
+            <meta name ="description" content ="There is a fast growing body of knowledge and tools to help estimate effective reproduction number of an epidemic in real time; I have a go at applying the latest EpiNow2 R package to data for Covid-19 cases in Victoria, Australia.">
+            <meta property="og:description" content ="There is a fast growing body of knowledge and tools to help estimate effective reproduction number of an epidemic in real time; I have a go at applying the latest EpiNow2 R package to data for Covid-19 cases in Victoria, Australia.">
+         
+         <meta property="og:site_name" content="free range statistics" />
+         <meta property="og:title" content="Estimating Covid-19 reproduction number with delays and right-truncation" />
+         
+            <meta property="og:image" content="http://freerangestats.info/img/0189-combined-2.png" />
+         
+		 
+			<meta property="og:url" content="http://freerangestats.info/blog/2020/07/18/victoria-r-convolution.html" />
+		 
+         <meta property="og:author" content= "https://www.facebook.com/peterstats" />
+         <meta property="og:type" content="article" />
+      
+
+<link href='https://fonts.googleapis.com/css?family=Sarala' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Prosto+One' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Ubuntu+Mono' rel='stylesheet'>
+	  
+          <link href="/css/bootstrap.min.css" rel ="stylesheet" type="text/css">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet" type="text/css">
+            <link href="/css/custom.css" rel ="stylesheet" type="text/css">     
+		<link href="/css/syntax.css" rel ="stylesheet" type="text/css">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="free range statistics by Peter Ellis"
+      href="/feed.xml">
+
+	  
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+  <script>
+  (function() {
+    var cx = '015640467633673901770:pk3v2c95baw';
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+  })();
+</script>
+
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">free range statistics</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/about">about</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">all posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">ordered by date</a></li>
+				  <li><a href="/blog/most-popular.html">ordered by popularity</a></li>
+                  <li><a href="/blog/index_by_tag.html">grouped by subject matter</a></li>
+                  <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
+				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
+				  <li><a href = /blog/2020/07/18/victoria-r-convolution>most recent post</a></li>
+				</ul>
+            </li>
+              <li><a href="/blog/showcase.html">showcase</a></li>
+              <li><a href="/presentations/index.html">presentations</a></li>
+			  <li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">election forecasts<span class="caret"></span></a>
+                <ul class="dropdown-menu">
+				  <li><a href = "/elections/nz-2020/index.html">NZ 2020</a></li>
+                  <li><a href = "/elections/oz-2019/index.html">Australia federal 2019</a></li>
+				  <li><a href = "/elections/nz-2017/combined.html">NZ 2017</a></li>
+                  <li><a href="/blog/voting.html">all blog posts on voting behaviour</a></li>
+                </ul>				
+			  </li>
+			  
+			  
+			  
+		    </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			<div class="jumbotron">
+  <div class="container">
+	<center><h1>Estimating Covid-19 reproduction number with delays and right-truncation</h1></center>
+  </div>
+</div>
+
+
+
+	<div class = "post-summary">
+	<h2>At a glance:</h2>
+	   <p>There is a fast growing body of knowledge and tools to help estimate effective reproduction number of an epidemic in real time; I have a go at applying the latest EpiNow2 R package to data for Covid-19 cases in Victoria, Australia.</p>
+	   <p class="meta">18 Jul 2020</p>
+	   <hr></hr>
+	</div>
+
+
+<div class="col-md-7">
+
+	<div class="post">
+		
+	  <p>This <a href="https://www.medrxiv.org/content/10.1101/2020.06.18.20134858v2">great preprint</a> recently came out from a team of Katelyn Gostic and others. It uses simulations to test various methods of estimating the effective reproduction number <script type="math/tex">R_t</script>. If you are following the Covid-19 pandemic from a data angle at all, you will no doubt have come across the effective reproduction number and will know that it is an estimate, at a point in time, of the average number of people an infected person infects in turn. It drives the exponential growth of an epidemic, and the way it varies over time is a clear, interpretable way of understanding how that growth rate gets under control, or doesn’t.</p>
+
+<p>The paper is thorough, timely, and transparent - <a href="https://github.com/cobeylab/Rt_estimation">all the code is available</a>, and the criteria on which the authors test different methods are clear and sensible. It’s certainly a must-read for anyone thinking of trying to estimate the reproduction number in real time. Some of the key issues that it considers include (in my sequencing, not their’s):</p>
+
+<ul>
+  <li>the confirmed cases on any day will be a <strong>shifting underestimate</strong> of the number of actual cases. Most notably, when testing is constrained, high test positivity is very likely an indicator of more un-tested cases in the community the rate of which changes dramatically over time, but there is no agreed way of adjusting for this (in a <a href="/blog/2020/05/09/covid-population-incidence">previous blog</a> I have suggested a pragmatic method of doing this which puts the role of tests in one day somewhere between a census which implies one should use just counts and a random sample which implies one should use just positivity, but it leaves a lot of space for judgement).</li>
+  <li>the impact of the <strong>delays</strong> between infection, symptoms, testing and confirmation of a case.  Some method of allocating today’s cases to various past dates is needed. One common method of doing this - subtracting days according to the distribution of the delay from infection to confirmation - makes things worse.</li>
+  <li>the impact that correcting for that delay will have on our estimates of <em>today’s</em> cases, which will be <strong>right-truncated</strong>. That is, the infections in recent days will only be reflected fully in future data, so recent days’ estimates of infection numbers will be biased downwards</li>
+</ul>
+
+<p>There’s also a complication about the difference between <em>instantaneous</em> or <em>case/cohort</em> reproduction number. As I understand it, for any given “today” the former is an estimate of the number of people being infected today per active cases today; but the latter is the average number of people who will be infected (today and later) by people who are infected today. The instantaneous measure is more appropriate for real-time surveillance.</p>
+
+<h2 id="cases-and-test-positivity-in-victoria">Cases and test positivity in Victoria</h2>
+
+<p>I wanted to understand these issues better, particularly in the context of the recent marked increase in Covid-19 cases in Melbourne, Victoria, Australia where I live. Let’s start with looking at confirmed case numbers and test positivity rates. The Guardian compiles various announcements, media releases, dashboards and the like from the different state authorities around Australia into a <a href="https://docs.google.com/spreadsheets/d/1q5gdePANXci8enuiS4oHUJxcxC13d6bjMRSicakychE/edit#gid=1437767505">tidy Google sheet</a>. Thank you <a href="https://www.theguardian.com/australia-news/datablog/ng-interactive/2020/jul/16/victoria-coronavirus-map-melbourne-covid-19-cases-by-region-vic-case-numbers-data-trend-rising-falling-corona-hotspots-areas-postcodes">The Guardian</a>. The data are presented as cumulative totals of tests and of cases whenever data comes in - so they are <em>event</em> data, with between zero and four observation events per day per state. This needs a bit of tidying to turn into daily increases in cases and tests.</p>
+
+<p>Here’s the number of cases in Victoria, with and without a modest adjustment for test positivity as set out in my earlier post:</p>
+
+<object type="image/svg+xml" data="/img/0189-adjusting-positivity.svg" width="100%"><img src="/img/0189-adjusting-positivity.png" width="100%" /></object>
+
+<p>The history here will be familiar for Australians, but for other newcomers, the first burst of infections was driven nearly entirely by international travellers. There was a very low level of community transmission at that point, and the social distancing, test and trace, and lockdown measures pursued by governments at both Federal and State level were effective in suppressing the cases down to single digits. Then, since the second half of June, there has been a big increase in cases, this time locally contracted.</p>
+
+<p>The adjustment I’m making for positivity (the aqua-blue line) is very mild - I’m multiplying the confirmed cases by positivity to the power of 0.1 and then scaling the result so that the cases at the <em>lowest</em> test positivity are left as the originally were. I’m not using the power of 0.5 (ie square root) that I used in my previous post in the US context and that has been taken up by some other analysts. I don’t believe testing bottlenecks are as much of an issue here as in the US; I think our testing regime comes much closer to the ideal of a census of cases, or at least a relatively constant proportion of cases allowing for a big but relatively stable proportion of asymptomatic cases below the radar. To see why, here’s the time series of test positivity in Victoria:</p>
+
+<object type="image/svg+xml" data="/img/0189-positivity.svg" width="100%"><img src="/img/0189-positivity.png" width="100%" /></object>
+
+<p>That uptick is an issue, but it’s clearly a different order of magnitude of challenge to that faced in the US, where several locations have seen 20% of tests returning positive or higher (even 50% - one in two tests returning positive!), a major flashing red light that many many cases remain undiagnosed. The bottom line - there’s a lot of testing going on here in Victoria at the moment, I’m not sure it’s a major bottleneck for counting cases, and I only want to make a small adjustment for the positivity rate which is so close to zero for a lot of the period of interest.</p>
+
+<p>Here’s the code to download that data from The Guardian, estimate daily changes, model and smooth the test positivity rate and estimate an adjusted rate. It also sets us up for our next look at the issue of dealing with the delay, and with the downwards bias in recent days’ counts resulting from how we deal with the delay.</p>
+
+<p><em>Post continues after R code</em></p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">googlesheets4</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">janitor</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">mgcv</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">EpiNow2</span><span class="p">)</span><span class="w"> </span><span class="c1"># remotes::install_github("epiforecasts/EpiNow2")
+</span><span class="n">library</span><span class="p">(</span><span class="n">frs</span><span class="p">)</span><span class="w">     </span><span class="c1"># removes::install_github("ellisp/frs-r-package/pkg")
+</span><span class="n">library</span><span class="p">(</span><span class="n">patchwork</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">glue</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">surveillance</span><span class="p">)</span><span class="w"> </span><span class="c1"># for backprojNP()
+</span><span class="w">
+</span><span class="c1">#-----------------the Victoria data--------------
+</span><span class="w">
+</span><span class="n">url</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"https://docs.google.com/spreadsheets/d/1q5gdePANXci8enuiS4oHUJxcxC13d6bjMRSicakychE/edit#gid=1437767505"</span><span class="w">
+
+</span><span class="n">gd_orig</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">read_sheet</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="w"> 
+
+</span><span class="n">d</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">gd_orig</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">clean_names</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> 
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"VIC"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="c1"># deal with problem of multiple observations some days:
+</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">date</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">as.Date</span><span class="p">(</span><span class="n">date</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">date</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">summarise</span><span class="p">(</span><span class="n">tests_conducted_total</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">max</span><span class="p">(</span><span class="n">tests_conducted_total</span><span class="p">,</span><span class="w"> </span><span class="n">na.rm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">),</span><span class="w">
+            </span><span class="n">cumulative_case_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">max</span><span class="p">(</span><span class="n">cumulative_case_count</span><span class="p">,</span><span class="w"> </span><span class="n">na.rm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">tests_conducted_total</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">tests_conducted_total</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="kc">NA</span><span class="p">,</span><span class="w"> </span><span class="n">tests_conducted_total</span><span class="p">),</span><span class="w">
+         </span><span class="n">cumulative_case_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">cumulative_case_count</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="kc">NA</span><span class="p">,</span><span class="w"> </span><span class="n">cumulative_case_count</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ungroup</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="c1"># correct one typo, missing a zero
+</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">tests_conducted_total</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">date</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">as.Date</span><span class="p">(</span><span class="s2">"2020-07-10"</span><span class="p">),</span><span class="w"> </span><span class="m">1068000</span><span class="p">,</span><span class="w"> </span><span class="n">tests_conducted_total</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="c1"># remove two bad dates 
+</span><span class="w">  </span><span class="n">filter</span><span class="p">(</span><span class="o">!</span><span class="n">date</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="n">as.Date</span><span class="p">(</span><span class="nf">c</span><span class="p">(</span><span class="s2">"2020-06-06"</span><span class="p">,</span><span class="w"> </span><span class="s2">"2020-06-07"</span><span class="p">)))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">test_increase</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">tests_conducted_total</span><span class="p">[</span><span class="m">1</span><span class="p">],</span><span class="w"> </span><span class="n">diff</span><span class="p">(</span><span class="n">tests_conducted_total</span><span class="p">)),</span><span class="w">
+         </span><span class="n">confirm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">cumulative_case_count</span><span class="p">[</span><span class="m">1</span><span class="p">],</span><span class="w"> </span><span class="n">diff</span><span class="p">(</span><span class="n">cumulative_case_count</span><span class="p">)),</span><span class="w">
+         </span><span class="n">pos_raw</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pmin</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">confirm</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">test_increase</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">complete</span><span class="p">(</span><span class="n">date</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">seq.Date</span><span class="p">(</span><span class="nf">min</span><span class="p">(</span><span class="n">date</span><span class="p">),</span><span class="w"> </span><span class="nf">max</span><span class="p">(</span><span class="n">date</span><span class="p">),</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="s2">"day"</span><span class="p">),</span><span class="w"> 
+           </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="n">confirm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">numeric_date</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">date</span><span class="p">),</span><span class="w">
+         </span><span class="n">positivity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pos_raw</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">date</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">as.Date</span><span class="p">(</span><span class="s2">"2020-02-01"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">fill</span><span class="p">(</span><span class="n">positivity</span><span class="p">,</span><span class="w"> </span><span class="n">.direction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"downup"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+</span><span class="c1"># I don't believe the sqrt "corrected" cases helped here so have a much more modest 0.1.
+# But first we need to model positivity to smooth it, as it's far too spiky otherwise:
+</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">ps1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fitted</span><span class="p">(</span><span class="n">gam</span><span class="p">(</span><span class="n">positivity</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">s</span><span class="p">(</span><span class="n">numeric_date</span><span class="p">),</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">.</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"quasipoisson"</span><span class="p">)),</span><span class="w">
+         </span><span class="n">ps2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fitted</span><span class="p">(</span><span class="n">loess</span><span class="p">(</span><span class="n">positivity</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">numeric_date</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">.</span><span class="p">,</span><span class="w"> </span><span class="n">span</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.1</span><span class="p">)),</span><span class="w">
+         </span><span class="n">cases_corrected</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">confirm</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">ps1</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="m">0.1</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">min</span><span class="p">(</span><span class="n">ps1</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="m">0.1</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ungroup</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">smoothed_confirm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fitted</span><span class="p">(</span><span class="n">loess</span><span class="p">(</span><span class="n">confirm</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">numeric_date</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">.</span><span class="p">,</span><span class="w"> </span><span class="n">span</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.1</span><span class="p">)))</span><span class="w">
+
+
+</span><span class="n">the_caption</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"Data gathered by The Guardian; analysis by http://freerangestats.info"</span><span class="w">  
+
+</span><span class="c1"># Positivity plot:
+</span><span class="n">d</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">date</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_point</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pos_raw</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_line</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ps2</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent_format</span><span class="p">(</span><span class="n">accuracy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Test positivity"</span><span class="p">,</span><span class="w">
+       </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Positive test rates for COVID-19 in Melbourne, Victoria"</span><span class="p">,</span><span class="w">
+       </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_caption</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># Case numbers plot
+</span><span class="n">d</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">select</span><span class="p">(</span><span class="n">date</span><span class="p">,</span><span class="w"> </span><span class="n">cases_corrected</span><span class="p">,</span><span class="w"> </span><span class="n">confirm</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">gather</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">date</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">case_when</span><span class="p">(</span><span class="w">
+    </span><span class="n">variable</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"confirm"</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="s2">"Recorded cases"</span><span class="p">,</span><span class="w">
+    </span><span class="n">variable</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"cases_corrected"</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="s2">"With small adjustment for test positivity"</span><span class="w">
+  </span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">date</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">variable</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_point</span><span class="p">()</span><span class="w">  </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_smooth</span><span class="p">(</span><span class="n">se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">span</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.07</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Number of new cases per day"</span><span class="p">,</span><span class="w">
+       </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w">
+       </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_caption</span><span class="p">,</span><span class="w">
+       </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Covid-19 cases per day in Melbourne, Victoria"</span><span class="p">,</span><span class="w">
+       </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"With and without a small adjustment for test positivity. No adjustment for delay."</span><span class="p">)</span></code></pre></figure>
+
+<h2 id="convolution-and-deconvolution">Convolution and Deconvolution</h2>
+
+<p>One of the obvious challenges for estimating effective reproduction number (<script type="math/tex">R_t</script>) is the delay between infection and becoming a confirmed case. The Gostic et al paper looked at different ways of doing this. They found that with poor information, an imperfect but not-too-bad method is just to left-shift the confirmed cases by subtracting the estimated average delay from infection to reporting. A better method takes into account the distribution of that delay - typically a Poisson or negative binomial random variable of counts of days. However, a common approach to do this by subtracting delays drawn from that distribution is noticeably worse than simply subtracting the mean. In the words of Gostic et al:</p>
+
+<blockquote>
+  <p>“One method infers each individual’s time of infection by subtracting a sample from the delay distribution from each observation time. This is mathematically equivalent to convolving the observation time series with the reversed delay distribution. However, convolution is not the correct inverse operation and adds spurious variance to the imputed incidence curve. The delay distribution has the effect of spreading out infections incident on a particular day across many days of observation; subtracting the delay distribution from the already blurred observations spreads them out further. Instead, deconvolution is needed. In direct analogy with image processing, the subtraction operation blurs, whereas the proper deconvolution sharpens”</p>
+</blockquote>
+
+<p>To be clear, it’s not just armchair epidemiologists who are wrongly using convolution backwards in time here, but specialists performing Covid-19 surveillance or research for their professional roles. So this paper does a great service in pointing out how it makes things worse. I think that at least one high profile dashboard of <script type="math/tex">R_t</script> estimates has modified its method based on the findings in this paper already. Self-correcting science at work!</p>
+
+<h3 id="recovering-unobserved-past-infections-with-toy-data">Recovering unobserved past infections with toy data</h3>
+
+<p>To see this issue in action I made myself two functions <code class="highlighter-rouge">blur()</code> and <code class="highlighter-rouge">sharpen()</code> which respectively do the simple convolution and deconvolution tasks described above in a deterministic way. The job of <code class="highlighter-rouge">blur()</code> is to delay a vector of original cases in accordance with a given distribution. In effect, this spreads out the original vector over a greater (and delayed) time period. The job of <code class="highlighter-rouge">sharpen()</code> is to reverse this process - to recover an original vector of observations that, if blurred, would create the original (unobserved) incidence counts.</p>
+
+<p>I tested these two functions with a super-simple set of six original incidence counts, the vector <code class="highlighter-rouge">4, 6, 8, 9, 7, 5</code>. I blurred these into the future in accordance with expected values of a Poisson distribution with a mean of 3 days. Then I used <code class="highlighter-rouge">sharpen()</code> to recover the original values, which it does with near perfect success:</p>
+
+<object type="image/svg+xml" data="/img/0189-conv-eg.svg" width="100%"><img src="/img/0189-conv-eg.png" width="100%" /></object>
+
+<p>My blur() and sharpen() functions (which are completely deterministic and not fit in my opinion for dealing with real-life random data) are in the <a href="https://github.com/ellisp/frs-r-package/blob/master/pkg/R/convolution.R"><code class="highlighter-rouge">frs</code> R package</a> where I store miscellaneous stuff for this blog.</p>
+
+<p>Here’s he code that makes those toy example original, delayed and recovered time series:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#------------------understanding convolution----------------------
+</span><span class="w">
+</span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">4</span><span class="p">,</span><span class="m">6</span><span class="p">,</span><span class="m">8</span><span class="p">,</span><span class="m">9</span><span class="p">,</span><span class="m">7</span><span class="p">,</span><span class="m">5</span><span class="p">)</span><span class="w">
+</span><span class="n">pmf</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dpois</span><span class="p">(</span><span class="m">0</span><span class="o">:</span><span class="m">14</span><span class="p">,</span><span class="w"> </span><span class="n">lambda</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="p">)</span><span class="w">
+</span><span class="n">pmf</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">pmf</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">pmf</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># create a lagged version of x, with lags determined by a known probability mass function:
+</span><span class="n">y</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">blur</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">pmf</span><span class="p">,</span><span class="w"> </span><span class="n">scale_pmf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w">
+</span><span class="c1"># recover the original version of x, given its blurred version 
+# and the original probabilities of delays of various lags:
+</span><span class="n">recovered</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sharpen</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">pmf</span><span class="p">)</span><span class="w">
+
+
+</span><span class="n">p_conv</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tibble</span><span class="p">(</span><span class="n">original_x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="nf">length</span><span class="p">(</span><span class="n">x</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">right_join</span><span class="p">(</span><span class="n">recovered</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"position"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">gather</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">position</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">case_when</span><span class="p">(</span><span class="w">
+    </span><span class="n">variable</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"original_x"</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="s2">"Original (unobserved) values"</span><span class="p">,</span><span class="w">
+    </span><span class="n">variable</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"x"</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="s2">"Original values recovered"</span><span class="p">,</span><span class="w">
+    </span><span class="n">variable</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"y"</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="s2">"Values after a delay"</span><span class="w">
+   </span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">position</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">-1</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">position</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">variable</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_point</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_line</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">theme</span><span class="p">(</span><span class="n">legend.position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"right"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Convolution and deconvolution demonstrated with simulated data"</span><span class="p">,</span><span class="w">
+       </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w">
+       </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Time"</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Value"</span><span class="p">)</span></code></pre></figure>
+
+<p>… and for completeness, here are the definitions of my <code class="highlighter-rouge">blur()</code> and <code class="highlighter-rouge">sharpen()</code> functions. Most of the versions of these I’ve seen in R, Python and Stan use loops, but the particular nature of the “multiply every value of a vector by the probabilities for various lags” operation suggested to me it would be simpler to write as a join of two tables. Maybe I spend too much time with databases. I did think at one point in writing these that I seemed to be re-inventing matrix multiplication, and I’m sure there’s a better way than what I’ve got; but the complications of forcing the recovered vector of original infections to match the observed vector were too much for me to come up with a more elegant approach in the hour or so time budget I had for this bit of the exercise.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="cd">#' One-dimensional convolution
+#'
+#' @param x a vector of counts or other numbers
+#' @param pmf a vector of probabilities to delay x at various lags. First value should be for lag 0, 
+#' second for lag 1, etc. 
+#' @param warnings whether to show warnings when the resulting vector does not add up to the
+#' same sum as the original
+#' @param scale_pmf whether or not to scale pmf so it adds exactly to one
+#' @details \code{blur} and \code{sharpen} are deterministic single dimensional convolution functions
+#' for simple convolution by a lagged probability mass function representing the proportion of original
+#' cases that are delayed at various lags. They are for illustrative / toy purposes and probably should
+#' not be used for actual analysis.
+#' @return A vector of length equal to the length of x plus length of pmf minus 1
+#' @export
+#' @importFrom dplyr left_join
+#' @examples 
+#' x &lt;- c(4,6,8,9,7,5)
+#' pmf &lt;- c(0, 0.3, 0.5, 0.2)
+#' blur(x, pmf)
+</span><span class="n">blur</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">pmf</span><span class="p">,</span><span class="w"> </span><span class="n">warnings</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> </span><span class="n">scale_pmf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">){</span><span class="w">
+  
+  </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nf">class</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"integer"</span><span class="p">,</span><span class="w"> </span><span class="s2">"numeric"</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="o">!</span><span class="nf">is.null</span><span class="p">(</span><span class="nf">dim</span><span class="p">(</span><span class="n">x</span><span class="p">))){</span><span class="w">
+    </span><span class="n">stop</span><span class="p">(</span><span class="s2">"x should be a numeric vector of numbers"</span><span class="p">)</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+  
+  </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="s2">"numeric"</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="nf">class</span><span class="p">(</span><span class="n">pmf</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="o">!</span><span class="nf">is.null</span><span class="p">(</span><span class="nf">dim</span><span class="p">(</span><span class="n">pmf</span><span class="p">))){</span><span class="w">
+    </span><span class="n">stop</span><span class="p">(</span><span class="s2">"pmf should be a numeric vector of probabilities"</span><span class="p">)</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+  
+  </span><span class="k">if</span><span class="p">(</span><span class="n">scale_pmf</span><span class="p">){</span><span class="w">
+    </span><span class="n">pmf</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">pmf</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">pmf</span><span class="p">)</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+  
+  </span><span class="n">cvd</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.frame</span><span class="p">(</span><span class="n">pmf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pmf</span><span class="p">,</span><span class="w"> </span><span class="n">link</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">lag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="o">:</span><span class="p">(</span><span class="nf">length</span><span class="p">(</span><span class="n">pmf</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">1</span><span class="p">))</span><span class="w">
+  </span><span class="n">orig</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.frame</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">link</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+  </span><span class="n">orig</span><span class="o">$</span><span class="n">position</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">nrow</span><span class="p">(</span><span class="n">orig</span><span class="p">)</span><span class="w">
+  </span><span class="n">combined</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dplyr</span><span class="o">::</span><span class="n">left_join</span><span class="p">(</span><span class="n">orig</span><span class="p">,</span><span class="w"> </span><span class="n">cvd</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"link"</span><span class="p">)</span><span class="w">
+  </span><span class="n">combined</span><span class="o">$</span><span class="n">z</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">with</span><span class="p">(</span><span class="n">combined</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">pmf</span><span class="p">)</span><span class="w">
+  </span><span class="n">combined</span><span class="o">$</span><span class="n">new_position</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">with</span><span class="p">(</span><span class="n">combined</span><span class="p">,</span><span class="w"> </span><span class="n">position</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">lag</span><span class="p">)</span><span class="w">
+  </span><span class="n">y</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">aggregate</span><span class="p">(</span><span class="n">combined</span><span class="o">$</span><span class="n">z</span><span class="p">,</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="n">combined</span><span class="o">$</span><span class="n">new_position</span><span class="p">),</span><span class="w"> </span><span class="n">sum</span><span class="p">)</span><span class="o">$</span><span class="n">x</span><span class="w">
+  
+  </span><span class="k">if</span><span class="p">(</span><span class="nf">sum</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">!=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">warnings</span><span class="p">){</span><span class="w">
+    </span><span class="n">warning</span><span class="p">(</span><span class="s2">"Something went wrong with blur; result did not sum up to original"</span><span class="p">)</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+  
+  </span><span class="nf">return</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="cd">#' Single dimensional deconvolution
+#' 
+#' @param y a vector of values to be deconvolved
+#' @param pmf a vector of probabilities for the original convolution that created y
+#' @param warnings passed through to blur
+#' @param digits how many digits to round the deconvolved values to. If NULL no rounding occurs.
+#' @details \code{blur} and \code{sharpen} are deterministic single dimensional convolution functions
+#' for simple convolution by a lagged probability mass function representing the proportion of original
+#' cases that are delayed at various lags. They are for illustrative / toy purposes and probably should
+#' not be used for actual analysis.
+#' 
+#' Use \code{\link[surveillance]{backprojNP}} for a better, maximum likelihood approach to recovering
+#' an unseen set of original cases that result in the observations.
+#' 
+#' \code{sharpen} is the inverse of \code{blur}; it seeks to recover an original vector that, when blurred
+#' via \code{pmf}, would produce the actual observations.
+#' @return a data frame with columns for x (the inferred original values what were convolved to y),
+#' y (which will be padded out with some extra zeroes), and position (which is the numbering of the
+#' row relative to the original ordering of y; so position = 1 refers to the first value of y)
+#' @seealso \code{\link[surveillance]{backprojNP}}.
+#' @export
+#' @examples 
+#' x &lt;- c(4,6,8,9,7,5)
+#' pmf &lt;- c(0, 0.3, 0.5, 0.2)
+#' # create a convolved version of x:
+#' y &lt;- blur(x, pmf)
+#' # recover the original version of x, given its blurred version 
+#' # and the original convolution probabilities:
+#' sharpen(y, pmf)
+</span><span class="n">sharpen</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">pmf</span><span class="p">,</span><span class="w"> </span><span class="n">warnings</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">digits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">NULL</span><span class="p">){</span><span class="w">
+  </span><span class="n">y</span><span class="m">2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="nf">rep</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">pmf</span><span class="p">)),</span><span class="w"> </span><span class="n">y</span><span class="p">)</span><span class="w">
+  </span><span class="n">starter_x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">pmf</span><span class="p">)))</span><span class="w">
+  
+  </span><span class="n">fn</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">){</span><span class="w">
+    </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">y</span><span class="m">2</span><span class="p">)</span><span class="w">
+    </span><span class="n">d</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">sqrt</span><span class="p">(</span><span class="nf">sum</span><span class="p">((</span><span class="n">blur</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">pmf</span><span class="p">,</span><span class="w"> </span><span class="n">warnings</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">warnings</span><span class="p">,</span><span class="w"> </span><span class="n">scale_pmf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)[</span><span class="m">1</span><span class="o">:</span><span class="nf">length</span><span class="p">(</span><span class="n">x</span><span class="p">)]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">y</span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="m">2</span><span class="p">))</span><span class="w">
+    </span><span class="nf">return</span><span class="p">(</span><span class="n">d</span><span class="p">)</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+  
+  </span><span class="n">op_res</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">optim</span><span class="p">(</span><span class="n">starter_x</span><span class="p">,</span><span class="w"> </span><span class="n">fn</span><span class="p">,</span><span class="w"> </span><span class="n">lower</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"L-BFGS-B"</span><span class="p">)</span><span class="w">
+  
+  </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">op_res</span><span class="o">$</span><span class="n">par</span><span class="w">
+  </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">y</span><span class="m">2</span><span class="p">)</span><span class="w">
+  </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nf">is.null</span><span class="p">(</span><span class="n">digits</span><span class="p">)){</span><span class="w">
+    </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">digits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">digits</span><span class="p">)</span><span class="w">  
+  </span><span class="p">}</span><span class="w">
+  
+  </span><span class="n">output</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.frame</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">y</span><span class="m">2</span><span class="p">)</span><span class="w">
+  </span><span class="n">output</span><span class="o">$</span><span class="n">position</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">seq</span><span class="p">(</span><span class="n">from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">output</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">y</span><span class="p">),</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+  </span><span class="nf">return</span><span class="p">(</span><span class="n">output</span><span class="p">)</span><span class="w">
+  
+</span><span class="p">}</span></code></pre></figure>
+
+<p>A big limitation on these toy <code class="highlighter-rouge">blur()</code> and <code class="highlighter-rouge">sharpen()</code> functions is that they assume not only that we know the probability mass for each possible day of lagging, but that the process is deterministic. Of course, this isn’t the case. The <code class="highlighter-rouge">backprojNP()</code> function in <a href="https://cran.r-project.org/package=surveillance">the <code class="highlighter-rouge">surveillance</code> R package</a> estimates those unobserved latent series on the assumption that the observations come from a Poisson process. Here’s how that looks when we apply it to my toy data:</p>
+
+<object type="image/svg+xml" data="/img/0189-toy-backprop.svg" width="100%"><img src="/img/0189-toy-backprop.png" width="100%" /></object>
+
+<p>This uses a method first developed in the context of understand the spread of HIV, which has a particularly long and uncertain delay between infection and confirmation of a case.</p>
+
+<p>It doesn’t do as well at recovering the original as my <code class="highlighter-rouge">sharpen()</code> did, because <code class="highlighter-rouge">sharpen()</code> has the luxury of knowing the blurring took place deterministically. With these small numbers that makes as big difference. But <code class="highlighter-rouge">backprojNP()</code> does an ok job at recovering at least some of the original structure. It’s a <em>bit</em> sharper than the blurred observations. Here’s the code applying <code class="highlighter-rouge">backprojNP()</code> to my toy data (mostly this is plotting data; I stuck to base graphics to give me a bit more control over the legend):</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># Make a "surveillance time series" of our toy observations
+</span><span class="n">y_sts</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sts</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="w">
+</span><span class="c1"># Back-propagate to get an estimate of the original, assuming our observations
+# are a Poisson process
+</span><span class="n">x</span><span class="m">2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">backprojNP</span><span class="p">(</span><span class="n">y_sts</span><span class="p">,</span><span class="w"> </span><span class="n">pmf</span><span class="p">)</span><span class="w">
+
+</span><span class="n">par</span><span class="p">(</span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Roboto"</span><span class="p">)</span><span class="w">
+</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">xaxis.labelFormat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">NULL</span><span class="p">,</span><span class="w"> 
+   </span><span class="n">legend</span><span class="o">=</span><span class="kc">NULL</span><span class="p">,</span><span class="w"> </span><span class="n">lwd</span><span class="o">=</span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">3</span><span class="p">),</span><span class="w"> </span><span class="n">lty</span><span class="o">=</span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">),</span><span class="w"> 
+   </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"grey80"</span><span class="p">,</span><span class="w"> </span><span class="s2">"grey90"</span><span class="p">,</span><span class="w"> </span><span class="s2">"red"</span><span class="p">),</span><span class="w">
+   </span><span class="n">main</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">bty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"l"</span><span class="p">,</span><span class="w">
+   </span><span class="n">ylim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">10</span><span class="p">),</span><span class="w">
+   </span><span class="n">xlab</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Time"</span><span class="p">,</span><span class="w">
+   </span><span class="n">ylab</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Infections"</span><span class="p">)</span><span class="w">
+</span><span class="n">title</span><span class="p">(</span><span class="s2">"Recovering / sharpening unobserved infections with simulated toy data and \nsurveillance::backprojNP()"</span><span class="p">,</span><span class="w"> 
+	</span><span class="n">adj</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Sarala"</span><span class="p">,</span><span class="w"> </span><span class="n">font.main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+</span><span class="n">points</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">6</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"orange"</span><span class="p">,</span><span class="w"> </span><span class="n">cex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="p">,</span><span class="w"> </span><span class="n">pch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"-"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">legend</span><span class="p">(</span><span class="m">15</span><span class="p">,</span><span class="w"> </span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="n">legend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Observed"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Back-propagated"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Original"</span><span class="p">),</span><span class="w">
+	 </span><span class="n">pch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">15</span><span class="p">,</span><span class="w"> </span><span class="kc">NA</span><span class="p">,</span><span class="w"> </span><span class="kc">NA</span><span class="p">),</span><span class="w">
+	 </span><span class="n">lty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">),</span><span class="w">
+	 </span><span class="n">lwd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">),</span><span class="w">
+	 </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"grey80"</span><span class="p">,</span><span class="w"> </span><span class="s2">"red"</span><span class="p">,</span><span class="w"> </span><span class="s2">"orange"</span><span class="p">),</span><span class="w">
+	 </span><span class="n">pt.cex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">),</span><span class="w">
+	 </span><span class="n">cex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.8</span><span class="p">,</span><span class="w">
+	 </span><span class="n">bty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"n"</span><span class="p">)</span><span class="w">
+
+</span><span class="err">#</span><span class="w"> </span><span class="n">note</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">actual</span><span class="w"> </span><span class="n">estimates</span><span class="w"> </span><span class="n">are</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">x</span><span class="m">2</span><span class="o">@</span><span class="n">upperbound</span><span class="p">,</span><span class="w"> </span><span class="n">which</span><span class="w"> </span><span class="n">adds</span><span class="w"> </span><span class="n">up</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="m">39</span><span class="p">,</span><span class="w"> </span><span class="n">same</span><span class="w"> </span><span class="n">as</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">original</span><span class="w"> </span><span class="n">y</span></code></pre></figure>
+
+<p>Not only does <code class="highlighter-rouge">backprojNP()</code> do a better job at coping with real-life random data, it’s much faster than my <code class="highlighter-rouge">sharpen()</code> function. So I should emphasise again that <code class="highlighter-rouge">frs::sharpen()</code> is here purely for illustrative purposes, to help me get my head around how this whole single dimensional deconvolution thing works.</p>
+
+<h3 id="recovering-unobserved-past-infections-with-toy-data-1">Recovering unobserved past infections with toy data</h3>
+
+<p>OK, so how does this go when we apply it to real Covid-19 data? A quick google suggests that the delay from infection to symptoms is approximately a Poisson distribution with a mean of 6 days. The time from symptoms to becoming a confirmed case is unfortunately very much unknown, and also is likely to change over time (for example, as queues for testing lengthen or shorten, and testing regimes become more or less aggressive). I took a guess for illustrative purposes that it is going to be a Poisson distribution with a mean of about 3 days, shifted one day to the right (because it takes at least one day to get one’s test results). As the sum of two Poisson distributions is another Poisson distribution, this means we can model the overall delay from (unobserved) infection to confirmation as a Poisson distribution with mean of 9 days, plus one day for good luck. In the code below the probability of delay by various lags is defined on this basis in the <code class="highlighter-rouge">pmf_covid</code> vector.</p>
+
+<p>Here’s what this looks like when I apply it to the Victorian data:</p>
+
+<object type="image/svg+xml" data="/img/0189-delay-adj.svg" width="100%"><img src="/img/0189-delay-adj.png" width="100%" /></object>
+
+<p>Overall the curve looks like how we’d expect - earlier than the observed cases, and a little steeper (not as much steeper as I expected though - in the course of writing this blog over a few days I noted this curve can change noticeably as individual data points come in, so it should be treated with caution - see later for a better chart).</p>
+
+<p>Note how this chart really draws attention to the final challenge we’ll be looking at - the right truncation of the data. That massive drop in the aqua-blue line is very misleading, because it’s based on there being zero confirmed cases from tomorrow onwards! We’ve got a way to go yet before we want to turn this into estimates of effective reproduction number, but we’re on track.</p>
+
+<p>Here’s the code for that bit of analysis:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">pmf_covid</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">dpois</span><span class="p">(</span><span class="m">0</span><span class="o">:</span><span class="m">20</span><span class="p">,</span><span class="w"> </span><span class="n">lambda</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">9</span><span class="p">))</span><span class="w">
+
+</span><span class="c1"># takes a few minutes
+</span><span class="n">bp_covid</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">backprojNP</span><span class="p">(</span><span class="n">sts</span><span class="p">(</span><span class="n">d</span><span class="o">$</span><span class="n">confirm</span><span class="p">),</span><span class="w"> </span><span class="n">pmf_covid</span><span class="p">)</span><span class="w">
+
+</span><span class="n">sharpened</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tibble</span><span class="p">(</span><span class="n">recovered_x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bp_covid</span><span class="o">@</span><span class="n">upperbound</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">n</span><span class="p">())</span><span class="w">
+
+</span><span class="n">p_adj_conv</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">n</span><span class="p">())</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">left_join</span><span class="p">(</span><span class="n">sharpened</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"position"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">select</span><span class="p">(</span><span class="n">date</span><span class="p">,</span><span class="w"> </span><span class="n">recovered_x</span><span class="p">,</span><span class="w"> </span><span class="n">confirm</span><span class="p">)</span><span class="w">  </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">recovered_x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">replace_na</span><span class="p">(</span><span class="n">recovered_x</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">gather</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">date</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">case_when</span><span class="p">(</span><span class="w">
+    </span><span class="n">variable</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"confirm"</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="s2">"Confirmed cases"</span><span class="p">,</span><span class="w">
+    </span><span class="n">variable</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"recovered_x"</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="s2">"Estimated original cases accounting for delay"</span><span class="w">
+  </span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">date</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">variable</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_line</span><span class="p">(</span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1.5</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Back-projection of Victorian Covid-19 infections"</span><span class="p">,</span><span class="w">
+       </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">str_wrap</span><span class="p">(</span><span class="s2">"Non-parametric back-projection of incidence cases assuming 
+       average delay of 10 days between infection and observation, using methods in 
+                           Becker et al (1991). No correction for right truncation of data,
+                           so the last 15 days will be badly biased downwards."</span><span class="p">,</span><span class="w"> </span><span class="m">100</span><span class="p">),</span><span class="w">
+       </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Number of infections"</span><span class="p">,</span><span class="w">
+       </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span><span class="w">
+
+</span><span class="n">print</span><span class="p">(</span><span class="n">p_adj_conv1</span><span class="p">)</span></code></pre></figure>
+
+<h2 id="adjust-for-testing-delay-and-right-truncation-all-at-once">Adjust for testing, delay and right truncation all at once</h2>
+
+<p>Clearly the problem of adjusting for the delay is going to need a more careful evidence base than my casual guess at a Poisson variable with mean of 9 days displaced one day to the right; we’ll need an effective way to manage the smoothing of our inferred original infection estimates; we need a way of estimating the unobserved cases; and a method for dealing with the “right truncation” ie the absence of data that can be mapped to infections today, yesterday, and other recent days.</p>
+
+<p>Following one of the footnotes in Gostic et al (referring to “Many statistical methods are available to adjust for right truncation in epidemiological data”) led me to the <a href="https://github.com/epiforecasts/EpiNow2">very excellent <code class="highlighter-rouge">EpiNow2</code></a> R package, which tries to do most of this simultaneously. It wraps a Bayesian Gaussian process model implemented in Stan, which is exactly the way I think this problem should be approached. Their documentation helpfully includes instructions on using their package for real-time estimation of Covid-19, exactly my problem. It even includes literature-based estimates of the key characteristics of the appropriate distributions to use for estimating and combining different types of lags (generation, incubation and reporting).</p>
+
+<p><code class="highlighter-rouge">EpiNow2</code> is one of the tools developed and used by the team behind <a href="https://epiforecasts.io/">epiforecasts.io</a> - Sebastian Funk and others at the London School of Hygiene and Tropical Medicine. The guts of the software is <a href="https://github.com/epiforecasts/EpiNow2/blob/master/inst/stan/estimate_infections.stan">this Stan program</a>.</p>
+
+<p>While it’s still under development, it’s very impressive. Hats off to the team. Here’s the full citation, noting a fair bit of cross-over with both the epiforecasts.io team and the Gostic et al paper I started this blog with a link to:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code> Sam Abbott, Joel Hellewell, Robin Thompson, Katelyn Gostic, Katharine Sherratt, 
+  Sophie Meakin, James Munday, Nikos Bosse and Sebastian Funk (2020). EpiNow2: 
+  Estimate Realtime Case Counts and Time-varying Epidemiological Parameters. 
+  R package version 0.3.0.
+</code></pre>
+</div>
+
+<p>Here’s what I get when I apply their approach out-of-the-box to Victoria’s case counts:</p>
+
+<object type="image/svg+xml" data="/img/0189-combined-1.svg" width="100%"><img src="/img/0189-combined-1.png" width="100%" /></object>
+
+<p>As can be seen, several sets of estimates are returned. Panel B is important - it shows the estimated actual infection counts (the curving ribbon, which reflects a credibility interval) in contrast to the reported confirmed cases (the grey columns). It makes it easy to see the broadening uncertainty as we get to today and even a bit into the future; and also how the estimated infections precede the confirmed cases.</p>
+
+<p>From panel B, the estimates of instantaneous reproduction number follow in straightforward fashion, as seen in the bottom panel. I’ve opted to only show the estimates of <script type="math/tex">R_t</script> from late April onwards because prior to that the cases were dominated by international arrivals. While methods exist to estimate reproduction number appropriately in this circumstance, I’m not sufficiently interested in that bit of history (<em>months</em> ago now…) to go to the effort to do it.</p>
+
+<p>Of course, this chart is cautiously good news for Victorians. The brown ‘nowcasting’ segment of the plot shows a decided downwards trend in estimated infections, timing closely with the extra shutdown and distancing measures brought in just under two weeks ago. And it shows the best estimate of today’s effective reproduction number to be (just) less than 1. Let’s hope that stays the case.</p>
+
+<p>That first fit was with the confirmed case numbers directly from The Guardian. If I instead apply them to the numbers after my mild correction for test positivity, we see a similar picture. Recent estimated case numbers are higher because of the higher test positivity, but the estimate of <script type="math/tex">R_t</script> today is similar - still just below 1.0, and on its way down (albeit with lots of uncertainty).</p>
+
+<object type="image/svg+xml" data="/img/0189-combined-2.svg" width="100%"><img src="/img/0189-combined-2.png" width="100%" /></object>
+
+<p>That uncertainty issue is actual one of my main motivators for writing this blog. The fact is, we don’t know what’s going to happen here. This is definitely one of those cases when one of the most useful things a forecast or nowcast can do is highlight the range of possibilities that are consistent with the data we have. And critically, what happens in the future - that big blue credibility interval in the last couple of charts - depends on actual people’s actual decisions and actions.</p>
+
+<blockquote>
+  <p>“The fault, dear Brutus, is not in our stars, but in ourselves”</p>
+</blockquote>
+
+<p>That reminds me, a Shakespearean blog post really is on the way.</p>
+
+<p>So the situation in Melbourne is clearly on a knife edge. Today’s numbers (Saturday 18 July) are good (in fact exactly what and when would be hoped if the suppression strategy is doing its job), but we know not to pay too much attention to one point in these noisy processes. In a week’s time, any number of cases per day from zero to more than 1,000 (the chart is cut off well below its top point) is possible. Let’s remember those big, uncertain prediction intervals; not be too confident about which way things are headed; and do our best to point them in the right direction by our own behaviour. Stay safe out there! Practice social distancing, stay at home as much as possible, wear a mask when going out, and pay attention to your local public health experts. New Zealanders are excluded the first three of those four things, because they did the fourth one reasonably well.</p>
+
+<p>Anyway, here’s the code for those final bits of analysis. Running the estimation processes took several hours each on my laptop:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#------------Estimating R with EpiNow2---------------------
+# Various delay/lag distributions as per the Covid-19 examples in the EpiNow2 documentation.
+</span><span class="w">
+</span><span class="n">reporting_delay</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">EpiNow2</span><span class="o">::</span><span class="n">bootstrapped_dist_fit</span><span class="p">(</span><span class="n">rlnorm</span><span class="p">(</span><span class="m">100</span><span class="p">,</span><span class="w"> </span><span class="nf">log</span><span class="p">(</span><span class="m">6</span><span class="p">),</span><span class="w"> </span><span class="m">1</span><span class="p">))</span><span class="w">
+</span><span class="c1">## Set max allowed delay to 30 days to truncate computation
+</span><span class="n">reporting_delay</span><span class="o">$</span><span class="n">max</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">30</span><span class="w">
+
+</span><span class="n">generation_time</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="n">mean</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EpiNow2</span><span class="o">::</span><span class="n">covid_generation_times</span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">mean</span><span class="p">,</span><span class="w">
+                        </span><span class="n">mean_sd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EpiNow2</span><span class="o">::</span><span class="n">covid_generation_times</span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">mean_sd</span><span class="p">,</span><span class="w">
+                        </span><span class="n">sd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EpiNow2</span><span class="o">::</span><span class="n">covid_generation_times</span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">sd</span><span class="p">,</span><span class="w">
+                        </span><span class="n">sd_sd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EpiNow2</span><span class="o">::</span><span class="n">covid_generation_times</span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">sd_sd</span><span class="p">,</span><span class="w">
+                        </span><span class="n">max</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">30</span><span class="p">)</span><span class="w">
+
+</span><span class="n">incubation_period</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="n">mean</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EpiNow2</span><span class="o">::</span><span class="n">covid_incubation_period</span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">mean</span><span class="p">,</span><span class="w">
+                          </span><span class="n">mean_sd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EpiNow2</span><span class="o">::</span><span class="n">covid_incubation_period</span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">mean_sd</span><span class="p">,</span><span class="w">
+                          </span><span class="n">sd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EpiNow2</span><span class="o">::</span><span class="n">covid_incubation_period</span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">sd</span><span class="p">,</span><span class="w">
+                          </span><span class="n">sd_sd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EpiNow2</span><span class="o">::</span><span class="n">covid_incubation_period</span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">sd_sd</span><span class="p">,</span><span class="w">
+                          </span><span class="n">max</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">30</span><span class="p">)</span><span class="w">
+
+
+</span><span class="c1">#---------Based on original data-------------
+</span><span class="w">
+</span><span class="n">estimates</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">EpiNow2</span><span class="o">::</span><span class="n">epinow</span><span class="p">(</span><span class="n">reported_cases</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">d</span><span class="p">,</span><span class="w"> 
+                             </span><span class="n">generation_time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">generation_time</span><span class="p">,</span><span class="w">
+                             </span><span class="n">delays</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="n">incubation_period</span><span class="p">,</span><span class="w"> </span><span class="n">reporting_delay</span><span class="p">),</span><span class="w">
+                             </span><span class="n">horizon</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">7</span><span class="p">,</span><span class="w"> </span><span class="n">samples</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3000</span><span class="p">,</span><span class="w"> </span><span class="n">warmup</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">600</span><span class="p">,</span><span class="w"> 
+                             </span><span class="n">cores</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="p">,</span><span class="w"> </span><span class="n">chains</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="p">,</span><span class="w"> </span><span class="n">verbose</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> 
+                             </span><span class="n">adapt_delta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.95</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># Function for doing some mild polishing to the default plot from epinow();
+# assumes existence in global environment of a ggplot2 theme called my_theme, 
+# defined previously, and takes the output of epinow() as its main argument:
+</span><span class="n">my_plot_estimates</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">estimates</span><span class="p">,</span><span class="w"> </span><span class="n">extra_title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">){</span><span class="w">
+  </span><span class="n">my_theme</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">my_theme</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">theme</span><span class="p">(</span><span class="n">axis.text.x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_text</span><span class="p">(</span><span class="n">angle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">45</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">8</span><span class="p">,</span><span class="w"> </span><span class="n">hjust</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">))</span><span class="w"> 
+  
+  </span><span class="n">p</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">estimates</span><span class="o">$</span><span class="n">plots</span><span class="o">$</span><span class="n">summary</span><span class="w">
+  
+  </span><span class="n">p</span><span class="m">1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">p</span><span class="o">$</span><span class="n">patches</span><span class="o">$</span><span class="n">plots</span><span class="p">[[</span><span class="m">1</span><span class="p">]]</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">comma_format</span><span class="p">(</span><span class="n">accuracy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">my_theme</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">theme</span><span class="p">(</span><span class="n">legend.position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"none"</span><span class="p">,</span><span class="w">
+          </span><span class="n">panel.grid.minor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_blank</span><span class="p">())</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">coord_cartesian</span><span class="p">(</span><span class="n">ylim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">1000</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">labs</span><span class="p">(</span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">glue</span><span class="p">(</span><span class="s2">"Estimated infections based on confirmed cases{extra_title}"</span><span class="p">),</span><span class="w">
+         </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">scale_x_date</span><span class="p">(</span><span class="n">date_breaks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"1 week"</span><span class="p">,</span><span class="w"> </span><span class="n">date_labels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"%d %b"</span><span class="p">,</span><span class="w"> </span><span class="n">limits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">range</span><span class="p">(</span><span class="n">p</span><span class="o">$</span><span class="n">data</span><span class="o">$</span><span class="n">date</span><span class="p">))</span><span class="w">
+  
+  </span><span class="n">p</span><span class="m">2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">p</span><span class="o">$</span><span class="n">patches</span><span class="o">$</span><span class="n">plots</span><span class="p">[[</span><span class="m">2</span><span class="p">]]</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">comma_format</span><span class="p">(</span><span class="n">accuracy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">my_theme</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">theme</span><span class="p">(</span><span class="n">legend.position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"none"</span><span class="p">,</span><span class="w">
+          </span><span class="n">panel.grid.minor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_blank</span><span class="p">())</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">coord_cartesian</span><span class="p">(</span><span class="n">ylim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">1000</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">labs</span><span class="p">(</span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">glue</span><span class="p">(</span><span class="s2">"Estimated infections taking delay{extra_title} into account"</span><span class="p">),</span><span class="w">
+         </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">scale_x_date</span><span class="p">(</span><span class="n">date_breaks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"1 week"</span><span class="p">,</span><span class="w"> </span><span class="n">date_labels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"%d %b"</span><span class="p">,</span><span class="w"> </span><span class="n">limits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">range</span><span class="p">(</span><span class="n">p</span><span class="o">$</span><span class="n">data</span><span class="o">$</span><span class="n">date</span><span class="p">))</span><span class="w">
+  
+  </span><span class="n">p</span><span class="m">3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">p</span><span class="o">$</span><span class="n">data</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> 
+    </span><span class="n">filter</span><span class="p">(</span><span class="n">date</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">as.Date</span><span class="p">(</span><span class="s2">"2020-04-20"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">date</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">median</span><span class="p">,</span><span class="w"> </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">type</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">my_theme</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">geom_hline</span><span class="p">(</span><span class="n">yintercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">geom_ribbon</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">ymin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lower</span><span class="p">,</span><span class="w"> </span><span class="n">ymax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">upper</span><span class="p">),</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">geom_ribbon</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">ymin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bottom</span><span class="p">,</span><span class="w"> </span><span class="n">ymax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">top</span><span class="p">),</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">geom_line</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">type</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">theme</span><span class="p">(</span><span class="n">legend.position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"none"</span><span class="p">,</span><span class="w">
+          </span><span class="n">panel.grid.minor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_blank</span><span class="p">())</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">ggplot2</span><span class="o">::</span><span class="n">scale_fill_brewer</span><span class="p">(</span><span class="n">palette</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Dark2"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">labs</span><span class="p">(</span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">glue</span><span class="p">(</span><span class="s2">"Effective Reproduction Number, correcting for both delay and right truncation{extra_title}"</span><span class="p">),</span><span class="w">
+         </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bquote</span><span class="p">(</span><span class="s2">"Estimated"</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">R</span><span class="p">[</span><span class="n">t</span><span class="p">]),</span><span class="w">
+         </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span><span class="w">  </span><span class="o">+</span><span class="w">
+    </span><span class="n">scale_x_date</span><span class="p">(</span><span class="n">date_breaks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"1 week"</span><span class="p">,</span><span class="w"> </span><span class="n">date_labels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"%d %b"</span><span class="p">,</span><span class="w"> </span><span class="n">limits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">range</span><span class="p">(</span><span class="n">p</span><span class="o">$</span><span class="n">data</span><span class="o">$</span><span class="n">date</span><span class="p">))</span><span class="w">
+  
+  </span><span class="n">pc</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">p</span><span class="m">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">p</span><span class="m">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">p</span><span class="m">3</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">plot_layout</span><span class="p">(</span><span class="n">ncol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+
+  </span><span class="nf">return</span><span class="p">(</span><span class="n">pc</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+
+</span><span class="n">my_plot_estimates</span><span class="p">(</span><span class="n">estimates</span><span class="p">)</span><span class="w">  
+
+</span><span class="c1">#---------Based on positivity-adjusted-------------
+</span><span class="w">
+</span><span class="n">d</span><span class="m">2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">select</span><span class="p">(</span><span class="n">d</span><span class="p">,</span><span class="w"> </span><span class="n">date</span><span class="p">,</span><span class="w"> </span><span class="n">cases_corrected</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">confirm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="n">cases_corrected</span><span class="p">)</span><span class="w"> </span><span class="p">)</span><span class="w">
+
+</span><span class="n">estimates2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">EpiNow2</span><span class="o">::</span><span class="n">epinow</span><span class="p">(</span><span class="n">reported_cases</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">d</span><span class="m">2</span><span class="p">,</span><span class="w"> 
+                             </span><span class="n">generation_time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">generation_time</span><span class="p">,</span><span class="w">
+                             </span><span class="n">delays</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="n">incubation_period</span><span class="p">,</span><span class="w"> </span><span class="n">reporting_delay</span><span class="p">),</span><span class="w">
+                             </span><span class="n">horizon</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">7</span><span class="p">,</span><span class="w"> </span><span class="n">samples</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3000</span><span class="p">,</span><span class="w"> </span><span class="n">warmup</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">600</span><span class="p">,</span><span class="w"> 
+                             </span><span class="n">cores</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="p">,</span><span class="w"> </span><span class="n">chains</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="p">,</span><span class="w"> </span><span class="n">verbose</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> 
+                             </span><span class="n">adapt_delta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.95</span><span class="p">)</span><span class="w">
+
+
+</span><span class="n">my_plot_estimates</span><span class="p">(</span><span class="n">estimates2</span><span class="p">,</span><span class="w"> </span><span class="n">extra_title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">" and positivity"</span><span class="p">)</span></code></pre></figure>
+
+
+		
+	</div>
+</div>
+
+<div class="col-md-1"></div>
+<div class="col-md-4">
+	<div class="side-banner">
+	
+
+
+	<div>
+	   
+	    
+			
+			<p>&larr; Previous post</p>
+			<p><a rel="prev" href="/blog/2020/06/13/publication-reform">Fixing scientific publishing and peer review</a></p>
+		
+		
+		
+		
+		
+		
+	</div>
+	
+	 
+
+   <div class = "side-footer">
+			
+			<hr></hr>
+			<p><gcse:search></gcse:search></p>
+			<hr></hr>
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.</p>
+			<hr></hr>
+			
+       <div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="false" data-share="false"></div>
+			
+			<hr></hr>
+			<p>I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+			<hr></hr>
+
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title"><i>free range statistics</i></span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			<hr></hr>
+			
+
+
+    </div>
+
+
+
+  
+   
+
+
+
+
+		  
+		  
+
+
+
+	   
+	<div id="disqus_thread"></div>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function() {
+				var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+				dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+				(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+			})();
+		</script>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function () {
+				var s = document.createElement('script'); s.async = true;
+				s.type = 'text/javascript';
+				s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+				(document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+			}());
+		</script>
+
+	<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+	</div>	
+</div>    
+   
+   
+
+			
+			</div><!-- /.container -->
+         
+   <!-- Default Statcounter code for Free Range Statistics
+http://Http://freerangestats.info -->
+<script type="text/javascript">
+var sc_project=11673245; 
+var sc_invisible=1; 
+var sc_security="5b7111a4"; 
+</script>
+<script type="text/javascript"
+src="https://www.statcounter.com/counter/counter.js" async></script>
+<noscript><div class="statcounter"><a title="Web Analytics"
+href="http://statcounter.com/" target="_blank"><img class="statcounter"
+src="//c.statcounter.com/11673245/0/5b7111a4/1/" alt="Web
+Analytics"></a></div></noscript>
+<!-- End of Statcounter Code -->
+
+</body>   
+</html>
