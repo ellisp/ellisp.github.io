@@ -1,0 +1,816 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Suppressed data (left-censored counts)</title>
+      	
+         
+         
+            <meta name ="description" content ="I experiment with some different ways of handling counts in tables that have been suppressed for confidentiality, and come up in favour of multiple imputation. The mice R package helpfully lets you define your own imputation algorithm.">
+            <meta property="og:description" content ="I experiment with some different ways of handling counts in tables that have been suppressed for confidentiality, and come up in favour of multiple imputation. The mice R package helpfully lets you define your own imputation algorithm.">
+         
+         <meta property="og:site_name" content="free range statistics" />
+         <meta property="og:title" content="Suppressed data (left-censored counts)" />
+         
+            <meta property="og:image" content="http://freerangestats.info/img/0138-corresp.gif" />
+         
+		 
+			<meta property="og:url" content="http://freerangestats.info/blog/2018/11/06/suppressed-data.html" />
+		 
+         <meta property="og:author" content= "https://www.facebook.com/peterstats" />
+         <meta property="og:type" content="article" />
+      
+
+<link href='https://fonts.googleapis.com/css?family=Sarala' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Prosto+One' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Ubuntu+Mono' rel='stylesheet'>
+	  
+          <link href="/css/bootstrap.min.css" rel ="stylesheet" type="text/css">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet" type="text/css">
+            <link href="/css/custom.css" rel ="stylesheet" type="text/css">     
+		<link href="/css/syntax.css" rel ="stylesheet" type="text/css">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="free range statistics by Peter Ellis"
+      href="/feed.xml">
+
+	  
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+  <script>
+  (function() {
+    var cx = '015640467633673901770:pk3v2c95baw';
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+  })();
+</script>
+
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">free range statistics</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/about">about</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">all posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">ordered by date</a></li>
+				  <li><a href="/blog/most-popular.html">ordered by popularity</a></li>
+                  <li><a href="/blog/index_by_tag.html">grouped by subject matter</a></li>
+                  <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
+				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
+				  <li><a href = /blog/2020/09/26/nzes-issues>most recent post</a></li>
+				</ul>
+            </li>
+              <li><a href="/blog/showcase.html">showcase</a></li>
+              <li><a href="/presentations/index.html">presentations</a></li>
+			  <li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">forecasts<span class="caret"></span></a>
+                <ul class="dropdown-menu">
+				  <li><a href = "/covid-tracking/index.html">Covid-19 in Australia</a></li>
+                  <li><a href = "/elections/nz-2020/index.html">NZ election 2020</a></li>
+                  <li><a href = "/elections/oz-2019/index.html">Australia federal election 2019</a></li>
+				  <li><a href = "/elections/nz-2017/combined.html">NZ election 2017</a></li>
+                  <li><a href="/blog/voting.html">all blog posts on voting behaviour</a></li>
+                </ul>				
+			  </li>
+			  
+			  
+			  
+		    </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			<div class="jumbotron">
+  <div class="container">
+	<center><h1>Suppressed data (left-censored counts)</h1></center>
+  </div>
+</div>
+
+
+
+	<div class = "post-summary">
+	<h2>At a glance:</h2>
+	   <p>I experiment with some different ways of handling counts in tables that have been suppressed for confidentiality, and come up in favour of multiple imputation. The mice R package helpfully lets you define your own imputation algorithm.</p>
+	   <p class="meta">06 Nov 2018</p>
+	   <hr></hr>
+	</div>
+
+
+<div class="col-md-7">
+
+	<div class="post">
+		
+	  <p><em>Updated 9 November 2018 with corrected use of the left-censored survival model</em></p>
+
+<p>This is a post about dealing with tables that have been subject to cell suppression or perturbation for confidentiality reasons.  While some of the data world is only just waking up to issues of confidentiality and privacy, national statistics offices and associated researchers over some decades have developed a whole field of knowledge and tools in the area of “statistical disclosure control”.  I found <a href="https://www.springer.com/us/book/9781441978011">Duncan, Elliot and Salazar-Gonzalez’ <em>Statistical Confidentiality: Principles and Practice</em></a> and excellent text on this subject when I had to get on top of it late in 2017, while working on Stats NZ’s Integrated Data Infrastructure (IDI) output release processes.</p>
+
+<p>Why does one need to suppress data when it has already been aggregated and isn’t sensitive itself? Because we fear “data snoopers” (yes, that really is the correct technical term) who will combine our published data with other datasets - public or private - to reveal sensitive information.  For example, if we publish a table that shows there is only one hairdresser in Smallville, that in itself isn’t sensitive; but if we combine it with a separate dataset showing the average income of hairdressers in Smallville we have given away their private information. The thing that makes statistical disclosure control so hard is that we <em>don’t know</em> what other datasets the data snooper may have available to them to use in combination with our data, however innocuous it looks on its own.</p>
+
+<h2 id="suppression-in-context">Suppression in context</h2>
+
+<p>National stats offices rarely rely alone on cell suppression. One reason is that unless analysis is very very tightly controlled, the secondary suppressions that are needed to avoid uncovering the true value of a suppressed cell quickly get out of hand.  For example, in this table which I’ll be returning to later, we would have to suppress not only number of tigers and bears in region B, but also the total number of tigers and bears:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="text-align: left">region</th>
+      <th style="text-align: right">lions</th>
+      <th style="text-align: right">tigers</th>
+      <th style="text-align: right">bears</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: left">A</td>
+      <td style="text-align: right">7</td>
+      <td style="text-align: right">6</td>
+      <td style="text-align: right">13</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">B</td>
+      <td style="text-align: right">9</td>
+      <td style="text-align: right">&lt;6</td>
+      <td style="text-align: right">&lt;6</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">C</td>
+      <td style="text-align: right">20</td>
+      <td style="text-align: right">24</td>
+      <td style="text-align: right">33</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">D</td>
+      <td style="text-align: right">18</td>
+      <td style="text-align: right">8</td>
+      <td style="text-align: right">90</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>If it were critical that we publish the total number of tigers and bears, then we would need to suppress at least one more region count for each animal.  So the numbers of tigers and bears in Region A would probably also be suppressed, not because it is less than six but because revealing it would let a snooper with the marginal totals deduce the counts in Region B. With the hierarchical tables and various slices and dices that official statistics practice usually requires, this procedure soon gets pretty complicated.</p>
+
+<p>There is software to help calculate the best secondary cell suppressions (such as the <a href="https://cran.r-project.org/package=sdcTable">sdcTable R package</a>), but sometimes there are practical situations in which it would be difficult to apply, and for this or other reasons we need more techniques than just suppression.  One key situation is when a significant number of analysts, not under the direct control of the agency, have a degree of access to the original microdata.  Two examples I’m aware of are:</p>
+
+<ul>
+  <li>the <a href="http://www.abs.gov.au/websitedbs/censushome.nsf/home/tablebuilder">Australian Bureau of Statistics’ Census Table Builder</a> is an online tool (with free guest access) that lets you slice and dice granular census microdata, without seeing the original data but delivering aggregate tables of counts. The ABS can’t control which combinations of filters and slices will be applied, so secondary cell suppression isn’t realistic.  Instead, results are reported all the way down to zero, but have been perturbed so one never knows exactly what the correct value is (other than within a small margin, of course).</li>
+  <li>the Stats NZ data lab allows access to de-identified microdata including the extraordinary Integrated Data Infrastructure which combines <em>inter alia</em> tax, benefits, health, education and justice data at the individual level.  While the data are rigorously de-identified (researchers cannot see names, tax or other identification numbers, or addresses more granular than meshblock), a snooper with full access could probably combine results from the IDI with external datasets to identify sensitive information.  Because of this, access is tightly controlled to <a href="https://www.stats.govt.nz/integrated-data/apply-to-use-microdata-for-research/">secure laboratories and approved researchers</a>, who are responsible for confidentialisation of their results.  Results have to go through an “output checking” process to be sure appropriate confidentialisation has been applied. There is a <a href="http://archive.stats.govt.nz/tools_and_services/microdata-access/data-lab/microdata-output-guide.aspx?_ga=2.56156779.1327683982.1541452764-1061460037.1533109136">37 page Microdata Output Guide</a> for researchers to follow throughout this process.  Many of the rules involve suppression and secondary suppression, but these are not the only tools relied on. For example, counts are perturbed by means of random rounding.</li>
+</ul>
+
+<p>Random rounding is an interesting case.  Base 3 random rounding works by rounding a number to the nearest number divisible by 3 with 2/3 probability, and the second nearest with 1/3.  If the number is already divisible by 3 it stays the same.  So this means that of all the numbers that might end up being published as a six, “4” has a 1/3 chance of being 6; “5” has 2/3; “6” has 3/3; “7” has 2/3; and “8” has 1/3.</p>
+
+<p>Simple application of Bayes’ formula indicates that if we started with equal chances for the real value being anything from 4 to 8, then the probabilities of a published six really meaning 4, 5, 6, 7 and 8 are 1/9, 2/9, 3/9, 2/9, 1/9 respectively.  But were the starting chances equal? Not really. In fact, I’m sure the number “8” occurs in the sort of cross tabs that get cell suppression many times more than the number “4”.  I don’t have proof of this, just an intuition based on the process of deciding what categories are used in the first place, which tables are thought worth publishing, etc.  Obviously if half the numbers in a table were small enough to be suppressed, pretty soon we would stop bothering to publish the table and find other categories with higher cell counts.</p>
+
+<p>If we change our priors from equal chances to something more realistic, we get quite a different picture:</p>
+
+<p><img src="/img/0138-rr3-priors.svg" width="100%" /></p>
+
+<p>The inference process here can be thought of as: “Before we even see the table, we know it is a table of counts. We know that most published counts of this sort are substantial numbers, at least in double figures. Then we look at this particular cell, and see that it is published as a random rounded 6.  We update our prior, with all possibilities lower than 4 and greater than 8 automatically becoming zero.  Then we combine our updated prior with the chances of each value being published as 6, and get a posterior distribution for the underlying number that relies on both our starting assumptions and the process of random rounding.”</p>
+
+<p>We’ll come back to this line of thinking when we impute some numbers that are suppressed completely.</p>
+
+<p>Here’s the code that generated the graphic above and sets us up for the rest of the session.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">knitr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">MASS</span><span class="p">)</span><span class="w"> </span><span class="c1"># for corresp
+</span><span class="n">library</span><span class="p">(</span><span class="n">Cairo</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">png</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">VGAM</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">grid</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">ggrepel</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">mice</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">testthat</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#---------random rounding base 3-----------------
+# probability of observing a six, given actual values 4, 5, 6, 7, 8
+</span><span class="n">prob</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">3</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">3</span><span class="w">
+</span><span class="n">prior15</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dpois</span><span class="p">(</span><span class="m">4</span><span class="o">:</span><span class="m">8</span><span class="p">,</span><span class="w"> </span><span class="m">15</span><span class="p">)</span><span class="w">
+</span><span class="n">prior30</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dpois</span><span class="p">(</span><span class="m">4</span><span class="o">:</span><span class="m">8</span><span class="p">,</span><span class="w"> </span><span class="m">30</span><span class="p">)</span><span class="w">
+
+</span><span class="n">rr3_data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data_frame</span><span class="p">(</span><span class="w">
+  </span><span class="n">Value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="o">:</span><span class="m">8</span><span class="p">,</span><span class="w">
+  </span><span class="n">`Equal probabilities`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">prob</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">prob</span><span class="p">),</span><span class="w">
+  </span><span class="n">`Poisson with mean of 15`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">prob</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">prior15</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">prior15</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">prob</span><span class="p">),</span><span class="w">
+  </span><span class="n">`Poisson with mean of 30`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">prob</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">prior30</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">prior30</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">prob</span><span class="p">)</span><span class="w">
+</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">gather</span><span class="p">(</span><span class="n">prior</span><span class="p">,</span><span class="w"> </span><span class="n">post_prob</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">Value</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># check our probabilities add up to 1
+</span><span class="n">expect_equal</span><span class="p">(</span><span class="n">as.vector</span><span class="p">(</span><span class="n">tapply</span><span class="p">(</span><span class="n">rr3_data</span><span class="o">$</span><span class="n">post_prob</span><span class="p">,</span><span class="w"> </span><span class="n">rr3_data</span><span class="o">$</span><span class="n">prior</span><span class="p">,</span><span class="w"> </span><span class="n">sum</span><span class="p">)),</span><span class="w">
+             </span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">1</span><span class="p">))</span><span class="w">
+
+</span><span class="n">rr3_data</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Value</span><span class="p">,</span><span class="w"> </span><span class="n">weight</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">post_prob</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_bar</span><span class="p">(</span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.8</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">prior</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Posterior probability this is the actual value"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"A value that has been random rounded (base 3) for statistical disclosure control"</span><span class="p">,</span><span class="w">
+          </span><span class="s2">"Distribution of true value when published value is 6, with three different prior expectations"</span><span class="p">)</span></code></pre></figure>
+
+<h2 id="simulated-suppressed-data">Simulated suppressed data</h2>
+
+<p>Even though national stats offices rarely rely just on cell suppression, agencies that need to safely publish aggregate data but lack the resources and expertise of a stats office will often use it as their main method to provide a certain minimal level of confidentialisation.  So it’s of some interest to look at the case of how to analyse a table that has had cells suppressed but no other statistical disclosure control.  I am using two such datasets, from completely different sources on different projects, in my work at the moment.</p>
+
+<p>Earlier in this post I introduced this table with two suppressed cells:</p>
+
+<h4 id="data-as-it-is-published">Data as it is published</h4>
+
+<table>
+  <thead>
+    <tr>
+      <th style="text-align: left">region</th>
+      <th style="text-align: right">lions</th>
+      <th style="text-align: right">tigers</th>
+      <th style="text-align: right">bears</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: left">A</td>
+      <td style="text-align: right">7</td>
+      <td style="text-align: right">6</td>
+      <td style="text-align: right">13</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">B</td>
+      <td style="text-align: right">9</td>
+      <td style="text-align: right">&lt;6</td>
+      <td style="text-align: right">&lt;6</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">C</td>
+      <td style="text-align: right">20</td>
+      <td style="text-align: right">24</td>
+      <td style="text-align: right">33</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">D</td>
+      <td style="text-align: right">18</td>
+      <td style="text-align: right">8</td>
+      <td style="text-align: right">90</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>I generated this from a model with a strong relationship between animal type and region, and I also know both the <em>true observed values</em> (as though I were the statistical office managing suppression and publication) and the <em>expected values from the data generating process</em> (as though I were God).</p>
+
+<h4 id="the-actual-data">The actual data</h4>
+
+<table>
+  <thead>
+    <tr>
+      <th style="text-align: left">region</th>
+      <th style="text-align: right">lions</th>
+      <th style="text-align: right">tigers</th>
+      <th style="text-align: right">bears</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: left">A</td>
+      <td style="text-align: right">7</td>
+      <td style="text-align: right">6</td>
+      <td style="text-align: right">13</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">B</td>
+      <td style="text-align: right">9</td>
+      <td style="text-align: right">1</td>
+      <td style="text-align: right">5</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">C</td>
+      <td style="text-align: right">20</td>
+      <td style="text-align: right">24</td>
+      <td style="text-align: right">33</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">D</td>
+      <td style="text-align: right">18</td>
+      <td style="text-align: right">8</td>
+      <td style="text-align: right">90</td>
+    </tr>
+  </tbody>
+</table>
+
+<h4 id="the-expected-values-from-the-data-generating-process">The expected values from the data generating process</h4>
+
+<table>
+  <thead>
+    <tr>
+      <th style="text-align: left">region</th>
+      <th style="text-align: right">lions</th>
+      <th style="text-align: right">tigers</th>
+      <th style="text-align: right">bears</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: left">A</td>
+      <td style="text-align: right">7.4</td>
+      <td style="text-align: right">4.8</td>
+      <td style="text-align: right">13.2</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">B</td>
+      <td style="text-align: right">6.2</td>
+      <td style="text-align: right">1.6</td>
+      <td style="text-align: right">11.6</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">C</td>
+      <td style="text-align: right">15.9</td>
+      <td style="text-align: right">22.8</td>
+      <td style="text-align: right">31.4</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">D</td>
+      <td style="text-align: right">17.8</td>
+      <td style="text-align: right">10.7</td>
+      <td style="text-align: right">79.1</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The data was generated by means of a generalized linear model with a Poisson response (a classic and critical model to understand when dealing with tables of count data), this way:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">expand.grid</span><span class="p">(</span><span class="n">animals</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"lions"</span><span class="p">,</span><span class="w"> </span><span class="s2">"tigers"</span><span class="p">,</span><span class="w"> </span><span class="s2">"bears"</span><span class="p">),</span><span class="w">
+            </span><span class="n">region</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">LETTERS</span><span class="p">[</span><span class="m">1</span><span class="o">:</span><span class="m">4</span><span class="p">],</span><span class="w">
+            </span><span class="n">count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">as_tibble</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">animals</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_relevel</span><span class="p">(</span><span class="n">animals</span><span class="p">,</span><span class="w"> </span><span class="s2">"lions"</span><span class="p">))</span><span class="w">
+
+</span><span class="n">n</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="w">
+
+</span><span class="n">mm</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">model.matrix</span><span class="p">(</span><span class="n">count</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">animals</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># for reproducibility:
+</span><span class="n">set.seed</span><span class="p">(</span><span class="m">123</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># generate true coefficients of the model:
+</span><span class="n">true_coefs</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">runif</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">-1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">))</span><span class="w">
+
+</span><span class="c1"># generate the actual data and make the suppressed version:
+</span><span class="n">data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">expected</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">exp</span><span class="p">(</span><span class="n">mm</span><span class="w"> </span><span class="o">%*%</span><span class="w"> </span><span class="n">true_coefs</span><span class="p">),</span><span class="w">
+         </span><span class="n">count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rpois</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">lambda</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">exp</span><span class="p">(</span><span class="n">mm</span><span class="w"> </span><span class="o">%*%</span><span class="w"> </span><span class="n">true_coefs</span><span class="p">)),</span><span class="w">
+         </span><span class="n">censored_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">count</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">6</span><span class="p">,</span><span class="w"> </span><span class="s2">"&lt;6"</span><span class="p">,</span><span class="w"> </span><span class="n">count</span><span class="p">),</span><span class="w">
+         </span><span class="n">censored_count_num</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">censored_count</span><span class="p">),</span><span class="w">
+         </span><span class="n">count_replaced</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">count</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">6</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="n">count</span><span class="p">))</span><span class="w">
+
+</span><span class="c1"># data as it is published:
+</span><span class="n">data</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> 
+  </span><span class="n">dplyr</span><span class="o">::</span><span class="n">select</span><span class="p">(</span><span class="n">animals</span><span class="p">,</span><span class="w"> </span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">censored_count</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">spread</span><span class="p">(</span><span class="n">animals</span><span class="p">,</span><span class="w"> </span><span class="n">censored_count</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">kable</span><span class="w">
+
+</span><span class="c1"># actual underlying data:
+</span><span class="n">data</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> 
+  </span><span class="n">dplyr</span><span class="o">::</span><span class="n">select</span><span class="p">(</span><span class="n">animals</span><span class="p">,</span><span class="w"> </span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">count</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">spread</span><span class="p">(</span><span class="n">animals</span><span class="p">,</span><span class="w"> </span><span class="n">count</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">kable</span><span class="w">
+
+</span><span class="c1"># actual underlying data generating process expectations:
+</span><span class="n">data</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> 
+  </span><span class="n">dplyr</span><span class="o">::</span><span class="n">select</span><span class="p">(</span><span class="n">animals</span><span class="p">,</span><span class="w"> </span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">expected</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">expected</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="n">expected</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">spread</span><span class="p">(</span><span class="n">animals</span><span class="p">,</span><span class="w"> </span><span class="n">expected</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">kable</span></code></pre></figure>
+
+<h2 id="correspondence-analysis-and-tests-of-independence">Correspondence analysis and tests of independence</h2>
+
+<p>The most common statistical test done on this sort of data is a Chi-square test, which tests the plausibility of the row and column variables being independent of each other. It’s equivalent to comparing a generalized linear model with a Poisson response that has an interaction effect between two variables (<code class="highlighter-rouge">count ~ animals + region + animals:region</code>) with one that doesn’t (<code class="highlighter-rouge">count ~ animals + region</code>).  As I generated the data with the fully saturated model, I know that the correct decision is to reject the null hypothesis of “no interaction”. But what’s a general way to perform this test on a table with data that is missing, very much not at random but missing because it is below a known threshold?</p>
+
+<p>A second technique I want to look at is correspondence analysis, coming from a more exploratory paradigm of data analysis rather than basing itself on statistical tests.  Correspondence analysis works well as a graphic summary of a two-way cross tab.  Here’s the biplot from correspondence analysis of the true observed data in our case:</p>
+
+<p><img src="/img/0138-corresp-real.svg" width="100%" /></p>
+
+<p>If you’re not familiar with this sort of plot and you deal with count data in cross tabs, I strongly recommend the technique. At a glance we see that bears are distinctively frequent to area D, tigers to C and lions B and A (although A is a more typical region than others, close to the cross in the centre of the chart). You can confirm this by looking at the original table and calculating row-wise and column-wise percentages, but it’s not such an easy snapshot as is provided by the graphic.</p>
+
+<p>Like the Chi-square test, we need a full table of results to do this analysis.</p>
+
+<p>With only two cells suppressed, there are only 36 possibilities for what they could be (each cell could really be any number from zero to five inclusive).  So it’s quite feasible to perform analysis on 36 different possible data sets.  If the results are substantively the same for all combinations, we can conclude it doesn’t matter what the suppressed cells really are.  This is a nice, common sense and easily explainable approach.</p>
+
+<p>For the correspondence analysis, the logical way to show all 36 possibilities is via an animation:</p>
+
+<p><img src="/img/0138-corresp.gif" width="100%" /></p>
+
+<p>For the Chi square tests the results are numeric so we can summarise them with standard methods including maximum and minimum values. Here are the summaries of the p values from the Fisher exact test for independence (<code class="highlighter-rouge">pvalues_f</code>) and the Chi-squared test:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>
+   pvalues_f           pvalues_c        
+ Min.   :0.0004998   Min.   :4.810e-11  
+ 1st Qu.:0.0004998   1st Qu.:6.381e-09  
+ Median :0.0004998   Median :3.989e-08  
+ Mean   :0.0004998   Mean   :1.480e-07  
+ 3rd Qu.:0.0004998   3rd Qu.:1.730e-07  
+ Max.   :0.0004998   Max.   :8.438e-07 
+ 
+</code></pre>
+</div>
+
+<p>For both the correspondence analysis and the tests of independence, the results don’t vary materially when we change the values in the suppressed cells, so we could proceed to inference with confidence.</p>
+
+<p>Here’s the code that did those two types of analysis with a full set of possible values plugged into the suppressed cells:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># make a traditional cross tab matrix of the data:
+</span><span class="n">tab</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> 
+  </span><span class="n">dplyr</span><span class="o">::</span><span class="n">select</span><span class="p">(</span><span class="n">animals</span><span class="p">,</span><span class="w"> </span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">count</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">spread</span><span class="p">(</span><span class="n">animals</span><span class="p">,</span><span class="w"> </span><span class="n">count</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">dplyr</span><span class="o">::</span><span class="n">select</span><span class="p">(</span><span class="n">lions</span><span class="p">,</span><span class="w"> </span><span class="n">tigers</span><span class="p">,</span><span class="w"> </span><span class="n">bears</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">as.matrix</span><span class="p">()</span><span class="w">
+</span><span class="n">rownames</span><span class="p">(</span><span class="n">tab</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nb">LETTERS</span><span class="p">[</span><span class="m">1</span><span class="o">:</span><span class="m">4</span><span class="p">]</span><span class="w">
+
+</span><span class="c1"># biplot with the actual full values (obviously not usually available to analysts):
+</span><span class="n">par</span><span class="p">(</span><span class="n">font.main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">col.axis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey80"</span><span class="p">,</span><span class="w"> </span><span class="n">fg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey80"</span><span class="p">)</span><span class="w">
+</span><span class="n">xl</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">-1.2</span><span class="p">,</span><span class="w"> </span><span class="m">0.5</span><span class="p">)</span><span class="w">
+</span><span class="n">yl</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">-1.1</span><span class="p">,</span><span class="w"> </span><span class="m">0.4</span><span class="p">)</span><span class="w">
+</span><span class="n">biplot</span><span class="p">(</span><span class="n">corresp</span><span class="p">(</span><span class="n">tab</span><span class="p">,</span><span class="w"> </span><span class="n">nf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">),</span><span class="w"> 
+       </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Full data including suppressed values\n"</span><span class="p">,</span><span class="w"> 
+       </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"orange"</span><span class="p">,</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">),,</span><span class="w">
+       </span><span class="n">xlim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xl</span><span class="p">,</span><span class="w"> </span><span class="n">ylim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">yl</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># read in image of the table for including in the animated graphic:
+</span><span class="n">table_image</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">readPNG</span><span class="p">(</span><span class="s2">"0138-table-image.png"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># set up empty vectors to store the results of tests of independence:
+</span><span class="n">pvalues_f</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">numeric</span><span class="p">()</span><span class="w">
+</span><span class="n">pvalues_c</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">numeric</span><span class="p">()</span><span class="w">
+
+</span><span class="c1"># create a temporary folder for storing frames of the animation:
+</span><span class="n">dir.create</span><span class="p">(</span><span class="s2">"tmp"</span><span class="p">)</span><span class="w">
+</span><span class="n">pd</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">setwd</span><span class="p">(</span><span class="s2">"tmp"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># we can use brute force and see if the results are statistically significant
+# for all possible values.  We'll do chi square tests and correspondence analysis
+# at the same time
+</span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">0</span><span class="o">:</span><span class="m">5</span><span class="p">){</span><span class="w">
+  </span><span class="k">for</span><span class="p">(</span><span class="n">j</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">0</span><span class="o">:</span><span class="m">5</span><span class="p">){</span><span class="w">
+    </span><span class="n">tab</span><span class="p">[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="c1"># tigers in B
+</span><span class="w">    </span><span class="n">tab</span><span class="p">[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="c1"># bears in B
+</span><span class="w">    </span><span class="n">pvalues_f</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">pvalues_f</span><span class="p">,</span><span class="w"> </span><span class="n">fisher.test</span><span class="p">(</span><span class="n">tab</span><span class="p">,</span><span class="w"> </span><span class="n">simulate.p.value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="o">$</span><span class="n">p.value</span><span class="p">)</span><span class="w">
+    </span><span class="n">pvalues_c</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">pvalues_c</span><span class="p">,</span><span class="w"> </span><span class="n">chisq.test</span><span class="p">(</span><span class="n">tab</span><span class="p">)</span><span class="o">$</span><span class="n">p.value</span><span class="p">)</span><span class="w">
+    </span><span class="n">CairoPNG</span><span class="p">(</span><span class="n">paste0</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="s2">".png"</span><span class="p">),</span><span class="w"> </span><span class="m">2000</span><span class="p">,</span><span class="w"> </span><span class="m">2000</span><span class="p">,</span><span class="w"> </span><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">300</span><span class="p">)</span><span class="w">
+      </span><span class="n">par</span><span class="p">(</span><span class="n">font.main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">col.axis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey80"</span><span class="p">,</span><span class="w"> </span><span class="n">fg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey80"</span><span class="p">,</span><span class="w"> </span><span class="n">mar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">2</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">4</span><span class="p">,</span><span class="m">1</span><span class="p">))</span><span class="w">
+      </span><span class="n">biplot</span><span class="p">(</span><span class="n">corresp</span><span class="p">(</span><span class="n">tab</span><span class="p">,</span><span class="w"> </span><span class="n">nf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">),</span><span class="w"> </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"orange"</span><span class="p">,</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">),</span><span class="w">
+             </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">paste0</span><span class="p">(</span><span class="s2">"Imputed values: tigers in B = "</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">"; bears in B = "</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="s2">".\n"</span><span class="p">),</span><span class="w">
+             </span><span class="n">xlim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xl</span><span class="p">,</span><span class="w"> </span><span class="n">bty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"n"</span><span class="p">,</span><span class="w"> 
+             </span><span class="n">ylim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">yl</span><span class="p">)</span><span class="w">
+      </span><span class="n">grid.raster</span><span class="p">(</span><span class="n">table_image</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.66</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.2</span><span class="p">,</span><span class="w"> </span><span class="n">width</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.3</span><span class="p">)</span><span class="w">
+    </span><span class="n">dev.off</span><span class="p">()</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span><span class="n">system</span><span class="p">(</span><span class="s1">'magick -loop 0 -delay 40 *.png "0138-corresp.gif"'</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># move the result to where I use it for the blog
+</span><span class="n">file.rename</span><span class="p">(</span><span class="s2">"0138-corresp.gif"</span><span class="p">,</span><span class="w"> </span><span class="s2">"../../img/0138-corresp.gif"</span><span class="p">)</span><span class="w">
+</span><span class="n">setwd</span><span class="p">(</span><span class="n">pd</span><span class="p">)</span><span class="w">
+</span><span class="c1"># clean up (uncomment the last line if happy to delete the above results):
+# unlink("tmp", recursive = TRUE)
+</span><span class="w">
+</span><span class="c1"># p-values:
+</span><span class="n">summary</span><span class="p">(</span><span class="n">cbind</span><span class="p">(</span><span class="n">pvalues_f</span><span class="p">,</span><span class="w"> </span><span class="n">pvalues_c</span><span class="p">))</span></code></pre></figure>
+
+<h2 id="generalized-linear-model">Generalized linear model</h2>
+
+<p>For a more general approach, I wanted to be ready for a situation with more than two categorical variables, and where the number of suppressed cells is too large to repeat the analysis with all combinations. As a use case, I fit a generalized linear model where my interest is in the values of the coefficients (ie the tiger effect relative to lions, bear effect, region B effect relative to region A, etc and their interaction impacts, on “count” as the response variable).</p>
+
+<p>One thought is to treat the missing data as a parameter, constrained to be an integer from zero to five, and estimate it simultaneously with the main model in a Bayesian framework.  In principle this would work, except the missing data has to be an integer (because it then forms part of a Poisson or negative binomial distribution as part of the main model) and it is difficult to estimate such discontinuous parameters.  You can’t do it in Stan, for example.</p>
+
+<p>Another way of looking at the problem is to note that this is <a href="https://en.wikipedia.org/wiki/Censoring_(statistics)">censored data</a> and use methods developed specifically with this in mind. “Survival analysis” has of course developed methods for dealing with all sorts of censored data; most obviously with “right-censored” data such as age at death when some of the subjects are still alive. Left-censored data occurs when measurement instruments struggle at the lower end of values, but is also an appropriate description of our suppressed values. In R, the <code class="highlighter-rouge">VGAM</code> package provides methods for fitting generalized linear models to data that is either left, right or interval censored.</p>
+
+<p>The third family of methods I tried involved substituting values for the suppressed cells.  At its simplest, I tried replacing them all with “3”.  At the more complex end, I used multiple imputation to generate 20 different datasets with random values from zero to five in each suppressed cell; fit the model to each dataset; and pool the results.  This is a method I use a lot with other missing data and is nicely supported by the <code class="highlighter-rouge">mice</code> R package. <code class="highlighter-rouge">mice</code> doesn’t have an imputation method (that I can see) that exactly meets my case of a number from zero to five, but it’s easy to write your own.  I did this two different ways:</p>
+
+<ul>
+  <li>with a uniform chance for each number</li>
+  <li>with probabilities proportional to the density of a Poisson distribution with mean equal to the trimmed mean of the unsuppressed counts (the reasoning being the same as that used earlier in this post in discussing random rounding)</li>
+</ul>
+
+<p>Here’s the results of all those different methods. First, in a summary of the mean squared error comparing coefficient estimates to their known true values:</p>
+
+<p><img src="/img/0138-summary.svg" width="100%" /></p>
+
+<p>… and second, with the coefficient-by-coefficient detail:</p>
+
+<p><img src="/img/0138-coefs.svg" width="100%" /></p>
+
+<p>What we see from this single simulated dataset is:</p>
+
+<ul>
+  <li>simply substituting the number “3” in for all suppressed values worked fine; in fact nearly as well as using the original unavailable data, or the most sophisticated multiple imputation method</li>
+  <li>multiple imputation with probabilities proportional to the Poisson density out-performed multiple imputation with sampling from a uniform distribution.</li>
+  <li>the survival analysis method performed ok by this crude measure (in fact, better than fitting regression to the full data), once I got my indicator of which observations were censored the right way around, thanks to the comment by Aniko Szabo - but not as well as the best multiple imputation method.</li>
+  <li>Sampling the suppressed values from a uniform distribution, and the left-censored survival analysis method, both give particularly bad coefficients for the coefficients related to the suppressed cells (interaction of tigers with region B, and bears with region B).</li>
+</ul>
+
+<p>Because this is a single simulated dataset, the conclusions above should be treated as only indicative. A good next step would be to generalise this by testing it with many datasets, but that will have to wait for a later blog post as this one is already long enough! My working hypothesis when I get to that is that multiple imputation with probabilities proportional to the Poisson density will be the best method, but I’m open to being wrong on that.</p>
+
+<p>Here’s the code for the comparison of those different methods:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#====================different approaches to dealing with the missing data===================
+</span><span class="w">
+</span><span class="c1">#---------------regenerate data-----------
+# doing this here to make this chunk of code easier for when I want to generalise this whole approach
+# to multiple simulations
+</span><span class="n">set.seed</span><span class="p">(</span><span class="m">123</span><span class="p">)</span><span class="w">
+</span><span class="n">true_coefs</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">runif</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">-1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">))</span><span class="w">
+</span><span class="n">data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">expected</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">exp</span><span class="p">(</span><span class="n">mm</span><span class="w"> </span><span class="o">%*%</span><span class="w"> </span><span class="n">true_coefs</span><span class="p">),</span><span class="w">
+         </span><span class="n">count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rpois</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">lambda</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">exp</span><span class="p">(</span><span class="n">mm</span><span class="w"> </span><span class="o">%*%</span><span class="w"> </span><span class="n">true_coefs</span><span class="p">)),</span><span class="w">
+         </span><span class="n">censored_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">count</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">6</span><span class="p">,</span><span class="w"> </span><span class="s2">"&lt;6"</span><span class="p">,</span><span class="w"> </span><span class="n">count</span><span class="p">),</span><span class="w">
+         </span><span class="n">censored_count_num</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">censored_count</span><span class="p">),</span><span class="w">
+         </span><span class="n">count_replaced</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">count</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">6</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="n">count</span><span class="p">))</span><span class="w">
+
+</span><span class="c1">#--------------straightforward methods-----------
+</span><span class="n">mod0</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">glm</span><span class="p">(</span><span class="n">count</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">animals</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"poisson"</span><span class="p">)</span><span class="w">
+</span><span class="n">mod2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">glm</span><span class="p">(</span><span class="n">count_replaced</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">animals</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"poisson"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#------------with censored poisson regression-------------------------
+# (note that we indicated a complete observation with a 1, and a censored one with a 0)
+</span><span class="n">data</span><span class="o">$</span><span class="n">z</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">pmax</span><span class="p">(</span><span class="m">6</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="o">$</span><span class="n">count</span><span class="p">)</span><span class="w">
+</span><span class="n">data</span><span class="o">$</span><span class="n">not_lcensored</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="o">!</span><span class="nf">is.na</span><span class="p">(</span><span class="n">data</span><span class="o">$</span><span class="n">censored_count_num</span><span class="w"> </span><span class="p">))</span><span class="w">
+</span><span class="n">mod3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">vglm</span><span class="p">(</span><span class="n">SurvS4</span><span class="p">(</span><span class="n">z</span><span class="p">,</span><span class="w"> </span><span class="n">not_lcensored</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"left"</span><span class="p">)</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">animals</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cens.poisson</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#------------------ with multiple imputation----------
+</span><span class="cd">#' Imputation function for suppressed data for use with mice - Poisson-based
+#'
+#' @param y vector to be imputed
+#' @param ry logical vector of observed (TRUE) and missing (FALSE) values of y
+#' @param x design matrix. Ignored but is probably needed for mice to use.
+#' @param wy vector that  is TRUE where imputations are created for y. Not sure when this is different
+#' to just !ry (which is the default).
+</span><span class="n">mice.impute.desuppress</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">ry</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">wy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">NULL</span><span class="p">,</span><span class="w"> </span><span class="n">max_value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+  </span><span class="c1"># during dev:
+</span><span class="w">  </span><span class="c1"># y &lt;- data$censored_count_num; ry &lt;- !is.na(y)
+</span><span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nf">is.null</span><span class="p">(</span><span class="n">wy</span><span class="p">)){</span><span class="w"> 
+    </span><span class="n">wy</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="o">!</span><span class="n">ry</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+  
+  </span><span class="c1"># What are the relative chances of getting values from 0 to the maximum allowed value,
+</span><span class="w">  </span><span class="c1"># if we have a Poisson distribution  which we have estimated the mean of via trimmed mean?
+</span><span class="w">  </span><span class="c1"># (this is very approximate but probably better than just giving equal chances to 0:5)
+</span><span class="w">  </span><span class="n">probs</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dpois</span><span class="p">(</span><span class="m">0</span><span class="o">:</span><span class="n">max_value</span><span class="p">,</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="n">ry</span><span class="p">],</span><span class="w"> </span><span class="n">tr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.2</span><span class="p">))</span><span class="w">
+  
+  </span><span class="nf">return</span><span class="p">(</span><span class="n">sample</span><span class="p">(</span><span class="m">0</span><span class="o">:</span><span class="n">max_value</span><span class="p">,</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">wy</span><span class="p">),</span><span class="w"> </span><span class="n">prob</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">probs</span><span class="p">,</span><span class="w"> </span><span class="n">replace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">))</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="cd">#' Imputation function for suppressed data for use with mice - simple
+#'
+</span><span class="n">mice.impute.uniform</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">ry</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">wy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">NULL</span><span class="p">,</span><span class="w"> </span><span class="n">max_value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+  </span><span class="nf">return</span><span class="p">(</span><span class="n">sample</span><span class="p">(</span><span class="m">0</span><span class="o">:</span><span class="n">max_value</span><span class="p">,</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">wy</span><span class="p">),</span><span class="w"> </span><span class="n">replace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">))</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">m</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">20</span><span class="w"> </span><span class="c1"># number of imputed/complete datasets to generate
+</span><span class="n">data_imp1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">mice</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"censored_count_num"</span><span class="p">,</span><span class="w"> </span><span class="s2">"animals"</span><span class="p">,</span><span class="w"> </span><span class="s2">"region"</span><span class="p">)],</span><span class="w"> 
+                  </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"desuppress"</span><span class="p">,</span><span class="w"> </span><span class="n">print</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w">
+</span><span class="n">imp_y1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data_imp1</span><span class="o">$</span><span class="n">imp</span><span class="o">$</span><span class="n">`censored_count_num`</span><span class="w"> 
+</span><span class="n">imp_y1</span><span class="w"> </span><span class="c1"># visual check
+</span><span class="w">
+</span><span class="n">data_imp2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">mice</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"censored_count_num"</span><span class="p">,</span><span class="w"> </span><span class="s2">"animals"</span><span class="p">,</span><span class="w"> </span><span class="s2">"region"</span><span class="p">)],</span><span class="w"> 
+                  </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"uniform"</span><span class="p">,</span><span class="w"> </span><span class="n">print</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w">
+</span><span class="n">imp_y2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data_imp2</span><span class="o">$</span><span class="n">imp</span><span class="o">$</span><span class="n">`censored_count_num`</span><span class="w"> 
+</span><span class="n">imp_y2</span><span class="w"> </span><span class="c1"># visual check
+</span><span class="w">
+</span><span class="n">mod_mice1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">with</span><span class="p">(</span><span class="n">data_imp1</span><span class="p">,</span><span class="w"> </span><span class="n">glm</span><span class="p">(</span><span class="n">censored_count_num</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">animals</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"poisson"</span><span class="p">))</span><span class="w">
+</span><span class="n">coef_mice1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">pool</span><span class="p">(</span><span class="n">mod_mice1</span><span class="p">)</span><span class="o">$</span><span class="n">pooled</span><span class="o">$</span><span class="n">estimate</span><span class="w">
+
+</span><span class="n">mod_mice2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">with</span><span class="p">(</span><span class="n">data_imp2</span><span class="p">,</span><span class="w"> </span><span class="n">glm</span><span class="p">(</span><span class="n">censored_count_num</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">animals</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"poisson"</span><span class="p">))</span><span class="w">
+</span><span class="n">coef_mice2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">pool</span><span class="p">(</span><span class="n">mod_mice2</span><span class="p">)</span><span class="o">$</span><span class="n">pooled</span><span class="o">$</span><span class="n">estimate</span><span class="w">
+
+</span><span class="c1">#---------------results----------------------
+# comparison data
+</span><span class="n">d</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data_frame</span><span class="p">(</span><span class="n">underlying</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">true_coefs</span><span class="p">,</span><span class="w"> 
+           </span><span class="n">`Using full data including suppressed values (not usually possible!)`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coef</span><span class="p">(</span><span class="n">mod0</span><span class="p">),</span><span class="w">
+           </span><span class="n">`Replacing suppressed values with 3`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coef</span><span class="p">(</span><span class="n">mod2</span><span class="p">),</span><span class="w">
+           </span><span class="n">`Left-censored survival-based method`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coef</span><span class="p">(</span><span class="n">mod3</span><span class="p">),</span><span class="w">
+           </span><span class="n">`MICE with Poisson proportional probabilities`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coef_mice1</span><span class="p">,</span><span class="w">
+           </span><span class="n">`MICE with uniform probabilities`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coef_mice2</span><span class="p">,</span><span class="w">
+           </span><span class="n">labels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">names</span><span class="p">(</span><span class="n">coef</span><span class="p">(</span><span class="n">mod0</span><span class="p">)))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">labels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"animals"</span><span class="p">,</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">labels</span><span class="p">),</span><span class="w">
+         </span><span class="n">labels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"region"</span><span class="p">,</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">labels</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">gather</span><span class="p">(</span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">underlying</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">labels</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">str_wrap</span><span class="p">(</span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="m">25</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="nf">is.na</span><span class="p">(</span><span class="n">value</span><span class="p">),</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">))</span><span class="w"> 
+
+</span><span class="c1"># summary data:  
+</span><span class="n">d</span><span class="m">2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">square_error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">value</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">underlying</span><span class="p">)</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">method</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">summarise</span><span class="p">(</span><span class="n">mse</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">square_error</span><span class="p">),</span><span class="w">
+         </span><span class="n">trmse</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">square_error</span><span class="p">,</span><span class="w"> </span><span class="n">tr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.2</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ungroup</span><span class="p">()</span><span class="w">  </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_reorder</span><span class="p">(</span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">mse</span><span class="p">))</span><span class="w"> 
+
+</span><span class="c1"># summary graphic:  
+</span><span class="n">ggplot</span><span class="p">(</span><span class="n">d</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mse</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">trmse</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">method</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_point</span><span class="p">(</span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_text_repel</span><span class="p">(</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Mean squared error of coefficient estimates"</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Trimmed mean squared error of coefficient estimates"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Comparison of different methods of handling suppressed counts in a frequency table"</span><span class="p">,</span><span class="w">
+          </span><span class="s2">"Summary results of models fitted after different treatment methods"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># coefficients graphic:		  
+</span><span class="n">d</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">factor</span><span class="p">(</span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">levels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">levels</span><span class="p">(</span><span class="n">d</span><span class="m">2</span><span class="o">$</span><span class="n">method</span><span class="p">)))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">underlying</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">labels</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">nrow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_abline</span><span class="p">(</span><span class="n">slope</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">intercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey50"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_point</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_text_repel</span><span class="p">(</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Correct value of coefficient in underlying data generating process"</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Value estimated from a GLM with one particular method of dealing with censored data"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">coord_equal</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Comparison of different methods of handling suppressed counts in a frequency table"</span><span class="p">,</span><span class="w">
+          </span><span class="s2">"Coefficient estimates from models fitted after different treatment methods"</span><span class="p">)</span></code></pre></figure>
+
+
+
+		
+	</div>
+</div>
+
+<div class="col-md-1"></div>
+<div class="col-md-4">
+	<div class="side-banner">
+	
+
+
+	<div>
+	   
+	    
+			
+			<p>&larr; Previous post</p>
+			<p><a rel="prev" href="/blog/2018/10/27/dice-games">Simulating simple dice games</a></p>
+		
+		
+		
+		
+		 
+			
+			<p>Next post &rarr;</p>
+			<p><a rel="next" href="/blog/2018/11/18/suppressed-data-2">A more systematic look at suppressed data</a></p>
+			
+			
+		
+		
+	</div>
+	
+	 
+
+   <div class = "side-footer">
+			
+			<hr></hr>
+			<p><gcse:search></gcse:search></p>
+			<hr></hr>
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.</p>
+			<hr></hr>
+			
+			<p>My day job is Chief Data Scientist at <a href='https://www.nousgroup.com/'>Nous Group</a>, an international management consultancy with over 400 people working across Australia, the UK and Canada. <a href='mailto:peter.ellis@nousgroup.com.au'>Contact me</a> if you are interested working with us on a grand challenge or broad agenda.</p>
+		
+		    <hr></hr>
+			
+       <div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="false" data-share="false"></div>
+			
+			<hr></hr>
+			<p>I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+			<hr></hr>
+
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title"><i>free range statistics</i></span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			<hr></hr>
+			
+
+
+    </div>
+
+
+
+  
+   
+
+
+
+
+		  
+		  
+
+
+
+	   
+	<div id="disqus_thread"></div>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function() {
+				var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+				dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+				(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+			})();
+		</script>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function () {
+				var s = document.createElement('script'); s.async = true;
+				s.type = 'text/javascript';
+				s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+				(document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+			}());
+		</script>
+
+	<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+	</div>	
+</div>    
+   
+   
+
+			
+			</div><!-- /.container -->
+         
+   <!-- Default Statcounter code for Free Range Statistics
+http://Http://freerangestats.info -->
+<script type="text/javascript">
+var sc_project=11673245; 
+var sc_invisible=1; 
+var sc_security="5b7111a4"; 
+</script>
+<script type="text/javascript"
+src="https://www.statcounter.com/counter/counter.js" async></script>
+<noscript><div class="statcounter"><a title="Web Analytics"
+href="http://statcounter.com/" target="_blank"><img class="statcounter"
+src="//c.statcounter.com/11673245/0/5b7111a4/1/" alt="Web
+Analytics"></a></div></noscript>
+<!-- End of Statcounter Code -->
+
+</body>   
+</html>

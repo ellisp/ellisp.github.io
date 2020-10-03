@@ -1,0 +1,977 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Forecasting unemployment</title>
+      	
+         
+         
+            <meta name ="description" content ="Forecasting unemployment is hard, with lots of complex bi-directional causality. Also, while AIC is asymptotically equivalent to cross-validation, it's probably better to check. It turns out that interest rates or stock prices don't have any useful information for nowcasting unemployment.">
+            <meta property="og:description" content ="Forecasting unemployment is hard, with lots of complex bi-directional causality. Also, while AIC is asymptotically equivalent to cross-validation, it's probably better to check. It turns out that interest rates or stock prices don't have any useful information for nowcasting unemployment.">
+         
+         <meta property="og:site_name" content="free range statistics" />
+         <meta property="og:title" content="Forecasting unemployment" />
+         
+            <meta property="og:image" content="http://freerangestats.info/img/0155-dag.png" />
+         
+		 
+			<meta property="og:url" content="http://freerangestats.info/blog/2019/07/28/unemployment-forecasts.html" />
+		 
+         <meta property="og:author" content= "https://www.facebook.com/peterstats" />
+         <meta property="og:type" content="article" />
+      
+
+<link href='https://fonts.googleapis.com/css?family=Sarala' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Prosto+One' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Ubuntu+Mono' rel='stylesheet'>
+	  
+          <link href="/css/bootstrap.min.css" rel ="stylesheet" type="text/css">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet" type="text/css">
+            <link href="/css/custom.css" rel ="stylesheet" type="text/css">     
+		<link href="/css/syntax.css" rel ="stylesheet" type="text/css">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="free range statistics by Peter Ellis"
+      href="/feed.xml">
+
+	  
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+  <script>
+  (function() {
+    var cx = '015640467633673901770:pk3v2c95baw';
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+  })();
+</script>
+
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">free range statistics</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/about">about</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">all posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">ordered by date</a></li>
+				  <li><a href="/blog/most-popular.html">ordered by popularity</a></li>
+                  <li><a href="/blog/index_by_tag.html">grouped by subject matter</a></li>
+                  <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
+				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
+				  <li><a href = /blog/2020/09/26/nzes-issues>most recent post</a></li>
+				</ul>
+            </li>
+              <li><a href="/blog/showcase.html">showcase</a></li>
+              <li><a href="/presentations/index.html">presentations</a></li>
+			  <li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">forecasts<span class="caret"></span></a>
+                <ul class="dropdown-menu">
+				  <li><a href = "/covid-tracking/index.html">Covid-19 in Australia</a></li>
+                  <li><a href = "/elections/nz-2020/index.html">NZ election 2020</a></li>
+                  <li><a href = "/elections/oz-2019/index.html">Australia federal election 2019</a></li>
+				  <li><a href = "/elections/nz-2017/combined.html">NZ election 2017</a></li>
+                  <li><a href="/blog/voting.html">all blog posts on voting behaviour</a></li>
+                </ul>				
+			  </li>
+			  
+			  
+			  
+		    </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			<div class="jumbotron">
+  <div class="container">
+	<center><h1>Forecasting unemployment</h1></center>
+  </div>
+</div>
+
+
+
+	<div class = "post-summary">
+	<h2>At a glance:</h2>
+	   <p>Forecasting unemployment is hard, with lots of complex bi-directional causality. Also, while AIC is asymptotically equivalent to cross-validation, it's probably better to check. It turns out that interest rates or stock prices don't have any useful information for nowcasting unemployment.</p>
+	   <p class="meta">28 Jul 2019</p>
+	   <hr></hr>
+	</div>
+
+
+<div class="col-md-7">
+
+	<div class="post">
+		
+	  <p>Last week <a href="/blog/2019/07/20/time-series-cv">I wrote about time-series cross-validation</a>, and mentioned that my original motivation was forecasting unemployment. Actually, I’m interested in <em>nowcasting</em> unemployment rates - that is, estimating a value for a current or recently past period, before the official statistic becomes available. In particular, I’ve been wondering about what leading indicators might be available to help with this.</p>
+
+<p>“Leading” in this case will have to mean pretty fast, because the official unemployment stats in Australia come out from the Australian Bureau of Statistics (ABS) with admirable promptitude given the complexity of managing the Labour Force Survey. ABS Series 6202.0 - the monthly summary from the Labour Force Survey - comes out around two weeks after the reference month. Only a few economic variables of interest are available faster than that. In this blog post I look at two candidates for leading information that are readily available in more or less real time - interest rates and stock exchange prices.</p>
+
+<p>One big change in the past decade in this sort of short-term forecasting of unemployment has been to model the transitions between participation, employed and unemployed people, rather than direct modelling of the resulting proportions. This innovation comes from <a href="https://www.brookings.edu/wp-content/uploads/2012/09/2012b_Barnichon.pdf">an interesting 2012 paper by Barnichon and Nekarda</a>. I’ve only skimmed this paper, but I’d like to look into how much of the gains they report comes from the focus on workforce transitions, and how much from their inclusion of new information in the form of vacancy postings and claims for unemployment insurance. My suspicion is that these latter two series have powerful new information. I will certainly be returning to vacancy information and job adverts at a later time - these are items which feature prominently for me in my day job at Nous Group in analysing the labour market.</p>
+
+<h2 id="unemployment-stats">Unemployment stats</h2>
+
+<p>Here’s the Australian unemployment rate that we’re trying to forecast. I’ve added the party of federal government as context:</p>
+
+<object type="image/svg+xml" data="/img/0155-unemp.svg" width="100%"><img src="/img/0155-unemp.png" /></object>
+
+<p>The data go back to 1978 and are published as their “original” survey estimates, seasonally adjusted and trend. “Trend” is nearly visually identical to “seasonally adjusted” so I’ve not included it in the chart above.</p>
+
+<p>If I’m to be forecasting this I’ll want to forecast both the original and the seasonally adjusted values, so it’s worth checking out if I can replicate (or get close to) the ABS’ seasonal adjustment. Here’s a comparison of a seasonally adjusted series out of the box using X13-SEATS-ARIMA and the default settings provided by Christoph Sax’s excellent <code class="highlighter-rouge">seasonal</code> package (which includes testing for and including-if-helpful trading days and Easter seasonal adjustments).</p>
+
+<object type="image/svg+xml" data="/img/0155-seas.svg" width="100%"><img src="/img/0155-seas.png" /></object>
+
+<p>There are 13 observations where we are 0.1 of a percentage point or more out, mostly featuring a difference of opinion between my model and the ABS’ on the seasonality of the winter months. This would be worth further exploring in a future post; perhaps the ABS’ parameters are published somewhere, and/or it would be interesting to try to reverse-engineer them. But it’s close enough for today’s purposes.</p>
+
+<p>Here’s the R code so far. Getting hold of and tidying ABS time series data is a cinch now thanks to Matt Cowgill et al’s <code class="highlighter-rouge">readabs</code> package. BTW, I’m behind the times on how I manage time series data - I know that some of what I’m doing below can be done a bit easier with the help of <a href="https://CRAN.R-project.org/package=tsibble">tsibble</a> and related R packages. But I haven’t got around to learning how yet. Which is a great example of why continuous learning is an essential part of modern statistics and data science.</p>
+
+<p><em>Post continues after code excerpt</em></p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">quantmod</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">readabs</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">lubridate</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">forecast</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">vars</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">rvest</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">seasonal</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">ggdag</span><span class="p">)</span><span class="w">
+
+
+</span><span class="n">the_caption</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"Analysis by http:://freerangestats.info"</span><span class="w">
+
+</span><span class="c1">#------------unemployment------------------
+</span><span class="n">lfs1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">read_abs</span><span class="p">(</span><span class="s2">"6202.0"</span><span class="p">,</span><span class="w"> </span><span class="n">tables</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+
+</span><span class="n">govt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tibble</span><span class="p">(</span><span class="n">end</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">as.Date</span><span class="p">(</span><span class="nf">c</span><span class="p">(</span><span class="s2">"1975-12-13"</span><span class="p">,</span><span class="w"> </span><span class="s2">"1983-03-05"</span><span class="p">,</span><span class="w"> </span><span class="s2">"1996-03-02"</span><span class="p">,</span><span class="w"> </span><span class="s2">"2007-11-24"</span><span class="p">,</span><span class="w"> </span><span class="s2">"2013-09-07"</span><span class="p">,</span><span class="w"> </span><span class="s2">"2022-06-30"</span><span class="p">)),</span><span class="w">
+               </span><span class="n">party</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"ALP"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Lib/Nat"</span><span class="p">,</span><span class="w"> </span><span class="s2">"ALP"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Lib/Nat"</span><span class="p">,</span><span class="w"> </span><span class="s2">"ALP"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Lib/Nat"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">as.Date</span><span class="p">(</span><span class="s2">"1972-12-02"</span><span class="p">),</span><span class="w"> </span><span class="n">end</span><span class="p">[</span><span class="o">-</span><span class="n">n</span><span class="p">()]))</span><span class="w">
+          
+</span><span class="n">lfs1</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">series</span><span class="w"> </span><span class="o">==</span><span class="w">  </span><span class="s2">"Unemployment rate ;  Persons ;"</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">series_type</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">"Trend"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_rect</span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">govt</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.8</span><span class="p">,</span><span class="w"> 
+            </span><span class="n">aes</span><span class="p">(</span><span class="n">xmin</span><span class="w"> </span><span class="o">=</span><span class="n">start</span><span class="p">,</span><span class="w"> </span><span class="n">xmax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">end</span><span class="p">,</span><span class="w"> </span><span class="n">ymin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="kc">Inf</span><span class="p">,</span><span class="w"> </span><span class="n">ymax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">Inf</span><span class="p">,</span><span class="w"> </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">party</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_line</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">date</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">series_type</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent_format</span><span class="p">(</span><span class="n">accuracy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Unemployment rate"</span><span class="p">,</span><span class="w">
+       </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Unemployment series:"</span><span class="p">,</span><span class="w">
+       </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Unemployment in Australia, 1978 to present"</span><span class="p">,</span><span class="w">
+       </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Monthly series 6202.0 from the Australian Bureau of Statistics"</span><span class="p">,</span><span class="w">
+       </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_caption</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_fill_manual</span><span class="p">(</span><span class="s2">"Federal government:"</span><span class="p">,</span><span class="w"> </span><span class="n">values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"ALP"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"#E53440"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Lib/Nat"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"#1C4f9C"</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_colour_manual</span><span class="p">(</span><span class="n">values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Original"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"black"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Seasonally Adjusted"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"white"</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">theme</span><span class="p">(</span><span class="n">legend.key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_rect</span><span class="p">(</span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey"</span><span class="p">))</span><span class="w">
+
+</span><span class="c1"># prepare data frame for later with columns for each series
+</span><span class="n">unemp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lfs1</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">series</span><span class="w"> </span><span class="o">==</span><span class="w">  </span><span class="s2">"Unemployment rate ;  Persons ;"</span><span class="w"> </span><span class="o">&amp;</span><span class="w">
+           </span><span class="n">series_type</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Seasonally Adjusted"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Original"</span><span class="p">))</span><span class="w">   </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">dplyr</span><span class="o">::</span><span class="n">select</span><span class="p">(</span><span class="n">date</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">series_type</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">spread</span><span class="p">(</span><span class="n">series_type</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">rename</span><span class="p">(</span><span class="n">unemployment</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Original</span><span class="p">,</span><span class="w">
+         </span><span class="n">unemployment_sa</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">`Seasonally Adjusted`</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">unemployment_my_sa</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ts</span><span class="p">(</span><span class="n">unemployment</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1978</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">),</span><span class="w"> </span><span class="n">frequency</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">12</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+           </span><span class="n">seas</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+           </span><span class="n">final</span><span class="p">())</span><span class="w">
+</span><span class="c1">#--------------Comparison of seasonal adjustments------------------
+</span><span class="n">col_labs</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">seq</span><span class="p">(</span><span class="n">from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1979</span><span class="p">,</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2019</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">paste0</span><span class="p">(</span><span class="s2">"-01-01"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">as.Date</span><span class="p">(</span><span class="n">format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"%Y-%m-%d"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">my_col_scale</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">scale_colour_viridis_c</span><span class="p">(</span><span class="n">breaks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">col_labs</span><span class="p">),</span><span class="w">
+                                       </span><span class="n">labels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">year</span><span class="p">(</span><span class="n">col_labs</span><span class="p">),</span><span class="w">
+                                       </span><span class="n">option</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"D"</span><span class="p">,</span><span class="w">
+                                       </span><span class="n">direction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">-1</span><span class="p">)</span><span class="w">
+
+</span><span class="n">ggplot</span><span class="p">(</span><span class="n">unemp</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">unemployment_sa</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">unemployment_my_sa</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">date</span><span class="p">)))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_point</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">coord_equal</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Seasonally adjusted series published by the ABS"</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Seasonally adjusted from seasonal"</span><span class="p">,</span><span class="w">
+       </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Comparison of seasonally adjusted unemployment series"</span><span class="p">,</span><span class="w">
+       </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Vertical axis uses the defaults from the {seasonal} R package front-end to X13-SEATS-ARIMA"</span><span class="p">,</span><span class="w">
+       </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_caption</span><span class="p">,</span><span class="w">
+       </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">my_col_scale</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">theme</span><span class="p">(</span><span class="n">legend.position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"right"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># check for the individual highest points
+</span><span class="n">unemp</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">abs</span><span class="p">(</span><span class="n">unemployment_my_sa</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">unemployment_sa</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">arrange</span><span class="p">(</span><span class="n">desc</span><span class="p">(</span><span class="n">d</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">slice</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">20</span><span class="p">)</span></code></pre></figure>
+
+<h2 id="stock-prices-and-interest-rates">Stock prices and interest rates</h2>
+
+<p>The Australian Securities Exchange publishes an index based on the price of the “ASX 200” list of companies. Daily data are available from the likes of Yahoo Finance (easily accessed from the R <code class="highlighter-rouge">quantmod</code> package), but the longest series I could find was from the ASX themselves. Unfortunately, even this series only goes back to the early 2000s. There must be more historical data out there somewhere, so please feel free to make a comment on this post about where to find it.</p>
+
+<p>I grabbed the historical interest rates series form the Reserve Bank of Australia (RBA). This series goes all the way back to the 1970s.</p>
+
+<p>Here’s what all the time series I’ve got so far look like - unemployment (both original and seasonally adjusted), interest rates and stock prices:</p>
+
+<object type="image/svg+xml" data="/img/0155-combined-series.svg" width="100%"><img src="/img/0155-combined-series.png" /></object>
+
+<h2 id="relationships">Relationships</h2>
+
+<p>So what’s the relationship between these different series when we put them into scatter plots, with one axis for each series? First, let’s look at them on their original scales. We see there’s strongly negative relationships between both interest rates and stock prices on unemployment:</p>
+
+<object type="image/svg+xml" data="/img/0155-csp1.svg" width="100%"><img src="/img/0155-csp1.png" /></object>
+
+<p>Of course, this doesn’t mean that interest rates and stock prices going up leads to a fall in unemployment. Rather, there are some complicated things going on here:</p>
+
+<ul>
+  <li>When unemployment is low or expected to be low, the authorities become more worried about inflation and tend to increase interest rates to control that.</li>
+  <li>When the economy is doing well, unemployment goes low and stock prices tend to grow.</li>
+  <li>When investors think that interest rates are likely to go up, they pay less for stocks and stock prices go down (and vice versa). So a decrease in unemployment can lead to “pessimism” on the part of stock market players, fearing a rise in interest rates despite (or because of) the good news for the economy that the decrease in unemployment is. And vice versa - an anticipated increase in unemployment leads to expectations of interest rate cuts, which can lead to a surge in stock prices.</li>
+  <li>Complicating these relationships, stock prices are definitely a non-stationary time series (ie despite their ups and downs, they have definitely grown on average since the 2000s) - and interest rates and unemployment rates are probably non-stationary (that is, their average values change over time in historic level shifts, not just oscillating around a constant mean). Comparing non-stationary time-series leads to spurious correlations.</li>
+</ul>
+
+<p>We can control to a degree for the non-stationarity problem by looking at growth rates or first differences rather than the original series, and the following set of scatter plots does just that:</p>
+
+<object type="image/svg+xml" data="/img/0155-csp2.svg" width="100%"><img src="/img/0155-csp2.png" /></object>
+
+<p>Now we’re getting somewhere. The apparent relationship between the stock prices and unemployment was probably a spurious artefact of the secular change they were both undergoing. On the other hand, there is definitely a negative relationship between change in interest rates and change in unemployment rates. What we’re seeing here is the dominance of one way of the causality direction - as unemployment goes up, interest rates go down in response. This trumps the presumed causal effect in the opposite direction (as interest rates go down, it boosts the economy, eventually leading to a decrease in unemployment), which is probably only observeable, if at all, at quite some lag.</p>
+
+<p>In fact, the situation was sufficiently complex that I had a go at drawing a direct acyclic graph (DAG), as is now all the rage in thinking about causality.  Here’s my greatly simplified description of what is happening here:</p>
+
+<object type="image/svg+xml" data="/img/0155-dag.svg" width="100%"><img src="/img/0155-dag.png" /></object>
+
+<p>This provides a framework for thinking about what we’re observing. Basically, the connection from unemployment to interest rates via the RBA is realtively strong and quick, whereas the causality in the other direction is complex, delayed and difficult to observe. And the price of stocks is impacted on by so many things in such weird ways (I haven’t tried to show all the “animal spirits” and other influences, rational and otherwise) that it isn’t that surprising that it’s little or no use as a predictor of unemployment.</p>
+
+<p>Here’s R code to date, probably of particular interest for people either in interested in grabbing this historical data from the ASX and the RBA, or in drawing DAGs (for which I’m using the R package “ggdag: Analyze and Create Elegant Directed Acyclic Graphs” by Malcolm Barrett).</p>
+
+<p><em>Post continues after code excerpt</em></p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#-----------------------ASX 200 from Yahoo--------------------
+# First attempt at stock price data, not enough historical to be useful
+</span><span class="n">axjo</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">getSymbols</span><span class="p">(</span><span class="s2">"^AXJO"</span><span class="p">,</span><span class="w"> </span><span class="n">auto.assign</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># exploratory plot (not shown in blog)
+</span><span class="n">autoplot</span><span class="p">(</span><span class="n">axjo</span><span class="o">$</span><span class="n">AXJO.Close</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w">
+       </span><span class="n">title</span><span class="o">=</span><span class="w"> </span><span class="s2">"ASX 200 stock price index"</span><span class="p">,</span><span class="w">
+       </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Sourced from Yahoo Finance via quantmod; data only available back to 2007"</span><span class="p">,</span><span class="w">
+       </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_caption</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#---------------------ASX 200 from ASX------------------
+</span><span class="n">url</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"https://www.asx.com.au/about/historical-market-statistics.htm"</span><span class="w">
+</span><span class="n">asx</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">read_html</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># Read the 18 separate HTML tables in as elements of a list
+</span><span class="n">asx_l</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lapply</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">18</span><span class="p">,</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">i</span><span class="p">){</span><span class="w"> </span><span class="n">html_table</span><span class="p">(</span><span class="n">asx</span><span class="p">)[[</span><span class="n">i</span><span class="p">]]})</span><span class="w">
+
+</span><span class="c1"># convert to a data frame. Note that `date` is going to use the first day of the
+# month even though the values are actually month-end values. This is for joining
+# to other data that use a different convention later on:
+</span><span class="n">asx_df</span><span class="w"> </span><span class="o">&lt;-</span><span class="w">  </span><span class="n">do.call</span><span class="p">(</span><span class="s2">"rbind"</span><span class="p">,</span><span class="w"> </span><span class="n">asx_l</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">as_tibble</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="c1"># convert the messy and inconsistent Month column into an actual date:
+</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">mon</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">str_sub</span><span class="p">(</span><span class="n">Month</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">),</span><span class="w">
+         </span><span class="n">yr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">str_extract</span><span class="p">(</span><span class="n">Month</span><span class="p">,</span><span class="w"> </span><span class="s2">"[0-9]*$"</span><span class="p">),</span><span class="w">
+  </span><span class="n">date</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">as.Date</span><span class="p">(</span><span class="n">paste</span><span class="p">(</span><span class="s2">"01"</span><span class="p">,</span><span class="w"> </span><span class="n">mon</span><span class="p">,</span><span class="w"> </span><span class="n">yr</span><span class="p">,</span><span class="w"> </span><span class="n">sep</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"-"</span><span class="p">),</span><span class="w"> </span><span class="n">format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"%d-%b-%y"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">dplyr</span><span class="o">::</span><span class="n">select</span><span class="p">(</span><span class="o">-</span><span class="n">mon</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">yr</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">Month</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="c1"># convert numbers with comma big marks into numeric values:
+</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">`Dom. Equity Mkt cap $m`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">gsub</span><span class="p">(</span><span class="s2">","</span><span class="p">,</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">`Dom. Equity Mkt cap $m`</span><span class="p">)))</span><span class="w">
+
+</span><span class="c1"># exploratory plot (not shown in blog)
+</span><span class="n">asx_df</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">gather</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">date</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">date</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">scales</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"free_y"</span><span class="p">,</span><span class="w"> </span><span class="n">ncol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_line</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">comma</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Various stock market indicators direct from the ASX"</span><span class="p">,</span><span class="w">
+       </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Month-end data available back to 2002"</span><span class="p">,</span><span class="w">
+       </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w">
+       </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">paste</span><span class="p">(</span><span class="s2">"Source: https://www.asx.com.au/about/historical-market-statistics.htm\n"</span><span class="p">,</span><span class="w">
+                       </span><span class="n">the_caption</span><span class="p">))</span><span class="w">
+
+</span><span class="c1"># make a data frame of just the series we're interested in:
+</span><span class="n">asx_end_month</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">asx_df</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">dplyr</span><span class="o">::</span><span class="n">select</span><span class="p">(</span><span class="n">date</span><span class="p">,</span><span class="w">
+         </span><span class="n">asx200</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">`S&amp;P/ASX 200 Price Index`</span><span class="p">)</span><span class="w">
+
+
+</span><span class="c1">#--------------------Interest rates---------------------
+</span><span class="w">
+</span><span class="n">f</span><span class="m">11</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">read_csv</span><span class="p">(</span><span class="s2">"https://www.rba.gov.au/statistics/tables/csv/f1.1-data.csv?v=2019-06-08-13-25-32"</span><span class="p">,</span><span class="w">
+                </span><span class="n">skip</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10</span><span class="p">)</span><span class="w">
+
+</span><span class="n">interest</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">f</span><span class="m">11</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">date</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">as.Date</span><span class="p">(</span><span class="n">paste0</span><span class="p">(</span><span class="s2">"01-"</span><span class="p">,</span><span class="w"> </span><span class="n">`Series ID`</span><span class="p">),</span><span class="w"> </span><span class="n">format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"%d-%b-%Y"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">dplyr</span><span class="o">::</span><span class="n">select</span><span class="p">(</span><span class="n">date</span><span class="p">,</span><span class="w"> </span><span class="n">interest</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FIRMMCRI</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="o">!</span><span class="nf">is.na</span><span class="p">(</span><span class="n">interest</span><span class="p">))</span><span class="w">
+
+</span><span class="c1">#===============Analysis===============
+</span><span class="w">
+</span><span class="c1"># create a combined data set of all the series so far
+</span><span class="n">combined</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">asx_end_month</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">full_join</span><span class="p">(</span><span class="n">unemp</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"date"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">full_join</span><span class="p">(</span><span class="n">interest</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"date"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">month</span><span class="p">(</span><span class="n">date</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">year</span><span class="p">(</span><span class="n">date</span><span class="p">),</span><span class="w"> </span><span class="s2">""</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ungroup</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">arrange</span><span class="p">(</span><span class="n">date</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">date_n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">date</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">dplyr</span><span class="o">::</span><span class="n">select</span><span class="p">(</span><span class="o">-</span><span class="n">unemployment_my_sa</span><span class="p">)</span><span class="w"> 
+
+
+</span><span class="c1"># combined time series plot
+</span><span class="n">combined</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">gather</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">date</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">date_n</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">label</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">date</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">scales</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"free_y"</span><span class="p">,</span><span class="w"> </span><span class="n">ncol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_line</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w">
+       </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Stock prices, interest rates and unemployment considered together"</span><span class="p">,</span><span class="w">
+       </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Sourced from ASX, RBA and ABS"</span><span class="p">,</span><span class="w">
+       </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_caption</span><span class="p">)</span><span class="w">
+
+</span><span class="n">d</span><span class="m">1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">combined</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">dplyr</span><span class="o">::</span><span class="n">select</span><span class="p">(</span><span class="o">-</span><span class="n">unemployment</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="o">!</span><span class="nf">is.na</span><span class="p">(</span><span class="n">asx200</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="o">!</span><span class="nf">is.na</span><span class="p">(</span><span class="n">unemployment_sa</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">gather</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">date</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">date_n</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">label</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">unemployment_sa</span><span class="p">)</span><span class="w"> 
+
+</span><span class="n">col_labs</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">seq</span><span class="p">(</span><span class="n">from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2002</span><span class="p">,</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2019</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">paste0</span><span class="p">(</span><span class="s2">"-01-01"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">as.Date</span><span class="p">(</span><span class="n">format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"%Y-%m-%d"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">my_col_scale</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">scale_colour_viridis_c</span><span class="p">(</span><span class="n">breaks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">col_labs</span><span class="p">),</span><span class="w">
+                                       </span><span class="n">labels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">year</span><span class="p">(</span><span class="n">col_labs</span><span class="p">),</span><span class="w">
+                                       </span><span class="n">option</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"D"</span><span class="p">,</span><span class="w">
+                                       </span><span class="n">direction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">-1</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># first connected scatter plot									   
+</span><span class="n">d</span><span class="m">1</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">unemployment_sa</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">date_n</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">scales</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"free_x"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_smooth</span><span class="p">(</span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"gam"</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"brown"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_point</span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">filter</span><span class="p">(</span><span class="n">d</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">""</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_text</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">label</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_path</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">theme</span><span class="p">(</span><span class="n">legend.position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"right"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="s2">"Raw value"</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="s2">"Seasonally adjusted unemployment rate"</span><span class="p">,</span><span class="w">
+       </span><span class="n">colour</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w">
+       </span><span class="n">caption</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">the_caption</span><span class="p">,</span><span class="w">
+       </span><span class="n">title</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="s2">"Inverse relationship between unemployment and both stock prices and interest rates"</span><span class="p">,</span><span class="w">
+       </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Unemployment impacts on interest rates, rather than the other way around. And stock prices are undergoing long term structural change."</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_x_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">comma</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">my_col_scale</span><span class="w">
+
+</span><span class="n">d</span><span class="m">2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">combined</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">dplyr</span><span class="o">::</span><span class="n">select</span><span class="p">(</span><span class="o">-</span><span class="n">unemployment</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">asx200</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="kc">NA</span><span class="p">,</span><span class="w"> </span><span class="n">diff</span><span class="p">(</span><span class="nf">log</span><span class="p">(</span><span class="n">asx200</span><span class="p">))),</span><span class="w">
+         </span><span class="n">interest</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="kc">NA</span><span class="p">,</span><span class="w"> </span><span class="n">diff</span><span class="p">(</span><span class="n">interest</span><span class="p">))</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w">
+         </span><span class="n">unemployment_sa</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="kc">NA</span><span class="p">,</span><span class="w"> </span><span class="n">diff</span><span class="p">(</span><span class="nf">log</span><span class="p">(</span><span class="n">unemployment_sa</span><span class="p">))))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="o">!</span><span class="nf">is.na</span><span class="p">(</span><span class="n">asx200</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="o">!</span><span class="nf">is.na</span><span class="p">(</span><span class="n">unemployment_sa</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">gather</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">date</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">label</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">unemployment_sa</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">date_n</span><span class="p">)</span><span class="w">
+
+
+</span><span class="c1"># Second connected scatter plot
+</span><span class="n">d</span><span class="m">2</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">unemployment_sa</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">date_n</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">scales</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"free_x"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_smooth</span><span class="p">(</span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"gam"</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"brown"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_point</span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">filter</span><span class="p">(</span><span class="n">d</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">""</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_text</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">label</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_path</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">theme</span><span class="p">(</span><span class="n">legend.position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"right"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="s2">"Growth in other variable"</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="s2">"Growth in unemployment rate"</span><span class="p">,</span><span class="w">
+       </span><span class="n">title</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="s2">"Changes in interest rates and stock prices, compared to unemployment rate - monthly changes"</span><span class="p">,</span><span class="w">
+       </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Unemployment and ASX200 shown as diff(log(x)); change in interest rate shown in percentage points.
+Increase in unemployment comes with decrease in interest rate; no real relationship to stock prices."</span><span class="p">,</span><span class="w">
+       </span><span class="n">colour</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_x_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">)</span><span class="w">  </span><span class="o">+</span><span class="w">
+  </span><span class="n">my_col_scale</span><span class="w"> 
+
+</span><span class="c1">#--------------Digression to think about causality-----------------------
+</span><span class="n">dagified</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dagify</span><span class="p">(</span><span class="n">unemployment</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">economy</span><span class="p">,</span><span class="w">
+                   </span><span class="n">interest</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">RBA</span><span class="p">,</span><span class="w">
+                   </span><span class="n">RBA</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">inflation</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">unemployment</span><span class="p">,</span><span class="w">
+                   </span><span class="n">govt</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">voters</span><span class="p">,</span><span class="w">
+                   </span><span class="n">voters</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">unemployment</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">stocks</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">inflation</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">interest</span><span class="p">,</span><span class="w">
+                   </span><span class="n">economy</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">govt</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">inflation</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">interest</span><span class="p">,</span><span class="w">
+                   </span><span class="n">inflation</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">economy</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">interest</span><span class="p">,</span><span class="w">
+                   </span><span class="n">stocks</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">economy</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">interest</span><span class="p">,</span><span class="w">
+                   </span><span class="n">outcome</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"unemployment"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># Draw DAG:
+</span><span class="n">set.seed</span><span class="p">(</span><span class="m">123</span><span class="p">)</span><span class="w">
+</span><span class="n">tidy_dagitty</span><span class="p">(</span><span class="n">dagified</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="n">xend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xend</span><span class="p">,</span><span class="w"> </span><span class="n">yend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">yend</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_dag_edges_arc</span><span class="p">(</span><span class="n">edge_colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey50"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_dag_node</span><span class="p">(</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="s2">"grey80"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_dag_text</span><span class="p">(</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">main_font</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">theme_void</span><span class="p">(</span><span class="n">base_family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">main_font</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Simplified causal diagram of key economic actors and variables in Australia"</span><span class="p">,</span><span class="w">
+       </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Only primary impacts are shown, rather than impacts that depend on anticipating intermediaries."</span><span class="p">)</span></code></pre></figure>
+
+<h2 id="vector-auto-regression-as-an-exploratory-modelling-stage">Vector auto regression as an exploratory modelling stage</h2>
+
+<p>The data here seem appropriate for exploring with a vector auto-regression model (VAR).  A VAR models the changes in multiple time series together and is a way to understand the impacts of each (and their lagged versions) on themselves and eachother.</p>
+
+<p>One of the most useful outputs from fitting a VAR is the plot of the Impulse Response Function, which lets you visualise the ongoing impact on all series of a shock to one series. In our case, here’s what happens if there is an upwards shock to interest rates:</p>
+
+<object type="image/svg+xml" data="/img/0155-irf1.svg" width="100%"><img src="/img/0155-irf1.png" /></object>
+
+<p>The biggest impact is on interest rates, they go high, increase further for a bit, and basically stay high - the shock leads to a level shift upwards in the interest rates. But the model also implies that this level shift up in interest rates leads to a level shift downwards in unemployment. Clearly, interpreting this causally would be a mistake, for the reasons discussed earlier.</p>
+
+<p>Also, it’s interesting to note that the interest rate shift upwards has little evidence of any impact on stock prices (the red lines are 95% confidence intervals, and basically include zero, suggesting no clear impact one way or another).</p>
+
+<p>For completeness, here are the charts showing the impact of shocks to the other two series.</p>
+
+<object type="image/svg+xml" data="/img/0155-irf2.svg" width="100%"><img src="/img/0155-irf2.png" /></object>
+
+<object type="image/svg+xml" data="/img/0155-irf3.svg" width="100%"><img src="/img/0155-irf3.png" /></object>
+
+<p>None of these are as polished as I usually like my graphics, but I’m treating these as outputs from exploratory modelling rather than core parts of my results dissemination. Actually, I have no intent of using a VAR for my actual nowcasting, as the whole point of using leading indicators is that I don’t need to forecast all three series together. But a VAR is a useful thing to fit to add a bit more discipline in thinking about multi-directional <a href="https://en.wikipedia.org/wiki/Granger_causality">Granger causality</a> to what has so far been just a bunch of scatter plots.</p>
+
+<p>Here’s the code that fits those VARs, and also which puts together the data in a form for what I’ll be actually using in a jiffy. I’m mostly using the first-differenced stock price series, and original unemployment and interest rates series. My rationale for doing this is the instinct that prices are fundamentally a different, more absolute measure than are either of the other two, which are expressed as rates or proportions. Definitely if I were doing this for real, this would be one of my more substantive decisions that would need some serious thinking, and it’s one we’ll come back to.</p>
+
+<p><em>Post continues after code excerpt</em></p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#-----------------Subsets of data for modelling---------------
+# a subset of the data that is complete for when we have the growth in ASX prices, and its lag, and unemployment
+</span><span class="n">d</span><span class="m">4</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">combined</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">asx200</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="kc">NA</span><span class="p">,</span><span class="w"> </span><span class="n">diff</span><span class="p">(</span><span class="nf">log</span><span class="p">(</span><span class="n">asx200</span><span class="p">))),</span><span class="w">
+         </span><span class="n">asx200_l</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lag</span><span class="p">(</span><span class="n">asx200</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="o">!</span><span class="nf">is.na</span><span class="p">(</span><span class="n">unemployment</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="o">!</span><span class="nf">is.na</span><span class="p">(</span><span class="n">asx200_l</span><span class="p">))</span><span class="w"> 
+
+
+</span><span class="n">asx200_ts</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ts</span><span class="p">(</span><span class="n">d</span><span class="m">4</span><span class="o">$</span><span class="n">asx200</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">2002</span><span class="p">,</span><span class="w"> </span><span class="m">6</span><span class="p">),</span><span class="w"> </span><span class="n">frequency</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">12</span><span class="p">)</span><span class="w">
+</span><span class="n">asx200_ts1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ts</span><span class="p">(</span><span class="n">d</span><span class="m">4</span><span class="o">$</span><span class="n">asx200_l</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">2002</span><span class="p">,</span><span class="w"> </span><span class="m">6</span><span class="p">),</span><span class="w"> </span><span class="n">frequency</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">12</span><span class="p">)</span><span class="w">
+</span><span class="n">unemp_ts</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ts</span><span class="p">(</span><span class="n">d</span><span class="m">4</span><span class="o">$</span><span class="n">unemployment</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">2002</span><span class="p">,</span><span class="w"> </span><span class="m">6</span><span class="p">),</span><span class="w"> </span><span class="n">frequency</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">12</span><span class="p">)</span><span class="w">
+</span><span class="n">unemp_sa_ts</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ts</span><span class="p">(</span><span class="n">d</span><span class="m">4</span><span class="o">$</span><span class="n">unemployment_sa</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">2002</span><span class="p">,</span><span class="w"> </span><span class="m">6</span><span class="p">),</span><span class="w"> </span><span class="n">frequency</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">12</span><span class="p">)</span><span class="w">
+</span><span class="n">interest_ts</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ts</span><span class="p">(</span><span class="n">d</span><span class="m">4</span><span class="o">$</span><span class="n">interest</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">2002</span><span class="p">,</span><span class="w"> </span><span class="m">6</span><span class="p">),</span><span class="w"> </span><span class="n">frequency</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">12</span><span class="p">)</span><span class="w">
+
+
+</span><span class="c1">#-----------------Vector auto-regression----------
+# For the VAR, we'll use seasonally adjusted unemployment
+</span><span class="n">comb_ts_d</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">scale</span><span class="p">(</span><span class="n">cbind</span><span class="p">(</span><span class="n">asx200_ts</span><span class="p">,</span><span class="w"> </span><span class="n">unemp_sa_ts</span><span class="p">,</span><span class="w"> </span><span class="n">interest_ts</span><span class="p">)[</span><span class="m">-1</span><span class="p">,</span><span class="w"> </span><span class="p">])</span><span class="w">
+
+</span><span class="n">mod_var</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">VAR</span><span class="p">(</span><span class="n">comb_ts_d</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w">
+
+</span><span class="n">plot</span><span class="p">(</span><span class="n">irf</span><span class="p">(</span><span class="n">mod_var</span><span class="p">,</span><span class="w"> </span><span class="n">impulse</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"interest_ts"</span><span class="p">),</span><span class="w"> </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Impact of a shock upwards to interest rates"</span><span class="p">,</span><span class="w">
+     </span><span class="n">sub</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"We can see that this model is based on a misinterpretation of causality"</span><span class="p">)</span><span class="w">
+</span><span class="n">plot</span><span class="p">(</span><span class="n">irf</span><span class="p">(</span><span class="n">mod_var</span><span class="p">,</span><span class="w"> </span><span class="n">impulse</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"asx200_ts"</span><span class="p">),</span><span class="w"> </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Impact of a shock upwards to stock price"</span><span class="p">)</span><span class="w">
+</span><span class="n">plot</span><span class="p">(</span><span class="n">irf</span><span class="p">(</span><span class="n">mod_var</span><span class="p">,</span><span class="w"> </span><span class="n">impulse</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"unemp_sa_ts"</span><span class="p">),</span><span class="w"> </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Impact of a shock upwards to unemployment"</span><span class="p">)</span></code></pre></figure>
+
+<h2 id="finally-creating-some-viable-forecasting-models">Finally, creating some viable forecasting models</h2>
+
+<p>I fit four potential ARIMA (auto-regressive integrated moving average) models, in each case specifying level one of integration ie the original time series is to be first-differenced. I used the original observations, not seasonally adjusted - my idea is that if I ever do this for real, I will nowcast the actual observed unemployment, and turn it into a seasonally adjusted value myself, so I have both numbers to present.</p>
+
+<p>My four models differ in the explanatory “x” regressor variables they include:</p>
+
+<ul>
+  <li>none</li>
+  <li>just interest rates</li>
+  <li>interest rates and stock prices</li>
+  <li>interest rates, stock prices, and stock prices at lag 1</li>
+</ul>
+
+<p>Here’s the performance of each of these models on the basis of Akaike’s Information Criterion:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="text-align: left"> </th>
+      <th style="text-align: right">df</th>
+      <th style="text-align: right">AIC</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: left">mod_aa0</td>
+      <td style="text-align: right">6</td>
+      <td style="text-align: right">-109.8404</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">mod_aa1</td>
+      <td style="text-align: right">8</td>
+      <td style="text-align: right">-128.5164</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">mod_aa2</td>
+      <td style="text-align: right">9</td>
+      <td style="text-align: right">-126.6400</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">mod_aa3</td>
+      <td style="text-align: right">10</td>
+      <td style="text-align: right">-124.8471</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>So historically, the best performing model for predicting unemployment (the lowest value of AIC) is the one with interest rates in it as an explanatory variable, but no stock prices.</p>
+
+<p>Here’s rough confidence intervals for the values of all the parameters in that model. We’re most interest in the <code class="highlighter-rouge">xreg</code> estimate, which is the direction and strenght of the impact of interest rates in forecasting uinemployment. Remember, this doesn’t imply causality - just that it’s useful for forecasting purposes.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="text-align: left"> </th>
+      <th style="text-align: right">2.5 %</th>
+      <th style="text-align: right">97.5 %</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: left">ar1</td>
+      <td style="text-align: right">-0.05</td>
+      <td style="text-align: right">0.64</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">ar2</td>
+      <td style="text-align: right">-0.26</td>
+      <td style="text-align: right">0.14</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">ma1</td>
+      <td style="text-align: right">-0.96</td>
+      <td style="text-align: right">-0.31</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">sar1</td>
+      <td style="text-align: right">-2.65</td>
+      <td style="text-align: right">1.70</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">sma1</td>
+      <td style="text-align: right">-2.43</td>
+      <td style="text-align: right">1.96</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">sma2</td>
+      <td style="text-align: right">-1.84</td>
+      <td style="text-align: right">1.26</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">xreg</td>
+      <td style="text-align: right">-0.38</td>
+      <td style="text-align: right">-0.21</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The negative value means that when interest rates are high, it’s a sign that the change in unemployment rates is about to decrease. How are we to interpret this? Recall this simple chart:</p>
+
+<object type="image/svg+xml" data="/img/0155-combined-series.svg" width="100%"><img src="/img/0155-combined-series.png" /></object>
+
+<p>We see that at times of substantial economic change, there is a very strong negative link between interest rates and unemployment. This is particularly apparent in the early 1990s and in the period around the 2008 global economic crises up to 2010. The 1990s are excluded from my modelling data in order to have four comparable models, because I don’t have stock prices to include; so I suspect it’s the 2007 to 2009 period that is being picked up in the model.</p>
+
+<p>I am profoundly skeptical of whether this indicates that we really have found a useful forecasting explanatory regressor variable. Hence I wanted to check the AIC quality of fit figures with time series cross-validation of the one-period-out forecasts. AIC is actually asymptotically equivalent to one-period-out cross-validation, but how much data do we need for this property to kick in? Funny things are the rule rather than exception with time series, and spurious correlation lurks everywhere. I’d feel more comfortable if brute force showed me that I would have been better off to include interest rates than not, in a thought experiment where I was doing monthly nowcasts of unemployment rates since the 2000s. Hence my post last week on time-series cross-validation, to be sure with simulated data that I was doing it right.</p>
+
+<p>The reason I wanted to be sure (and my digression last week into simulated data) was that in this case, the cross-validation comes up with different results from the AIC.  Here’s the accuracy summary of the one-period-out cross-validation results for comparing models <code class="highlighter-rouge">mod_aa0</code> (first differenced unemployment rate, no explanatory variables) and <code class="highlighter-rouge">mod_aa1</code> (with interest rates as an explanatory variable). The no-explanatory-variables model wins hands-down:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="text-align: left">model</th>
+      <th style="text-align: right">ME</th>
+      <th style="text-align: right">RMSE</th>
+      <th style="text-align: right">MAE</th>
+      <th style="text-align: right">MPE</th>
+      <th style="text-align: right">MAPE</th>
+      <th style="text-align: right">ACF1</th>
+      <th style="text-align: right">Theil’s U</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: left">With interest rates</td>
+      <td style="text-align: right">0.0285642</td>
+      <td style="text-align: right">0.4014554</td>
+      <td style="text-align: right">0.1882691</td>
+      <td style="text-align: right">0.6239319</td>
+      <td style="text-align: right">3.491464</td>
+      <td style="text-align: right">0.0617393</td>
+      <td style="text-align: right">1.2358698</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Univariate</td>
+      <td style="text-align: right">0.0061069</td>
+      <td style="text-align: right">0.2200771</td>
+      <td style="text-align: right">0.1631800</td>
+      <td style="text-align: right">0.2062656</td>
+      <td style="text-align: right">3.032230</td>
+      <td style="text-align: right">-0.0147829</td>
+      <td style="text-align: right">0.6987458</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The univariate mode has lower bias (mean error) as well as lower root mean square error, mean absolute error, mean percentage error, mean absolute percentage error, autocorrelation of the residuals, and Theil’s U. The apparent superiority of the interest rates model from comparing AICs turns out to be a mistake.</p>
+
+<p>So after all that, what have we found? If I want to nowcast unemployment rates, I am best off (on the potential leading indicators used so far), ignoring other variables and simply fitting a univariate time series model to the unemployment rate.  This actually doesn’t surprise me, but it was worth looking around.</p>
+
+<p>I still have hopes of vacancy rates or job advert numbers as a leading variable. Unlike interest rates, these are basically measures of a very similar, directly related concept to unemployment, without any significant causality complications. But this will need to wait for another post.</p>
+
+<p>Here’s the R code for fitting the various ARIMA models and doing the time-series cross-validation. The <a href="/blog/2019/07/20/time-series-cv">cross-validation code is explained in last week’s post</a>:</p>
+
+<p><em>Post continues after code excerpt</em></p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#----------------ARIMA modelling---------------
+</span><span class="n">mod_aa0</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">auto.arima</span><span class="p">(</span><span class="n">unemp_ts</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+
+</span><span class="n">mod_aa1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">auto.arima</span><span class="p">(</span><span class="n">unemp_ts</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="o">=</span><span class="m">1</span><span class="p">,</span><span class="w">
+                      </span><span class="n">xreg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">interest_ts</span><span class="p">)</span><span class="w">
+
+</span><span class="n">mod_aa2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">auto.arima</span><span class="p">(</span><span class="n">unemp_ts</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="o">=</span><span class="m">1</span><span class="p">,</span><span class="w"> 
+                      </span><span class="n">xreg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cbind</span><span class="p">(</span><span class="n">asx200_ts</span><span class="p">,</span><span class="w"> </span><span class="n">interest_ts</span><span class="p">))</span><span class="w">
+
+</span><span class="n">mod_aa3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">auto.arima</span><span class="p">(</span><span class="n">unemp_ts</span><span class="p">,</span><span class="w">  </span><span class="n">d</span><span class="o">=</span><span class="m">1</span><span class="p">,</span><span class="w">
+                      </span><span class="n">xreg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cbind</span><span class="p">(</span><span class="n">asx200_ts</span><span class="p">,</span><span class="w"> </span><span class="n">asx200_ts1</span><span class="p">,</span><span class="w"> </span><span class="n">interest_ts</span><span class="p">))</span><span class="w">
+
+</span><span class="n">knitr</span><span class="o">::</span><span class="n">kable</span><span class="p">(</span><span class="n">AIC</span><span class="p">(</span><span class="n">mod_aa0</span><span class="p">,</span><span class="w"> </span><span class="n">mod_aa1</span><span class="p">,</span><span class="w"> </span><span class="n">mod_aa2</span><span class="p">,</span><span class="w"> </span><span class="n">mod_aa3</span><span class="p">))</span><span class="w">
+
+
+</span><span class="n">knitr</span><span class="o">::</span><span class="n">kable</span><span class="p">(</span><span class="nf">round</span><span class="p">(</span><span class="n">confint</span><span class="p">(</span><span class="n">mod_aa1</span><span class="p">),</span><span class="w"> </span><span class="m">2</span><span class="p">))</span><span class="w">
+
+</span><span class="c1"># The fact that higher interest rates are a good forecast of lower unemployment suggests the RBA (or banks?)
+# are taking extra information into account in setting their interest rates - they know something about
+# the direction the economy is going that lets them set the interest rate level even before it has 
+# manifested itself in the unemployment
+</span><span class="w">
+
+</span><span class="c1">#-------------Time series cross-validation------------
+# The model chosen by AIC (ie mod_aa1, which includes interest rates and is better than the univariate model)
+# should in theory be the same as what we'd get with leave-one-out cross validation. See:
+# Stone M. (1977) An asymptotic equivalence of choice of model by cross-validation and Akaike’s criterion. Journal of the Royal Statistical Society Series B. 39, 44–7.
+# But funny things can happen with time series, and actually our sample is not vast. So let's check that out:
+</span><span class="w">
+
+</span><span class="cd">#' auto.arima forecast function for time series cross validation
+#' 
+#' adapted from https://gist.github.com/robjhyndman/d9eb5568a78dbc79f7acc49e22553e96 
+</span><span class="n">aafc</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="n">xreg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">NULL</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p">){</span><span class="w">
+  </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nf">is.null</span><span class="p">(</span><span class="n">xreg</span><span class="p">)){</span><span class="w">
+    
+    </span><span class="n">ncol</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">NCOL</span><span class="p">(</span><span class="n">xreg</span><span class="p">)</span><span class="w">
+    </span><span class="n">X</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">matrix</span><span class="p">(</span><span class="n">xreg</span><span class="p">[</span><span class="m">1</span><span class="o">:</span><span class="nf">length</span><span class="p">(</span><span class="n">y</span><span class="p">),</span><span class="w"> </span><span class="p">],</span><span class="w"> </span><span class="n">ncol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ncol</span><span class="p">)</span><span class="w">
+    </span><span class="k">if</span><span class="p">(</span><span class="n">NROW</span><span class="p">(</span><span class="n">xreg</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">h</span><span class="p">)</span><span class="w">
+      </span><span class="n">stop</span><span class="p">(</span><span class="s2">"Not enough xreg data for forecasting"</span><span class="p">)</span><span class="w">
+    </span><span class="n">newX</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">matrix</span><span class="p">(</span><span class="n">xreg</span><span class="p">[</span><span class="nf">length</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="n">h</span><span class="p">),</span><span class="w"> </span><span class="p">],</span><span class="w"> </span><span class="n">ncol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ncol</span><span class="p">)</span><span class="w">
+    
+    </span><span class="n">fit</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">auto.arima</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">xreg</span><span class="o">=</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p">)</span><span class="w">
+    </span><span class="nf">return</span><span class="p">(</span><span class="n">forecast</span><span class="p">(</span><span class="n">fit</span><span class="p">,</span><span class="w"> </span><span class="n">xreg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">newX</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">h</span><span class="p">))</span><span class="w">
+    
+  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">
+    
+    </span><span class="n">fit</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">auto.arima</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p">)</span><span class="w">
+    </span><span class="nf">return</span><span class="p">(</span><span class="n">forecast</span><span class="p">(</span><span class="n">fit</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">h</span><span class="p">))</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="c1"># this CV takes about 20 minutes
+</span><span class="n">system.time</span><span class="p">({</span><span class="w">
+  </span><span class="n">aa1_cv</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tsCV</span><span class="p">(</span><span class="n">unemp_ts</span><span class="p">,</span><span class="w"> </span><span class="n">aafc</span><span class="p">,</span><span class="w"> </span><span class="n">xreg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">interest_ts</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+  </span><span class="n">aa0_cv</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tsCV</span><span class="p">(</span><span class="n">unemp_ts</span><span class="p">,</span><span class="w"> </span><span class="n">aafc</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="o">=</span><span class="m">1</span><span class="p">)</span><span class="w">
+</span><span class="p">})</span><span class="w">
+
+</span><span class="n">rbind</span><span class="p">(</span><span class="n">accuracy</span><span class="p">(</span><span class="n">unemp_ts</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">aa1_cv</span><span class="p">,</span><span class="w"> </span><span class="n">unemp_ts</span><span class="p">),</span><span class="w">
+      </span><span class="n">accuracy</span><span class="p">(</span><span class="n">unemp_ts</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">aa0_cv</span><span class="p">,</span><span class="w"> </span><span class="n">unemp_ts</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">as.data.frame</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"With interest rates"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Univariate"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">dplyr</span><span class="o">::</span><span class="n">select</span><span class="p">(</span><span class="n">model</span><span class="p">,</span><span class="w"> </span><span class="n">everything</span><span class="p">())</span></code></pre></figure>
+
+<h2 id="final-clincher---testing-on-a-longer-time-series">Final clincher - testing on a longer time series</h2>
+
+<p>So far in my modelling, I’ve been working with a cut-down dataset, only going back to 2002 so I can include stock prices as a candidate variable. If I’m satisfied that stock prices have nothing to offer in nowcasting unemployemnt (and I am now), then I might as well refit my two univariate and interest rates models with the full set of data available back to the late 1970s.</p>
+
+<p>This time, the interest rate model is inferior even on the basis of the AIC (which of course has a longer series to allow its asymptotic properties to kick in).:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="text-align: left"> </th>
+      <th style="text-align: right">df</th>
+      <th style="text-align: right">AIC</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: left">mod_aa0_long</td>
+      <td style="text-align: right">6</td>
+      <td style="text-align: right">-106.2901</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">mod_aa1_long</td>
+      <td style="text-align: right">7</td>
+      <td style="text-align: right">-104.3239</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>This is confirmed by the time-series cross-validation:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="text-align: left">model</th>
+      <th style="text-align: right">ME</th>
+      <th style="text-align: right">RMSE</th>
+      <th style="text-align: right">MAE</th>
+      <th style="text-align: right">MPE</th>
+      <th style="text-align: right">MAPE</th>
+      <th style="text-align: right">ACF1</th>
+      <th style="text-align: right">Theil’s U</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: left">With interest rates</td>
+      <td style="text-align: right">-0.0022767</td>
+      <td style="text-align: right">0.3287481</td>
+      <td style="text-align: right">0.1980351</td>
+      <td style="text-align: right">0.0378736</td>
+      <td style="text-align: right">2.959823</td>
+      <td style="text-align: right">-0.0400820</td>
+      <td style="text-align: right">0.8890656</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Univariate</td>
+      <td style="text-align: right">0.0064120</td>
+      <td style="text-align: right">0.2404348</td>
+      <td style="text-align: right">0.1847038</td>
+      <td style="text-align: right">0.1837424</td>
+      <td style="text-align: right">2.755187</td>
+      <td style="text-align: right">0.0177967</td>
+      <td style="text-align: right">0.6408704</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Other than mean percentage error (which I dislike as a metric of accuracy anyway), the univariabte model is the better of the two.</p>
+
+<p><em>Post concludes after code excerpt</em></p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#---------longer series------
+</span><span class="w">
+</span><span class="n">unemp_long</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ts</span><span class="p">(</span><span class="n">unemp</span><span class="o">$</span><span class="n">unemployment</span><span class="p">,</span><span class="w"> </span><span class="n">frequency</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">12</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1978</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">))</span><span class="w">
+</span><span class="n">interest_long</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ts</span><span class="p">(</span><span class="n">interest</span><span class="o">$</span><span class="n">interest</span><span class="p">,</span><span class="w"> </span><span class="n">frequency</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">12</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1976</span><span class="p">,</span><span class="w"> </span><span class="m">5</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">window</span><span class="p">(</span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1978</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">))</span><span class="w">
+
+</span><span class="n">mod_aa0_long</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">auto.arima</span><span class="p">(</span><span class="n">unemp_long</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+</span><span class="n">mod_aa1_long</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">auto.arima</span><span class="p">(</span><span class="n">unemp_long</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="o">=</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">xreg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">interest_long</span><span class="p">)</span><span class="w">
+</span><span class="n">AIC</span><span class="p">(</span><span class="n">mod_aa0_long</span><span class="p">,</span><span class="w"> </span><span class="n">mod_aa1_long</span><span class="p">)</span><span class="w">
+
+</span><span class="n">system.time</span><span class="p">({</span><span class="w">
+  </span><span class="n">aa1_cv_long</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tsCV</span><span class="p">(</span><span class="n">unemp_long</span><span class="p">,</span><span class="w"> </span><span class="n">aafc</span><span class="p">,</span><span class="w"> </span><span class="n">xreg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">interest_long</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+  </span><span class="n">aa0_cv_long</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tsCV</span><span class="p">(</span><span class="n">unemp_long</span><span class="p">,</span><span class="w"> </span><span class="n">aafc</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="o">=</span><span class="m">1</span><span class="p">)</span><span class="w">
+</span><span class="p">})</span><span class="w">
+
+</span><span class="n">rbind</span><span class="p">(</span><span class="n">accuracy</span><span class="p">(</span><span class="n">unemp_long</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">aa1_cv_long</span><span class="p">,</span><span class="w"> </span><span class="n">unemp_long</span><span class="p">),</span><span class="w">
+      </span><span class="n">accuracy</span><span class="p">(</span><span class="n">unemp_long</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">aa0_cv_long</span><span class="p">,</span><span class="w"> </span><span class="n">unemp_long</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">as.data.frame</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"With interest rates"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Univariate"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">dplyr</span><span class="o">::</span><span class="n">select</span><span class="p">(</span><span class="n">model</span><span class="p">,</span><span class="w"> </span><span class="n">everything</span><span class="p">())</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">knitr</span><span class="o">::</span><span class="n">kable</span><span class="p">()</span></code></pre></figure>
+
+<h2 id="unfinished-business">Unfinished business</h2>
+
+<p>So, a nice, clear conclusion today - don’t bother with interest rates or stock prices in trying to nowcast unemployment rates.</p>
+
+<p>I have three things that need further investigation here, but as this post is now well over 500 lines long these are definitely for another time:</p>
+
+<ul>
+  <li>more systematic thinking and exploration of whether the interest rate explanatory regressor should be first differenced, not in its absolute values. For the curious, I did fit my models with differenced interest rates, and reach the same (no effect) eventual conclusions as reported in the post. In fact, is possible that the non-stationary undifferenced interest rate series is what’s responsible for the suprious AIC finding that interest rates are worth including in the model in the first place.</li>
+  <li>replicating the ABS’ seasonal adjustment.</li>
+  <li>testing other possible explanatory variables, particularly vacancy rates or job advert numbers.</li>
+</ul>
+
+<p>That’s all for now, folks.</p>
+
+
+
+		
+	</div>
+</div>
+
+<div class="col-md-1"></div>
+<div class="col-md-4">
+	<div class="side-banner">
+	
+
+
+	<div>
+	   
+	    
+			
+			<p>&larr; Previous post</p>
+			<p><a rel="prev" href="/blog/2019/07/20/time-series-cv">Time series forecast cross-validation</a></p>
+		
+		
+		
+		
+		 
+			
+			<p>Next post &rarr;</p>
+			<p><a rel="next" href="/blog/2019/08/25/fitting-bins">Inferring a continuous distribution from binned data</a></p>
+			
+			
+		
+		
+	</div>
+	
+	 
+
+   <div class = "side-footer">
+			
+			<hr></hr>
+			<p><gcse:search></gcse:search></p>
+			<hr></hr>
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.</p>
+			<hr></hr>
+			
+			<p>My day job is Chief Data Scientist at <a href='https://www.nousgroup.com/'>Nous Group</a>, an international management consultancy with over 400 people working across Australia, the UK and Canada. <a href='mailto:peter.ellis@nousgroup.com.au'>Contact me</a> if you are interested working with us on a grand challenge or broad agenda.</p>
+		
+		    <hr></hr>
+			
+       <div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="false" data-share="false"></div>
+			
+			<hr></hr>
+			<p>I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+			<hr></hr>
+
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title"><i>free range statistics</i></span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			<hr></hr>
+			
+
+
+    </div>
+
+
+
+  
+   
+
+
+
+
+		  
+		  
+
+
+
+	   
+	<div id="disqus_thread"></div>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function() {
+				var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+				dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+				(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+			})();
+		</script>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function () {
+				var s = document.createElement('script'); s.async = true;
+				s.type = 'text/javascript';
+				s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+				(document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+			}());
+		</script>
+
+	<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+	</div>	
+</div>    
+   
+   
+
+			
+			</div><!-- /.container -->
+         
+   <!-- Default Statcounter code for Free Range Statistics
+http://Http://freerangestats.info -->
+<script type="text/javascript">
+var sc_project=11673245; 
+var sc_invisible=1; 
+var sc_security="5b7111a4"; 
+</script>
+<script type="text/javascript"
+src="https://www.statcounter.com/counter/counter.js" async></script>
+<noscript><div class="statcounter"><a title="Web Analytics"
+href="http://statcounter.com/" target="_blank"><img class="statcounter"
+src="//c.statcounter.com/11673245/0/5b7111a4/1/" alt="Web
+Analytics"></a></div></noscript>
+<!-- End of Statcounter Code -->
+
+</body>   
+</html>

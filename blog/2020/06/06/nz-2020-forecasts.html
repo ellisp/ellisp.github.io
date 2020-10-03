@@ -1,0 +1,375 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Forecasts for the 2020 New Zealand elections using R and Stan</title>
+      	
+         
+         
+            <meta name ="description" content ="My forecasts for the 2020 New Zealand general election are out, and predict a comfortable win for Jacinda Ardern's Labour Party either alone or in coalition.">
+            <meta property="og:description" content ="My forecasts for the 2020 New Zealand general election are out, and predict a comfortable win for Jacinda Ardern's Labour Party either alone or in coalition.">
+         
+         <meta property="og:site_name" content="free range statistics" />
+         <meta property="og:title" content="Forecasts for the 2020 New Zealand elections using R and Stan" />
+         
+            <meta property="og:image" content="http://freerangestats.info/img/nz-elections-2020/state-space-results-density.png" />
+         
+		 
+			<meta property="og:url" content="http://freerangestats.info/blog/2020/06/06/nz-2020-forecasts.html" />
+		 
+         <meta property="og:author" content= "https://www.facebook.com/peterstats" />
+         <meta property="og:type" content="article" />
+      
+
+<link href='https://fonts.googleapis.com/css?family=Sarala' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Prosto+One' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Ubuntu+Mono' rel='stylesheet'>
+	  
+          <link href="/css/bootstrap.min.css" rel ="stylesheet" type="text/css">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet" type="text/css">
+            <link href="/css/custom.css" rel ="stylesheet" type="text/css">     
+		<link href="/css/syntax.css" rel ="stylesheet" type="text/css">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="free range statistics by Peter Ellis"
+      href="/feed.xml">
+
+	  
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+  <script>
+  (function() {
+    var cx = '015640467633673901770:pk3v2c95baw';
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+  })();
+</script>
+
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">free range statistics</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/about">about</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">all posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">ordered by date</a></li>
+				  <li><a href="/blog/most-popular.html">ordered by popularity</a></li>
+                  <li><a href="/blog/index_by_tag.html">grouped by subject matter</a></li>
+                  <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
+				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
+				  <li><a href = /blog/2020/09/26/nzes-issues>most recent post</a></li>
+				</ul>
+            </li>
+              <li><a href="/blog/showcase.html">showcase</a></li>
+              <li><a href="/presentations/index.html">presentations</a></li>
+			  <li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">forecasts<span class="caret"></span></a>
+                <ul class="dropdown-menu">
+				  <li><a href = "/covid-tracking/index.html">Covid-19 in Australia</a></li>
+                  <li><a href = "/elections/nz-2020/index.html">NZ election 2020</a></li>
+                  <li><a href = "/elections/oz-2019/index.html">Australia federal election 2019</a></li>
+				  <li><a href = "/elections/nz-2017/combined.html">NZ election 2017</a></li>
+                  <li><a href="/blog/voting.html">all blog posts on voting behaviour</a></li>
+                </ul>				
+			  </li>
+			  
+			  
+			  
+		    </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			<div class="jumbotron">
+  <div class="container">
+	<center><h1>Forecasts for the 2020 New Zealand elections using R and Stan</h1></center>
+  </div>
+</div>
+
+
+
+	<div class = "post-summary">
+	<h2>At a glance:</h2>
+	   <p>My forecasts for the 2020 New Zealand general election are out, and predict a comfortable win for Jacinda Ardern's Labour Party either alone or in coalition.</p>
+	   <p class="meta">06 Jun 2020</p>
+	   <hr></hr>
+	</div>
+
+
+<div class="col-md-7">
+
+	<div class="post">
+		
+	  <h2 id="new-new-zealand-election-forecasts">New New Zealand election forecasts</h2>
+
+<p>I have finalised the first proper release version of my forecast for the New Zealand general election to be held on 19 September 2020. Here are the predicted probability distributions for number of seats for several of the realistic possible coalitions:</p>
+
+<object type="image/svg+xml" data="/img/nz-elections-2020/state-space-results-density.svg" width="100%"><img src="/img/nz-elections-2020/state-space-results-density.png" width="100%" /></object>
+
+<p>As can be seen, it’s looking very good for Prime Minister Jacinda Ardern and her Labour Party, with a very high probability of governing either alone or in coalition. Unless things change dramatically, the National Party’s chance of forming a government are vanishingly small without forming an unlikely coalition with New Zealand First, and small even then.</p>
+
+<h2 id="its-interesting-to-forecast-genuine-multi-party-politics">It’s interesting to forecast genuine multi-party politics</h2>
+
+<p>New Zealand elections are interesting to forecast because of the <a href="https://en.wikipedia.org/wiki/Mixed-member_proportional_representation">mixed-member proportional representation</a> system. The first election on this basis was in 1996. Since then, no single party has governed without coalition partners. This is a stark contrast to earlier years of first-past-the-post single-seat electorates. With New Zealand’s single house of parliament, this led to a single party dominating between elections with minimal checks and balances in the formal political system. In contrast, every Prime Minister since 1996 has had to carefully negotiate with their minor coalition partners on an ongoing basis during their term of government.</p>
+
+<p>In terms of forecasting, we have a two-step process:</p>
+
+<ul>
+  <li>estimate probability distributions for party votes on the day of election. These have to be based largely on the imperfect measurements we have from polling data. They need to take into account uncertainty about change between “today” and polling day;</li>
+  <li>convert those probability distributions for votes to seats in Parliament via simulations, and observe the coalition-building possibilities.</li>
+</ul>
+
+<p>Party votes need to be estimated for all parties with a realistic chance of representation in Parliament, making this a much more computationally intensive exercise than forecasting Australian elections. For the Australian House of Representatives, it suffices to estimate a single two-party-preferred number to get a good model of the election outcom. Of course, the proportionaal representation Senate is another matter.</p>
+
+<p>For my forecasts of vote, I use the same Bayesian latent state space model that I used in my 2017 election forecasts. I have dropped the second approach I used as backup in that election, which was a generalized additive model extrapolated forwards. Extrapolating with splines is hard to do right, and I think adds little to a good quality Bayesian model with explicit assumptions.</p>
+
+<p>The specification of the model in Stan is <a href="https://github.com/ellisp/nz-election-forecast/blob/master/method-statespace/ss-vectorized.stan">here on GitHub</a>.  It takes just 133 lines of code. The ‘parameters’ block of that code contains around 25,000 unseen values that need to be estimated. These include:</p>
+
+<ul>
+  <li>the unobserved support for seven parties (including ‘other’) for each of 3,223 days from 26 November 2011 to 19 September 2020 (the actual parameters estimated are the day to day changes). 7 x 3,223 = 22,561.</li>
+  <li>the measurement error for each of those seven parties for a total of 239 polls. 7 x 239 = 1,673.</li>
+  <li>a 7 x 6 matrix of the house effects of six pollsters for seven parties. 7 x 6 = 42.</li>
+  <li>a 7 by 7 symmetrical correlation matrix for the daily changes. 7 x 6 / 2 = 21.</li>
+  <li>the standard deviation of the daily changes in support for each party. 7 x 1 = 7.</li>
+  <li>the impact on each party of a change in methodology by one of the pollsters in 2017. 7 x 1 = 7.</li>
+</ul>
+
+<p>Although there are only two or three pollsters currently publishing voting-intention polls in New Zealand today, I estimate the house effects of previously-active pollsters as they are useful for understanding the house effects of those who are still standing. That is, by looking at all the pollsters over time, I get a better estimate of the “true” unobserved voting tendencies and how far out each pollster is on average.</p>
+
+<p>A key assumption here is that the house effect of the tendency to over- or under-estimate by each pollster for each party is constant over time. This is clearly wrong but seems a necessary simplifying assumption that I hope still leaves the model useful.</p>
+
+<p>The conversion of expected party vote into individual seats has to take into account the vagaries of MMP and in particular the seat of Epsom (held by ACT Party who otherwise would not exceed the 5% threshold for representation) and uncertainty about the Māori seats. This is undertaken with <a href="https://github.com/ellisp/nz-election-forecast/blob/master/setup/simulate-seats.R">the <code class="highlighter-rouge">simulate_seats</code> function</a> which is largely unchanged from my 2017 version, with the main change being to how the Māori seats are treated in the light of Labour’s dominance there last election and minimal information to counteract this in 2020.</p>
+
+<h2 id="incorporating-non-polling-expectations-as-a-prior-distribution">Incorporating non-polling expectations as a prior distribution</h2>
+
+<p>One improvement in my model from my models for either the 2017 New Zealand election or 2019 Australian election is the introduction of a prior expectation of the vote for the Prime Minister’s party, based on what I am loosely calling a “political science model”. What I mean here is the sort of model that predicts vote based on economic performance, scandals, etc. Unfortunately, we have only a small number of elections to use to estimate the distribution of this (because the pre-MMP elections do not seem to me to be useful in understanding).</p>
+
+<p>Here is the history of swings against the incumbent Prime Minister in New Zealand since MMP:</p>
+
+<object type="image/svg+xml" data="/img/nz-elections-2020/state-space-prior.svg" width="100%"><img src="/img/nz-elections-2020/state-space-prior.png" width="100%" /></object>
+
+<p>The code that produces this chart is in <a href="https://github.com/ellisp/nz-election-forecast/blob/master/method-statespace/prior.R">this script for getting the parameters of the prior</a> for the forecasting model.</p>
+
+<p>To the human eye there’s an interesting pattern here. After their first election, the Prime Minister’s party has a swing <em>to</em> them, then the swing declines until it becomes negative. Obviously each cycle finishes with a swing against their party, because that’s what’s needed for them to no longer be the incumbent next time around. But the positive swing to the PM in their first go as incumbent is interesting.</p>
+
+<p>However, with only eight data points and a time series at that (time series data is not worth as much as data points that are independent of eachother) I don’t think I should presume that pattern will continue. After all, if the unit of analysis is “first term Prime Ministers facing their first election as incumbent”, we only have two data points - Helen Clark in 2002 and John Key in 2011. Nor is there enough data to try to do a regression of pro-PM swing on economic growth or unemployment as I’d like. Instead, I chose as my prior the very flat assumption that the swing against Jacinda Ardern’s party will be drawn from a distribution with a mean of 1.3% and standard deviation of 3.4%. I still have to make a call on the <em>shape</em> of that distribution; it’s clearly not normally distributed so I chose a relatively fat tailed t distribution with 4 degrees of freedom for the shape. This all feels a bit arbitrary, but at least its transparent.</p>
+
+<p>Why 4 degrees of freedom, not 1 as I did in my first run of the model? This distribution is about expressing what I’d expect to see if I didn’t have any polling information at all. And it turns out if you sample from a t distribution with one degree of freedom and scale to the appropriate mean and standard deviation, there are too many values that are too far away from the mean to strike me as plausible, as an observer of election outcomes. So I chose the prior that really reflects my prior.</p>
+
+<p>We can see the impact of that prior expectation in this chart of the estimated latent voting intention and the polls (imperfect measurement of voting intention). The “pull” of the prior can be seen in the downwards jab for the Labour Party between the two recent very positive polls and the expected result on election day:</p>
+
+<object type="image/svg+xml" data="/img/nz-elections-2020/state-space-ribbons.svg" width="100%"><img src="/img/nz-elections-2020/state-space-ribbons.png" width="100%" /></object>
+
+<p>The big uncertainty around that downwards jab is also clearly shown. I’m pretty satisfied with the prediction intervals there. They’re wide, but that just reflects the lack of polling data in New Zealand.</p>
+
+<h2 id="more-updates-will-follow-as-polls-come-in">More updates will follow as polls come in</h2>
+
+<p>The model takes a long time to fit - 18+ hours on my laptop. I have several ideas for reducing that, but all of them seem to involve throwing out some information:</p>
+
+<ul>
+  <li>start at 2014, rather than 2011</li>
+  <li>change the grain from daily to weekly estimates of the underlying voting intention</li>
+  <li>wrap more of the smaller parties (eg ACT and Māori Party) into “other”</li>
+</ul>
+
+<p>I’d do one or more of these if I thought I was going to have to run the model lots with frequently updating polling data. But with so few polls expected, I don’t think I will bother.</p>
+
+<p>I will update this model (and also the <code class="highlighter-rouge">nzelect</code> R package that it draws on) as more polls come in.</p>
+
+<p>Key links:</p>
+
+<ul>
+  <li><a href="/elections/nz-2020/index.html">New Zealand 2020 election forecasts</a> (updating regularly)</li>
+  <li>Source code for <a href="https://github.com/ellisp/nz-election-forecast">the forecasting preparation and model</a></li>
+  <li>Source code for <a href="https://github.com/ellisp/nzelect">the <code class="highlighter-rouge">nzelect</code> R package</a> which holds the polling and election results data (there’s also a version on CRAN but it’s out of date at the moment).</li>
+</ul>
+
+
+
+		
+	</div>
+</div>
+
+<div class="col-md-1"></div>
+<div class="col-md-4">
+	<div class="side-banner">
+	
+
+
+	<div>
+	   
+	    
+			
+			<p>&larr; Previous post</p>
+			<p><a rel="prev" href="/blog/2020/05/30/implausible-health-data-firm">A health data firm making extraordinary claims about its data</a></p>
+		
+		
+		
+		
+		 
+			
+			<p>Next post &rarr;</p>
+			<p><a rel="next" href="/blog/2020/06/13/publication-reform">Fixing scientific publishing and peer review</a></p>
+			
+			
+		
+		
+	</div>
+	
+	 
+
+   <div class = "side-footer">
+			
+			<hr></hr>
+			<p><gcse:search></gcse:search></p>
+			<hr></hr>
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.</p>
+			<hr></hr>
+			
+			<p>My day job is Chief Data Scientist at <a href='https://www.nousgroup.com/'>Nous Group</a>, an international management consultancy with over 400 people working across Australia, the UK and Canada. <a href='mailto:peter.ellis@nousgroup.com.au'>Contact me</a> if you are interested working with us on a grand challenge or broad agenda.</p>
+		
+		    <hr></hr>
+			
+       <div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="false" data-share="false"></div>
+			
+			<hr></hr>
+			<p>I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+			<hr></hr>
+
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title"><i>free range statistics</i></span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			<hr></hr>
+			
+
+
+    </div>
+
+
+
+  
+   
+
+
+
+
+		  
+		  
+
+
+
+	   
+	<div id="disqus_thread"></div>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function() {
+				var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+				dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+				(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+			})();
+		</script>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function () {
+				var s = document.createElement('script'); s.async = true;
+				s.type = 'text/javascript';
+				s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+				(document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+			}());
+		</script>
+
+	<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+	</div>	
+</div>    
+   
+   
+
+			
+			</div><!-- /.container -->
+         
+   <!-- Default Statcounter code for Free Range Statistics
+http://Http://freerangestats.info -->
+<script type="text/javascript">
+var sc_project=11673245; 
+var sc_invisible=1; 
+var sc_security="5b7111a4"; 
+</script>
+<script type="text/javascript"
+src="https://www.statcounter.com/counter/counter.js" async></script>
+<noscript><div class="statcounter"><a title="Web Analytics"
+href="http://statcounter.com/" target="_blank"><img class="statcounter"
+src="//c.statcounter.com/11673245/0/5b7111a4/1/" alt="Web
+Analytics"></a></div></noscript>
+<!-- End of Statcounter Code -->
+
+</body>   
+</html>

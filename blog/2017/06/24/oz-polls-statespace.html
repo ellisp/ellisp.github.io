@@ -1,0 +1,664 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>State-space modelling of the Australian 2007 federal election</title>
+      	
+         
+         
+            <meta name ="description" content ="As part of familiarising myself with the Stan probabilistic programming language, I replicate Simon Jackman's state space modelling with house effects of the 2007 Australian federal election.">
+            <meta property="og:description" content ="As part of familiarising myself with the Stan probabilistic programming language, I replicate Simon Jackman's state space modelling with house effects of the 2007 Australian federal election.">
+         
+         <meta property="og:site_name" content="free range statistics" />
+         <meta property="og:title" content="State-space modelling of the Australian 2007 federal election" />
+         
+            <meta property="og:image" content="http://ellisp.github.io/img/0102-all-polls.png" />
+         
+		 
+			<meta property="og:url" content="http://freerangestats.info/blog/2017/06/24/oz-polls-statespace.html" />
+		 
+         <meta property="og:author" content= "https://www.facebook.com/peterstats" />
+         <meta property="og:type" content="article" />
+      
+
+<link href='https://fonts.googleapis.com/css?family=Sarala' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Prosto+One' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Ubuntu+Mono' rel='stylesheet'>
+	  
+          <link href="/css/bootstrap.min.css" rel ="stylesheet" type="text/css">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet" type="text/css">
+            <link href="/css/custom.css" rel ="stylesheet" type="text/css">     
+		<link href="/css/syntax.css" rel ="stylesheet" type="text/css">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="free range statistics by Peter Ellis"
+      href="/feed.xml">
+
+	  
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+  <script>
+  (function() {
+    var cx = '015640467633673901770:pk3v2c95baw';
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+  })();
+</script>
+
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">free range statistics</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/about">about</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">all posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">ordered by date</a></li>
+				  <li><a href="/blog/most-popular.html">ordered by popularity</a></li>
+                  <li><a href="/blog/index_by_tag.html">grouped by subject matter</a></li>
+                  <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
+				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
+				  <li><a href = /blog/2020/09/26/nzes-issues>most recent post</a></li>
+				</ul>
+            </li>
+              <li><a href="/blog/showcase.html">showcase</a></li>
+              <li><a href="/presentations/index.html">presentations</a></li>
+			  <li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">forecasts<span class="caret"></span></a>
+                <ul class="dropdown-menu">
+				  <li><a href = "/covid-tracking/index.html">Covid-19 in Australia</a></li>
+                  <li><a href = "/elections/nz-2020/index.html">NZ election 2020</a></li>
+                  <li><a href = "/elections/oz-2019/index.html">Australia federal election 2019</a></li>
+				  <li><a href = "/elections/nz-2017/combined.html">NZ election 2017</a></li>
+                  <li><a href="/blog/voting.html">all blog posts on voting behaviour</a></li>
+                </ul>				
+			  </li>
+			  
+			  
+			  
+		    </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			<div class="jumbotron">
+  <div class="container">
+	<center><h1>State-space modelling of the Australian 2007 federal election</h1></center>
+  </div>
+</div>
+
+
+
+	<div class = "post-summary">
+	<h2>At a glance:</h2>
+	   <p>As part of familiarising myself with the Stan probabilistic programming language, I replicate Simon Jackman's state space modelling with house effects of the 2007 Australian federal election.</p>
+	   <p class="meta">24 Jun 2017</p>
+	   <hr></hr>
+	</div>
+
+
+<div class="col-md-7">
+
+	<div class="post">
+		
+	  <h2 id="pooling-the-polls-with-bayesian-statistics">Pooling the polls with Bayesian statistics</h2>
+
+<p>In <a href="http://eppsac.utdallas.edu/files/jackman/CAJP%2040-4%20Jackman.pdf">an important 2005 article in the Australian Journal of Political Science</a>, Simon Jackman set out a statistically-based approach to pooling polls in an election campaign.  He describes the sensible intuitive approach of modelling a latent, unobserved voting intention (unobserved except on the day of the actual election) and treats each poll as a random observation based on that latent state space.   Uncertainty associated with each measurement comes from sample size and bias coming from the average effect of the firm conducting the poll, as well as of course uncertainty about the state of the unobserved voting intention.  This approach allows house effects and the latent state space to be estimated simultaneously, quantifies the uncertainty associated with both, and in general gives a much more satisfying method of pooling polls than any kind of weighted average.</p>
+
+<p>Jackman gives a worked example of the approach in his excellent book <a href="http://au.wiley.com/WileyCDA/WileyTitle/productCd-0470011548.html">Bayesian Analysis for the Social Sciences</a>, using voting intention for the Australian Labor Party (ALP) in the 2007 Australian federal election for data.  He provides <code class="highlighter-rouge">JAGS</code> code for fitting the model, but notes that with over 1,000 parameters to estimate (most of those parameters are the estimated voting intention for each day between the 2004 and 2007 elections) it is painfully slow to fit in general purpose MCMC-based Bayesian tools such as <code class="highlighter-rouge">WinBUGS</code> or <code class="highlighter-rouge">JAGS</code> - several days of CPU time on a fast computer in 2009.  Jackman estimated his model with Gibbs sampling implemented directly in R.</p>
+
+<p>Down the track, I want to implement Jackman’s method of polling aggregation myself, to estimate latent voting intention for New Zealand to provide an alternative method for my <a href="/elections/elections.html">election forecasts</a>.  I set myself the familiarisation task of reproducing his results for the Australian 2007 election.  New Zealand’s elections are a little complex to model because of the multiple parties in the proportional representation system, so I wanted to use a general Bayesian tool for the purpose to simplify my model specification when I came to it.  I use <a href="http://mc-stan.org/">Stan</a> because its <a href="https://en.wikipedia.org/wiki/Hybrid_Monte_Carlo">Hamiltonian Monte Carlo</a> method of exploring the parameter space works well when there are many parameters - as in this case, with well over 1,000 parameters to estimate.</p>
+
+<p>Stan describes itself as “a state-of-the-art platform for statistical modeling and high-performance statistical computation. Thousands of users rely on Stan for statistical modeling, data analysis, and prediction in the social, biological, and physical sciences, engineering, and business.”  It lets the programmer specify a complex statistical model, and given a set of data will return a range of parameter estimates that were most likely to produce the observed data.  Stan isn’t something you use as an end-to-end workbench - it’s assumed that data manipulation and presentation is done with another tool such as R, Matlab or Python.  Stan focuses on doing one thing well - using Hamiltonian Monte Carlo to estimate complex statistical models, potentially with many thousands of hierarchical parameters, with arbitrarily set prior distributions.</p>
+
+<p><em>Caveat! - I’m fairly new to Stan and I’m pretty sure my Stan programs that follow aren’t best practice, even though I am confident they work.  Use at your own risk!</em></p>
+
+<h2 id="basic-approach---estimated-voting-intention-in-the-absence-of-polls">Basic approach - estimated voting intention in the absence of polls</h2>
+
+<p>I approached the problem in stages, gradually making my model more realistic.  First, I set myself the task of modelling latent first-preference support for the ALP in the absence of polling data.  If all we had were the 2004 and 2007 election results, where might we have thought ALP support went between those two points?  Here’s my results:</p>
+
+<p><img src="/img/0102-no-polls.svg" width="100%" /></p>
+
+<p>For this first analysis, I specified that support for the ALP had to be a random walk that changed by a normally distributed variable with standard deviation of 0.25 percentage points for each daily change.  Why 0.25?  Just because Jim Savage used it in his <a href="http://andrewgelman.com/2016/08/06/state-space-poll-averaging-model/">rough application of this approach</a> to the US Presidential election in 2016.  I’ll be relaxing this assumption later.</p>
+
+<p>Here’s the R code that sets up the session, brings in the data from Jackman’s <code class="highlighter-rouge">pscl</code> R package, and defines a graphics function that I’ll be using for each model I create.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">pscl</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">forcats</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">rstan</span><span class="p">)</span><span class="w">
+
+</span><span class="n">rstan_options</span><span class="p">(</span><span class="n">auto_write</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w">
+</span><span class="n">options</span><span class="p">(</span><span class="n">mc.cores</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">7</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#=========2004 election to 2007 election==============
+</span><span class="n">data</span><span class="p">(</span><span class="n">AustralianElectionPolling</span><span class="p">)</span><span class="w">
+</span><span class="n">data</span><span class="p">(</span><span class="n">AustralianElections</span><span class="p">)</span><span class="w">
+
+</span><span class="n">days_between_elections</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">as.integer</span><span class="p">(</span><span class="n">diff</span><span class="p">(</span><span class="n">as.Date</span><span class="p">(</span><span class="nf">c</span><span class="p">(</span><span class="s2">"2004-10-09"</span><span class="p">,</span><span class="w"> </span><span class="s2">"2007-11-24"</span><span class="p">))))</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">1</span><span class="w">
+
+</span><span class="cd">#' Function to plot time series extracted from a stan fit of latent state space model of 2007 Australian election
+</span><span class="n">plot_results</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">stan_m</span><span class="p">){</span><span class="w">
+   </span><span class="k">if</span><span class="p">(</span><span class="nf">class</span><span class="p">(</span><span class="n">stan_m</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">"stanfit"</span><span class="p">){</span><span class="w">
+      </span><span class="n">stop</span><span class="p">(</span><span class="s2">"stan_m must be an object of class stanfit, with parameters mu representing latent vote at a point in time"</span><span class="p">)</span><span class="w">
+   </span><span class="p">}</span><span class="w">
+   </span><span class="n">ex</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.data.frame</span><span class="p">(</span><span class="n">rstan</span><span class="o">::</span><span class="n">extract</span><span class="p">(</span><span class="n">stan_m</span><span class="p">,</span><span class="w"> </span><span class="s2">"mu"</span><span class="p">))</span><span class="w">
+   </span><span class="nf">names</span><span class="p">(</span><span class="n">ex</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">d</span><span class="m">1</span><span class="o">$</span><span class="n">n_days</span><span class="w">
+   
+   </span><span class="n">p</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ex</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="n">gather</span><span class="p">(</span><span class="n">day</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="n">mutate</span><span class="p">(</span><span class="n">day</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">day</span><span class="p">),</span><span class="w">
+             </span><span class="n">day</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">as.Date</span><span class="p">(</span><span class="n">day</span><span class="p">,</span><span class="w"> </span><span class="n">origin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"2004-10-08"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="n">group_by</span><span class="p">(</span><span class="n">day</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="n">summarise</span><span class="p">(</span><span class="n">mean</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">value</span><span class="p">),</span><span class="w">
+                </span><span class="n">upper</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">quantile</span><span class="p">(</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="m">0.975</span><span class="p">),</span><span class="w">
+                </span><span class="n">lower</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">quantile</span><span class="p">(</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="m">0.025</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">day</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Shaded region shows a pointwise 95% credible interval."</span><span class="p">,</span><span class="w"> 
+           </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Voting intention for the ALP (%)"</span><span class="p">,</span><span class="w">
+           </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Source: Jackman's pscl R package; analysis at https://ellisp.github.io"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">geom_ribbon</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">ymin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lower</span><span class="p">,</span><span class="w"> </span><span class="n">ymax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">upper</span><span class="p">),</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.3</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">geom_line</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mean</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="n">breaks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">31</span><span class="o">:</span><span class="m">54</span><span class="p">,</span><span class="w"> </span><span class="n">sec.axis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dup_axis</span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+      </span><span class="n">theme</span><span class="p">(</span><span class="n">panel.grid.minor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_blank</span><span class="p">())</span><span class="w">
+   
+   </span><span class="nf">return</span><span class="p">(</span><span class="n">p</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span></code></pre></figure>
+
+<p>Here’s the Stan program that specifies this super simple model of changing ALP support from 2004 to 2007:</p>
+
+<figure class="highlight"><pre><code class="language-stan" data-lang="stan">// oz-polls-1.stan
+
+data {
+  int&lt;lower=1&gt; n_days;           // number of days
+  real mu_start;                 // value at starting election
+  real mu_finish;                // value at final election
+}
+parameters {
+  real&lt;lower=0,upper=100&gt; mu[n_days];               // underlying state of vote intention
+}
+
+model {
+  
+  // state model
+  mu[1] ~ normal(mu_start, 0.01);
+  for (i in 2:n_days) 
+      mu[i] ~ normal(mu[i - 1], 0.25);
+      
+  // measurement model
+  // 1. Election result
+  mu[n_days] ~ normal(mu_finish, 0.01);
+  
+}</code></pre></figure>
+
+<p>And here’s the R code that calls that Stan program and draws the resulting summary graphic.  Stan works by compiling a program in C++ that is based on the statistical model specified in the <code class="highlighter-rouge">*.stan</code> file.  Then the C++ program zooms around the high-dimensional parameter space, moving slower around the combinations of parameters that seem more likely given the data and the specified prior distributions.  It can use multiple processors on your machine and works super fast given the complexity of what it’s doing.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#----------------no polls inbetween the elections------------
+</span><span class="n">d</span><span class="m">1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="n">mu_start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">37.64</span><span class="p">,</span><span class="w"> </span><span class="n">mu_finish</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">43.38</span><span class="p">,</span><span class="w"> </span><span class="n">n_days</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">days_between_elections</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># returns some warnings first time it compiles; see
+# http://mc-stan.org/misc/warnings.html suggests most compiler
+# warnings can be just ignored.
+</span><span class="n">system.time</span><span class="p">({</span><span class="w">
+  </span><span class="n">stan_mod1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">stan</span><span class="p">(</span><span class="n">file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'oz-polls-1.stan'</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">d</span><span class="m">1</span><span class="p">,</span><span class="w">
+  </span><span class="n">control</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="n">max_treedepth</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">20</span><span class="p">))</span><span class="w">
+  </span><span class="p">})</span><span class="w"> </span><span class="c1"># 1800 seconds
+</span><span class="w">
+</span><span class="n">plot_results</span><span class="p">(</span><span class="n">stan_mod1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Voting intention for the ALP between the 2004 and 2007 Australian elections"</span><span class="p">,</span><span class="w">
+           </span><span class="s2">"Latent variable estimated with no use of polling data"</span><span class="p">)</span></code></pre></figure>
+
+<h2 id="adding-in-one-polling-firm">Adding in one polling firm</h2>
+
+<p>Next I wanted to add a single polling firm.  I chose Nielsen’s 42 polls because Jackman found they had a fairly low bias, which removed one complication for me as I built up my familiarity with the approach.  Here’s the result:</p>
+
+<p><img src="/img/0102-one-poll.svg" width="100%" /></p>
+
+<p>That model was specified in Stan as set out below.  The Stan program is more complex now; I’ve had to specify how many polls I have (<code class="highlighter-rouge">y_n</code>), the values for each poll (<code class="highlighter-rouge">y_values</code>), and the days since the last election each poll was taken (<code class="highlighter-rouge">y_days</code>).  This way I only have to specify 42 measurement errors as part of the probability model - other implementations I’ve seen of this approach ask for an estimate of measurement error for each poll on each day, treating the days with no polls as missing values to be estimated.  That obviously adds a huge computational load I wanted to avoid.</p>
+
+<p>In this program, I haven’t yet added in the notion of a house effect for Nielsen.  Each measurement Nielsen made is assumed to have been an unbiased one.  Again, I’ll be relaxing this later.  The state model is also the same as before ie standard deviation of the day to day innovations is still hard coded as 0.25 percentage points.</p>
+
+<figure class="highlight"><pre><code class="language-stan" data-lang="stan">// oz-polls-2.stan
+
+data {
+  int&lt;lower=1&gt; n_days;            // number of days
+  real mu_start;                  // value at starting election
+  real mu_finish;                 // value at final election
+  int&lt;lower=1&gt; y_n;               // number of polls
+  real y_values[y_n];             // actual values in polls
+  int&lt;lower=0&gt; y_days[y_n];       // the number of days since starting election each poll was taken
+  real y_se[y_n];
+}
+parameters {
+  real&lt;lower=0,upper=100&gt; mu[n_days];               // underlying state of vote intention
+}
+
+model {
+  
+  // state model
+  mu[1] ~ normal(mu_start, 0.01);
+  for (i in 2:n_days) 
+      mu[i] ~ normal(mu[i - 1], 0.25);
+      
+  // measurement model
+  // 1. Election result
+  mu[n_days] ~ normal(mu_finish, 0.01);
+  
+  // 2. Polls
+  for(t in 1:y_n)
+      y_values[t] ~ normal(mu[y_days[t]], y_se[t]);
+  
+}</code></pre></figure>
+
+<p>Here’s the R code to prepare the data and pass it to Stan.  Interestingly, fitting this model is noticeably faster than the one with no polling data at all.  My intuition for this is that now the state space is constrained to being reasonably close to some actually observed measurements, it’s an easier job for Stan to know where is good to explore.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#--------------------AC Nielson-------------------
+</span><span class="n">ac</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">AustralianElectionPolling</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">org</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Nielsen"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">MidDate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">startDate</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">endDate</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">startDate</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w">
+         </span><span class="n">MidDateNum</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.integer</span><span class="p">(</span><span class="n">MidDate</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">as.Date</span><span class="p">(</span><span class="s2">"2004-10-08"</span><span class="p">)),</span><span class="w">  </span><span class="c1"># ie number of days since first election; last election (9 October 2004) is day 1
+</span><span class="w">         </span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ALP</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w">
+         </span><span class="n">se_alp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sqrt</span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="m">1</span><span class="o">-</span><span class="w"> </span><span class="n">p</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">sampleSize</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">100</span><span class="p">)</span><span class="w">
+
+</span><span class="n">d</span><span class="m">2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="w">
+  </span><span class="n">mu_start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">37.64</span><span class="p">,</span><span class="w">
+  </span><span class="n">mu_finish</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">43.38</span><span class="p">,</span><span class="w">
+  </span><span class="n">n_days</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">days_between_elections</span><span class="p">,</span><span class="w">
+  </span><span class="n">y_values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ac</span><span class="o">$</span><span class="n">ALP</span><span class="p">,</span><span class="w">
+  </span><span class="n">y_days</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ac</span><span class="o">$</span><span class="n">MidDateNum</span><span class="p">,</span><span class="w">
+  </span><span class="n">y_n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">ac</span><span class="p">),</span><span class="w">
+  </span><span class="n">y_se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ac</span><span class="o">$</span><span class="n">se_alp</span><span class="w">
+</span><span class="p">)</span><span class="w">
+
+</span><span class="n">system.time</span><span class="p">({</span><span class="w">
+  </span><span class="n">stan_mod2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">stan</span><span class="p">(</span><span class="n">file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'oz-polls-2.stan'</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">d</span><span class="m">2</span><span class="p">,</span><span class="w">
+                   </span><span class="n">control</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="n">max_treedepth</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">20</span><span class="p">))</span><span class="w">
+</span><span class="p">})</span><span class="w"> </span><span class="c1"># 510 seconds
+</span><span class="w">
+</span><span class="n">plot_results</span><span class="p">(</span><span class="n">stan_mod2</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_point</span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ac</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MidDate</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ALP</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Voting intention for the ALP between the 2004 and 2007 Australian elections"</span><span class="p">,</span><span class="w">
+           </span><span class="s2">"Latent variable estimated with use of just one firm's polling data (Nielsen)"</span><span class="p">)</span></code></pre></figure>
+
+<h2 id="including-all-five-polling-houses">Including all five polling houses</h2>
+
+<p>Finally, the complete model replicating Jackman’s work:</p>
+
+<p><img src="/img/0102-all-polls.svg" width="100%" /></p>
+
+<p>As well as adding the other four sets of polls, I’ve introduced five house effects that need to be estimated (ie the bias for each polling firm/mode); and I’ve told Stan to estimate the standard deviation of the day-to-day innovations in the latent support for ALP rather than hard-coding it as 0.25.  Jackman specified a uniform prior on <code class="highlighter-rouge">[0, 1]</code> for that parameter, but I found this led to lots of estimation problems for Stan.  The Stan developers give some <a href="https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations">great practical advice</a> on this sort of issue and I adapted some of that to specify the prior distribution for the standard deviation of day to day innovation as <code class="highlighter-rouge">N(0.5, 0.5)</code>, constrained to be positive.</p>
+
+<p>Here’s the Stan program:</p>
+
+<figure class="highlight"><pre><code class="language-stan" data-lang="stan">// oz-polls-3.stan
+
+data {
+  int&lt;lower=1&gt; n_days;            // number of days
+  real mu_start;                  // value at starting election
+  real mu_finish;                 // value at final election
+  
+  // change the below into 5 matrixes with 3 columns each for values, days, standard error
+  int y1_n;                     // number of polls
+  int y2_n;
+  int y3_n;
+  int y4_n;
+  int y5_n;
+  real y1_values[y1_n];       // actual values in polls
+  real y2_values[y2_n];       
+  real y3_values[y3_n];       
+  real y4_values[y4_n];       
+  real y5_values[y5_n];       
+  int y1_days[y1_n];          // the number of days since starting election each poll was taken
+  int y2_days[y2_n]; 
+  int y3_days[y3_n]; 
+  int y4_days[y4_n]; 
+  int y5_days[y5_n]; 
+  real y1_se[y1_n];             // the standard errors of the polls
+  real y2_se[y2_n];           
+  real y3_se[y3_n];           
+  real y4_se[y4_n];           
+  real y5_se[y5_n];           
+}
+parameters {
+  real&lt;lower=0,upper=100&gt; mu[n_days];               // underlying state of vote intention
+  real d[5];                                        // polling effects
+  real&lt;lower=0&gt; sigma;                              // sd of innovations
+}
+
+model {
+  
+  // state model
+  mu[1] ~ normal(mu_start, 0.01); // starting point
+  
+  // Jackman used uniform(0, 1) for sigma, but this seems to be the cause
+  // of a lot of problems with the estimation process.
+  // https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations
+  // recommends not using a uniform, but constraining sigma to be positive
+  // and using an open ended prior instead.  So:
+  sigma ~ normal(0.5, 0.5);              // prior for innovation sd.  
+  
+  for (i in 2:n_days) 
+      mu[i] ~ normal(mu[i - 1], sigma);
+      
+  // measurement model
+  // 1. Election result
+  mu[n_days] ~ normal(mu_finish, 0.01);
+  
+  // 2. Polls
+  d ~ normal(0, 7.5); // ie a fairly loose prior for house effects
+  
+  for(t in 1:y1_n)
+      y1_values[t] ~ normal(mu[y1_days[t]] + d[1], y1_se[t]);
+  for(t in 1:y2_n)
+      y2_values[t] ~ normal(mu[y2_days[t]] + d[2], y2_se[t]);
+  for(t in 1:y3_n)
+      y3_values[t] ~ normal(mu[y3_days[t]] + d[3], y3_se[t]);
+  for(t in 1:y4_n)
+      y4_values[t] ~ normal(mu[y4_days[t]] + d[4], y4_se[t]);
+  for(t in 1:y5_n)
+      y5_values[t] ~ normal(mu[y5_days[t]] + d[5], y5_se[t]);
+}</code></pre></figure>
+
+<p>Building the fact there are 5 polling firms (or firm-mode combinations, as Morgan is in there twice) directly into the program must be bad practice, but seeing as there are different numbers of polls taken by each firm and on different days I couldn’t work out a better way to do it.  Stan doesn’t support ragged arrays, or objects like R’s lists, or (I think) convenient subsetting of tables, which would be the three ways I’d normally try to do that in another language.  So I settled for the approach above, even though it has some ugly bits of repetition.</p>
+
+<p>Here’s the R code that sorts the data and passes it to Stan</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#-------------------all 5 polls--------------------
+</span><span class="n">all_polls</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">AustralianElectionPolling</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">MidDate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">startDate</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">endDate</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">startDate</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w">
+         </span><span class="n">MidDateNum</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.integer</span><span class="p">(</span><span class="n">MidDate</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">as.Date</span><span class="p">(</span><span class="s2">"2004-10-08"</span><span class="p">)),</span><span class="w">  </span><span class="c1"># ie number of days since starting election
+</span><span class="w">         </span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ALP</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w">
+         </span><span class="n">se_alp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sqrt</span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="m">1</span><span class="o">-</span><span class="w"> </span><span class="n">p</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">sampleSize</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w">
+         </span><span class="n">org</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_reorder</span><span class="p">(</span><span class="n">org</span><span class="p">,</span><span class="w"> </span><span class="n">ALP</span><span class="p">))</span><span class="w">
+
+
+</span><span class="n">poll_orgs</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">as.character</span><span class="p">(</span><span class="n">unique</span><span class="p">(</span><span class="n">all_polls</span><span class="o">$</span><span class="n">org</span><span class="p">))</span><span class="w">
+
+</span><span class="n">p</span><span class="m">1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">filter</span><span class="p">(</span><span class="n">all_polls</span><span class="p">,</span><span class="w"> </span><span class="n">org</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">poll_orgs</span><span class="p">[[</span><span class="m">1</span><span class="p">]])</span><span class="w">
+</span><span class="n">p</span><span class="m">2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">filter</span><span class="p">(</span><span class="n">all_polls</span><span class="p">,</span><span class="w"> </span><span class="n">org</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">poll_orgs</span><span class="p">[[</span><span class="m">2</span><span class="p">]])</span><span class="w">
+</span><span class="n">p</span><span class="m">3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">filter</span><span class="p">(</span><span class="n">all_polls</span><span class="p">,</span><span class="w"> </span><span class="n">org</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">poll_orgs</span><span class="p">[[</span><span class="m">3</span><span class="p">]])</span><span class="w">
+</span><span class="n">p</span><span class="m">4</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">filter</span><span class="p">(</span><span class="n">all_polls</span><span class="p">,</span><span class="w"> </span><span class="n">org</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">poll_orgs</span><span class="p">[[</span><span class="m">4</span><span class="p">]])</span><span class="w">
+</span><span class="n">p</span><span class="m">5</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">filter</span><span class="p">(</span><span class="n">all_polls</span><span class="p">,</span><span class="w"> </span><span class="n">org</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">poll_orgs</span><span class="p">[[</span><span class="m">5</span><span class="p">]])</span><span class="w">
+
+
+</span><span class="n">d</span><span class="m">3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="w">
+  </span><span class="n">mu_start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">37.64</span><span class="p">,</span><span class="w">
+  </span><span class="n">mu_finish</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">43.38</span><span class="p">,</span><span class="w">
+  </span><span class="n">n_days</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">days_between_elections</span><span class="p">,</span><span class="w">
+  </span><span class="n">y</span><span class="m">1</span><span class="err">_</span><span class="n">values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">1</span><span class="o">$</span><span class="n">ALP</span><span class="p">,</span><span class="w">
+  </span><span class="n">y</span><span class="m">1</span><span class="err">_</span><span class="n">days</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">1</span><span class="o">$</span><span class="n">MidDateNum</span><span class="p">,</span><span class="w">
+  </span><span class="n">y</span><span class="m">1</span><span class="err">_</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">p</span><span class="m">1</span><span class="p">),</span><span class="w">
+  </span><span class="n">y</span><span class="m">1</span><span class="err">_</span><span class="n">se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">1</span><span class="o">$</span><span class="n">se_alp</span><span class="p">,</span><span class="w">
+  </span><span class="n">y</span><span class="m">2</span><span class="err">_</span><span class="n">values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">2</span><span class="o">$</span><span class="n">ALP</span><span class="p">,</span><span class="w">
+  </span><span class="n">y</span><span class="m">2</span><span class="err">_</span><span class="n">days</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">2</span><span class="o">$</span><span class="n">MidDateNum</span><span class="p">,</span><span class="w">
+  </span><span class="n">y</span><span class="m">2</span><span class="err">_</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">p</span><span class="m">2</span><span class="p">),</span><span class="w">
+  </span><span class="n">y</span><span class="m">2</span><span class="err">_</span><span class="n">se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">2</span><span class="o">$</span><span class="n">se_alp</span><span class="p">,</span><span class="w">
+  </span><span class="n">y</span><span class="m">3</span><span class="err">_</span><span class="n">values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">3</span><span class="o">$</span><span class="n">ALP</span><span class="p">,</span><span class="w">
+  </span><span class="n">y</span><span class="m">3</span><span class="err">_</span><span class="n">days</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">3</span><span class="o">$</span><span class="n">MidDateNum</span><span class="p">,</span><span class="w">
+  </span><span class="n">y</span><span class="m">3</span><span class="err">_</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">p</span><span class="m">3</span><span class="p">),</span><span class="w">
+  </span><span class="n">y</span><span class="m">3</span><span class="err">_</span><span class="n">se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">3</span><span class="o">$</span><span class="n">se_alp</span><span class="p">,</span><span class="w">
+  </span><span class="n">y</span><span class="m">4</span><span class="err">_</span><span class="n">values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">4</span><span class="o">$</span><span class="n">ALP</span><span class="p">,</span><span class="w">
+  </span><span class="n">y</span><span class="m">4</span><span class="err">_</span><span class="n">days</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">4</span><span class="o">$</span><span class="n">MidDateNum</span><span class="p">,</span><span class="w">
+  </span><span class="n">y</span><span class="m">4</span><span class="err">_</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">p</span><span class="m">4</span><span class="p">),</span><span class="w">
+  </span><span class="n">y</span><span class="m">4</span><span class="err">_</span><span class="n">se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">4</span><span class="o">$</span><span class="n">se_alp</span><span class="p">,</span><span class="w">
+  </span><span class="n">y</span><span class="m">5</span><span class="err">_</span><span class="n">values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">5</span><span class="o">$</span><span class="n">ALP</span><span class="p">,</span><span class="w">
+  </span><span class="n">y</span><span class="m">5</span><span class="err">_</span><span class="n">days</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">5</span><span class="o">$</span><span class="n">MidDateNum</span><span class="p">,</span><span class="w">
+  </span><span class="n">y</span><span class="m">5</span><span class="err">_</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">p</span><span class="m">5</span><span class="p">),</span><span class="w">
+  </span><span class="n">y</span><span class="m">5</span><span class="err">_</span><span class="n">se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">5</span><span class="o">$</span><span class="n">se_alp</span><span class="w">
+</span><span class="p">)</span><span class="w">
+
+
+</span><span class="n">system.time</span><span class="p">({</span><span class="w">
+  </span><span class="n">stan_mod3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">stan</span><span class="p">(</span><span class="n">file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'oz-polls-3.stan'</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">d</span><span class="m">3</span><span class="p">,</span><span class="w">
+                    </span><span class="n">control</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="n">max_treedepth</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">15</span><span class="p">,</span><span class="w">
+                                   </span><span class="n">adapt_delta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.8</span><span class="p">),</span><span class="w">
+                    </span><span class="n">iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4000</span><span class="p">)</span><span class="w">
+</span><span class="p">})</span><span class="w"> </span><span class="c1"># about 600 seconds
+</span><span class="w">
+</span><span class="n">plot_results</span><span class="p">(</span><span class="n">stan_mod3</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_point</span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">all_polls</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MidDate</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ALP</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">org</span><span class="p">),</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_line</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mean</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">labs</span><span class="p">(</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Voting intention for the ALP between the 2004 and 2007 Australian elections"</span><span class="p">,</span><span class="w">
+           </span><span class="s2">"Latent variable estimated with use of all major firms' polling data"</span><span class="p">)</span></code></pre></figure>
+
+<h2 id="estimates-of-polling-house-effects">Estimates of polling house effects</h2>
+
+<p>Here’s the house effects estimated by me with Stan, compared to those in Jackman’s 2009 book:</p>
+
+<p><img src="/img/0102-compare-house-effects.svg" width="100%" /></p>
+
+<p>Basically we got the same results - certainly close enough anyway.  Jackman writes:</p>
+
+<blockquote>
+  <p>“The largest effect is for the face-to-face polls conducted by Morgan; the point estimate of the house effect is 2.7 percentage points, which is very large relative to the classical sampling error accompanhying these polls.”</p>
+</blockquote>
+
+<p>Interestingly, Morgan’s phone polls did much better.</p>
+
+<p>Here’s the code that did that comparison:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">house_effects</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">summary</span><span class="p">(</span><span class="n">stan_mod3</span><span class="p">,</span><span class="w"> </span><span class="n">pars</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"d"</span><span class="p">)</span><span class="o">$</span><span class="n">summary</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">as.data.frame</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="nf">round</span><span class="p">(</span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">org</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">poll_orgs</span><span class="p">,</span><span class="w">
+         </span><span class="n">source</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Stan"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">dplyr</span><span class="o">::</span><span class="n">select</span><span class="p">(</span><span class="n">org</span><span class="p">,</span><span class="w"> </span><span class="n">mean</span><span class="p">,</span><span class="w"> </span><span class="n">`2.5%`</span><span class="p">,</span><span class="w"> </span><span class="n">`97.5%`</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">)</span><span class="w">
+
+</span><span class="n">jackman</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data_frame</span><span class="p">(</span><span class="w">
+   </span><span class="n">org</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Galaxy"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Morgan, F2F"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Newspoll"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Nielsen"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Morgan, Phone"</span><span class="p">),</span><span class="w">
+   </span><span class="n">mean</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">-1.2</span><span class="p">,</span><span class="w"> </span><span class="m">2.7</span><span class="p">,</span><span class="w"> </span><span class="m">1.2</span><span class="p">,</span><span class="w"> </span><span class="m">0.9</span><span class="p">,</span><span class="w"> </span><span class="m">0.8</span><span class="p">),</span><span class="w">
+   </span><span class="n">`2.5%`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">-3.1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">-0.5</span><span class="p">,</span><span class="w"> </span><span class="m">-0.8</span><span class="p">,</span><span class="w"> </span><span class="m">-1</span><span class="p">),</span><span class="w">
+   </span><span class="n">`97.5%`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">0.6</span><span class="p">,</span><span class="w"> </span><span class="m">4.3</span><span class="p">,</span><span class="w"> </span><span class="m">2.8</span><span class="p">,</span><span class="w"> </span><span class="m">2.5</span><span class="p">,</span><span class="w"> </span><span class="m">2.3</span><span class="p">),</span><span class="w">
+   </span><span class="n">source</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Jackman"</span><span class="w">
+</span><span class="p">)</span><span class="w">
+
+</span><span class="n">d</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">rbind</span><span class="p">(</span><span class="n">house_effects</span><span class="p">,</span><span class="w"> </span><span class="n">jackman</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">org</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_reorder</span><span class="p">(</span><span class="n">org</span><span class="p">,</span><span class="w"> </span><span class="n">mean</span><span class="p">),</span><span class="w">
+          </span><span class="n">ypos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">org</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">0.1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">0.2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">source</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Stan"</span><span class="p">))</span><span class="w"> 
+
+</span><span class="n">d</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ypos</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">source</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_segment</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">yend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ypos</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">`2.5%`</span><span class="p">,</span><span class="w"> </span><span class="n">xend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">`97.5%`</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_point</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mean</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="n">breaks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="n">labels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">levels</span><span class="p">(</span><span class="n">d</span><span class="o">$</span><span class="n">org</span><span class="p">),</span><span class="w">
+                      </span><span class="n">minor_breaks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">NULL</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">theme</span><span class="p">(</span><span class="n">panel.grid.major.y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_blank</span><span class="p">(),</span><span class="w">
+         </span><span class="n">legend.position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"right"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"House effect for polling firms, 95% credibility intervals\n(percentage points over-estimate of ALP vote)"</span><span class="p">,</span><span class="w">
+        </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w">
+        </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w">
+        </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Source: Jackman's pscl R package; analysis at https://ellisp.github.io"</span><span class="p">)</span><span class="w">  </span><span class="o">+</span><span class="w">
+   </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Polling 'house effects' in the leadup to the 2007 Australian election"</span><span class="p">,</span><span class="w">
+           </span><span class="s2">"Basically the same results in new analysis with Stan as in the original Jackman (2009)"</span><span class="p">)</span></code></pre></figure>
+
+<p>So there we go - state space modelling of voting intention, with variable house effects, in the Australian 2007 federal election.</p>
+
+
+		
+	</div>
+</div>
+
+<div class="col-md-1"></div>
+<div class="col-md-4">
+	<div class="side-banner">
+	
+
+
+	<div>
+	   
+	    
+			
+			<p>&larr; Previous post</p>
+			<p><a rel="prev" href="/blog/2017/06/17/microdata-access">Stats NZ encouraging active sharing for microdata access projects</a></p>
+		
+		
+		
+		
+		 
+			
+			<p>Next post &rarr;</p>
+			<p><a rel="next" href="/blog/2017/07/02/family-violence">Family violence and economic deprivation in New Zealand</a></p>
+			
+			
+		
+		
+	</div>
+	
+	 
+
+   <div class = "side-footer">
+			
+			<hr></hr>
+			<p><gcse:search></gcse:search></p>
+			<hr></hr>
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.</p>
+			<hr></hr>
+			
+			<p>My day job is Chief Data Scientist at <a href='https://www.nousgroup.com/'>Nous Group</a>, an international management consultancy with over 400 people working across Australia, the UK and Canada. <a href='mailto:peter.ellis@nousgroup.com.au'>Contact me</a> if you are interested working with us on a grand challenge or broad agenda.</p>
+		
+		    <hr></hr>
+			
+       <div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="false" data-share="false"></div>
+			
+			<hr></hr>
+			<p>I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+			<hr></hr>
+
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title"><i>free range statistics</i></span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			<hr></hr>
+			
+
+
+    </div>
+
+
+
+  
+   
+
+
+
+
+		  
+		  
+
+
+
+	   
+	<div id="disqus_thread"></div>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function() {
+				var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+				dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+				(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+			})();
+		</script>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function () {
+				var s = document.createElement('script'); s.async = true;
+				s.type = 'text/javascript';
+				s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+				(document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+			}());
+		</script>
+
+	<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+	</div>	
+</div>    
+   
+   
+
+			
+			</div><!-- /.container -->
+         
+   <!-- Default Statcounter code for Free Range Statistics
+http://Http://freerangestats.info -->
+<script type="text/javascript">
+var sc_project=11673245; 
+var sc_invisible=1; 
+var sc_security="5b7111a4"; 
+</script>
+<script type="text/javascript"
+src="https://www.statcounter.com/counter/counter.js" async></script>
+<noscript><div class="statcounter"><a title="Web Analytics"
+href="http://statcounter.com/" target="_blank"><img class="statcounter"
+src="//c.statcounter.com/11673245/0/5b7111a4/1/" alt="Web
+Analytics"></a></div></noscript>
+<!-- End of Statcounter Code -->
+
+</body>   
+</html>

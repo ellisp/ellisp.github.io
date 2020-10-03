@@ -1,0 +1,392 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Cross-validation of topic modelling</title>
+      	
+         
+         
+            <meta name ="description" content ="Cross-validation of the "perplexity" from a topic model, to help determine a good number of topics.">
+            <meta property="og:description" content ="Cross-validation of the "perplexity" from a topic model, to help determine a good number of topics.">
+         
+         <meta property="og:site_name" content="Peter's stats stuff" />
+         <meta property="og:title" content="Cross-validation of topic modelling" />
+         
+            <meta property="og:image" content="http://ellisp.github.io/img/0077-cv.png" />
+         
+         <meta property="og:url" content="http://ellisp.github.io/blog/2017/01/04/topic-model-cv/" />
+         <meta property="og:author" content= "https://www.facebook.com/peter.ellis.353" />
+         <meta property="og:type" content="article" />
+           
+          <link href="/css/bootstrap.min.css" rel ="stylesheet">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet">
+            <link href="/css/custom.css" rel ="stylesheet">     
+		<link href="/css/syntax.css" rel ="stylesheet">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="Peter's stats stuff by Peter Ellis"
+      href="/feed.xml">
+
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Peter's stats stuff</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">All blog posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">Ordered by date</a></li>
+                  <li><a href="/blog/index_by_tag.html">Grouped by subject matter</a></li>
+                  <li><a href = /blog/2017/01/04/topic-model-cv>Most recent post</a></li>
+                 </ul>
+            </li>
+              <li><a href="/blog/showcase.html">Showcase</a></li>
+              <li><a href="/presentations/index.html">Presentations</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			    <div class="jumbotron">
+      <div class="container">
+        <h1>Cross-validation of topic modelling</h1>
+         <p class="meta">04 Jan 2017</p>
+        
+      </div>
+    </div>
+
+
+
+
+<div class = "post-summary">
+<h2>At a glance:</h2>
+   Cross-validation of the "perplexity" from a topic model, to help determine a good number of topics.
+   <hr></hr>
+</div>
+
+<div class="post">
+<div class="col-md-2">
+
+</div>
+  <div class="col-md-8">
+
+  <h2 id="determining-the-number-of-topics-in-a-corpus-of-documents">Determining the number of “topics” in a corpus of documents</h2>
+<p>In my <a href="/blog/2016/12/31/sparse-bags">last post</a> I finished by topic modelling a set of political blogs from 2004.  I made a passing comment that it’s a challenge to know how many topics to set; the R <code class="highlighter-rouge">topicmodels</code> package doesn’t do this for you.  There’s quite a discussion on this out there, but all the extant approaches amount to fitting your model with lots of different values of k (where k is the number of latent topics to identify) and seeing which is “best”.  Naturally, this begs the question of what is meant by “best”.</p>
+
+<p>A literature has grown around this question, and the convenient <a href="https://cran.r-project.org/package=ldatuning"><code class="highlighter-rouge">ldatuning</code> R package</a> by Nikita Murzintcev provides metrics using four of the methods.  A <a href="https://cran.r-project.org/web/packages/ldatuning/vignettes/topics.html">helpful vignette</a> shows this in action with the <code class="highlighter-rouge">AssociatedPress</code> dataset of 2,246 articles and 10,473 words distributed with several of the commonly used R text-mining packages.  It’s super-simple to run; here’s the all the code needed:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">ldatuning</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">topicmodels</span><span class="p">)</span><span class="w">
+</span><span class="n">data</span><span class="p">(</span><span class="s2">"AssociatedPress"</span><span class="p">,</span><span class="w"> </span><span class="n">package</span><span class="o">=</span><span class="s2">"topicmodels"</span><span class="p">)</span><span class="w">
+</span><span class="n">full_data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">AssociatedPress</span><span class="w">
+
+</span><span class="n">system.time</span><span class="p">({</span><span class="w">
+</span><span class="n">tunes</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">FindTopicsNumber</span><span class="p">(</span><span class="w">
+   </span><span class="n">full_data</span><span class="p">,</span><span class="w">
+   </span><span class="n">topics</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">10</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="m">120</span><span class="p">,</span><span class="w"> </span><span class="m">140</span><span class="p">,</span><span class="w"> </span><span class="m">160</span><span class="p">,</span><span class="w"> </span><span class="m">180</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="o">:</span><span class="m">3</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">50</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">200</span><span class="p">),</span><span class="w">
+   </span><span class="n">metrics</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Griffiths2004"</span><span class="p">,</span><span class="w"> </span><span class="s2">"CaoJuan2009"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Arun2010"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Deveaud2014"</span><span class="p">),</span><span class="w">
+   </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Gibbs"</span><span class="p">,</span><span class="w">
+   </span><span class="n">control</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="n">seed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">77</span><span class="p">),</span><span class="w">
+   </span><span class="n">mc.cores</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">8L</span><span class="p">,</span><span class="w">
+   </span><span class="n">verbose</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><span class="p">})</span><span class="w">
+
+</span><span class="n">FindTopicsNumber_plot</span><span class="p">(</span><span class="n">tunes</span><span class="p">)</span></code></pre></figure>
+
+<p>and here’s the results.  The code above was still running on my machine when I wrote up this post, so I’ve pinched the image from the vignette:</p>
+
+<p><img src="/img/0077-ldatuning-screenshot.png" width="750" /></p>
+
+<p>OK, pretty convincing, and a good literature behind it.  Time consuming, but rigorous.  The <code class="highlighter-rouge">ldatuning</code> documentation has references and links to the underlying articles.</p>
+
+<h2 id="cross-validation">Cross-validation</h2>
+
+<p>While I was researching this I came across <a href="http://stackoverflow.com/questions/21355156/topic-models-cross-validation-with-loglikelihood-or-perplexity">this question on Stack Overflow</a> as well as a few mentions elsewhere on the web of cross-validation of topic models to choose optimal number of topics.  As part of my familiarisation with the whole approach to topic modelling I decided to look further into this.  For example, the <a href="https://cran.r-project.org/web/packages/topicmodels/vignettes/topicmodels.pdf">vignette for topicmodels</a> says the number of topics in their worked example was chosen by 10-fold cross-validation, but doesn’t say how this was done other than pointing out that it is possible in “a few lines of R code”.</p>
+
+<p>The abstracts of the articles implemented by <code class="highlighter-rouge">ldatuning</code> look like the metrics they suggest are based on assessing maximising <a href="https://en.wikipedia.org/wiki/Likelihood_function">likelihood</a>, minimising <a href="https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence">Kullback-Leibler divergence</a> or similar, using the same dataset that the model was trained on (rather than cross-validation).</p>
+
+<p>The key idea of cross-validation is that you divide the data into different numbers of subsets - conventionally 5 or 10, let’s say 5 from now on - and take turns at using one of the five as a validation set while the remaining four are used as a training set.  This way each data point gets one turn as part of the hold-out validation, and four as part of the training set.  It’s useful for assessing the overall validity of the model on data that wasn’t involved in its training, and also for identifying good values of tuning hyper-parameters.  For today, I want to use it to find the best value of the number of topics hyperparameter “k”.  I’m going to use the <code class="highlighter-rouge">perplexity</code> measure for the applicability of a topic model to new data.  Given the <code class="highlighter-rouge">perplexity</code> function comes in the <code class="highlighter-rouge">topicmodels</code> R package and is the obvious way supplied to test a trained model on new data, I think this is most likely what Grun and Hornick did for cross-validation in the <code class="highlighter-rouge">topicmodels</code> vignette.</p>
+
+<p>Let’s do this one step at a time, building up to the full cross-validation at different values of k:</p>
+
+<ul>
+  <li>first, I’m going to do validation (not cross-validation), on a single hold-out set of one fifth of the data, at a single value of k</li>
+  <li>then I’m going to use cross-validation at a single value of k</li>
+  <li>finally I’m going to use cross-validation at many values of k</li>
+</ul>
+
+<p>Cross-validation is very computing-intensive and embarrassingly parallel so I’m going to parallelize the second and third of the efforts above.</p>
+
+<h3 id="simple-validation-with-a-single-number-of-topics">Simple validation with a single number of topics</h3>
+
+<p>For the simple validation, I make a single <code class="highlighter-rouge">train_set</code> version of 75% of rows from the <code class="highlighter-rouge">AssociatedPress</code> document-term-matrix, randomly chosen; and a <code class="highlighter-rouge">valid_set</code> of the remaining 25%.  The model is fit with the <code class="highlighter-rouge">LDA</code> function, and then (final two lines of code in the chunk below) I estimate how perplexed the resulting model is with both the training data set and the validation set.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">topicmodels</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">doParallel</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">ggplot2</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
+
+</span><span class="n">data</span><span class="p">(</span><span class="s2">"AssociatedPress"</span><span class="p">,</span><span class="w"> </span><span class="n">package</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"topicmodels"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">burnin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1000</span><span class="w">
+</span><span class="n">iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1000</span><span class="w">
+</span><span class="n">keep</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">50</span><span class="w">
+
+</span><span class="c1"># define our "full data" - during development I pretend the full dataset is 
+# just the first 500 AP articles, which is enough for a reasonable test while not taking
+# forever to run.  When I ran the final model, I came back and removed the "1:500" from below
+</span><span class="n">full_data</span><span class="w">  </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">AssociatedPress</span><span class="p">[</span><span class="m">1</span><span class="o">:</span><span class="m">500</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="w">
+</span><span class="n">n</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">full_data</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#-----------validation--------
+</span><span class="n">k</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="c1"># number of topics
+</span><span class="w">
+</span><span class="n">splitter</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sample</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">0.75</span><span class="p">))</span><span class="w">
+</span><span class="n">train_set</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">full_data</span><span class="p">[</span><span class="n">splitter</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="w">
+</span><span class="n">valid_set</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">full_data</span><span class="p">[</span><span class="o">-</span><span class="n">splitter</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="w">
+
+</span><span class="n">fitted</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">LDA</span><span class="p">(</span><span class="n">train_set</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Gibbs"</span><span class="p">,</span><span class="w">
+                          </span><span class="n">control</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="n">burnin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">burnin</span><span class="p">,</span><span class="w"> </span><span class="n">iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">iter</span><span class="p">,</span><span class="w"> </span><span class="n">keep</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">keep</span><span class="p">)</span><span class="w"> </span><span class="p">)</span><span class="w">
+</span><span class="n">perplexity</span><span class="p">(</span><span class="n">fitted</span><span class="p">,</span><span class="w"> </span><span class="n">newdata</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">train_set</span><span class="p">)</span><span class="w">
+</span><span class="n">perplexity</span><span class="p">(</span><span class="n">fitted</span><span class="p">,</span><span class="w"> </span><span class="n">newdata</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">valid_set</span><span class="p">)</span></code></pre></figure>
+
+<p>Perplexity was 2728 on the training data, and a much higher 4280 on the validation set.  This is to be expected - the model has been fit to the training set and naturally finds the new validation data more perplexing - that’s the whole reason for confronting a model with fresh data.  BTW, to check whether this was impacted on by the number of documents, I also tried the above with equally sized training and validation sets and got similar results.</p>
+
+<h3 id="cross-validation-with-a-single-number-of-topics">Cross validation with a single number of topics</h3>
+
+<p>Next step is do the validation, with a single value of k, but splitting the data into five so each row of the data gets a turn in the validation set.  Here’s how I did that:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#---------------5-fold cross-validation---------------------
+</span><span class="n">folds</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">5</span><span class="w">
+</span><span class="n">splitfolds</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sample</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="n">folds</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">replace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w">
+
+</span><span class="n">cluster</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">makeCluster</span><span class="p">(</span><span class="n">detectCores</span><span class="p">(</span><span class="n">logical</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="c1"># leave one CPU spare...
+</span><span class="n">registerDoParallel</span><span class="p">(</span><span class="n">cluster</span><span class="p">)</span><span class="w">
+
+</span><span class="n">clusterEvalQ</span><span class="p">(</span><span class="n">cluster</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w">
+   </span><span class="n">library</span><span class="p">(</span><span class="n">topicmodels</span><span class="p">)</span><span class="w">
+</span><span class="p">})</span><span class="w">
+</span><span class="n">clusterExport</span><span class="p">(</span><span class="n">cluster</span><span class="p">,</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"full_data"</span><span class="p">,</span><span class="w"> </span><span class="s2">"k"</span><span class="p">,</span><span class="w"> </span><span class="s2">"burnin"</span><span class="p">,</span><span class="w"> </span><span class="s2">"iter"</span><span class="p">,</span><span class="w"> </span><span class="s2">"keep"</span><span class="p">,</span><span class="w"> </span><span class="s2">"splitfolds"</span><span class="p">))</span><span class="w">
+
+</span><span class="n">results</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">foreach</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">folds</span><span class="p">)</span><span class="w"> </span><span class="o">%dopar%</span><span class="w"> </span><span class="p">{</span><span class="w">
+   </span><span class="n">train_set</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">full_data</span><span class="p">[</span><span class="n">splitfolds</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="w">
+   </span><span class="n">valid_set</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">full_data</span><span class="p">[</span><span class="n">splitfolds</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="w">
+   
+   </span><span class="n">fitted</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">LDA</span><span class="p">(</span><span class="n">train_set</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Gibbs"</span><span class="p">,</span><span class="w">
+                 </span><span class="n">control</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="n">burnin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">burnin</span><span class="p">,</span><span class="w"> </span><span class="n">iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">iter</span><span class="p">,</span><span class="w"> </span><span class="n">keep</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">keep</span><span class="p">)</span><span class="w"> </span><span class="p">)</span><span class="w">
+   </span><span class="nf">return</span><span class="p">(</span><span class="n">perplexity</span><span class="p">(</span><span class="n">fitted</span><span class="p">,</span><span class="w"> </span><span class="n">newdata</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">valid_set</span><span class="p">))</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span><span class="n">stopCluster</span><span class="p">(</span><span class="n">cluster</span><span class="p">)</span></code></pre></figure>
+
+<p>The results aren’t particularly interesting - just 5 numbers - so I won’t show here.</p>
+
+<h3 id="cross-validation-with-many-candidate-numbers-of-topics">Cross validation with many candidate numbers of topics</h3>
+
+<p>Finally, we now do this cross-validation many times, with different values of the number of latent topics to estimate.  Here’s how I did that:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#----------------5-fold cross-validation, different numbers of topics----------------
+</span><span class="n">cluster</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">makeCluster</span><span class="p">(</span><span class="n">detectCores</span><span class="p">(</span><span class="n">logical</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="c1"># leave one CPU spare...
+</span><span class="n">registerDoParallel</span><span class="p">(</span><span class="n">cluster</span><span class="p">)</span><span class="w">
+
+</span><span class="n">clusterEvalQ</span><span class="p">(</span><span class="n">cluster</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w">
+   </span><span class="n">library</span><span class="p">(</span><span class="n">topicmodels</span><span class="p">)</span><span class="w">
+</span><span class="p">})</span><span class="w">
+
+</span><span class="n">folds</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">5</span><span class="w">
+</span><span class="n">splitfolds</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sample</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="n">folds</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">replace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w">
+</span><span class="n">candidate_k</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="m">4</span><span class="p">,</span><span class="w"> </span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="m">20</span><span class="p">,</span><span class="w"> </span><span class="m">30</span><span class="p">,</span><span class="w"> </span><span class="m">40</span><span class="p">,</span><span class="w"> </span><span class="m">50</span><span class="p">,</span><span class="w"> </span><span class="m">75</span><span class="p">,</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w"> </span><span class="m">200</span><span class="p">,</span><span class="w"> </span><span class="m">300</span><span class="p">)</span><span class="w"> </span><span class="c1"># candidates for how many topics
+</span><span class="n">clusterExport</span><span class="p">(</span><span class="n">cluster</span><span class="p">,</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"full_data"</span><span class="p">,</span><span class="w"> </span><span class="s2">"burnin"</span><span class="p">,</span><span class="w"> </span><span class="s2">"iter"</span><span class="p">,</span><span class="w"> </span><span class="s2">"keep"</span><span class="p">,</span><span class="w"> </span><span class="s2">"splitfolds"</span><span class="p">,</span><span class="w"> </span><span class="s2">"folds"</span><span class="p">,</span><span class="w"> </span><span class="s2">"candidate_k"</span><span class="p">))</span><span class="w">
+
+</span><span class="c1"># we parallelize by the different number of topics.  A processor is allocated a value
+# of k, and does the cross-validation serially.  This is because it is assumed there
+# are more candidate values of k than there are cross-validation folds, hence it
+# will be more efficient to parallelise
+</span><span class="n">system.time</span><span class="p">({</span><span class="w">
+</span><span class="n">results</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">foreach</span><span class="p">(</span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="nf">length</span><span class="p">(</span><span class="n">candidate_k</span><span class="p">),</span><span class="w"> </span><span class="n">.combine</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rbind</span><span class="p">)</span><span class="w"> </span><span class="o">%dopar%</span><span class="p">{</span><span class="w">
+   </span><span class="n">k</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">candidate_k</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="w">
+   </span><span class="n">results_1k</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">matrix</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">nrow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">folds</span><span class="p">,</span><span class="w"> </span><span class="n">ncol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w">
+   </span><span class="n">colnames</span><span class="p">(</span><span class="n">results_1k</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"k"</span><span class="p">,</span><span class="w"> </span><span class="s2">"perplexity"</span><span class="p">)</span><span class="w">
+   </span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">folds</span><span class="p">){</span><span class="w">
+      </span><span class="n">train_set</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">full_data</span><span class="p">[</span><span class="n">splitfolds</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="w">
+      </span><span class="n">valid_set</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">full_data</span><span class="p">[</span><span class="n">splitfolds</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="w">
+      
+      </span><span class="n">fitted</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">LDA</span><span class="p">(</span><span class="n">train_set</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Gibbs"</span><span class="p">,</span><span class="w">
+                    </span><span class="n">control</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="n">burnin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">burnin</span><span class="p">,</span><span class="w"> </span><span class="n">iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">iter</span><span class="p">,</span><span class="w"> </span><span class="n">keep</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">keep</span><span class="p">)</span><span class="w"> </span><span class="p">)</span><span class="w">
+      </span><span class="n">results_1k</span><span class="p">[</span><span class="n">i</span><span class="p">,]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">perplexity</span><span class="p">(</span><span class="n">fitted</span><span class="p">,</span><span class="w"> </span><span class="n">newdata</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">valid_set</span><span class="p">))</span><span class="w">
+   </span><span class="p">}</span><span class="w">
+   </span><span class="nf">return</span><span class="p">(</span><span class="n">results_1k</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span><span class="p">})</span><span class="w">
+</span><span class="n">stopCluster</span><span class="p">(</span><span class="n">cluster</span><span class="p">)</span><span class="w">
+
+</span><span class="n">results_df</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.data.frame</span><span class="p">(</span><span class="n">results</span><span class="p">)</span><span class="w">
+
+</span><span class="n">ggplot</span><span class="p">(</span><span class="n">results_df</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">perplexity</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_point</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_smooth</span><span class="p">(</span><span class="n">se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"5-fold cross-validation of topic modelling with the 'Associated Press' dataset"</span><span class="p">,</span><span class="w">
+           </span><span class="s2">"(ie five different models fit for each candidate number of topics)"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Candidate number of topics"</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Perplexity when fitting the trained model to the hold-out set"</span><span class="p">)</span></code></pre></figure>
+
+<p>This took 75 minutes to run on my laptop when I stopped the <code class="highlighter-rouge">candidate_k</code> at 100, steadily keeping 7 of my logical cores at about 50%-80% capacity.  When I added the final values of 200 and 300 to <code class="highlighter-rouge">candidate_k</code> it took XX minutes.  Here’s the results:</p>
+
+<p><img src="/img/0077-cv.svg" alt="cv" /></p>
+
+<p>We get something that at least is consistent with the measures from the <code class="highlighter-rouge">ldatuning</code> package; there’s a distinct flattening out of the cross-validated perplexity somewhere between 50 and 100 topics.  There’s still judgement required as to where</p>
+
+<h2 id="a-small-note-on-topicmodels-in-linux">A small note on <code class="highlighter-rouge">topicmodels</code> in linux.</h2>
+
+<p>In writing this post I used both Windows and Linux (Ubuntu) machines, and it was my first time using <code class="highlighter-rouge">topicmodels</code> on Linux.  I had some frustrations getting it installed; basically the same problem with missing GNU Scientific Library in <a href="http://tinyheero.github.io/2016/02/20/install-r-topicmodels.html">this blog post</a> and <a href="http://stackoverflow.com/questions/24172188/how-can-i-install-topicmodels-package-in-r">this Stack Overflow Q&amp;A</a>.</p>
+
+<p>The trick was I needed not just <code class="highlighter-rouge">gsl-bin</code> but also <code class="highlighter-rouge">libsg10-dev</code>.  Also the <code class="highlighter-rouge">mpfr</code> library which is “a GNU portable C library for arbitrary-precision binary floating-point computation with correct rounding, based on GNU Multi-Precision Library.”</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash">sudo apt-get install gsl-bin libgsl0-dev
+sudo apt-get install libmpfr-dev libmpfr-doc libmpfr4 libmpfr4-dbg</code></pre></figure>
+
+
+
+</div>
+
+<div class = "container">
+   <div class="col-md-4">
+    
+        <a rel="prev" href="/blog/2016/12/31/sparse-bags">
+        <p>&larr; Older</p>
+        <p>Sparse matrices, k-means clustering, topic modelling with posts on the 2004 US Presidential election</p>
+        
+        </a>
+    
+    </div>
+    <div class="col-md-4">
+    </div>
+    <div class="col-md-4" style="text-align: right;">
+    
+      </div>
+      </div>
+      
+      
+      
+</div>
+
+
+   
+    <div id="disqus_thread"></div>
+
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+    
+    
+   
+			
+			</div><!-- /.container -->
+
+         
+
+   <div class = "container footer">
+			<footer>
+	    		
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.  Or follow <a href = "/feed.r.xml">posts in this blog featuring R with RSS</a>.</p>
+			
+            <p>This blog is built with <a href = "http://jekyllrb.com/">Jekyll</a>, <a href = "http://getbootstrap.com/">Bootstrap</a>, <a href = "https://www.ruby-lang.org/en/">Ruby</a> and <a href = "https://cran.r-project.org/">R</a>.  Read my <a href="/about/acknowledgements.html">acknowledgements</a> for a little more on how.  I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+
+			<div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="true" data-share="false"></div>
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Peter's stats stuff</span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			
+			
+
+			</footer>
+    </div>
+
+
+
+  
+</body>
+</html>
+   
+
+
+
+
+         

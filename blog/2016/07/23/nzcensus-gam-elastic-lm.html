@@ -1,0 +1,579 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>nzcensus on GitHub</title>
+      	
+         
+         
+            <meta name ="description" content ="Demonstration analysis of area unit demographic data from the nzcensus R package on GitHub, which is approaching more maturity and readiness for general use.">
+            <meta property="og:description" content ="Demonstration analysis of area unit demographic data from the nzcensus R package on GitHub, which is approaching more maturity and readiness for general use.">
+         
+         <meta property="og:site_name" content="Peter's stats stuff" />
+         <meta property="og:title" content="nzcensus on GitHub" />
+         
+            <meta property="og:image" content="http://ellisp.github.io/img/0046-gam-relations.png" />
+         
+         <meta property="og:url" content="http://ellisp.github.io/blog/2016/07/23/nzcensus-gam-elastic-lm/" />
+         <meta property="og:author" content= "https://www.facebook.com/peter.ellis.353" />
+         <meta property="og:type" content="article" />
+           
+          <link href="/css/bootstrap.min.css" rel ="stylesheet">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet">
+            <link href="/css/custom.css" rel ="stylesheet">     
+		<link href="/css/syntax.css" rel ="stylesheet">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="Peter's stats stuff by Peter Ellis"
+      href="/feed.xml">
+
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Peter's stats stuff</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">All blog posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">Ordered by date</a></li>
+                  <li><a href="/blog/index_by_tag.html">Grouped by subject matter</a></li>
+                  <li><a href = /blog/2016/07/23/nzcensus-gam-elastic-lm>Most recent post</a></li>
+                 </ul>
+            </li>
+              <li><a href="/blog/showcase.html">Showcase</a></li>
+              <li><a href="/presentations/index.html">Presentations</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			    <div class="jumbotron">
+      <div class="container">
+        <h1>nzcensus on GitHub</h1>
+         <p class="meta">23 Jul 2016</p>
+        
+      </div>
+    </div>
+
+
+
+
+<div class = "post-summary">
+<h2>TL;DR Summary:</h2>
+   Demonstration analysis of area unit demographic data from the nzcensus R package on GitHub, which is approaching more maturity and readiness for general use.
+   <hr></hr>
+</div>
+
+<div class="post">
+<div class="col-md-2">
+
+</div>
+  <div class="col-md-8">
+
+  <h2 id="introduction">Introduction</h2>
+
+<p>A few months back as part of the <code class="highlighter-rouge">nzelect</code> package I included some data from the New Zealand Census 2013.  As noted in my <a href="/blog/2016/07/14/nzelect-cran">last post</a>, I’ve now split this into a separate <code class="highlighter-rouge">nzcensus</code> package, for ease of development and maintenance and to allow <code class="highlighter-rouge">nzelect</code> to fit within CRAN size restrictions.</p>
+
+<p>The <code class="highlighter-rouge">nzcensus</code> package has a set of 60+ demographic variables aggregated at the level of meshblock, area unit, territorial authority and regional council.  These variables have mostly been calculated by me from the counts in the Statistics New Zealand “meshblock” data set.  For example, I’ve converted the count of individuals of European descent into a proportion of individuals who provided ethnicity information.  This makes the <code class="highlighter-rouge">nzcensus</code> R package much more analysis-ready than the publichsed meshblock data  because the calculated variables are in a state for comparisons across area groupings.</p>
+
+<p>The code that does these calculations is <a href="https://github.com/ellisp/nzelect">available on GitHub</a>.  The preparation of <code class="highlighter-rouge">nzcensus</code> is still done as part of the <code class="highlighter-rouge">nzelect</code> project, although end users can install either or both separately.  I’ve fixed a few errors in my census calculations found in the past few weeks but there’s always potential for more.  In the event of any uncertainty, refer back to the definitive version on the Statistics New Zealand website.</p>
+
+<h2 id="interactive-map-of-household-income">Interactive map of household income</h2>
+
+<p>One of the variables that I didn’t have to calculate (because it is directly available in the original data) is median household income.  Here’s an interactive map showing that variable by area unit.  Zoom in and out to the map in the usual way for map interaction on your device; click on circles to get the name and income value for the area unit in which it is centred.)</p>
+
+<iframe src="/img/0046-leaflet-map.html" style="overflow-y: hidden;" width="100%" height="430px"></iframe>
+
+<p>Here’s the simple R code to create that map, drawing on the <a href="https://rstudio.github.io/leaflet/">leaflet R package</a>, which provides extremely easy to use access to the Leaflet JavaScript library:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># install the nzcensus package (note it is part of the nzelect GitHub repository):
+</span><span class="n">devtools</span><span class="o">::</span><span class="n">install_github</span><span class="p">(</span><span class="s2">"ellisp/nzelect/pkg2"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># load up packages:
+</span><span class="n">library</span><span class="p">(</span><span class="n">leaflet</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">nzcensus</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># remove Chatham Islands 
+</span><span class="n">tmp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">AreaUnits2013</span><span class="p">[</span><span class="n">AreaUnits2013</span><span class="o">$</span><span class="n">WGS84Longitude</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="o">!</span><span class="nf">is.na</span><span class="p">(</span><span class="n">AreaUnits2013</span><span class="o">$</span><span class="n">MedianIncome2013</span><span class="p">),</span><span class="w"> </span><span class="p">]</span><span class="w">
+
+</span><span class="c1"># create colour palette function
+</span><span class="n">pal</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">colorQuantile</span><span class="p">(</span><span class="s2">"RdBu"</span><span class="p">,</span><span class="w"> </span><span class="kc">NULL</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># create labels for popups
+</span><span class="n">labs</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">paste0</span><span class="p">(</span><span class="n">tmp</span><span class="o">$</span><span class="n">AU_NAM</span><span class="p">,</span><span class="w"> </span><span class="s2">" $"</span><span class="p">,</span><span class="w"> </span><span class="n">format</span><span class="p">(</span><span class="n">tmp</span><span class="o">$</span><span class="n">MedianIncome2013</span><span class="p">,</span><span class="w"> </span><span class="n">big.mark</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">","</span><span class="p">))</span><span class="w">
+
+
+</span><span class="c1"># draw map:
+</span><span class="n">leaflet</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">addProviderTiles</span><span class="p">(</span><span class="s2">"CartoDB.Positron"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">addCircles</span><span class="p">(</span><span class="n">lng</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tmp</span><span class="o">$</span><span class="n">WGS84Longitude</span><span class="p">,</span><span class="w"> </span><span class="n">lat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tmp</span><span class="o">$</span><span class="n">WGS84Latitude</span><span class="p">,</span><span class="w">
+              </span><span class="n">color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pal</span><span class="p">(</span><span class="o">-</span><span class="n">tmp</span><span class="o">$</span><span class="n">MedianIncome2013</span><span class="p">),</span><span class="w">
+              </span><span class="n">popup</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">labs</span><span class="p">,</span><span class="w">
+              </span><span class="n">radius</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">500</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">addLegend</span><span class="p">(</span><span class="w">
+      </span><span class="n">pal</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pal</span><span class="p">,</span><span class="w">
+      </span><span class="n">values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="n">tmp</span><span class="o">$</span><span class="n">MedianIncome2013</span><span class="p">,</span><span class="w">
+      </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Quantile of median&lt;br&gt;household income"</span><span class="p">,</span><span class="w">
+      </span><span class="n">position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"topleft"</span><span class="p">,</span><span class="w">
+      </span><span class="n">bins</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="p">)</span></code></pre></figure>
+
+<h2 id="modelling-household-income-on-demographic-variables">Modelling household income on demographic variables</h2>
+
+<p>In a <a href="/blog/2016/06/05/bootstrap-cv-strategies">previous post</a> which became one of my most read posts, I had used an earlier version of this dataset to try out different validation methods for regression modelling strategies.  I mentioned at the time that the modelling strategies I was using (full model, stepwise selection, dropping variance-inflating collinear variables) were less important for that particular purpose than the three different validation methods, but I think most of the take-up in comments and on Twitter showed interest in the modelling strategies.</p>
+
+<p>To take this idea to its next step, I start edging towards what I think is a better modelling strategy for that data.  In today’s post I start with some techniques which I think both are needed for the optimal end approach, but I don’t yet bring them together.  The methods I’m using here are:</p>
+
+<ul>
+  <li>Adding latitude and longitude as explanatory variables to adjust for the fact that spatially located observations are not independent of eachother, but spatially close variables are likely to have correlated random elements</li>
+  <li>Lasso, ridge regression, and elastic net regularisation (a generalisation of the lasso and ridge regression) to deal with the multicollinearity in a better way than simply dropping some of the variables</li>
+  <li>A generalized additive model which lets me take into account non-linear shaped relationships between some of the explanatory variables and the response variable</li>
+</ul>
+
+<p>My ultimate approach to this kind of regression modelling for this data - which has to wait for a later post - will combine the above, plus imputation of missing  values for some explanatory variables, using the <code class="highlighter-rouge">gamsel</code> approach.</p>
+
+<p>I’m going to fit three different models:</p>
+
+<ul>
+  <li>a linear model with all explanatory variables, fit using ordinary least squares</li>
+  <li>a linear model with all explanatory variables, fit via elastic net regularisation which penalises for extra variables included in the model and shrinks estimated coefficients towards zero to compensate</li>
+  <li>a generalised additive model that lets the explanatory variables with the stronger relationship to income to have curved, non-linear relationships that better fit the actual data; and allows the nuisance spatial relationship with income to be a smooth, flexible spline.</li>
+</ul>
+
+<h3 id="setup">Setup</h3>
+<p>First I load up the packages with the R functionality I’m going to need and get the data into convenient shape for this particular modelling exercise.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#===================setup=======================
+</span><span class="n">library</span><span class="p">(</span><span class="n">ggplot2</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">boot</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">dplyr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">Hmisc</span><span class="p">)</span><span class="w"> </span><span class="c1"># for spearman2
+</span><span class="n">library</span><span class="p">(</span><span class="n">mgcv</span><span class="p">)</span><span class="w">  </span><span class="c1"># for gam
+</span><span class="n">library</span><span class="p">(</span><span class="n">caret</span><span class="p">)</span><span class="w"> </span><span class="c1"># for RMSE
+</span><span class="n">library</span><span class="p">(</span><span class="n">grid</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">stringr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">ggrepel</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">glmnet</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">maps</span><span class="p">)</span><span class="w"> </span><span class="c1"># for country borders on the smoothing plot
+</span><span class="w">
+</span><span class="n">set.seed</span><span class="p">(</span><span class="m">123</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># install nzcensus if not already done
+# devtools::install_github("ellisp/nzelect/pkg2")
+</span><span class="n">library</span><span class="p">(</span><span class="n">nzcensus</span><span class="p">)</span><span class="w">
+
+</span><span class="n">au</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">AreaUnits2013</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="c1"># drop the columns with areas' code and name, and the redundant coordinate system
+</span><span class="w">   </span><span class="n">select</span><span class="p">(</span><span class="o">-</span><span class="n">AU2014</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">AU_NAM</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">NZTM2000Easting</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">NZTM2000Northing</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="c1"># drop some intrinsically collinear variables that would be exactly collinear
+</span><span class="w">   </span><span class="c1"># if it weren't for rounding error and confidentialisation:
+</span><span class="w">   </span><span class="n">select</span><span class="p">(</span><span class="o">-</span><span class="n">PropWorked40_49hours2013</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">Prop35to39_2013</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">PropFemale2013</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># give meaningful rownames, helpful for some diagnostic plots later
+</span><span class="n">row.names</span><span class="p">(</span><span class="n">au</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">AreaUnits2013</span><span class="o">$</span><span class="n">AU_NAM</span><span class="w">
+
+</span><span class="c1"># remove some repetition from the variable names
+</span><span class="nf">names</span><span class="p">(</span><span class="n">au</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"_2013"</span><span class="p">,</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="nf">names</span><span class="p">(</span><span class="n">au</span><span class="p">))</span><span class="w">
+</span><span class="nf">names</span><span class="p">(</span><span class="n">au</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"2013"</span><span class="p">,</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="nf">names</span><span class="p">(</span><span class="n">au</span><span class="p">))</span><span class="w">
+</span><span class="nf">names</span><span class="p">(</span><span class="n">au</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"Prop"</span><span class="p">,</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="nf">names</span><span class="p">(</span><span class="n">au</span><span class="p">))</span><span class="w">
+
+</span><span class="c1"># restrict to areas with no missing data.  An improvement for later
+# is to use imputation and include this step within the validation.
+</span><span class="n">au</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">au</span><span class="p">[</span><span class="n">complete.cases</span><span class="p">(</span><span class="n">au</span><span class="p">),</span><span class="w"> </span><span class="p">]</span><span class="w">
+
+</span><span class="c1"># give the data a generic name for ease of copying and pasting
+</span><span class="n">the_data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">au</span><span class="w">
+
+</span><span class="c1"># we need a dummy variable for the Chathams because it's extreme value of longitude
+# makes any spatial variables otherwise highly problematic.
+# the_data$chathams &lt;- the_data$WGS84Longitude &lt; 100
+</span><span class="n">the_data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">the_data</span><span class="p">[</span><span class="n">the_data</span><span class="o">$</span><span class="n">WGS84Longitude</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="w">
+
+</span><span class="nf">names</span><span class="p">(</span><span class="n">the_data</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">make.names</span><span class="p">(</span><span class="nf">names</span><span class="p">(</span><span class="n">the_data</span><span class="p">))</span></code></pre></figure>
+
+<h3 id="linear-model">Linear model</h3>
+<p>My first and simplest method is one of those I used in the previous post - linear regression, estimated with ordinary least squares, using all the explanatory variables.</p>
+
+<p>In comparing these approaches I am always going to use the same validation approach.  All three validation methods gave similar results, so I’m going to pick one that’s easy to generalise, the so-called “simple bootstrap” validation method.  In this approach, a re-sample of data is taken from the original data with replacement, the same number of rows as originally (hence some points sampled twice, some not at all).  The model is fit based on this re-sample, and that model fit is used to predict the response variable for the entire (not just the “out of bag” samples - that’s a different approach) original dataset.  I collect the average root mean square error of those predictions from doing this resampling 99 times.</p>
+
+<p>Because this classic model forms a reference point for alternative methods, it’s important to consider the classic diagnostic graphics too.  Here they are:</p>
+
+<p><img src="/img/0046-lm-diagnostics.svg" alt="diagnostics" /></p>
+
+<p>There’s no problems with outliers or leverage (noting that in the earlier preparation code I’d excluded the Chatham Islands from the dataset to make the spatial aspect of the problem tractable).  There’s a bit of curvature in the residuals, indicating a possible structural problem that later on we will use the generalized additive model to address.  There’s also some non-normality in the residuals - the QQ plot (top right of the four) shows that towards the upper and lower extremes of the residuals’ distribution the actual values of standardized residuals are larger in absolute magnitude than the theoretical values they should have from a Normal distribution.  This isn’t disastrous, but it does mean we need to take care in inference, and use methods such as the bootstrap for all of our inference as methods that rely on distributional assuptions will be suspect.</p>
+
+<p>Here’s the code for fitting this simple model.  As will be the case for all three of our approaches, we start by defining a function that</p>
+
+<ul>
+  <li>fits the model to a resample with replacement of the data, defined by the argument <code class="highlighter-rouge">i</code></li>
+  <li>uses that model to predict the values of income from the full original data</li>
+  <li>returns the root mean square errors of those predictions:</li>
+</ul>
+
+<p>This function can then be used by the <code class="highlighter-rouge">boot</code> function to perform the bootstrap validation</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">fit_lm</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">){</span><span class="w">
+   </span><span class="n">mod1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lm</span><span class="p">(</span><span class="n">MedianIncome</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">.</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">])</span><span class="w">
+   </span><span class="c1"># use the model based on resample on the original data to estimate how
+</span><span class="w">   </span><span class="c1"># good or not it is:
+</span><span class="w">   </span><span class="n">RMSE</span><span class="p">(</span><span class="n">predict</span><span class="p">(</span><span class="n">mod1</span><span class="p">,</span><span class="w"> </span><span class="n">newdata</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">),</span><span class="w"> </span><span class="n">data</span><span class="o">$</span><span class="n">MedianIncome</span><span class="p">)</span><span class="w">
+   
+</span><span class="p">}</span><span class="w">
+
+</span><span class="c1"># use bootstrap validation for an unbiaased estimate of root mean square error
+</span><span class="n">rmses_lm_boot</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">boot</span><span class="p">(</span><span class="n">the_data</span><span class="p">,</span><span class="w"> </span><span class="n">statistic</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fit_lm</span><span class="p">,</span><span class="w"> </span><span class="n">R</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">99</span><span class="p">)</span><span class="w">
+</span><span class="n">lm_rmse</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">rmses_lm_boot</span><span class="o">$</span><span class="n">t</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># save a single version of this model for later
+</span><span class="n">mod_lm</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lm</span><span class="p">(</span><span class="n">MedianIncome</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">.</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_data</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># Check out classic diagnostic plots:
+</span><span class="n">par</span><span class="p">(</span><span class="n">mfrow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">))</span><span class="w">
+</span><span class="n">plot</span><span class="p">(</span><span class="n">mod_lm</span><span class="p">)</span></code></pre></figure>
+
+<p>The average bootstrapped root mean square error from this method is 2015.</p>
+
+<h3 id="elastic-net-regularization">Elastic net regularization</h3>
+<p><a href="https://en.wikipedia.org/wiki/Elastic_net_regularization">Elastic net regularization</a> is a generalisation of the “ridge regression” and “lasso” methods of estimating parameters of a linear model.  Both ridge regression and lasso estimation provide extra penalties for the magnitude of coefficients in the linear predictor; the lasso penalises bases on the sum of the absolute value of estimated coefficients and the ridge on the sum of squared values.  In both cases the net effect is to shrink estimated coefficients towards zero.  It’s a far superior method for model building than dropping variables based on their variable inflation factors, or stepwise regression, the two methods I used for demonstration purposes in my previous posts.  In particular, all sorts of problems for subsequent inference, such as bias towards significance of the parameters remaining in the model, are reduced or eliminated altogether.</p>
+
+<p>The elastic net approach is defined by two hyperparameters, <code class="highlighter-rouge">alpha</code> and <code class="highlighter-rouge">lambda</code>.  When <code class="highlighter-rouge">alpha = 1</code> the elastic net is equivalent to the lasso; when <code class="highlighter-rouge">alpha = 0</code> it is equivalent to ridge regression.  For any given value of <code class="highlighter-rouge">alpha</code>, the value of <code class="highlighter-rouge">lambda</code> indicates how much penalty is given to the size of coefficients in the linear predictor.  The <code class="highlighter-rouge">cv.glmnet</code> function uses cross validation to give the best value of <code class="highlighter-rouge">lambda</code> for any given <code class="highlighter-rouge">alpha</code>; a bit of extra work is needed to simultaneously choose alpha.  In the code below I use <code class="highlighter-rouge">cv.glmnet</code> with nine different values of <code class="highlighter-rouge">alpha</code></p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># A lasso, ridge rigression, or elastic net (which combines the two) is a way
+# of dealing with the collinearity by forcing some coefficients to shrink (possibly to zero)
+# while doing minimal damage to the inferential qualities of the rest and to the overall model fit.
+</span><span class="w">
+</span><span class="c1"># First we need to decide between ridge regression and lasso or elastic net (between the two)
+# define folds for cross validation so can check the impact of different values of alpha 
+</span><span class="n">set.seed</span><span class="p">(</span><span class="m">124</span><span class="p">)</span><span class="w">
+</span><span class="n">foldid</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sample</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">the_data</span><span class="p">),</span><span class="w"> </span><span class="n">replace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># separate out the explanatory from response variable
+# for when using lasso and ridge regression
+</span><span class="n">X</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">the_data</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="n">select</span><span class="p">(</span><span class="o">-</span><span class="n">MedianIncome</span><span class="p">)</span><span class="w">
+</span><span class="n">Y</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">the_data</span><span class="o">$</span><span class="n">MedianIncome</span><span class="w"> 
+
+
+</span><span class="n">cv_results</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data_frame</span><span class="p">(</span><span class="n">lambda</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">numeric</span><span class="p">(),</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">numeric</span><span class="p">(),</span><span class="w"> </span><span class="n">mcve</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">numeric</span><span class="p">())</span><span class="w">
+</span><span class="n">alphas</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">seq</span><span class="p">(</span><span class="n">from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">length.out</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">9</span><span class="p">)</span><span class="w">
+
+</span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">alphas</span><span class="p">){</span><span class="w">
+   </span><span class="n">cvfit</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">cv.glmnet</span><span class="p">(</span><span class="n">as.matrix</span><span class="p">(</span><span class="n">X</span><span class="p">),</span><span class="w"> </span><span class="n">Y</span><span class="p">,</span><span class="w"> </span><span class="n">foldid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">foldid</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w">
+   </span><span class="n">tmp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data_frame</span><span class="p">(</span><span class="n">lambda</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cvfit</span><span class="o">$</span><span class="n">lambda</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">mcve</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cvfit</span><span class="o">$</span><span class="n">cvm</span><span class="p">)</span><span class="w">   
+   </span><span class="n">cv_results</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">rbind</span><span class="p">(</span><span class="n">cv_results</span><span class="p">,</span><span class="w"> </span><span class="n">tmp</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">arrange</span><span class="p">(</span><span class="n">cv_results</span><span class="p">,</span><span class="w"> </span><span class="n">mcve</span><span class="p">)</span><span class="w"> 
+</span><span class="c1"># best alpha with this see is 0.75 but right combination of alpha and lambda
+# works pretty well for any alpha
+</span><span class="w">
+</span><span class="c1"># For the graphic I take square root of mcve so it is back on same scale as RMSE used elsewhere in this post
+</span><span class="w">   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">cv_results</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lambda</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sqrt</span><span class="p">(</span><span class="n">mcve</span><span class="p">),</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">as.factor</span><span class="p">(</span><span class="nf">round</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">))))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_line</span><span class="p">(</span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_line</span><span class="p">(</span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.2</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey50"</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">group</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">as.factor</span><span class="p">(</span><span class="nf">round</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">))))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_x_log10</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">coord_cartesian</span><span class="p">(</span><span class="n">ylim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1800</span><span class="p">,</span><span class="w"> </span><span class="m">4000</span><span class="p">),</span><span class="w"> </span><span class="n">xlim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="m">1000</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_colour_brewer</span><span class="p">(</span><span class="s2">"alpha"</span><span class="p">,</span><span class="w"> </span><span class="n">palette</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Greens"</span><span class="p">,</span><span class="w"> </span><span class="n">guide</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">guide_legend</span><span class="p">(</span><span class="n">reverse</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Cross-validation to select hyper parameters\nin elastic net regression"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="s2">"Square root of mean cross validation error"</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">comma</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">theme</span><span class="p">(</span><span class="n">legend.position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"right"</span><span class="p">)</span></code></pre></figure>
+
+<p>Here’s the results in tabular form.  Many combinations of alpha and lambda work well.  Basically, there’s not much to choose from between ridge regression and lasso with this particular set of data, which has a nice moderate size of observations for a modest number of variables.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="o">&gt;</span><span class="w"> </span><span class="n">arrange</span><span class="p">(</span><span class="n">cv_results</span><span class="p">,</span><span class="w"> </span><span class="n">mcve</span><span class="p">)</span><span class="w">
+</span><span class="n">Source</span><span class="o">:</span><span class="w"> </span><span class="n">local</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="n">frame</span><span class="w"> </span><span class="p">[</span><span class="m">740</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="m">3</span><span class="p">]</span><span class="w">
+
+     </span><span class="n">lambda</span><span class="w"> </span><span class="n">alpha</span><span class="w">    </span><span class="n">mcve</span><span class="w">
+      </span><span class="o">&lt;</span><span class="n">dbl</span><span class="o">&gt;</span><span class="w"> </span><span class="o">&lt;</span><span class="n">dbl</span><span class="o">&gt;</span><span class="w">   </span><span class="o">&lt;</span><span class="n">dbl</span><span class="o">&gt;</span><span class="w">
+</span><span class="m">1</span><span class="w">  </span><span class="m">6.029743</span><span class="w"> </span><span class="m">0.750</span><span class="w"> </span><span class="m">4290529</span><span class="w">
+</span><span class="m">2</span><span class="w">  </span><span class="m">5.168351</span><span class="w"> </span><span class="m">0.875</span><span class="w"> </span><span class="m">4291482</span><span class="w">
+</span><span class="m">3</span><span class="w">  </span><span class="m">4.963227</span><span class="w"> </span><span class="m">1.000</span><span class="w"> </span><span class="m">4291871</span><span class="w">
+</span><span class="m">4</span><span class="w">  </span><span class="m">7.235692</span><span class="w"> </span><span class="m">0.625</span><span class="w"> </span><span class="m">4291920</span><span class="w">
+</span><span class="m">5</span><span class="w">  </span><span class="m">7.941163</span><span class="w"> </span><span class="m">0.625</span><span class="w"> </span><span class="m">4292204</span><span class="w">
+</span><span class="m">6</span><span class="w">  </span><span class="m">6.592893</span><span class="w"> </span><span class="m">0.625</span><span class="w"> </span><span class="m">4292411</span><span class="w">
+</span><span class="m">7</span><span class="w">  </span><span class="m">4.290856</span><span class="w"> </span><span class="m">0.875</span><span class="w"> </span><span class="m">4292494</span><span class="w">
+</span><span class="m">8</span><span class="w">  </span><span class="m">4.522307</span><span class="w"> </span><span class="m">1.000</span><span class="w"> </span><span class="m">4292497</span><span class="w">
+</span><span class="m">9</span><span class="w">  </span><span class="m">6.617636</span><span class="w"> </span><span class="m">0.750</span><span class="w"> </span><span class="m">4292529</span><span class="w">
+</span><span class="m">10</span><span class="w"> </span><span class="m">5.672259</span><span class="w"> </span><span class="m">0.875</span><span class="w"> </span><span class="m">4292609</span><span class="w">
+</span><span class="n">..</span><span class="w">      </span><span class="n">...</span><span class="w">   </span><span class="n">...</span><span class="w">     </span><span class="n">...</span></code></pre></figure>
+
+<p>Here’s the graphic presentation of those results, making it clearer that for an appropriate value of <code class="highlighter-rouge">lambda</code>, pretty much any alpha gives an ok result.</p>
+
+<p><img src="/img/0046-alpha-lambda.svg" alt="alpha-lambda" /></p>
+
+<p>Choosing <code class="highlighter-rouge">0.750</code> as the value of <code class="highlighter-rouge">alpha</code> and using cross-validation for each resampled dataset to choose <code class="highlighter-rouge">lambda</code>, we can now use bootstrap validation to check out the results of this modelling approach.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">fit_elastic</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">){</span><span class="w">
+   </span><span class="c1"># i = sample(1:nrow(data), nrow(data), replace = TRUE)
+</span><span class="w">   </span><span class="n">Y_orig</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data</span><span class="o">$</span><span class="n">MedianIncome</span><span class="w">
+   </span><span class="n">X_orig</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.matrix</span><span class="p">(</span><span class="n">select</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">MedianIncome</span><span class="p">))</span><span class="w">
+   </span><span class="n">data2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="w">
+   </span><span class="n">Y_new</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data2</span><span class="o">$</span><span class="n">MedianIncome</span><span class="w">
+   </span><span class="n">X_new</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.matrix</span><span class="p">(</span><span class="n">select</span><span class="p">(</span><span class="n">data2</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">MedianIncome</span><span class="p">))</span><span class="w">
+   </span><span class="n">lambda</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">cv.glmnet</span><span class="w"> </span><span class="p">(</span><span class="n">X_new</span><span class="p">,</span><span class="w"> </span><span class="n">Y_new</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.85</span><span class="p">)</span><span class="o">$</span><span class="n">lambda.min</span><span class="w">
+   </span><span class="n">mod1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">glmnet</span><span class="p">(</span><span class="n">X_new</span><span class="p">,</span><span class="w"> </span><span class="n">Y_new</span><span class="p">,</span><span class="w"> </span><span class="n">lambda</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lambda</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.85</span><span class="p">)</span><span class="w">
+   </span><span class="c1"># use the model based on resample on the original data to estimate how
+</span><span class="w">   </span><span class="c1"># good or not it is:
+</span><span class="w">   </span><span class="n">rmse</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">RMSE</span><span class="p">(</span><span class="n">predict</span><span class="p">(</span><span class="n">mod1</span><span class="p">,</span><span class="w"> </span><span class="n">newx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">X_orig</span><span class="p">),</span><span class="w"> </span><span class="n">Y</span><span class="p">)</span><span class="w">   </span><span class="nf">return</span><span class="p">(</span><span class="n">rmse</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">rmses_elastic_boot</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">boot</span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_data</span><span class="p">,</span><span class="w"> </span><span class="n">statistic</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fit_elastic</span><span class="p">,</span><span class="w"> </span><span class="n">R</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">99</span><span class="p">)</span><span class="w"> </span><span class="c1"># takes a few minutes
+</span><span class="n">elastic_rmse</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">rmses_elastic_boot</span><span class="o">$</span><span class="n">t</span><span class="p">)</span></code></pre></figure>
+
+<p>The average bootstrapped root mean square error from this method is again 2015, showing that the improved estimates of individual coefficients has neither worsened nor improved the overall fit.</p>
+
+<p>The characteristic of shrinkage methods is that the estimates of coefficients in the linear predictor are less in absolute size than are the ordinary least squares estimators.  The relatively mild nature of this phenomenon in this particular case is shown in the graphic below.  The straight diagonal line shows where the shrunk estimate of the coefficient from the elastic net equals that from ordinary least squares; when points are to the right of this line if positive, or to the left of it if negative, the elastic net regularized estimate is closer to zero than its ordinary least squares equivalent.  The shrinkage is pretty mild.</p>
+
+<p><img src="/img/0046-compare-coefs.svg" alt="coefs" /></p>
+
+<h3 id="generalized-additive-model">Generalized additive model</h3>
+<p>The third and final strategy to be tried today is a different structural model, allowing non-linear relations between the explanatory variables and the response (median household income) they are trying to predict.   It turns out this has a fairly material impact on overall model fit.  I’ll start with a plot showing those non-linear relations for the fifteen demographic variables most closely related to household income and the two spatial (latitude and longitude) variables:</p>
+
+<p><img src="/img/0046-gam-relations.svg" alt="curves" /></p>
+
+<p>We can see a bit of curve in some of these relationships.  For example, the relationship between the proportion of people who are partnered and income is decidedly non-linear, with an upwards surge in income for a small number of low-partnership areas that belies the general positive correlation.  The relationship between the proportion of people in full time employment and income shows a definite S shape.  The relationship between the proportion of people with Bachelors degrees and income gets steeper as the proportion gets higher; and so on.</p>
+
+<p>The latitude and longitude plot at the bottom right of the image above is the most complex non-linear relationship and the plot is a little difficult to see, so here’s an enhanced version of it:</p>
+
+<p><img src="/img/0046-gam-spatial-residuals.png" alt="map" /></p>
+
+<p>This map is showing the relationship between location and income, after all the demographic variables are accounted for.  Including a flexible spline for an interaction between longitude and latitude in a Generalized Additive Model like this is an excellent way of controlling for the nuisance factor of spatial autocorrelation, which if not accounted for is likely to lead to false inference, with the strength of evidence for relations between the data being overestimated (apparent relations can be just artefacts of how the spatial grouping was made).</p>
+
+<p>In specifying models of this sort I often follow Frank Harrell’s informal advice of determining how many degrees of freedom are available (between 1/20 and 1/10 the number of observations) and allocating them (in the form of splines, the more degrees of freedom allocated the more flexible, with a single degree of freedom meaning a straight linear response) the explanatory variables with the strongest non-parametric relationship with the response variable.  This approach works only after the analyst has made a commitment to include all such variables in the model - letting the dstrength of relationship with the response determine whether an explanatory variable gets in at all is a form of stepwise regression and subject to all the problems that come from that.</p>
+
+<p>To estimate the strength of the non parameteric relationships I use Harrell’s <code class="highlighter-rouge">spearman2</code> which regresses Y on the rank of X and the square of the rank of X.   This powerful method allows non-monotonic relationships between variables.  In the case of today’s data, it shows the strongest relationship to household income as being the proportion of people in full time employment, households with access to the internet, and so on as seen in the output below:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="o">&gt;</span><span class="w"> </span><span class="n">sp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">spearman2</span><span class="p">(</span><span class="n">MedianIncome</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">.</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_data</span><span class="p">)</span><span class="w">
+</span><span class="o">&gt;</span><span class="w"> </span><span class="n">sp</span><span class="p">[</span><span class="n">order</span><span class="p">(</span><span class="o">-</span><span class="n">sp</span><span class="p">[</span><span class="w"> </span><span class="p">,</span><span class="m">6</span><span class="p">])[</span><span class="m">1</span><span class="o">:</span><span class="m">15</span><span class="p">],</span><span class="w"> </span><span class="p">]</span><span class="w">
+                         </span><span class="n">rho2</span><span class="w">         </span><span class="nb">F</span><span class="w"> </span><span class="n">df1</span><span class="w">  </span><span class="n">df2</span><span class="w"> </span><span class="n">P</span><span class="w"> </span><span class="n">Adjusted</span><span class="w"> </span><span class="n">rho2</span><span class="w">    </span><span class="n">n</span><span class="w">
+</span><span class="n">FullTimeEmployed</span><span class="w">    </span><span class="m">0.7134528</span><span class="w"> </span><span class="m">4436.8712</span><span class="w">   </span><span class="m">1</span><span class="w"> </span><span class="m">1782</span><span class="w"> </span><span class="m">0</span><span class="w">     </span><span class="m">0.7132920</span><span class="w"> </span><span class="m">1784</span><span class="w">
+</span><span class="n">InternetHH</span><span class="w">          </span><span class="m">0.5844727</span><span class="w"> </span><span class="m">2506.5272</span><span class="w">   </span><span class="m">1</span><span class="w"> </span><span class="m">1782</span><span class="w"> </span><span class="m">0</span><span class="w">     </span><span class="m">0.5842396</span><span class="w"> </span><span class="m">1784</span><span class="w">
+</span><span class="n">NoQualification</span><span class="w">     </span><span class="m">0.4477222</span><span class="w"> </span><span class="m">1444.6370</span><span class="w">   </span><span class="m">1</span><span class="w"> </span><span class="m">1782</span><span class="w"> </span><span class="m">0</span><span class="w">     </span><span class="m">0.4474123</span><span class="w"> </span><span class="m">1784</span><span class="w">
+</span><span class="n">UnemploymentBenefit</span><span class="w"> </span><span class="m">0.4309570</span><span class="w"> </span><span class="m">1349.5736</span><span class="w">   </span><span class="m">1</span><span class="w"> </span><span class="m">1782</span><span class="w"> </span><span class="m">0</span><span class="w">     </span><span class="m">0.4306377</span><span class="w"> </span><span class="m">1784</span><span class="w">
+</span><span class="n">Smoker</span><span class="w">              </span><span class="m">0.4103768</span><span class="w"> </span><span class="m">1240.2690</span><span class="w">   </span><span class="m">1</span><span class="w"> </span><span class="m">1782</span><span class="w"> </span><span class="m">0</span><span class="w">     </span><span class="m">0.4100459</span><span class="w"> </span><span class="m">1784</span><span class="w">
+</span><span class="n">Partnered</span><span class="w">           </span><span class="m">0.3866804</span><span class="w"> </span><span class="m">1123.5000</span><span class="w">   </span><span class="m">1</span><span class="w"> </span><span class="m">1782</span><span class="w"> </span><span class="m">0</span><span class="w">     </span><span class="m">0.3863363</span><span class="w"> </span><span class="m">1784</span><span class="w">
+</span><span class="n">Managers</span><span class="w">            </span><span class="m">0.3854615</span><span class="w"> </span><span class="m">1117.7367</span><span class="w">   </span><span class="m">1</span><span class="w"> </span><span class="m">1782</span><span class="w"> </span><span class="m">0</span><span class="w">     </span><span class="m">0.3851166</span><span class="w"> </span><span class="m">1784</span><span class="w">
+</span><span class="n">Bachelor</span><span class="w">            </span><span class="m">0.3729497</span><span class="w"> </span><span class="m">1059.8773</span><span class="w">   </span><span class="m">1</span><span class="w"> </span><span class="m">1782</span><span class="w"> </span><span class="m">0</span><span class="w">     </span><span class="m">0.3725978</span><span class="w"> </span><span class="m">1784</span><span class="w">
+</span><span class="n">SelfEmployed</span><span class="w">        </span><span class="m">0.3666249</span><span class="w"> </span><span class="m">1031.4988</span><span class="w">   </span><span class="m">1</span><span class="w"> </span><span class="m">1782</span><span class="w"> </span><span class="m">0</span><span class="w">     </span><span class="m">0.3662695</span><span class="w"> </span><span class="m">1784</span><span class="w">
+</span><span class="n">NoMotorVehicle</span><span class="w">      </span><span class="m">0.3587586</span><span class="w">  </span><span class="m">996.9846</span><span class="w">   </span><span class="m">1</span><span class="w"> </span><span class="m">1782</span><span class="w"> </span><span class="m">0</span><span class="w">     </span><span class="m">0.3583987</span><span class="w"> </span><span class="m">1784</span><span class="w">
+</span><span class="n">Unemployed</span><span class="w">          </span><span class="m">0.3572286</span><span class="w">  </span><span class="m">990.3698</span><span class="w">   </span><span class="m">1</span><span class="w"> </span><span class="m">1782</span><span class="w"> </span><span class="m">0</span><span class="w">     </span><span class="m">0.3568679</span><span class="w"> </span><span class="m">1784</span><span class="w">
+</span><span class="n">Labourers</span><span class="w">           </span><span class="m">0.3387476</span><span class="w">  </span><span class="m">912.8864</span><span class="w">   </span><span class="m">1</span><span class="w"> </span><span class="m">1782</span><span class="w"> </span><span class="m">0</span><span class="w">     </span><span class="m">0.3383766</span><span class="w"> </span><span class="m">1784</span><span class="w">
+</span><span class="n">Worked50_59hours</span><span class="w">    </span><span class="m">0.3311916</span><span class="w">  </span><span class="m">882.4404</span><span class="w">   </span><span class="m">1</span><span class="w"> </span><span class="m">1782</span><span class="w"> </span><span class="m">0</span><span class="w">     </span><span class="m">0.3308163</span><span class="w"> </span><span class="m">1784</span><span class="w">
+</span><span class="n">Separated</span><span class="w">           </span><span class="m">0.3122393</span><span class="w">  </span><span class="m">809.0175</span><span class="w">   </span><span class="m">1</span><span class="w"> </span><span class="m">1782</span><span class="w"> </span><span class="m">0</span><span class="w">     </span><span class="m">0.3118533</span><span class="w"> </span><span class="m">1784</span><span class="w">
+</span><span class="n">Maori</span><span class="w">               </span><span class="m">0.3022017</span><span class="w">  </span><span class="m">771.7465</span><span class="w">   </span><span class="m">1</span><span class="w"> </span><span class="m">1782</span><span class="w"> </span><span class="m">0</span><span class="w">     </span><span class="m">0.3018101</span><span class="w"> </span><span class="m">1784</span></code></pre></figure>
+
+<p>I then allocate flexible splines to the first 15 or so of those variables.  The 4 x 4 grid of non-linear plots and the map of spatial effects that began this section was produced with the code below:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># see http://stackoverflow.com/questions/30627642/issue-with-gam-function-in-r
+# for why the data needs to be specified in both terms() and in gam()
+</span><span class="n">the_formula</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">terms</span><span class="p">(</span><span class="n">MedianIncome</span><span class="w"> </span><span class="o">~</span><span class="w">  
+                        </span><span class="n">s</span><span class="p">(</span><span class="n">FullTimeEmployed</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">6</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+                        </span><span class="n">s</span><span class="p">(</span><span class="n">InternetHH</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">6</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+                        </span><span class="n">s</span><span class="p">(</span><span class="n">NoQualification</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+                        </span><span class="n">s</span><span class="p">(</span><span class="n">UnemploymentBenefit</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+                        </span><span class="n">s</span><span class="p">(</span><span class="n">Smoker</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+                        </span><span class="n">s</span><span class="p">(</span><span class="n">Partnered</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="p">)</span><span class="w">  </span><span class="o">+</span><span class="w">
+                        </span><span class="n">s</span><span class="p">(</span><span class="n">Managers</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+                        </span><span class="n">s</span><span class="p">(</span><span class="n">Bachelor</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+                        </span><span class="n">s</span><span class="p">(</span><span class="n">SelfEmployed</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+                        </span><span class="n">s</span><span class="p">(</span><span class="n">NoMotorVehicle</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+                        </span><span class="n">s</span><span class="p">(</span><span class="n">Unemployed</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+                        </span><span class="n">s</span><span class="p">(</span><span class="n">Labourers</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+                        </span><span class="n">s</span><span class="p">(</span><span class="n">Worked50_59hours</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+                        </span><span class="n">s</span><span class="p">(</span><span class="n">Separated</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+                        </span><span class="n">s</span><span class="p">(</span><span class="n">Maori</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+                        </span><span class="n">s</span><span class="p">(</span><span class="n">WGS84Longitude</span><span class="p">,</span><span class="w"> </span><span class="n">WGS84Latitude</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+                        </span><span class="n">.</span><span class="p">,</span><span class="w">
+                     </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_data</span><span class="p">)</span><span class="w">
+
+</span><span class="n">gam_model</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">gam</span><span class="p">(</span><span class="n">the_formula</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_data</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># grid of nonlinear relations
+</span><span class="n">par</span><span class="p">(</span><span class="n">bty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"l"</span><span class="p">,</span><span class="w"> </span><span class="n">mar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">5</span><span class="p">,</span><span class="m">4</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">))</span><span class="w">
+</span><span class="n">plot</span><span class="p">(</span><span class="n">gam_model</span><span class="p">,</span><span class="w"> </span><span class="n">residuals</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> </span><span class="n">pages</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">shade</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> 
+	</span><span class="n">seWithMean</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> </span><span class="n">ylab</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span><span class="w">
+</span><span class="n">grid.text</span><span class="p">(</span><span class="s2">"Impact of area average variables on median income by area unit (New Zealand census 2013)"</span><span class="p">,</span><span class="w"> </span><span class="m">0.5</span><span class="p">,</span><span class="w"> </span><span class="m">0.99</span><span class="p">,</span><span class="w">
+		 </span><span class="n">gp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gpar</span><span class="p">(</span><span class="n">fontfamily</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"myfont"</span><span class="p">))</span><span class="w">
+		 
+</span><span class="c1"># map of spatial impacts		 
+</span><span class="n">par</span><span class="p">(</span><span class="n">bty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"l"</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"myfont"</span><span class="p">,</span><span class="w"> </span><span class="n">fg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"white"</span><span class="p">)</span><span class="w">
+</span><span class="n">plot</span><span class="p">(</span><span class="n">gam_model</span><span class="p">,</span><span class="w"> </span><span class="n">shade</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> </span><span class="n">select</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">16</span><span class="p">,</span><span class="w"> </span><span class="n">rug</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> </span><span class="n">se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">scheme</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">topo.colors</span><span class="p">(</span><span class="m">100</span><span class="p">),</span><span class="w"> 
+     </span><span class="n">pch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">ylab</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Latitude"</span><span class="p">,</span><span class="w"> </span><span class="n">xlab</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Longitude"</span><span class="p">,</span><span class="w"> </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Spatial pattern in regression of income\non demographic area variables"</span><span class="p">)</span><span class="w">
+</span><span class="n">map</span><span class="p">(</span><span class="n">add</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey75"</span><span class="p">)</span></code></pre></figure>
+
+<p>The bootstrap validation of this method is straightforward and follows the same pattern as the two previous methods:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">fit_gam</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">){</span><span class="w">
+   </span><span class="n">mod1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">gam</span><span class="p">(</span><span class="n">the_formula</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">])</span><span class="w">
+   </span><span class="c1"># use the model based on resample on the original data to estimate how
+</span><span class="w">   </span><span class="c1"># good or not it is:
+</span><span class="w">   </span><span class="n">RMSE</span><span class="p">(</span><span class="n">predict</span><span class="p">(</span><span class="n">mod1</span><span class="p">,</span><span class="w"> </span><span class="n">newdata</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">),</span><span class="w"> </span><span class="n">data</span><span class="o">$</span><span class="n">MedianIncome</span><span class="p">)</span><span class="w">
+   
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">rmses_gam_boot</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">boot</span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_data</span><span class="p">,</span><span class="w"> </span><span class="n">statistic</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fit_gam</span><span class="p">,</span><span class="w"> </span><span class="n">R</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">99</span><span class="p">)</span><span class="w"> </span><span class="c1"># takes a few minutes
+</span><span class="n">gam_rmse</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">rmses_gam_boot</span><span class="o">$</span><span class="n">t</span><span class="p">)</span></code></pre></figure>
+
+<p>The root mean square error from this method is 1728, a very material improvement in model performance.</p>
+
+<p>The spatial spline (which was allowed to be as flexible as it needed) uses 27 effective degrees of freedom and the other splines another 30 (plus 60 or so from the parametric effects), taking this model to the most flexibility reasonable from the 1775 data points.</p>
+
+<h3 id="conclusions">Conclusions</h3>
+
+<p>Here’s those overall results:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="o">&gt;</span><span class="w"> </span><span class="n">data.frame</span><span class="p">(</span><span class="n">lm_rmse</span><span class="p">,</span><span class="w"> </span><span class="n">elastic_rmse</span><span class="p">,</span><span class="w"> </span><span class="n">gam_rmse</span><span class="p">)</span><span class="w">
+  </span><span class="n">lm_rmse</span><span class="w"> </span><span class="n">elastic_rmse</span><span class="w"> </span><span class="n">gam_rmse</span><span class="w">
+</span><span class="m">1</span><span class="w"> </span><span class="m">2015.34</span><span class="w">     </span><span class="m">2014.871</span><span class="w"> </span><span class="m">1728.254</span></code></pre></figure>
+
+<p>The elastic net approach gives us more confidence in the estimates of individual coefficients but in this case does not materially improve model performance.  Allowing curvature in the relations improved the model but does not address the collinearity problems.</p>
+
+<p>As foreshadowed earlier, the next improvements to make will be to combine these two methods - elastic net regularization for feature selection and shrinkage, and generalized additive models to allow non-linear relationships.  The <code class="highlighter-rouge">gamsel</code> R package enables this and I’ll return to it in a later post; perhaps at the same time as addressing an improved method of dealing with missing data (imputation rather than dropping altogether).</p>
+
+<p>For now, this serves as a sequel to my earlier piece on model validation, turning the attention now onto model strategies themselves; and to demonstrate a taster of the uses the <code class="highlighter-rouge">nzcensus</code> package can be turned to.</p>
+
+<p>Please file bugs or enhancement requests as <a href="https://github.com/ellisp/nzelect/issues">issues on GitHub</a>.</p>
+
+
+
+</div>
+
+<div class = "container">
+   <div class="col-md-4">
+    
+        <a rel="prev" href="/blog/2016/07/14/nzelect-cran">
+        <p>&larr; Older</p>
+        <p>nzelect 0.2.0 on CRAN</p>
+        
+        </a>
+    
+    </div>
+    <div class="col-md-4">
+    </div>
+    <div class="col-md-4" style="text-align: right;">
+    
+      </div>
+      </div>
+      
+      
+      
+</div>
+
+
+   
+    <div id="disqus_thread"></div>
+
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = 'statsinthewild';
+    
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+    
+    
+   
+			
+			</div><!-- /.container -->
+
+         
+
+   <div class = "container footer">
+			<footer>
+	    		
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.  Or follow <a href = "/feed.r.xml">posts in this blog featuring R with RSS</a>.</p>
+			
+            <p>This blog is built with <a href = "http://jekyllrb.com/">Jekyll</a>, <a href = "http://getbootstrap.com/">Bootstrap</a>, <a href = "https://www.ruby-lang.org/en/">Ruby</a> and <a href = "https://cran.r-project.org/">R</a>.  Read my <a href="/about/acknowledgements.html">acknowledgements</a> for a little more on how.  I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+
+			<div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="true" data-share="false"></div>
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Peter's stats stuff</span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			
+			
+
+			</footer>
+    </div>
+
+
+
+  
+</body>
+</html>
+   
+
+
+
+
+         

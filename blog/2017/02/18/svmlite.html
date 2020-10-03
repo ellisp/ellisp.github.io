@@ -1,0 +1,722 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Moving largish data from R to H2O - spam detection with Enron emails</title>
+      	
+         
+         
+            <meta name ="description" content ="I finally solve my problem of writing large sparse matrices from R into SVMLight format for importing to H2O; and demonstrate application with spam detection trained on the Enron email data comparing a generalized linear model, random forest, gradient boosting machine, and deep neural network.">
+            <meta property="og:description" content ="I finally solve my problem of writing large sparse matrices from R into SVMLight format for importing to H2O; and demonstrate application with spam detection trained on the Enron email data comparing a generalized linear model, random forest, gradient boosting machine, and deep neural network.">
+         
+         <meta property="og:site_name" content="free range statistics" />
+         <meta property="og:title" content="Moving largish data from R to H2O - spam detection with Enron emails" />
+         
+            <meta property="og:image" content="http://ellisp.github.io/img/0078-results.png" />
+         
+		 
+			<meta property="og:url" content="http://freerangestats.info/blog/2017/02/18/svmlite.html" />
+		 
+         <meta property="og:author" content= "https://www.facebook.com/peterstats" />
+         <meta property="og:type" content="article" />
+      
+
+<link href='https://fonts.googleapis.com/css?family=Sarala' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Prosto+One' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Ubuntu+Mono' rel='stylesheet'>
+	  
+          <link href="/css/bootstrap.min.css" rel ="stylesheet" type="text/css">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet" type="text/css">
+            <link href="/css/custom.css" rel ="stylesheet" type="text/css">     
+		<link href="/css/syntax.css" rel ="stylesheet" type="text/css">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="free range statistics by Peter Ellis"
+      href="/feed.xml">
+
+	  
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+  <script>
+  (function() {
+    var cx = '015640467633673901770:pk3v2c95baw';
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+  })();
+</script>
+
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">free range statistics</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/about">about</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">all posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">ordered by date</a></li>
+				  <li><a href="/blog/most-popular.html">ordered by popularity</a></li>
+                  <li><a href="/blog/index_by_tag.html">grouped by subject matter</a></li>
+                  <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
+				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
+				  <li><a href = /blog/2020/09/26/nzes-issues>most recent post</a></li>
+				</ul>
+            </li>
+              <li><a href="/blog/showcase.html">showcase</a></li>
+              <li><a href="/presentations/index.html">presentations</a></li>
+			  <li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">forecasts<span class="caret"></span></a>
+                <ul class="dropdown-menu">
+				  <li><a href = "/covid-tracking/index.html">Covid-19 in Australia</a></li>
+                  <li><a href = "/elections/nz-2020/index.html">NZ election 2020</a></li>
+                  <li><a href = "/elections/oz-2019/index.html">Australia federal election 2019</a></li>
+				  <li><a href = "/elections/nz-2017/combined.html">NZ election 2017</a></li>
+                  <li><a href="/blog/voting.html">all blog posts on voting behaviour</a></li>
+                </ul>				
+			  </li>
+			  
+			  
+			  
+		    </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			<div class="jumbotron">
+  <div class="container">
+	<center><h1>Moving largish data from R to H2O - spam detection with Enron emails</h1></center>
+  </div>
+</div>
+
+
+
+	<div class = "post-summary">
+	<h2>At a glance:</h2>
+	   <p>I finally solve my problem of writing large sparse matrices from R into SVMLight format for importing to H2O; and demonstrate application with spam detection trained on the Enron email data comparing a generalized linear model, random forest, gradient boosting machine, and deep neural network.</p>
+	   <p class="meta">18 Feb 2017</p>
+	   <hr></hr>
+	</div>
+
+
+<div class="col-md-7">
+
+	<div class="post">
+		
+	  <h2 id="moving-around-sparse-matrices-of-text-data---the-limitations-of-ash2o">Moving around sparse matrices of text data - the limitations of <code class="highlighter-rouge">as.h2o</code></h2>
+<p>This post is the resolution of a challenge I first <a href="/blog/2016/12/31/sparse-bags">wrote about in late 2016</a>, moving large sparse data from an R environment onto an <a href="http://h2o.ai">H2O cluster</a> for machine learning purposes.  In that post, I experimented with functionality recently added by the H2O team to their supporting R package, the ability for <code class="highlighter-rouge">as.h2o()</code> to interpret a sparse <code class="highlighter-rouge">Matrix</code> object from R and convert it to an H2O frame.  The <code class="highlighter-rouge">Matrix</code> and <code class="highlighter-rouge">as.h2o</code> method is ok for medium sized data but broke down on my hardware with a larger dataset - a bags of words from <a href="https://archive.ics.uci.edu/ml/machine-learning-databases/bag-of-words/">New York Times articles</a> with 300,000 rows and 102,000 columns.  Cell entries are the number of times a particular word is used in the document represented by a row and are mostly empty, so my 12GB laptop has no problem managing the data in a sparse format like <code class="highlighter-rouge">Matrix</code> from the <code class="highlighter-rouge">Matrix</code> package or a simple triplet matrix from the <code class="highlighter-rouge">slam</code> package.  I’m not sure what <code class="highlighter-rouge">as.h2o</code> does under the hood in converting from <code class="highlighter-rouge">Matrix</code> to an H2O frame, but it’s too much for my laptop.</p>
+
+<p>My motivation for this is that I want to use R for convenient pre-processing of textual data using the <a href="http://tidytextmining.com/"><code class="highlighter-rouge">tidytext</code></a> approach; but H2O for high powered machine learning.  <code class="highlighter-rouge">tidytext</code> makes it easy to create a sparse matrix with <code class="highlighter-rouge">cast_dtm</code> or <code class="highlighter-rouge">cast_sparse</code>, but uploading this to H2O can be a challenge.</p>
+
+<h3 id="how-to-write-from-r-into-svmlight-format">How to write from R into SVMLight format</h3>
+<p>After some <a href="http://stackoverflow.com/questions/41340086/how-to-cast-data-from-long-to-wide-format-in-h2o">to-and-fro on Stack Overflow</a>, the best advice was to export the sparse matrix from R into a SVMLight/LIBSVM format text file, then read it into H2O with <code class="highlighter-rouge">h2o.importFile(..., parse_type = "SVMLight")</code>.  This turned the problem from an difficult and possibly intractable memory managment challenge into a difficult and possibly intractable data formatting and file writing challenge - how to efficiently write files in SVMLight format.</p>
+
+<p>SVMLight format combines a data matrix with some modelling information ie the response value of a model, or “label” as it is (slightly oddly, I think) often called in this world.  Instead of a more conventional row-based sparse matrix format which might convey information in row-column-value triples, it uses label-column:value indicators.  It looks like this:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>1 10:3.4 123:0.5 34567:0.231
+0.2 22:1 456:0.3
+</code></pre>
+</div>
+
+<p>That example is equivalent to two rows of a sparse matrix with at least 34,567 columns.  The first row has <code class="highlighter-rouge">1</code> as the response value, <code class="highlighter-rouge">3.4</code> in the 10th column of explanatory variables, and 0.231 in the 34,567th column; the second row has 0.2 as the response value, <code class="highlighter-rouge">1</code> in the 22nd column, and so on.</p>
+
+<p>Writing data from R into this format is a known problem discussed in <a href="http://stackoverflow.com/questions/12112558/read-write-data-in-libsvm-format">this Q&amp;A on Stack Overflow</a>.  Unfortunately, the top rated answer to that question, <code class="highlighter-rouge">e1071::write.svm</code> is reported as being slow, and also it is integrated into a workflow that requires you to first fit a Support Vector Machine model to the data, a step I wanted to avoid.  That Q&amp;A led me to a GitHub repo by zygmuntz that had a (also slow) solution for writing dense matrices into SVMLight format, but that didn’t help me as my data were too large for R to hold in dense format.  So I wrote my own version for taking simplet triplet matrices and writing SVMLight format.  My first version depended on nested <code class="highlighter-rouge">paste</code> statements that were <code class="highlighter-rouge">apply</code>d to each row of the data and was still too slow at scale, but with the help of yet another <a href="http://stackoverflow.com/questions/41477700/optimising-sapply-or-for-paste-to-efficiently-transform-sparse-triplet-m">Stack Overflow interaction</a> and some data table wizardry by @Roland this was able to reduce the expected time writing my 300,000 by 83,000 New York Times matrix (having removed stop words) from several centuries to two minutes.</p>
+
+<p>I haven’t turned this into a package - it would seem better to find an existing package to add it to than create a package just for this one function, any ideas appreciated.  The <a href="https://github.com/ellisp/r-libsvm-format-read-write/blob/master/R/write-sparse-triplets-svm.R">functions are available on GitHub</a> but in case I end up moving them, here they are in full.  One function creates a big character vector; the second writes that to file.  This means multiple copies of the data need to be held in R and hence creates memory limitations, but is much much faster than writing it one line at a time (seconds rather than years in my test cases).</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">data.table</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">slam</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># Convert a simple triplet matrix to svm format
+</span><span class="cd">#' @author Peter Ellis
+#' @return a character vector of length n = nrow(stm)
+</span><span class="n">calc_stm_svm</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">stm</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">){</span><span class="w">
+  </span><span class="c1"># returns a character vector of length y ready for writing in svm format
+</span><span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="s2">"simple_triplet_matrix"</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="nf">class</span><span class="p">(</span><span class="n">stm</span><span class="p">)){</span><span class="w">
+    </span><span class="n">stop</span><span class="p">(</span><span class="s2">"stm must be a simple triple matrix"</span><span class="p">)</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+  </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">is.vector</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">stm</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">y</span><span class="p">)){</span><span class="w">
+    </span><span class="n">stop</span><span class="p">(</span><span class="s2">"y should be a vector of length equal to number of rows of stm"</span><span class="p">)</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+  </span><span class="n">n</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="w">
+  
+  </span><span class="c1"># data.table solution thanks to @roland at http://stackoverflow.com/questions/41477700/optimising-sapply-or-for-paste-to-efficiently-transform-sparse-triplet-m/41478999#41478999
+</span><span class="w">  </span><span class="n">stm2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.table</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">stm</span><span class="o">$</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">stm</span><span class="o">$</span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">stm</span><span class="o">$</span><span class="n">v</span><span class="p">)</span><span class="w">
+  </span><span class="n">res</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">stm2</span><span class="p">[,</span><span class="w"> </span><span class="n">.</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">jv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">paste</span><span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">sep</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">":"</span><span class="p">))</span><span class="w">
+             </span><span class="p">][</span><span class="n">order</span><span class="p">(</span><span class="n">i</span><span class="p">),</span><span class="w"> </span><span class="n">.</span><span class="p">(</span><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">paste</span><span class="p">(</span><span class="n">jv</span><span class="p">,</span><span class="w"> </span><span class="n">collapse</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">" "</span><span class="p">)),</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="p">][[</span><span class="s2">"res"</span><span class="p">]]</span><span class="w">
+  
+  </span><span class="n">out</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">paste</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">res</span><span class="p">)</span><span class="w">
+  
+  </span><span class="nf">return</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+
+</span><span class="cd">#' @param stm a simple triplet matrix (class exported slam) of features (ie explanatory variables)
+#' @param y a vector of labels.  If not provided, a dummy of 1s is provided
+#' @param file file to write to.
+#' @author Peter Ellis
+</span><span class="n">write_stm_svm</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">stm</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">stm</span><span class="p">)),</span><span class="w"> </span><span class="n">file</span><span class="p">){</span><span class="w">
+  </span><span class="n">out</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">calc_stm_svm</span><span class="p">(</span><span class="n">stm</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">)</span><span class="w">  
+  </span><span class="n">writeLines</span><span class="p">(</span><span class="n">out</span><span class="p">,</span><span class="w"> </span><span class="n">con</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">file</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span></code></pre></figure>
+
+<h2 id="example-application---spam-detection-with-the-enron-emails">Example application - spam detection with the Enron emails</h2>
+
+<p>Although I’d used the New York Times bags of words from the UCI machine learning dataset repository for testing the scaling up of this approach, I actually didn’t have anything I wanted to analyse that data for in H2O.  So casting around for an example use case I decided on using the <a href="http://csmining.org/index.php/enron-spam-datasets.html">Enron email collection for spam detection</a>, first analysed in a <a href="http://www.aueb.gr/users/ion/docs/ceas2006_paper.pdf">2006 conference paper by V. Metsis, I. Androutsopoulos and G. Paliouras</a>.  As well as providing one of the more sensational corporate scandals of recent times, the Enron case has blessed data scientists with one of the largest published sets of emails collected from their natural habitat.</p>
+
+<p>The original authors classified the emails as spam or ham and saved these pre-processed data for future use and reproducibility.  I’m not terribly knowledgeable (or interested) in spam detection, so please take the analysis below as a crude and naive example only.</p>
+
+<h3 id="data">Data</h3>
+<p>First the data need to be downloaded and unzipped.  The files are stored as 6 Tape ARchive files</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">tidytext</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">tm</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">testthat</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">data.table</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">h</span><span class="m">2</span><span class="n">o</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">stringr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">forcats</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#===========download files=============
+# Files described at http://csmining.org/index.php/enron-spam-datasets.html
+</span><span class="n">baseurl</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"http://csmining.org/index.php/enron-spam-datasets.html?file=tl_files/Project_Datasets/Enron-Spam%20datasets/Preprocessed/enron"</span><span class="w">
+
+</span><span class="n">filenames</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">paste0</span><span class="p">(</span><span class="n">baseurl</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">6</span><span class="p">,</span><span class="w"> </span><span class="s2">".tar.tar"</span><span class="p">)</span><span class="w">
+
+
+</span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">6</span><span class="p">){</span><span class="w">
+   </span><span class="n">message</span><span class="p">(</span><span class="s2">"Downloading "</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w">
+   </span><span class="n">dfile</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">paste0</span><span class="p">(</span><span class="s2">"enron"</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">".tar.tar"</span><span class="p">)</span><span class="w">
+   </span><span class="n">download.file</span><span class="p">(</span><span class="n">filenames</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="w"> </span><span class="n">destfile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dfile</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"wb"</span><span class="p">)</span><span class="w">
+   </span><span class="n">message</span><span class="p">(</span><span class="s2">"Un-archiving "</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w">
+   </span><span class="n">untar</span><span class="p">(</span><span class="n">dfile</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span></code></pre></figure>
+
+<p>This creates six folders with the names <code class="highlighter-rouge">enron1</code>, <code class="highlighter-rouge">enron2</code> etc; each with a <code class="highlighter-rouge">spam</code> and a <code class="highlighter-rouge">ham</code> subfolder containing numerous text files.  The files look like this example piece of ham (ie non-spam; a legitimate email), chosen at random:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>Subject: re : creditmanager net meeting
+aidan ,
+yes , this will work for us .
+vince
+" aidan mc nulty " on 12 / 16 / 99 08 : 36 : 14 am
+to : vince j kaminski / hou / ect @ ect
+cc :
+subject : creditmanager net meeting
+vincent , i cannot rearrange my schedule for tomorrow so i would like to
+confirm that we will have a net - meeting of creditmanager on friday 7 th of
+january at 9 . 30 your time .
+regards
+aidan mc nulty
+212 981 7422
+</code></pre>
+</div>
+
+<p>The pre-processing has removed duplicates, emails sent to themselves, some of the headers, etc.</p>
+
+<p>Importing the data into R and making tidy data frames of documents and word counts is made easy by Silge and Robinson’s <code class="highlighter-rouge">tidytext</code> package which I never tire of saying is a game changer for convenient analysis of text by statisticians:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#=============import to R================
+# Adapting the example at http://tidytextmining.com/usenet.html
+</span><span class="n">folders</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">paste0</span><span class="p">(</span><span class="s2">"enron"</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">6</span><span class="p">)</span><span class="w">
+
+</span><span class="n">spam</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data_frame</span><span class="p">(</span><span class="n">file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dir</span><span class="p">(</span><span class="n">paste0</span><span class="p">(</span><span class="n">folders</span><span class="p">,</span><span class="w"> </span><span class="s2">"/spam"</span><span class="p">),</span><span class="w"> </span><span class="n">full.names</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">map</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="w"> </span><span class="n">readLines</span><span class="p">,</span><span class="w"> </span><span class="n">encoding</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Latin-1"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">transmute</span><span class="p">(</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">basename</span><span class="p">(</span><span class="n">file</span><span class="p">),</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">unnest</span><span class="p">(</span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">SPAM</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"spam"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">ham</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data_frame</span><span class="p">(</span><span class="n">file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dir</span><span class="p">(</span><span class="n">paste0</span><span class="p">(</span><span class="n">folders</span><span class="p">,</span><span class="w"> </span><span class="s2">"/ham"</span><span class="p">),</span><span class="w"> </span><span class="n">full.names</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">map</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="w"> </span><span class="n">readLines</span><span class="p">,</span><span class="w"> </span><span class="n">encoding</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Latin-1"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">transmute</span><span class="p">(</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">basename</span><span class="p">(</span><span class="n">file</span><span class="p">),</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">unnest</span><span class="p">(</span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">SPAM</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"ham"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">enron_raw</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">rbind</span><span class="p">(</span><span class="n">spam</span><span class="p">,</span><span class="w"> </span><span class="n">ham</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#============error checks - failing!===================
+# Check against the counts provided at http://csmining.org/index.php/data.html
+# Turns out some 3013 spam messages have gone missing
+# should be 20170 spam messages and 16545 ham messages:
+# returns an error
+</span><span class="n">expect_equal</span><span class="p">(</span><span class="nf">length</span><span class="p">(</span><span class="n">unique</span><span class="p">(</span><span class="n">enron_raw</span><span class="o">$</span><span class="n">id</span><span class="p">)),</span><span class="w"> </span><span class="m">20170</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">16545</span><span class="p">)</span><span class="w"> 
+
+</span><span class="n">enron_raw</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">select</span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">SPAM</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">distinct</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">summarise</span><span class="p">(</span><span class="n">spam_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">SPAM</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"spam"</span><span class="p">),</span><span class="w"> </span><span class="n">ham_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">SPAM</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"ham"</span><span class="p">))</span><span class="w">
+</span><span class="c1"># For my purposes I decide not to worry about this.
+</span><span class="w">
+</span><span class="c1">#=================further processing==================
+</span><span class="n">enron</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">enron_raw</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="c1"># will just remove the "Subject:" and "Subject :" and treat subject words like any other
+</span><span class="w">   </span><span class="n">mutate</span><span class="p">(</span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"^Subject *: *"</span><span class="p">,</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">),</span><span class="w">
+          </span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"&lt;U.....&gt;"</span><span class="p">,</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">,</span><span class="w"> </span><span class="n">fixed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">))</span><span class="w"> 
+
+</span><span class="n">enron_words</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">enron</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">unnest_tokens</span><span class="p">(</span><span class="n">word</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">select</span><span class="p">(</span><span class="o">-</span><span class="n">SPAM</span><span class="p">)</span></code></pre></figure>
+
+<p>As well as basic word counts, I wanted to experiment with other characteristics of emails such as number of words, number and proportion of of stopwords (frequently used words like “and” and “the”).  I create a traditional data frame with a row for each email, identified by <code class="highlighter-rouge">id</code>, and columns indicating whether it is SPAM and those other characteristics of interest.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># First I'm creating a summary, dense data frame with some numeric info on each document
+</span><span class="n">enron_sum1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">enron</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">number_characters</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nchar</span><span class="p">(</span><span class="n">text</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">group_by</span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">SPAM</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">summarise</span><span class="p">(</span><span class="n">number_characters</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">number_characters</span><span class="p">))</span><span class="w">
+
+</span><span class="n">enron_sum2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">enron_words</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">group_by</span><span class="p">(</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">summarise</span><span class="p">(</span><span class="n">number_words</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">word</span><span class="p">))</span><span class="w">
+
+</span><span class="n">enron_sum3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">enron_words</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">anti_join</span><span class="p">(</span><span class="n">stop_words</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"word"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">group_by</span><span class="p">(</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">summarise</span><span class="p">(</span><span class="n">number_nonstop_words</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">word</span><span class="p">))</span><span class="w">
+
+</span><span class="n">enron_sum_total</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">enron_sum1</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">left_join</span><span class="p">(</span><span class="n">enron_sum2</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"id"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">left_join</span><span class="p">(</span><span class="n">enron_sum3</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"id"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">number_stop_words</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">number_words</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">number_nonstop_words</span><span class="p">,</span><span class="w">
+          </span><span class="n">proportion_stop_words</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">number_stop_words</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">number_words</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">select</span><span class="p">(</span><span class="o">-</span><span class="n">number_nonstop_words</span><span class="p">)</span><span class="w">
+
+</span><span class="n">enron_sum_total</span></code></pre></figure>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>Source: local data frame [33,702 x 6]
+Groups: id [33,702]
+
+                                   id  SPAM number_characters number_words number_stop_words
+                                &lt;chr&gt; &lt;chr&gt;             &lt;int&gt;        &lt;int&gt;             &lt;int&gt;
+1      0001.1999-12-10.farmer.ham.txt   ham                28            4                 0
+2    0001.1999-12-10.kaminski.ham.txt   ham                24            4                 3
+3        0001.2000-01-17.beck.ham.txt   ham              3486          559               248
+4       0001.2000-06-06.lokay.ham.txt   ham              3603          536               207
+5     0001.2001-02-07.kitchen.ham.txt   ham               322           48                18
+6    0001.2001-04-02.williams.ham.txt   ham              1011          202               133
+7      0002.1999-12-13.farmer.ham.txt   ham              4194          432               118
+8     0002.2001-02-07.kitchen.ham.txt   ham               385           64                40
+9  0002.2001-05-25.SA_and_HP.spam.txt  spam               990          170                80
+10        0002.2003-12-18.GP.spam.txt  spam              1064          175                63
+</code></pre>
+</div>
+
+<p>I next make my sparse matrix as a document term matrix (which is a special case of a simplet triplet matrix from the <code class="highlighter-rouge">slam</code> package), with a column for each word (having first limited myself to interesting words)</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">used_words</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">enron_words</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="c1"># knock out stop words:
+</span><span class="w">   </span><span class="n">anti_join</span><span class="p">(</span><span class="n">stop_words</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"word"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="c1"># knock out numerals, and words with only 2 or 1 letters:
+</span><span class="w">   </span><span class="n">mutate</span><span class="p">(</span><span class="n">word</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"[0-9]"</span><span class="p">,</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">word</span><span class="p">),</span><span class="w">
+          </span><span class="n">wordlength</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nchar</span><span class="p">(</span><span class="n">word</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">filter</span><span class="p">(</span><span class="n">wordlength</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">group_by</span><span class="p">(</span><span class="n">word</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">summarise</span><span class="p">(</span><span class="n">count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">word</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">ungroup</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="c1"># knock out words used less than 10 times:
+</span><span class="w">   </span><span class="n">filter</span><span class="p">(</span><span class="n">count</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="m">10</span><span class="p">)</span><span class="w">
+
+</span><span class="n">enron_dtm</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">enron_words</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">right_join</span><span class="p">(</span><span class="n">used_words</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"word"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">cast_dtm</span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">word</span><span class="p">,</span><span class="w"> </span><span class="n">count</span><span class="p">)</span><span class="w"> 
+
+</span><span class="c1"># we need a version of the dense data in the same order as the document-term-matrix, to do a sort of 
+# manual join of the sparse matrix with the dense one later in H2O.
+</span><span class="n">rows</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data_frame</span><span class="p">(</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rownames</span><span class="p">(</span><span class="n">enron_dtm</span><span class="p">))</span><span class="w">
+</span><span class="n">enron_dense</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">left_join</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span><span class="w"> </span><span class="n">enron_sum_total</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"id"</span><span class="p">)</span><span class="w">
+</span><span class="n">expect_equal</span><span class="p">(</span><span class="n">nrow</span><span class="p">(</span><span class="n">enron_dtm</span><span class="p">),</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">enron_dense</span><span class="p">))</span><span class="w">
+</span><span class="n">expect_equal</span><span class="p">(</span><span class="n">rownames</span><span class="p">(</span><span class="n">enron_dtm</span><span class="p">),</span><span class="w"> </span><span class="n">enron_dense</span><span class="o">$</span><span class="n">id</span><span class="p">)</span></code></pre></figure>
+
+<p>Now we can load our two datasets onto an H2O cluster for analysis:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#================import to h2o and join up there============
+</span><span class="n">h</span><span class="m">2</span><span class="n">o.init</span><span class="p">(</span><span class="n">nthreads</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">-1</span><span class="p">,</span><span class="w"> </span><span class="n">max_mem_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"8G"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># Load up the dense matrix with counts of stopwords etc:
+</span><span class="n">enron_dense_h2o</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.h2o</span><span class="p">(</span><span class="n">enron_dense</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># Load up the sparse matrix with columns for each word:
+</span><span class="n">thefile</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tempfile</span><span class="p">()</span><span class="w">
+</span><span class="n">write_stm_svm</span><span class="p">(</span><span class="n">enron_dtm</span><span class="p">,</span><span class="w"> </span><span class="n">file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">thefile</span><span class="p">)</span><span class="w">
+</span><span class="n">enron_sparse_h2o</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">h</span><span class="m">2</span><span class="n">o.uploadFile</span><span class="p">(</span><span class="n">thefile</span><span class="p">,</span><span class="w"> </span><span class="n">parse_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"SVMLight"</span><span class="p">)</span><span class="w">
+</span><span class="n">unlink</span><span class="p">(</span><span class="n">thefile</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># Number of rows should be equal:
+</span><span class="n">expect_equal</span><span class="p">(</span><span class="n">nrow</span><span class="p">(</span><span class="n">enron_sparse_h2o</span><span class="p">),</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">enron_dtm</span><span class="p">))</span><span class="w">
+</span><span class="c1"># Number of columns should be 1 extra in H2O, dummy variable of labels (1) added by write_stm_svm:
+</span><span class="n">expect_equal</span><span class="p">(</span><span class="n">ncol</span><span class="p">(</span><span class="n">enron_sparse_h2o</span><span class="p">),</span><span class="w"> </span><span class="n">ncol</span><span class="p">(</span><span class="n">enron_dtm</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># First column should be the dummy labels = all one
+</span><span class="n">expect_equal</span><span class="p">(</span><span class="n">mean</span><span class="p">(</span><span class="n">enron_sparse_h2o</span><span class="p">[</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">]),</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+
+</span><span class="n">enron_fulldata</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">h</span><span class="m">2</span><span class="n">o.cbind</span><span class="p">(</span><span class="n">enron_sparse_h2o</span><span class="p">,</span><span class="w"> </span><span class="n">enron_dense_h2o</span><span class="p">)</span><span class="w">
+</span><span class="n">head</span><span class="p">(</span><span class="n">colnames</span><span class="p">(</span><span class="n">enron_fulldata</span><span class="p">),</span><span class="w"> </span><span class="m">10</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># Convert the target variable to a factor so h2o.glm and other modelling functions
+# know what to do with it:
+</span><span class="n">enron_fulldata</span><span class="p">[</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="s2">"SPAM"</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.factor</span><span class="p">(</span><span class="n">enron_fulldata</span><span class="p">[</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="s2">"SPAM"</span><span class="p">])</span></code></pre></figure>
+
+<p>I now have an H2O frame with 33602 rows and 26592 columns; most of the columns representing words and the cells being counts; but some columns representing other variables such as number of stopwords.</p>
+
+<h3 id="analysis">Analysis</h3>
+
+<p>To give H2O a workout, I decided to fit four different types of models trying to understand which emails were ham and which spam:</p>
+
+<ul>
+  <li>generalized linear model, with elastic net regularization to help cope with the large number of explanatory variables</li>
+  <li>random forest</li>
+  <li>gradient boosting machine</li>
+  <li>neural network</li>
+</ul>
+
+<p>I split the data into training, validation and testing subsets; with the idea that the validation set would be used for choosing tuning parameters, and the testing set used as a final comparison of the predictive power of the final models.  As things turned out, I didn’t have patience to do much in the way of tuning.  This probably counted against the latter three of my four models, because I’m pretty confident better performance would be possible with more careful choice of some of the meta parameters.  Here’s the eventual results from my not-particularly-tuned models:</p>
+
+<p><img src="/img/0078-results.svg" width="100%" /></p>
+
+<p>The humble generalized linear model (GLM) performs pretty well; outperformed clearly only by the neural network.   The GLM has a big advantage in interpretability too.  Here are the most important variables for the GLM in predicting spam (NEG means a higher count of the word means less likely to be spam)</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>                   names coefficients sign       word
+1                  C9729    1.1635213  NEG      enron
+2                 C25535    0.6023054  NEG      vince
+3                  C1996    0.5990230  NEG   attached
+4                 C15413    0.4524011  NEG     louise
+5                 C19891    0.3905246  NEG  questions
+6                 C11478    0.2993239  NEG        gas
+7  proportion_stop_words    0.2935112  NEG       &lt;NA&gt;
+8                 C12866    0.2774074  NEG  hourahead
+9                  C7268    0.2600452  NEG      daren
+10                C16257    0.2497282  NEG      meter
+11                C12878    0.2439315  NEG    houston
+12                C21441    0.2345008  NEG      sally
+13                C16106    0.2179897  NEG    meeting
+14                C12894    0.1965571  NEG        hpl
+15                C16618    0.1909332  NEG     monday
+16                C11270    0.1873195  NEG     friday
+17                 C8553    0.1704185  NEG        doc
+18                 C7386    0.1673093  NEG       deal
+19                C21617    0.1636310  NEG   schedule
+20                 C4185    0.1510748  NEG california
+21                C12921    0.3695006  POS       http
+22                C16624    0.2132104  POS      money
+23                C22597    0.2034031  POS   software
+24                C15074    0.1957970  POS       life
+25                 C5394    0.1922659  POS      click
+26                C17683    0.1915608  POS     online
+27                C25462    0.1703109  POS     viagra
+28                C16094    0.1605989  POS       meds
+29                C21547    0.1583438  POS       save
+30                 C9483    0.1498732  POS      email
+</code></pre>
+</div>
+
+<p>So, who knew, emails containing the words “money”, “software”, “life”, “click”, “online”, “viagra” and “meds” are (or at least were in the time of Enron - things may have changed) more likely to be spam.</p>
+
+<p>Here’s the code for the analysis all together:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#=====================analysis in H2O=============
+</span><span class="w">
+</span><span class="c1">#-----------prep------------------------
+# names of the explanatory variables - all the columns in the sparse matrix (which are individual words)
+# except the first one which is the dummy "labels" created just for the SVMLight format.  And the
+# four summary variables in the dense dataframe:
+</span><span class="n">xnames</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">colnames</span><span class="p">(</span><span class="n">enron_sparse_h2o</span><span class="p">)[</span><span class="m">-1</span><span class="p">],</span><span class="w"> 
+            </span><span class="s2">"number_characters"</span><span class="p">,</span><span class="w"> </span><span class="s2">"number_words"</span><span class="p">,</span><span class="w"> </span><span class="s2">"number_stop_words"</span><span class="p">,</span><span class="w"> </span><span class="s2">"proportion_stop_words"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># A lookup table of the column names that refer to words to the words they actually mean.
+# Useful when we look at variable performance down the track.
+</span><span class="n">wordcols</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data_frame</span><span class="p">(</span><span class="w">
+   </span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">colnames</span><span class="p">(</span><span class="n">enron_sparse_h2o</span><span class="p">),</span><span class="w">
+   </span><span class="n">word</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">colnames</span><span class="p">(</span><span class="n">enron_dtm</span><span class="p">))</span><span class="w">
+</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># The slower models (ie apart from glm) take ages for cross-validation so 
+# we'll settle for single-split validation
+</span><span class="n">enron_split</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">h</span><span class="m">2</span><span class="n">o.splitFrame</span><span class="p">(</span><span class="n">enron_fulldata</span><span class="p">,</span><span class="w"> </span><span class="n">ratios</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">0.6</span><span class="p">,</span><span class="w"> </span><span class="m">0.2</span><span class="p">))</span><span class="w">
+</span><span class="nf">dim</span><span class="p">(</span><span class="n">enron_split</span><span class="p">[[</span><span class="m">1</span><span class="p">]])</span><span class="w">
+
+</span><span class="c1">#-------------------GLM---------------------
+# Binomial GLM, with elastic net regularization.  This is the minimal baseline sort of model.
+# 200 seconds
+</span><span class="n">system.time</span><span class="p">({</span><span class="w">
+</span><span class="n">mod.glm</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">h</span><span class="m">2</span><span class="n">o.glm</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xnames</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"SPAM"</span><span class="p">,</span><span class="w"> </span><span class="n">training_frame</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">enron_split</span><span class="p">[[</span><span class="m">1</span><span class="p">]],</span><span class="w"> 
+                   </span><span class="n">validation_frame</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">enron_split</span><span class="p">[[</span><span class="m">2</span><span class="p">]],</span><span class="w">
+                   </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"binomial"</span><span class="p">,</span><span class="w">
+                   </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">,</span><span class="w"> </span><span class="n">lambda_search</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w">
+</span><span class="p">})</span><span class="w">
+
+</span><span class="n">h</span><span class="m">2</span><span class="n">o.varimp</span><span class="p">(</span><span class="n">mod.glm</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">slice</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">30</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">left_join</span><span class="p">(</span><span class="n">wordcols</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"names"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"variable"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">arrange</span><span class="p">(</span><span class="n">sign</span><span class="p">,</span><span class="w"> </span><span class="n">desc</span><span class="p">(</span><span class="n">coefficients</span><span class="p">))</span><span class="w"> 
+
+</span><span class="n">h</span><span class="m">2</span><span class="n">o.performance</span><span class="p">(</span><span class="n">mod.glm</span><span class="p">,</span><span class="w"> </span><span class="n">valid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w"> </span><span class="c1"># 131 / 6640
+</span><span class="w">
+</span><span class="c1">#--------------------Random Forest-------------------
+# with ntrees = 50, nfolds = 10, max_depth  = 20, took 25 minutes to get 
+# 5% through so I stopped it and went back to having a single validation frame.
+# Can view progress by going to http://127.0.0.1:54321/flow/index.html
+# 1340 seconds
+</span><span class="n">system.time</span><span class="p">({</span><span class="w">
+</span><span class="n">mod.rf</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">h</span><span class="m">2</span><span class="n">o.randomForest</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xnames</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"SPAM"</span><span class="p">,</span><span class="w"> </span><span class="n">training_frame</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">enron_split</span><span class="p">[[</span><span class="m">1</span><span class="p">]],</span><span class="w"> 
+                           </span><span class="n">validation_frame</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">enron_split</span><span class="p">[[</span><span class="m">2</span><span class="p">]],</span><span class="w">
+                           </span><span class="n">ntrees</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">500</span><span class="p">,</span><span class="w"> </span><span class="n">max_depth</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">20</span><span class="p">,</span><span class="w">
+                           </span><span class="n">stopping_tolerance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.0001</span><span class="p">,</span><span class="w"> </span><span class="n">stopping_rounds</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="n">score_tree_interval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">25</span><span class="p">)</span><span class="w">
+</span><span class="p">})</span><span class="w">
+</span><span class="c1"># note from watching progress in flow, scoring every score_tree_interval models takes quite a lot of time.
+# so I pushed out score_tree_interval.  On current settings it will score
+# the latest model against the validation frame every 25 trees, and stop if it hasn't improved since 3*25 trees ago.
+# If score_tree_interval is a small number, it stops growing trees too quickly
+</span><span class="w">
+</span><span class="n">h</span><span class="m">2</span><span class="n">o.performance</span><span class="p">(</span><span class="n">mod.rf</span><span class="p">,</span><span class="w"> </span><span class="n">valid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w"> </span><span class="c1"># 172/6640 error rate
+</span><span class="w">
+</span><span class="c1">#-------------------gradient boosting machine-----------------
+# 1240 seconds
+</span><span class="n">system.time</span><span class="p">({</span><span class="w">
+   </span><span class="n">mod.gbm</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">h</span><span class="m">2</span><span class="n">o.gbm</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xnames</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"SPAM"</span><span class="p">,</span><span class="w"> </span><span class="n">training_frame</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">enron_split</span><span class="p">[[</span><span class="m">1</span><span class="p">]],</span><span class="w"> 
+                              </span><span class="n">validation_frame</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">enron_split</span><span class="p">[[</span><span class="m">2</span><span class="p">]],</span><span class="w">
+                              </span><span class="n">ntrees</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w"> </span><span class="n">max_depth</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="p">,</span><span class="w">
+                              </span><span class="n">stopping_tolerance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.0001</span><span class="p">,</span><span class="w"> </span><span class="n">stopping_rounds</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="n">score_tree_interval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="p">)</span><span class="w">
+</span><span class="p">})</span><span class="w">
+
+</span><span class="n">h</span><span class="m">2</span><span class="n">o.performance</span><span class="p">(</span><span class="n">mod.gbm</span><span class="p">,</span><span class="w"> </span><span class="n">valid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w"> </span><span class="c1"># 240/6640 error rate
+</span><span class="w">
+</span><span class="c1">#-------------------artificial neural network------------------------
+</span><span class="w">
+</span><span class="c1"># 900 seconds; much faster when sparse = TRUE
+</span><span class="n">system.time</span><span class="p">({</span><span class="w">
+   </span><span class="n">mod.dl</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">h</span><span class="m">2</span><span class="n">o.deeplearning</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xnames</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"SPAM"</span><span class="p">,</span><span class="w"> </span><span class="n">training_frame</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">enron_split</span><span class="p">[[</span><span class="m">1</span><span class="p">]],</span><span class="w"> 
+                      </span><span class="n">validation_frame</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">enron_split</span><span class="p">[[</span><span class="m">2</span><span class="p">]],</span><span class="w">
+                      </span><span class="n">hidden</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">200</span><span class="p">,</span><span class="w"> </span><span class="m">200</span><span class="p">),</span><span class="w">
+                      </span><span class="n">stopping_tolerance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.0001</span><span class="p">,</span><span class="w"> </span><span class="n">stopping_rounds</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="n">sparse</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w">
+</span><span class="p">})</span><span class="w">
+</span><span class="n">h</span><span class="m">2</span><span class="n">o.performance</span><span class="p">(</span><span class="n">mod.dl</span><span class="p">,</span><span class="w"> </span><span class="n">valid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w"> </span><span class="c1"># 82/6640
+</span><span class="w">
+
+</span><span class="c1">#-----------------Naive Bayes - doesn't work--------------------
+# Conditional probabilities won't fit in the driver node's memory (20.99 GB &gt; 6.06GB)
+</span><span class="n">mod.nb</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">h</span><span class="m">2</span><span class="n">o.naiveBayes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xnames</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"SPAM"</span><span class="p">,</span><span class="w"> </span><span class="n">training_frame</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">enron_split</span><span class="p">[[</span><span class="m">1</span><span class="p">]],</span><span class="w"> 
+                              </span><span class="n">validation_frame</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">enron_split</span><span class="p">[[</span><span class="m">2</span><span class="p">]])</span><span class="w">
+
+
+</span><span class="c1">#==============presentation of results==========================
+</span><span class="w">
+</span><span class="n">perf</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">newdata</span><span class="p">){</span><span class="w">
+   </span><span class="nf">return</span><span class="p">(</span><span class="nf">c</span><span class="p">(</span><span class="w">
+      </span><span class="n">glm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.character</span><span class="p">(</span><span class="n">h</span><span class="m">2</span><span class="n">o.confusionMatrix</span><span class="p">(</span><span class="n">mod.glm</span><span class="p">,</span><span class="w"> </span><span class="n">newdata</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">newdata</span><span class="p">)</span><span class="o">$</span><span class="n">Rate</span><span class="p">[</span><span class="m">1</span><span class="p">]),</span><span class="w">
+      </span><span class="n">rf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.character</span><span class="p">(</span><span class="n">h</span><span class="m">2</span><span class="n">o.confusionMatrix</span><span class="p">(</span><span class="n">mod.rf</span><span class="p">,</span><span class="w"> </span><span class="n">newdata</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">newdata</span><span class="p">)</span><span class="o">$</span><span class="n">Rate</span><span class="p">[</span><span class="m">1</span><span class="p">]),</span><span class="w">
+      </span><span class="n">gbm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.character</span><span class="p">(</span><span class="n">h</span><span class="m">2</span><span class="n">o.confusionMatrix</span><span class="p">(</span><span class="n">mod.gbm</span><span class="p">,</span><span class="w"> </span><span class="n">newdata</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">newdata</span><span class="p">)</span><span class="o">$</span><span class="n">Rate</span><span class="p">[</span><span class="m">1</span><span class="p">]),</span><span class="w">
+      </span><span class="n">dl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.character</span><span class="p">(</span><span class="n">h</span><span class="m">2</span><span class="n">o.confusionMatrix</span><span class="p">(</span><span class="n">mod.dl</span><span class="p">,</span><span class="w"> </span><span class="n">newdata</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">newdata</span><span class="p">)</span><span class="o">$</span><span class="n">Rate</span><span class="p">[</span><span class="m">1</span><span class="p">])</span><span class="w">
+      </span><span class="p">))</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="c1"># this isn't the most efficient computing wise, because the performance on the training
+# and validation sets could be extracted more directly but it is quick and easy to code:
+</span><span class="n">perfs</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lapply</span><span class="p">(</span><span class="n">enron_split</span><span class="p">,</span><span class="w"> </span><span class="n">perf</span><span class="p">)</span><span class="w">
+
+</span><span class="n">perfsdf</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data_frame</span><span class="p">(</span><span class="n">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">unlist</span><span class="p">(</span><span class="n">perfs</span><span class="p">),</span><span class="w">
+                      </span><span class="n">model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="nf">c</span><span class="p">(</span><span class="s2">"Generalized Linear Model"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Random Forest"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Gradient Boosting Machine"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Deep Learning"</span><span class="p">),</span><span class="w"> </span><span class="m">3</span><span class="p">),</span><span class="w">
+                      </span><span class="n">dataset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="nf">c</span><span class="p">(</span><span class="s2">"Training"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Validation"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Testing"</span><span class="p">),</span><span class="w"> </span><span class="n">each</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="p">),</span><span class="w">
+                      </span><span class="n">abbrev</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="nf">names</span><span class="p">(</span><span class="n">perfs</span><span class="p">[[</span><span class="m">1</span><span class="p">]]),</span><span class="w"> </span><span class="m">3</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">errors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">str_sub</span><span class="p">(</span><span class="n">str_extract</span><span class="p">(</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="s2">"=[0-9]+"</span><span class="p">),</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">)),</span><span class="w">
+          </span><span class="n">denom</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">str_sub</span><span class="p">(</span><span class="n">str_extract</span><span class="p">(</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="s2">"/[0-9]+"</span><span class="p">),</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">)),</span><span class="w">
+          </span><span class="n">errorrate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">errors</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">denom</span><span class="p">,</span><span class="w">
+          </span><span class="n">model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">factor</span><span class="p">(</span><span class="n">model</span><span class="p">,</span><span class="w"> </span><span class="n">levels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Deep Learning"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Generalized Linear Model"</span><span class="p">,</span><span class="w"> 
+                                           </span><span class="s2">"Random Forest"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Gradient Boosting Machine"</span><span class="p">)),</span><span class="w">
+          </span><span class="n">dataset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">factor</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span><span class="w"> </span><span class="n">levels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Training"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Validation"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Testing"</span><span class="p">)))</span><span class="w">
+
+</span><span class="n">perfsdf</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">errorrate</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dataset</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">abbrev</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">model</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_path</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">group</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">abbrev</span><span class="p">),</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">,</span><span class="w"> </span><span class="n">linetype</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_text</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_colour_brewer</span><span class="p">(</span><span class="n">palette</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Set1"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_x_continuous</span><span class="p">(</span><span class="s2">"Error rate"</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">labs</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Error rates detecting ham from spam"</span><span class="p">,</span><span class="w">
+           </span><span class="s2">"Enron email dataset, four different statistical learning methods"</span><span class="p">)</span></code></pre></figure>
+
+
+
+		
+	</div>
+</div>
+
+<div class="col-md-1"></div>
+<div class="col-md-4">
+	<div class="side-banner">
+	
+
+
+	<div>
+	   
+	    
+			
+			<p>&larr; Previous post</p>
+			<p><a rel="prev" href="/blog/2017/01/23/inaugural-speeches">US Presidential inauguration speeches</a></p>
+		
+		
+		
+		
+		 
+			
+			<p>Next post &rarr;</p>
+			<p><a rel="next" href="/blog/2017/02/26/appeal-circuits">Success rates of appeals to the Supreme Court by Circuit</a></p>
+			
+			
+		
+		
+	</div>
+	
+	 
+
+   <div class = "side-footer">
+			
+			<hr></hr>
+			<p><gcse:search></gcse:search></p>
+			<hr></hr>
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.</p>
+			<hr></hr>
+			
+			<p>My day job is Chief Data Scientist at <a href='https://www.nousgroup.com/'>Nous Group</a>, an international management consultancy with over 400 people working across Australia, the UK and Canada. <a href='mailto:peter.ellis@nousgroup.com.au'>Contact me</a> if you are interested working with us on a grand challenge or broad agenda.</p>
+		
+		    <hr></hr>
+			
+       <div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="false" data-share="false"></div>
+			
+			<hr></hr>
+			<p>I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+			<hr></hr>
+
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title"><i>free range statistics</i></span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			<hr></hr>
+			
+
+
+    </div>
+
+
+
+  
+   
+
+
+
+
+		  
+		  
+
+
+
+	   
+	<div id="disqus_thread"></div>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function() {
+				var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+				dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+				(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+			})();
+		</script>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function () {
+				var s = document.createElement('script'); s.async = true;
+				s.type = 'text/javascript';
+				s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+				(document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+			}());
+		</script>
+
+	<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+	</div>	
+</div>    
+   
+   
+
+			
+			</div><!-- /.container -->
+         
+   <!-- Default Statcounter code for Free Range Statistics
+http://Http://freerangestats.info -->
+<script type="text/javascript">
+var sc_project=11673245; 
+var sc_invisible=1; 
+var sc_security="5b7111a4"; 
+</script>
+<script type="text/javascript"
+src="https://www.statcounter.com/counter/counter.js" async></script>
+<noscript><div class="statcounter"><a title="Web Analytics"
+href="http://statcounter.com/" target="_blank"><img class="statcounter"
+src="//c.statcounter.com/11673245/0/5b7111a4/1/" alt="Web
+Analytics"></a></div></noscript>
+<!-- End of Statcounter Code -->
+
+</body>   
+</html>

@@ -1,0 +1,1328 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Re-creating survey microdata from marginal totals</title>
+      	
+         
+         
+            <meta name ="description" content ="I play around with creating my own synthetic unit record file of survey microdata to match published marginal totals. I conclude that making synthetic data for development or education purposes can be useful, but the effort to try to exactly match marginal totals from this sort of survey is unlikely to be useful for either bona fide researchers or ill-intentioned data snoopers.">
+            <meta property="og:description" content ="I play around with creating my own synthetic unit record file of survey microdata to match published marginal totals. I conclude that making synthetic data for development or education purposes can be useful, but the effort to try to exactly match marginal totals from this sort of survey is unlikely to be useful for either bona fide researchers or ill-intentioned data snoopers.">
+         
+         <meta property="og:site_name" content="free range statistics" />
+         <meta property="og:title" content="Re-creating survey microdata from marginal totals" />
+         
+            <meta property="og:image" content="http://freerangestats.info/img/0159-barchart.svg" />
+         
+		 
+			<meta property="og:url" content="http://freerangestats.info/blog/2019/11/03/re-creating-microdata.html" />
+		 
+         <meta property="og:author" content= "https://www.facebook.com/peterstats" />
+         <meta property="og:type" content="article" />
+      
+
+<link href='https://fonts.googleapis.com/css?family=Sarala' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Prosto+One' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Ubuntu+Mono' rel='stylesheet'>
+	  
+          <link href="/css/bootstrap.min.css" rel ="stylesheet" type="text/css">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet" type="text/css">
+            <link href="/css/custom.css" rel ="stylesheet" type="text/css">     
+		<link href="/css/syntax.css" rel ="stylesheet" type="text/css">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="free range statistics by Peter Ellis"
+      href="/feed.xml">
+
+	  
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+  <script>
+  (function() {
+    var cx = '015640467633673901770:pk3v2c95baw';
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+  })();
+</script>
+
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">free range statistics</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/about">about</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">all posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">ordered by date</a></li>
+				  <li><a href="/blog/most-popular.html">ordered by popularity</a></li>
+                  <li><a href="/blog/index_by_tag.html">grouped by subject matter</a></li>
+                  <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
+				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
+				  <li><a href = /blog/2020/09/26/nzes-issues>most recent post</a></li>
+				</ul>
+            </li>
+              <li><a href="/blog/showcase.html">showcase</a></li>
+              <li><a href="/presentations/index.html">presentations</a></li>
+			  <li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">forecasts<span class="caret"></span></a>
+                <ul class="dropdown-menu">
+				  <li><a href = "/covid-tracking/index.html">Covid-19 in Australia</a></li>
+                  <li><a href = "/elections/nz-2020/index.html">NZ election 2020</a></li>
+                  <li><a href = "/elections/oz-2019/index.html">Australia federal election 2019</a></li>
+				  <li><a href = "/elections/nz-2017/combined.html">NZ election 2017</a></li>
+                  <li><a href="/blog/voting.html">all blog posts on voting behaviour</a></li>
+                </ul>				
+			  </li>
+			  
+			  
+			  
+		    </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			<div class="jumbotron">
+  <div class="container">
+	<center><h1>Re-creating survey microdata from marginal totals</h1></center>
+  </div>
+</div>
+
+
+
+	<div class = "post-summary">
+	<h2>At a glance:</h2>
+	   <p>I play around with creating my own synthetic unit record file of survey microdata to match published marginal totals. I conclude that making synthetic data for development or education purposes can be useful, but the effort to try to exactly match marginal totals from this sort of survey is unlikely to be useful for either bona fide researchers or ill-intentioned data snoopers.</p>
+	   <p class="meta">03 Nov 2019</p>
+	   <hr></hr>
+	</div>
+
+
+<div class="col-md-7">
+
+	<div class="post">
+		
+	  <p>I recently did some pro bono work for Gun Control NZ reviewing the analysis by a market research firm of the survey that led to this media release: <a href="https://www.guncontrol.nz/media/most-new-zealanders-back-stronger-gun-laws">“Most New Zealanders back stronger gun laws”</a>. The analysis all checked out ok. The task at that time was to make sure that any claims about different perceptions of different groups in New Zealand society were backed by adequately severe (for the context) tests, and in the end I just performed a bunch of pragmatic Chi-square tests with the aggregate results provided by the original market research company.</p>
+
+<p>However, my first thought when I saw that I had access only to the marginal aggregate totals, not the original microdata, was that it might be easier to analyse if I could re-create the original microdata. Amongst other things, this would have meant I could cycle through various bits of analysis with less code. Creating an adequate set of microdata was a harder job than I had hoped, so I didn’t use that method for the original task. But since then I have been pecking away at it to see what it would take, partly for potential future use in this situation, partly as a general self-learning exercise in further understanding issues relating to statistical disclosure control (confidentialisation by cell suppression, random rounding, etc), which is more of a relevant technique than ever today.</p>
+
+<p>See <a href="https://www.itnews.com.au/news/algorithm-flaw-meant-census-responses-could-be-identified-519775">this story</a> for an example claim that an extended version of the sort of methods I describe here, in combination with repeated queries of marginal totals that have been pertured for statistical disclosure control, could be used to recover original sensitive census data. Me, I’m sceptical of the practicality of the alleged “exploit” in that story, which is more theoretical than actual, but it’s true that there is a potential vulnerability here that is worth dabbling my toes in to understand a little. It’s certainly true that repeated queries of a tool that delivers marginal totals (ie crosstabs) can get around the more basic forms of statistical disclosure control perturbation, which is why national stats offices are investing heavily in methods of control such as <a href="http://archive.stats.govt.nz/browse_for_stats/businesses/business_characteristics/new-method-for-confidentialising-tables.aspx">fixed random rounding</a> to mitigate that particular vulnerability.</p>
+
+<p>But to be clear on this up front - I don’t think a data snooper re-creating sensitive data is a realistic fear with regard to the sort of survey, with limited number of variables, such as that used for a demo in today’s post. And my analysis below bears this out.</p>
+
+<h2 id="example---survey-of-new-zealand-views-on-gun-control">Example - Survey of New Zealand views on gun control</h2>
+
+<p>When tidied up, the available data from the survey I am working with looks like this, a typical set of high level results from a market research poll:</p>
+
+<object type="image/svg+xml" data="/img/0159-barchart.svg" width="100%"><img src="/img/0159-barchart.png" /></object>
+
+<p>This chart shows one of two substantive questions in the survey, which is all I will be focusing on today. The visually prominent differences in response, such as by ethnicity, region, gender and rural or not location are statistically significant. The published data show cross tabulated counts by one question and one variable at a time (which I will be calling “marginal totals” in this post) but no interactions.</p>
+
+<p>The code for making these nice diverging stacked bar charts for Likert-like data is shown a bit later down this post.</p>
+
+<p>My task today is, it it possible to recreate a set of microdata that adds up to the aggregates in the available data? This is a special case of creating synthetic data, a common statistical disclosure control technique used to make microdata available for analysis that has the same properties as original microdata but without revealing sensitive details. Sometimes the data is analysed directly, sometimes it is used as a training set of data with which statisticians can develop their models safely before sending them off to a secure environment to be run on the real, gold standard data.</p>
+
+<p>Of course, this isn’t a new problem. A nice overview of some model-based methods is provided by Alan Lee in <a href="https://www.stat.auckland.ac.nz/~lee/SNZ2.pdf">this discussion</a> of creating SURFs (Simulated Unit Record Files) with New Zealand data. The <a href="https://cran.r-project.org/web/packages/synthpop/vignettes/synthpop.pdf"><code class="highlighter-rouge">synthpop</code></a> R package was developed as part of the Synthetic Data Estimation for UK Longitudinal Studies project and seems to be the most advanced software in this area. However, the motivation of these efforts is to create a SURF that has plausibly been generated from the same underlying joint distribution of the population as the actual sample; I have given myself the slightly extended task of generating a SURF that has exactly the same joint distribution as the actual sample (not the population), at least to the degree of detail revealed by the published marginal totals.</p>
+
+<p>Is this possible? There must be at least one solution, which is the actual sample (unless the aggregate totals have been deliberately fuzzed eg by random rounding or other perturbation for disclosure control). Can I find that solution? Is there more than one solution; if not, could this method  be something a snooper could do to recover sensitive information? If there are multiple solutions, does finding one allow us to get extra insight from the data, for example by fitting a model that looks for effects from one variable while controlling for others, something that isn’t possible with just the univariate aggregates? These are interesting questions.</p>
+
+<p>It turns out that the answers are:</p>
+
+<ul>
+  <li>It is possible to find a solution that very closely matches the published marginal totals, but very difficult to get an exact match</li>
+  <li>The close solutions aren’t unique</li>
+  <li>The existence of multiple solutions means that a snooper is unlikely to recover sensitive information by this method</li>
+  <li>Unless you combine considerably more variables than I have done in this instance, the process of re-synthesising microdata from the marginal totals does not yield any additional insights.</li>
+</ul>
+
+<h2 id="data-management">Data management</h2>
+
+<h3 id="import">Import</h3>
+
+<p>First step as always is data management. This first chunk of code below downloads the data, tidies it and produces the first chart.</p>
+
+<p><em>Post continues after R code</em></p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">survey</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">readxl</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">janitor</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">rmarkdown</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">kableExtra</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">knitr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">RColorBrewer</span><span class="p">)</span><span class="w">
+
+</span><span class="n">download.file</span><span class="p">(</span><span class="s2">"https://github.com/ellisp/blog-source/raw/master/data/NZ%20gunlaw%20survey%202019%20Sep%20supplementary%20tables.xlsx"</span><span class="p">,</span><span class="w">
+              </span><span class="n">destfile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"gun-law-survey-tables.xlsx"</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"wb"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">q</span><span class="m">1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"How strongly do you support or oppose strengthening New Zealand’s existing gun laws?"</span><span class="w">
+
+
+</span><span class="n">orig1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">read_excel</span><span class="p">(</span><span class="s2">"gun-law-survey-tables.xlsx"</span><span class="p">,</span><span class="w"> 
+                    </span><span class="n">sheet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Strengthening of exisiting laws"</span><span class="p">,</span><span class="w">
+                    </span><span class="n">skip</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+
+</span><span class="nf">names</span><span class="p">(</span><span class="n">orig1</span><span class="p">)[</span><span class="m">1</span><span class="o">:</span><span class="m">2</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w">  </span><span class="nf">c</span><span class="p">(</span><span class="s2">"variable"</span><span class="p">,</span><span class="w"> </span><span class="s2">"value"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">clean</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">){</span><span class="w">
+  </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span><span class="w"> </span><span class="s2">" "</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">fixed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w">
+  </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">" "</span><span class="p">,</span><span class="w"> </span><span class="s2">"_"</span><span class="p">,</span><span class="w"> </span><span class="n">str_squish</span><span class="p">(</span><span class="n">x</span><span class="p">),</span><span class="w"> </span><span class="n">fixed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w">
+  </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"M.ori"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Maori"</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w">
+  </span><span class="nf">return</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">freq1c</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">orig1</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">select</span><span class="p">(</span><span class="o">-</span><span class="n">`Total support`</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">`Total oppose`</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">fill</span><span class="p">(</span><span class="n">variable</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="o">!</span><span class="nf">is.na</span><span class="p">(</span><span class="n">value</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">gather</span><span class="p">(</span><span class="n">answer</span><span class="p">,</span><span class="w"> </span><span class="n">prop</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">Freq</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pmax</span><span class="p">(</span><span class="m">0.01</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">prop</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">100</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ungroup</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">select</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">answer</span><span class="p">,</span><span class="w"> </span><span class="n">Freq</span><span class="p">)</span><span class="w"> 
+
+</span><span class="n">ans_levs</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Strongly oppose"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Somewhat oppose"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Neither support or oppose"</span><span class="p">,</span><span class="w">
+              </span><span class="s2">"Unsure"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Strongly support"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Somewhat support"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># Graphic			  
+</span><span class="n">freq1c</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">"All"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">answer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ordered</span><span class="p">(</span><span class="n">answer</span><span class="p">,</span><span class="w"> </span><span class="n">levels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ans_levs</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">prop</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Freq</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">Freq</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="o">!</span><span class="n">answer</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Unsure"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Neither support or oppose"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">prop</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">grepl</span><span class="p">(</span><span class="s2">"oppose"</span><span class="p">,</span><span class="w"> </span><span class="n">answer</span><span class="p">),</span><span class="w"> </span><span class="o">-</span><span class="n">prop</span><span class="p">,</span><span class="w"> </span><span class="n">prop</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ungroup</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"_"</span><span class="p">,</span><span class="w"> </span><span class="s2">" "</span><span class="p">,</span><span class="w"> </span><span class="n">variable</span><span class="p">),</span><span class="w">
+         </span><span class="n">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_relevel</span><span class="p">(</span><span class="n">str_wrap</span><span class="p">(</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="m">30</span><span class="p">),</span><span class="w"> 
+                             </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Other ethnicity"</span><span class="p">,</span><span class="w"> </span><span class="s2">"$50k-$100k"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Under $50k"</span><span class="p">,</span><span class="w">
+                               </span><span class="s2">"Canterbury"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Wellington/ Wairarapa"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Lower North Is."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Upper North Is."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Auckland"</span><span class="p">),</span><span class="w"> 
+                             </span><span class="n">after</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">Inf</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">weight</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">prop</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">answer</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">scales</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"free_y"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_bar</span><span class="p">(</span><span class="n">position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"stack"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">coord_flip</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent_format</span><span class="p">(</span><span class="n">accuracy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_fill_manual</span><span class="p">(</span><span class="n">breaks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Strongly oppose"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Somewhat oppose"</span><span class="p">,</span><span class="w"> 
+                                  </span><span class="s2">"Somewhat support"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Strongly support"</span><span class="p">),</span><span class="w">
+                    </span><span class="n">values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">brewer.pal</span><span class="p">(</span><span class="m">4</span><span class="p">,</span><span class="w"> </span><span class="s2">"Spectral"</span><span class="p">)[</span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">4</span><span class="p">,</span><span class="m">3</span><span class="p">)])</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"'Unsure' and 'Neither' responses omitted from chart, but not from calculation of percentages"</span><span class="p">,</span><span class="w">
+       </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w">
+       </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="s2">""</span><span class="p">,</span><span class="w">
+       </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">q</span><span class="m">1</span><span class="p">,</span><span class="w">
+       </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Support and opposition to gun control in New Zealand"</span><span class="p">)</span></code></pre></figure>
+
+<h3 id="approach">Approach</h3>
+
+<p>We will be performing this resurrection of the microdata in three steps:</p>
+
+<ol>
+  <li>create a table of all possible combinations of each variable (income, age, ethnicity, possible answers to the question on gun control)</li>
+  <li>create a set of weights for each combination that add up to the observed marginal distributions (eg combinations of age with particular answers to the question), from which we can select samples that represent the same population we have inferred the original sample was drawn from</li>
+  <li>draw a sample from that population,</li>
+  <li>evaluate our sample’s marginal totals against those of the original sample, and “improve” our simulated sample by dropping excess individuals and replacing them with new ‘respondents’ that give the sample propoertise that more closely resemble the original sample</li>
+</ol>
+
+<p>The usual process of generating a SURF performs just steps 1 to 3, which turn out to be fairly straightforward with our relatively small number of variables. It is task four that looks to be the difficult one; a good thing too, or it would be too easy for snoopers to re-create microdata from aggregates.</p>
+
+<p>BTW if people are wondering about my use of the term “snooper”, this isn’t me being whimsical; this is the term generally used in the statistical disclosure control literature for the adversary that we build our confidentialisation methods to guard against.</p>
+
+<h3 id="dealing-with-some-variables-idiosyncracies">Dealing with some variables’ idiosyncracies</h3>
+
+<p>When we look at counts of responses by each of the reported variables, straight away we have two interesting problems.</p>
+
+<ul>
+  <li>The “ethnicity” variable, while reported in aggregate the same as variables such as region and income, is different because in the standard New Zealand classifications it is possible for a respondent to report two ethnicities. So we have more than 1,000 total responses by ethnicity despite the reported sample size being 1,000</li>
+  <li>Other variables have less than 1,000 responses, almost certainly due to non-response; and the “unknown” categories for those variables are not provide.</li>
+</ul>
+
+<table class="table" style="margin-left: auto; margin-right: auto;">
+ <thead>
+  <tr>
+   <th style="text-align:left;"> variable </th>
+   <th style="text-align:right;"> sum(Freq) </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr>
+   <td style="text-align:left;"> Age </td>
+   <td style="text-align:right;"> 1000.0000 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> All </td>
+   <td style="text-align:right;"> 1000.0000 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Dependent children </td>
+   <td style="text-align:right;"> 1000.0000 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Employment </td>
+   <td style="text-align:right;"> 1000.0000 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Ethnicity </td>
+   <td style="text-align:right;"> 1098.8538 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Gender </td>
+   <td style="text-align:right;"> 995.7287 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Household income </td>
+   <td style="text-align:right;"> 857.4557 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Living Situation </td>
+   <td style="text-align:right;"> 928.8421 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Region </td>
+   <td style="text-align:right;"> 1000.0100 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Rural </td>
+   <td style="text-align:right;"> 956.4756 </td>
+  </tr>
+</tbody>
+</table>
+
+<p>… which was generated with this:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">freq1c</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">variable</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">summarise</span><span class="p">(</span><span class="nf">sum</span><span class="p">(</span><span class="n">Freq</span><span class="p">))</span></code></pre></figure>
+
+<p>It looks like age, dependent children, employment and region were all fully responded to (perhaps mandatory) whereas other variables had varying degrees of partial response, with income being the most non-answered question (unsurprising because of its sensitivity).</p>
+
+<p>For income (and similar variables) we can recover the marginal totals of those for whom income is unknown by comparing the total responses for each level of the substantive question for “All” to those for whom we do have income information.</p>
+
+<p>For ethnicity we need five yes/no variables for each of the possible ethnicities. When we generate our full “all combinations” population, we will eliminate those with more than two ethnicities, which helps keep size down to reasonable levels.</p>
+
+<p>A bit of mucking around lets us deduce the values of those unknowns, and turn ethnicity into multiple variables.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#--------------Ethnicity variables and unknowns (income etc)--------------------
+</span><span class="n">freq1c</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">variable</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">summarise</span><span class="p">(</span><span class="nf">sum</span><span class="p">(</span><span class="n">Freq</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">kable</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">kable_styling</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">write_clip</span><span class="p">()</span><span class="w">
+
+</span><span class="n">freq1a</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">freq1c</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Ethnicity"</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">variable</span><span class="p">),</span><span class="w">
+         </span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">clean</span><span class="p">(</span><span class="n">variable</span><span class="p">),</span><span class="w">
+         </span><span class="n">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"$100,000k"</span><span class="p">,</span><span class="w"> </span><span class="s2">"$100k"</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">fixed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">))</span><span class="w"> 
+
+</span><span class="n">ethnicity_vars</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">freq1a</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">clean</span><span class="p">(</span><span class="n">value</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">distinct</span><span class="p">(</span><span class="n">variable</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">pull</span><span class="p">(</span><span class="n">variable</span><span class="p">)</span><span class="w">
+
+</span><span class="n">totals</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">freq1a</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"All"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">select</span><span class="p">(</span><span class="n">answer</span><span class="p">,</span><span class="w"> </span><span class="n">answer_total</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Freq</span><span class="p">)</span><span class="w">
+
+
+</span><span class="n">unknowns</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">freq1a</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">"All"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">answer</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">summarise</span><span class="p">(</span><span class="n">variable_total</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">Freq</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">left_join</span><span class="p">(</span><span class="n">totals</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"answer"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">Freq</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="n">answer_total</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">variable_total</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">),</span><span class="w">
+         </span><span class="n">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="n">ethnicity_vars</span><span class="p">,</span><span class="w"> 
+                        </span><span class="n">paste</span><span class="p">(</span><span class="s2">"Not"</span><span class="p">,</span><span class="w"> </span><span class="n">variable</span><span class="p">),</span><span class="w"> 
+                        </span><span class="n">paste</span><span class="p">(</span><span class="s2">"Unknown"</span><span class="p">,</span><span class="w"> </span><span class="n">variable</span><span class="p">)))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ungroup</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">select</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">answer</span><span class="p">,</span><span class="w"> </span><span class="n">Freq</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">Freq</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w">
+
+</span><span class="n">freq1b</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">freq1a</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">"All"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">rbind</span><span class="p">(</span><span class="n">unknowns</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">Freq</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="n">Freq</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">Freq</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0</span><span class="p">)</span></code></pre></figure>
+
+<h3 id="step-1---creating-all-possible-combinations">Step 1 - creating all possible combinations</h3>
+
+<p>The first few rows of the object <code class="highlighter-rouge">freq1b</code> above look like this:</p>
+
+<table class="table" style="margin-left: auto; margin-right: auto;">
+ <thead>
+  <tr>
+   <th style="text-align:left;"> variable </th>
+   <th style="text-align:left;"> value </th>
+   <th style="text-align:left;"> answer </th>
+   <th style="text-align:right;"> Freq </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr>
+   <td style="text-align:left;"> Region </td>
+   <td style="text-align:left;"> Upper North Is. </td>
+   <td style="text-align:left;"> Strongly support </td>
+   <td style="text-align:right;"> 99 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Region </td>
+   <td style="text-align:left;"> Auckland </td>
+   <td style="text-align:left;"> Strongly support </td>
+   <td style="text-align:right;"> 155 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Region </td>
+   <td style="text-align:left;"> Wellington/ Wairarapa </td>
+   <td style="text-align:left;"> Strongly support </td>
+   <td style="text-align:right;"> 69 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Region </td>
+   <td style="text-align:left;"> Lower North Is. </td>
+   <td style="text-align:left;"> Strongly support </td>
+   <td style="text-align:right;"> 52 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Region </td>
+   <td style="text-align:left;"> Canterbury </td>
+   <td style="text-align:left;"> Strongly support </td>
+   <td style="text-align:right;"> 72 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Region </td>
+   <td style="text-align:left;"> Other South Is. </td>
+   <td style="text-align:left;"> Strongly support </td>
+   <td style="text-align:right;"> 53 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Rural </td>
+   <td style="text-align:left;"> Yes </td>
+   <td style="text-align:left;"> Strongly support </td>
+   <td style="text-align:right;"> 50 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Rural </td>
+   <td style="text-align:left;"> No </td>
+   <td style="text-align:left;"> Strongly support </td>
+   <td style="text-align:right;"> 436 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Gender </td>
+   <td style="text-align:left;"> Male </td>
+   <td style="text-align:left;"> Strongly support </td>
+   <td style="text-align:right;"> 216 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Gender </td>
+   <td style="text-align:left;"> Female </td>
+   <td style="text-align:left;"> Strongly support </td>
+   <td style="text-align:right;"> 283 </td>
+  </tr>
+</tbody>
+</table>
+
+<p>Here is some code that takes that <code class="highlighter-rouge">freq1b</code> object and turns it into a big data frame of all the possible combinations of demographic variables and answers to question 1, hence representing the full population of New Zealand in scope for the survey (although not yet in the actual proportions of that population).</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#-------------------Create population dataset of all possible combinations of variables---------
+</span><span class="n">poss_answers1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">freq1b</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">distinct</span><span class="p">(</span><span class="n">answer</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">rename</span><span class="p">(</span><span class="n">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">answer</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"q1"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">all_vars</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">freq1b</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">distinct</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w">  </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">rbind</span><span class="p">(</span><span class="n">poss_answers1</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">variable</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">sequence</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">n</span><span class="p">())</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ungroup</span><span class="p">()</span><span class="w"> 
+
+</span><span class="n">all_vars_l</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">with</span><span class="p">(</span><span class="n">all_vars</span><span class="p">,</span><span class="w"> </span><span class="n">split</span><span class="p">(</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">variable</span><span class="p">))</span><span class="w">
+
+</span><span class="n">all_combos</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">do.call</span><span class="p">(</span><span class="n">expand.grid</span><span class="p">,</span><span class="w"> </span><span class="n">all_vars_l</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">as_tibble</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate_all</span><span class="p">(</span><span class="n">as.character</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">wt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="o">!</span><span class="p">(</span><span class="n">q</span><span class="m">1</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Unsure"</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">Living_Situation</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Renting from Housing New Zealand or other social housing organisation"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="o">!</span><span class="p">(</span><span class="n">q</span><span class="m">1</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Unsure"</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">Region</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Wellington/ Wairarapa"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="o">!</span><span class="p">(</span><span class="n">Gender</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Unknown Gender"</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">q</span><span class="m">1</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Neither support or oppose"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Somewhat oppose"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Unsure"</span><span class="p">)))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="c1"># remove people with more than 2 ethnicities, to save 1+ million impossible combinations:
+</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">number_ethnicities</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">Asian</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Asian"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+           </span><span class="p">(</span><span class="n">NZ_European_Other_European</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"NZ European / Other European"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+           </span><span class="p">(</span><span class="n">NZ_Maori</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"NZ Māori"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+           </span><span class="p">(</span><span class="n">Other_ethnicity</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Other ethnicity"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+           </span><span class="p">(</span><span class="n">Pasifika</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Pasifika"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">number_ethnicities</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">select</span><span class="p">(</span><span class="o">-</span><span class="n">number_ethnicities</span><span class="p">)</span></code></pre></figure>
+
+<p>Note that I have eliminated by hand a few combinations of variables that are implicitly non-existent in terms of our original sample, and also that the last steps in the chunk above are to cut down our combinations of variables to those that have only one or two ethnicities.</p>
+
+<h3 id="step-2---weights-that-resemble-the-marginal-totals-from-the-actual-sample">Step 2 - weights that resemble the marginal totals from the actual sample</h3>
+
+<p>So far so good. The next step is the one that gets most attention in the synthetic data literature; creating a model or set of weights that will allow our table of all possible combinations of variables to actually be representative of the in-scope population, as understood from the original sample. There are many ways to go about this, with and without explicit statistical models, and I have opted for the simplest which is to use iterative proportional fitting (or “raking”) to create a set of weights for my all-combinations table that adds up to every one of the observed combinations of aggregate marginal totals. I use Thomas Lumley’s <code class="highlighter-rouge">survey</code> package as a short cut here, noting the irony that I am creating weights for a population to match a sample, rather than (as is usually the case) for a sample to match a population. Sometimes this makes it hard to keep track of exactly what I mean by population in sample in the code below.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># Create a list with 13 different population tibbles, for each combination of a variable with Q1
+</span><span class="n">pops1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">freq1b</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">group_split</span><span class="p">(</span><span class="n">variable</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">lapply</span><span class="p">(</span><span class="n">.</span><span class="p">,</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">){</span><span class="w">
+    </span><span class="nf">names</span><span class="p">(</span><span class="n">x</span><span class="p">)[</span><span class="m">2</span><span class="o">:</span><span class="m">3</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">unique</span><span class="p">(</span><span class="n">x</span><span class="o">$</span><span class="n">variable</span><span class="p">),</span><span class="w"> </span><span class="s2">"q1"</span><span class="p">)</span><span class="w">
+    </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">x</span><span class="p">[,</span><span class="w"> </span><span class="m">-1</span><span class="p">]</span><span class="w">
+    </span><span class="nf">return</span><span class="p">(</span><span class="n">x</span><span class="p">)})</span><span class="w">
+
+</span><span class="n">full_data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">all_combos</span><span class="w">
+
+</span><span class="n">d</span><span class="m">1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">svydesign</span><span class="p">(</span><span class="o">~</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">weights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">~</span><span class="n">wt</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">full_data</span><span class="p">)</span><span class="w">
+
+</span><span class="n">d</span><span class="m">2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">rake</span><span class="p">(</span><span class="n">d</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">sample</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="o">~</span><span class="n">Age</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">q</span><span class="m">1</span><span class="p">,</span><span class="w">
+                             </span><span class="o">~</span><span class="n">Asian</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">q</span><span class="m">1</span><span class="p">,</span><span class="w">
+                             </span><span class="o">~</span><span class="n">Dependent_children</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">q</span><span class="m">1</span><span class="p">,</span><span class="w">
+                             </span><span class="o">~</span><span class="n">Employment</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">q</span><span class="m">1</span><span class="p">,</span><span class="w">
+                             </span><span class="o">~</span><span class="n">Gender</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">q</span><span class="m">1</span><span class="p">,</span><span class="w">
+                             </span><span class="o">~</span><span class="n">Household_income</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">q</span><span class="m">1</span><span class="p">,</span><span class="w">
+                             </span><span class="o">~</span><span class="n">Living_Situation</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">q</span><span class="m">1</span><span class="p">,</span><span class="w">
+                             </span><span class="o">~</span><span class="n">NZ_European_Other_European</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">q</span><span class="m">1</span><span class="p">,</span><span class="w">
+                             </span><span class="o">~</span><span class="n">NZ_Maori</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">q</span><span class="m">1</span><span class="p">,</span><span class="w">
+                             </span><span class="o">~</span><span class="n">Other_ethnicity</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">q</span><span class="m">1</span><span class="p">,</span><span class="w">
+                             </span><span class="o">~</span><span class="n">Pasifika</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">q</span><span class="m">1</span><span class="p">,</span><span class="w">
+                             </span><span class="o">~</span><span class="n">Region</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">q</span><span class="m">1</span><span class="p">,</span><span class="w">
+                             </span><span class="o">~</span><span class="n">Rural</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">q</span><span class="m">1</span><span class="w">
+</span><span class="p">),</span><span class="w">
+</span><span class="n">population</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="n">pops1</span><span class="p">[[</span><span class="m">1</span><span class="p">]],</span><span class="w">
+                  </span><span class="n">pops1</span><span class="p">[[</span><span class="m">2</span><span class="p">]],</span><span class="w">
+                  </span><span class="n">pops1</span><span class="p">[[</span><span class="m">3</span><span class="p">]],</span><span class="w">
+                  </span><span class="n">pops1</span><span class="p">[[</span><span class="m">4</span><span class="p">]],</span><span class="w">
+                  </span><span class="n">pops1</span><span class="p">[[</span><span class="m">5</span><span class="p">]],</span><span class="w">
+                  </span><span class="n">pops1</span><span class="p">[[</span><span class="m">6</span><span class="p">]],</span><span class="w">
+                  </span><span class="n">pops1</span><span class="p">[[</span><span class="m">7</span><span class="p">]],</span><span class="w">
+                  </span><span class="n">pops1</span><span class="p">[[</span><span class="m">8</span><span class="p">]],</span><span class="w">
+                  </span><span class="n">pops1</span><span class="p">[[</span><span class="m">9</span><span class="p">]],</span><span class="w">
+                  </span><span class="n">pops1</span><span class="p">[[</span><span class="m">10</span><span class="p">]],</span><span class="w">
+                  </span><span class="n">pops1</span><span class="p">[[</span><span class="m">11</span><span class="p">]],</span><span class="w">
+                  </span><span class="n">pops1</span><span class="p">[[</span><span class="m">12</span><span class="p">]],</span><span class="w">
+                  </span><span class="n">pops1</span><span class="p">[[</span><span class="m">13</span><span class="p">]]))</span><span class="w">
+
+</span><span class="n">full_data</span><span class="o">$</span><span class="n">wt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">weights</span><span class="p">(</span><span class="n">d</span><span class="m">2</span><span class="p">)</span></code></pre></figure>
+
+<p>This only takes a few seconds to run on my laptop.</p>
+
+<p>So we now have the <code class="highlighter-rouge">full_data</code> object, which has 2.5 million rows and 15 columns. The first 10 rows look like this:</p>
+
+<table class="table" style="margin-left: auto; margin-right: auto;">
+ <thead>
+  <tr>
+   <th style="text-align:left;"> Age </th>
+   <th style="text-align:left;"> Asian </th>
+   <th style="text-align:left;"> Dependent_children </th>
+   <th style="text-align:left;"> Employment </th>
+   <th style="text-align:left;"> Gender </th>
+   <th style="text-align:left;"> Household_income </th>
+   <th style="text-align:left;"> Living_Situation </th>
+   <th style="text-align:left;"> NZ_European_Other_European </th>
+   <th style="text-align:left;"> NZ_Maori </th>
+   <th style="text-align:left;"> Other_ethnicity </th>
+   <th style="text-align:left;"> Pasifika </th>
+   <th style="text-align:left;"> q1 </th>
+   <th style="text-align:left;"> Region </th>
+   <th style="text-align:left;"> Rural </th>
+   <th style="text-align:right;"> wt </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr>
+   <td style="text-align:left;"> 18-29 </td>
+   <td style="text-align:left;"> Not Asian </td>
+   <td style="text-align:left;"> Yes </td>
+   <td style="text-align:left;"> 30 hours or more </td>
+   <td style="text-align:left;"> Male </td>
+   <td style="text-align:left;"> Under $50k </td>
+   <td style="text-align:left;"> Renting from a private landlord or property management company </td>
+   <td style="text-align:left;"> Not NZ_European_Other_European </td>
+   <td style="text-align:left;"> NZ Maori </td>
+   <td style="text-align:left;"> Other ethnicity </td>
+   <td style="text-align:left;"> Pasifika </td>
+   <td style="text-align:left;"> Strongly support </td>
+   <td style="text-align:left;"> Upper North Is. </td>
+   <td style="text-align:left;"> Yes </td>
+   <td style="text-align:right;"> 2e-07 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 30-44 </td>
+   <td style="text-align:left;"> Not Asian </td>
+   <td style="text-align:left;"> Yes </td>
+   <td style="text-align:left;"> 30 hours or more </td>
+   <td style="text-align:left;"> Male </td>
+   <td style="text-align:left;"> Under $50k </td>
+   <td style="text-align:left;"> Renting from a private landlord or property management company </td>
+   <td style="text-align:left;"> Not NZ_European_Other_European </td>
+   <td style="text-align:left;"> NZ Maori </td>
+   <td style="text-align:left;"> Other ethnicity </td>
+   <td style="text-align:left;"> Pasifika </td>
+   <td style="text-align:left;"> Strongly support </td>
+   <td style="text-align:left;"> Upper North Is. </td>
+   <td style="text-align:left;"> Yes </td>
+   <td style="text-align:right;"> 3e-07 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 45-59 </td>
+   <td style="text-align:left;"> Not Asian </td>
+   <td style="text-align:left;"> Yes </td>
+   <td style="text-align:left;"> 30 hours or more </td>
+   <td style="text-align:left;"> Male </td>
+   <td style="text-align:left;"> Under $50k </td>
+   <td style="text-align:left;"> Renting from a private landlord or property management company </td>
+   <td style="text-align:left;"> Not NZ_European_Other_European </td>
+   <td style="text-align:left;"> NZ Maori </td>
+   <td style="text-align:left;"> Other ethnicity </td>
+   <td style="text-align:left;"> Pasifika </td>
+   <td style="text-align:left;"> Strongly support </td>
+   <td style="text-align:left;"> Upper North Is. </td>
+   <td style="text-align:left;"> Yes </td>
+   <td style="text-align:right;"> 3e-07 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 60+ </td>
+   <td style="text-align:left;"> Not Asian </td>
+   <td style="text-align:left;"> Yes </td>
+   <td style="text-align:left;"> 30 hours or more </td>
+   <td style="text-align:left;"> Male </td>
+   <td style="text-align:left;"> Under $50k </td>
+   <td style="text-align:left;"> Renting from a private landlord or property management company </td>
+   <td style="text-align:left;"> Not NZ_European_Other_European </td>
+   <td style="text-align:left;"> NZ Maori </td>
+   <td style="text-align:left;"> Other ethnicity </td>
+   <td style="text-align:left;"> Pasifika </td>
+   <td style="text-align:left;"> Strongly support </td>
+   <td style="text-align:left;"> Upper North Is. </td>
+   <td style="text-align:left;"> Yes </td>
+   <td style="text-align:right;"> 3e-07 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 18-29 </td>
+   <td style="text-align:left;"> Not Asian </td>
+   <td style="text-align:left;"> No </td>
+   <td style="text-align:left;"> 30 hours or more </td>
+   <td style="text-align:left;"> Male </td>
+   <td style="text-align:left;"> Under $50k </td>
+   <td style="text-align:left;"> Renting from a private landlord or property management company </td>
+   <td style="text-align:left;"> Not NZ_European_Other_European </td>
+   <td style="text-align:left;"> NZ Maori </td>
+   <td style="text-align:left;"> Other ethnicity </td>
+   <td style="text-align:left;"> Pasifika </td>
+   <td style="text-align:left;"> Strongly support </td>
+   <td style="text-align:left;"> Upper North Is. </td>
+   <td style="text-align:left;"> Yes </td>
+   <td style="text-align:right;"> 6e-07 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 30-44 </td>
+   <td style="text-align:left;"> Not Asian </td>
+   <td style="text-align:left;"> No </td>
+   <td style="text-align:left;"> 30 hours or more </td>
+   <td style="text-align:left;"> Male </td>
+   <td style="text-align:left;"> Under $50k </td>
+   <td style="text-align:left;"> Renting from a private landlord or property management company </td>
+   <td style="text-align:left;"> Not NZ_European_Other_European </td>
+   <td style="text-align:left;"> NZ Maori </td>
+   <td style="text-align:left;"> Other ethnicity </td>
+   <td style="text-align:left;"> Pasifika </td>
+   <td style="text-align:left;"> Strongly support </td>
+   <td style="text-align:left;"> Upper North Is. </td>
+   <td style="text-align:left;"> Yes </td>
+   <td style="text-align:right;"> 8e-07 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 45-59 </td>
+   <td style="text-align:left;"> Not Asian </td>
+   <td style="text-align:left;"> No </td>
+   <td style="text-align:left;"> 30 hours or more </td>
+   <td style="text-align:left;"> Male </td>
+   <td style="text-align:left;"> Under $50k </td>
+   <td style="text-align:left;"> Renting from a private landlord or property management company </td>
+   <td style="text-align:left;"> Not NZ_European_Other_European </td>
+   <td style="text-align:left;"> NZ Maori </td>
+   <td style="text-align:left;"> Other ethnicity </td>
+   <td style="text-align:left;"> Pasifika </td>
+   <td style="text-align:left;"> Strongly support </td>
+   <td style="text-align:left;"> Upper North Is. </td>
+   <td style="text-align:left;"> Yes </td>
+   <td style="text-align:right;"> 9e-07 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 60+ </td>
+   <td style="text-align:left;"> Not Asian </td>
+   <td style="text-align:left;"> No </td>
+   <td style="text-align:left;"> 30 hours or more </td>
+   <td style="text-align:left;"> Male </td>
+   <td style="text-align:left;"> Under $50k </td>
+   <td style="text-align:left;"> Renting from a private landlord or property management company </td>
+   <td style="text-align:left;"> Not NZ_European_Other_European </td>
+   <td style="text-align:left;"> NZ Maori </td>
+   <td style="text-align:left;"> Other ethnicity </td>
+   <td style="text-align:left;"> Pasifika </td>
+   <td style="text-align:left;"> Strongly support </td>
+   <td style="text-align:left;"> Upper North Is. </td>
+   <td style="text-align:left;"> Yes </td>
+   <td style="text-align:right;"> 1e-06 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 18-29 </td>
+   <td style="text-align:left;"> Not Asian </td>
+   <td style="text-align:left;"> Yes </td>
+   <td style="text-align:left;"> Less than 30 hours </td>
+   <td style="text-align:left;"> Male </td>
+   <td style="text-align:left;"> Under $50k </td>
+   <td style="text-align:left;"> Renting from a private landlord or property management company </td>
+   <td style="text-align:left;"> Not NZ_European_Other_European </td>
+   <td style="text-align:left;"> NZ Maori </td>
+   <td style="text-align:left;"> Other ethnicity </td>
+   <td style="text-align:left;"> Pasifika </td>
+   <td style="text-align:left;"> Strongly support </td>
+   <td style="text-align:left;"> Upper North Is. </td>
+   <td style="text-align:left;"> Yes </td>
+   <td style="text-align:right;"> 1e-07 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 30-44 </td>
+   <td style="text-align:left;"> Not Asian </td>
+   <td style="text-align:left;"> Yes </td>
+   <td style="text-align:left;"> Less than 30 hours </td>
+   <td style="text-align:left;"> Male </td>
+   <td style="text-align:left;"> Under $50k </td>
+   <td style="text-align:left;"> Renting from a private landlord or property management company </td>
+   <td style="text-align:left;"> Not NZ_European_Other_European </td>
+   <td style="text-align:left;"> NZ Maori </td>
+   <td style="text-align:left;"> Other ethnicity </td>
+   <td style="text-align:left;"> Pasifika </td>
+   <td style="text-align:left;"> Strongly support </td>
+   <td style="text-align:left;"> Upper North Is. </td>
+   <td style="text-align:left;"> Yes </td>
+   <td style="text-align:right;"> 1e-07 </td>
+  </tr>
+</tbody>
+</table>
+
+<p>Within rounding errors, that final <code class="highlighter-rouge">wt</code> column adds up to the published survey sample totals. For example:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="o">&gt;</span><span class="w"> </span><span class="n">full_data</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+</span><span class="o">+</span><span class="w">   </span><span class="n">group_by</span><span class="p">(</span><span class="n">Gender</span><span class="p">,</span><span class="w"> </span><span class="n">q</span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+</span><span class="o">+</span><span class="w">   </span><span class="n">summarise</span><span class="p">(</span><span class="n">full_data_total</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">wt</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+</span><span class="o">+</span><span class="w">   </span><span class="n">left_join</span><span class="p">(</span><span class="n">pops1</span><span class="p">[[</span><span class="m">5</span><span class="p">]])</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+</span><span class="o">+</span><span class="w">   </span><span class="n">rename</span><span class="p">(</span><span class="n">original_survey_total</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Freq</span><span class="p">)</span><span class="w">
+</span><span class="n">Joining</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Gender"</span><span class="p">,</span><span class="w"> </span><span class="s2">"q1"</span><span class="p">)</span><span class="w">
+</span><span class="c1"># A tibble: 15 x 4
+# Groups:   Gender [3]
+</span><span class="w">   </span><span class="n">Gender</span><span class="w">         </span><span class="n">q</span><span class="m">1</span><span class="w">                        </span><span class="n">full_data_total</span><span class="w"> </span><span class="n">original_survey_total</span><span class="w">
+   </span><span class="o">&lt;</span><span class="n">chr</span><span class="o">&gt;</span><span class="w">          </span><span class="o">&lt;</span><span class="n">chr</span><span class="o">&gt;</span><span class="w">                               </span><span class="o">&lt;</span><span class="n">dbl</span><span class="o">&gt;</span><span class="w">                 </span><span class="o">&lt;</span><span class="n">dbl</span><span class="o">&gt;</span><span class="w">
+ </span><span class="m">1</span><span class="w"> </span><span class="n">Female</span><span class="w">         </span><span class="n">Neither</span><span class="w"> </span><span class="n">support</span><span class="w"> </span><span class="n">or</span><span class="w"> </span><span class="n">oppose</span><span class="w">           </span><span class="m">55</span><span class="w">                       </span><span class="m">55</span><span class="w">
+ </span><span class="m">2</span><span class="w"> </span><span class="n">Female</span><span class="w">         </span><span class="n">Somewhat</span><span class="w"> </span><span class="n">oppose</span><span class="w">                     </span><span class="m">38</span><span class="w">                       </span><span class="m">38</span><span class="w">
+ </span><span class="m">3</span><span class="w"> </span><span class="n">Female</span><span class="w">         </span><span class="n">Somewhat</span><span class="w"> </span><span class="n">support</span><span class="w">                   </span><span class="m">108</span><span class="n">.</span><span class="w">                     </span><span class="m">107</span><span class="w">
+ </span><span class="m">4</span><span class="w"> </span><span class="n">Female</span><span class="w">         </span><span class="n">Strongly</span><span class="w"> </span><span class="n">oppose</span><span class="w">                     </span><span class="m">21</span><span class="w">                       </span><span class="m">21</span><span class="w">
+ </span><span class="m">5</span><span class="w"> </span><span class="n">Female</span><span class="w">         </span><span class="n">Strongly</span><span class="w"> </span><span class="n">support</span><span class="w">                   </span><span class="m">282</span><span class="n">.</span><span class="w">                     </span><span class="m">283</span><span class="w">
+ </span><span class="m">6</span><span class="w"> </span><span class="n">Female</span><span class="w">         </span><span class="n">Unsure</span><span class="w">                               </span><span class="m">9</span><span class="w">                        </span><span class="m">9</span><span class="w">
+ </span><span class="m">7</span><span class="w"> </span><span class="n">Male</span><span class="w">           </span><span class="n">Neither</span><span class="w"> </span><span class="n">support</span><span class="w"> </span><span class="n">or</span><span class="w"> </span><span class="n">oppose</span><span class="w">           </span><span class="m">63</span><span class="w">                       </span><span class="m">63</span><span class="w">
+ </span><span class="m">8</span><span class="w"> </span><span class="n">Male</span><span class="w">           </span><span class="n">Somewhat</span><span class="w"> </span><span class="n">oppose</span><span class="w">                     </span><span class="m">49</span><span class="n">.</span><span class="w">                      </span><span class="m">49</span><span class="w">
+ </span><span class="m">9</span><span class="w"> </span><span class="n">Male</span><span class="w">           </span><span class="n">Somewhat</span><span class="w"> </span><span class="n">support</span><span class="w">                    </span><span class="m">96.5</span><span class="w">                     </span><span class="m">96</span><span class="w">
+</span><span class="m">10</span><span class="w"> </span><span class="n">Male</span><span class="w">           </span><span class="n">Strongly</span><span class="w"> </span><span class="n">oppose</span><span class="w">                     </span><span class="m">51</span><span class="w">                       </span><span class="m">51</span><span class="w">
+</span><span class="m">11</span><span class="w"> </span><span class="n">Male</span><span class="w">           </span><span class="n">Strongly</span><span class="w"> </span><span class="n">support</span><span class="w">                   </span><span class="m">216</span><span class="n">.</span><span class="w">                     </span><span class="m">216</span><span class="w">
+</span><span class="m">12</span><span class="w"> </span><span class="n">Male</span><span class="w">           </span><span class="n">Unsure</span><span class="w">                               </span><span class="m">8</span><span class="w">                        </span><span class="m">8</span><span class="w">
+</span><span class="m">13</span><span class="w"> </span><span class="n">Unknown</span><span class="w"> </span><span class="n">Gender</span><span class="w"> </span><span class="n">Somewhat</span><span class="w"> </span><span class="n">support</span><span class="w">                     </span><span class="m">1.00</span><span class="w">                     </span><span class="m">1</span><span class="w">
+</span><span class="m">14</span><span class="w"> </span><span class="n">Unknown</span><span class="w"> </span><span class="n">Gender</span><span class="w"> </span><span class="n">Strongly</span><span class="w"> </span><span class="n">oppose</span><span class="w">                      </span><span class="m">1</span><span class="w">                        </span><span class="m">1</span><span class="w">
+</span><span class="m">15</span><span class="w"> </span><span class="n">Unknown</span><span class="w"> </span><span class="n">Gender</span><span class="w"> </span><span class="n">Strongly</span><span class="w"> </span><span class="n">support</span><span class="w">                     </span><span class="m">2.00</span><span class="w">                     </span><span class="m">2</span></code></pre></figure>
+
+<h3 id="step-3---a-sample-from-that-population">Step 3 - a sample from that population</h3>
+
+<p>So, a sample drawn at random from <code class="highlighter-rouge">full_data</code> with probability of selection proportionate to <code class="highlighter-rouge">wt</code> has a fighting chance of coming from the true population with the same joint distribution that the original sample came from, that is, the actual in-scope population of New Zealand. If we were just trying to create a SURF for analysts to use we would stop here, but we are interested not just in whether it is drawn from the same population, but how exactly it resembles the original sample. So in the code below I create the function <code class="highlighter-rouge">evaluate_dissim()</code>, which is going to get some heavy duty use later on. It compares the discrepencies in marginal totals between the new sample and the population totals it is meant to have, returning the sum of the absolute values.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># we can draw a sample from the set of all combinations
+</span><span class="n">set.seed</span><span class="p">(</span><span class="m">877</span><span class="p">)</span><span class="w">
+</span><span class="n">latest_sample</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sample_n</span><span class="p">(</span><span class="n">full_data</span><span class="p">,</span><span class="w"> </span><span class="m">1000</span><span class="p">,</span><span class="w"> </span><span class="n">replace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> </span><span class="n">weight</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">wt</span><span class="p">)</span><span class="w">
+
+</span><span class="cd">#' Evaluate the dissimilarity of a current sample's marginal totals compared to 
+#' those in the various margin "population" totals
+#' 
+#' @param latest_sample a sample to evaluate
+#' @param pops a list of population data frames with three columns; first two are variables, third is Freq
+#' @details provides the sum of the absolute differences of the marginal totals from the sample with those
+#' in pops that it is trying to resemble
+</span><span class="n">evaluate_dissim</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">latest_sample</span><span class="p">,</span><span class="w"> </span><span class="n">pops</span><span class="p">){</span><span class="w">
+  </span><span class="n">total_discrepency</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">0</span><span class="w">
+  
+  </span><span class="k">for</span><span class="p">(</span><span class="n">j</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="nf">length</span><span class="p">(</span><span class="n">pops</span><span class="p">)){</span><span class="w">
+    </span><span class="n">var_names</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">names</span><span class="p">(</span><span class="n">pops</span><span class="p">[[</span><span class="n">j</span><span class="p">]])[</span><span class="m">1</span><span class="o">:</span><span class="m">2</span><span class="p">]</span><span class="w">
+    </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">latest_sample</span><span class="p">[</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="n">var_names</span><span class="p">]</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="n">group_by_all</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="n">summarise</span><span class="p">(</span><span class="n">sample</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">())</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="n">left_join</span><span class="p">(</span><span class="n">pops</span><span class="p">[[</span><span class="n">j</span><span class="p">]],</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">var_names</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="n">mutate</span><span class="p">(</span><span class="n">discrepency</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">abs</span><span class="p">(</span><span class="n">sample</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">Freq</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="n">ungroup</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="n">summarise</span><span class="p">(</span><span class="n">discrepency</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">discrepency</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="n">pull</span><span class="w"> </span><span class="p">(</span><span class="n">discrepency</span><span class="p">)</span><span class="w">
+    
+    </span><span class="n">total_discrepency</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">total_discrepency</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">x</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+  </span><span class="nf">return</span><span class="p">(</span><span class="n">total_discrepency</span><span class="p">)</span><span class="w">
+  
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">discrepencies</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">evaluate_dissim</span><span class="p">(</span><span class="n">latest_sample</span><span class="p">,</span><span class="w"> </span><span class="n">pops1</span><span class="p">)</span></code></pre></figure>
+
+<p>Our starting sample is out from the marginal totals of the combined sample by a total of 1,546. For example, using gender again:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="o">&gt;</span><span class="w"> </span><span class="n">latest_sample</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+</span><span class="o">+</span><span class="w">   </span><span class="n">group_by</span><span class="p">(</span><span class="n">Gender</span><span class="p">,</span><span class="w"> </span><span class="n">q</span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+</span><span class="o">+</span><span class="w">   </span><span class="n">summarise</span><span class="p">(</span><span class="n">latest_sample_total</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">())</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+</span><span class="o">+</span><span class="w">   </span><span class="n">left_join</span><span class="p">(</span><span class="n">pops1</span><span class="p">[[</span><span class="m">5</span><span class="p">]])</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+</span><span class="o">+</span><span class="w">   </span><span class="n">rename</span><span class="p">(</span><span class="n">original_sample_total</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Freq</span><span class="p">)</span><span class="w">
+</span><span class="n">Joining</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Gender"</span><span class="p">,</span><span class="w"> </span><span class="s2">"q1"</span><span class="p">)</span><span class="w">
+</span><span class="c1"># A tibble: 15 x 4
+# Groups:   Gender [3]
+</span><span class="w">   </span><span class="n">Gender</span><span class="w">         </span><span class="n">q</span><span class="m">1</span><span class="w">                        </span><span class="n">latest_sample_total</span><span class="w"> </span><span class="n">original_sample_total</span><span class="w">
+   </span><span class="o">&lt;</span><span class="n">chr</span><span class="o">&gt;</span><span class="w">          </span><span class="o">&lt;</span><span class="n">chr</span><span class="o">&gt;</span><span class="w">                                   </span><span class="o">&lt;</span><span class="n">int</span><span class="o">&gt;</span><span class="w">                 </span><span class="o">&lt;</span><span class="n">dbl</span><span class="o">&gt;</span><span class="w">
+ </span><span class="m">1</span><span class="w"> </span><span class="n">Female</span><span class="w">         </span><span class="n">Neither</span><span class="w"> </span><span class="n">support</span><span class="w"> </span><span class="n">or</span><span class="w"> </span><span class="n">oppose</span><span class="w">                  </span><span class="m">64</span><span class="w">                    </span><span class="m">55</span><span class="w">
+ </span><span class="m">2</span><span class="w"> </span><span class="n">Female</span><span class="w">         </span><span class="n">Somewhat</span><span class="w"> </span><span class="n">oppose</span><span class="w">                            </span><span class="m">45</span><span class="w">                    </span><span class="m">38</span><span class="w">
+ </span><span class="m">3</span><span class="w"> </span><span class="n">Female</span><span class="w">         </span><span class="n">Somewhat</span><span class="w"> </span><span class="n">support</span><span class="w">                          </span><span class="m">102</span><span class="w">                   </span><span class="m">107</span><span class="w">
+ </span><span class="m">4</span><span class="w"> </span><span class="n">Female</span><span class="w">         </span><span class="n">Strongly</span><span class="w"> </span><span class="n">oppose</span><span class="w">                            </span><span class="m">19</span><span class="w">                    </span><span class="m">21</span><span class="w">
+ </span><span class="m">5</span><span class="w"> </span><span class="n">Female</span><span class="w">         </span><span class="n">Strongly</span><span class="w"> </span><span class="n">support</span><span class="w">                          </span><span class="m">265</span><span class="w">                   </span><span class="m">283</span><span class="w">
+ </span><span class="m">6</span><span class="w"> </span><span class="n">Female</span><span class="w">         </span><span class="n">Unsure</span><span class="w">                                      </span><span class="m">7</span><span class="w">                     </span><span class="m">9</span><span class="w">
+ </span><span class="m">7</span><span class="w"> </span><span class="n">Male</span><span class="w">           </span><span class="n">Neither</span><span class="w"> </span><span class="n">support</span><span class="w"> </span><span class="n">or</span><span class="w"> </span><span class="n">oppose</span><span class="w">                  </span><span class="m">71</span><span class="w">                    </span><span class="m">63</span><span class="w">
+ </span><span class="m">8</span><span class="w"> </span><span class="n">Male</span><span class="w">           </span><span class="n">Somewhat</span><span class="w"> </span><span class="n">oppose</span><span class="w">                            </span><span class="m">44</span><span class="w">                    </span><span class="m">49</span><span class="w">
+ </span><span class="m">9</span><span class="w"> </span><span class="n">Male</span><span class="w">           </span><span class="n">Somewhat</span><span class="w"> </span><span class="n">support</span><span class="w">                          </span><span class="m">100</span><span class="w">                    </span><span class="m">96</span><span class="w">
+</span><span class="m">10</span><span class="w"> </span><span class="n">Male</span><span class="w">           </span><span class="n">Strongly</span><span class="w"> </span><span class="n">oppose</span><span class="w">                            </span><span class="m">29</span><span class="w">                    </span><span class="m">51</span><span class="w">
+</span><span class="m">11</span><span class="w"> </span><span class="n">Male</span><span class="w">           </span><span class="n">Strongly</span><span class="w"> </span><span class="n">support</span><span class="w">                          </span><span class="m">240</span><span class="w">                   </span><span class="m">216</span><span class="w">
+</span><span class="m">12</span><span class="w"> </span><span class="n">Male</span><span class="w">           </span><span class="n">Unsure</span><span class="w">                                      </span><span class="m">8</span><span class="w">                     </span><span class="m">8</span><span class="w">
+</span><span class="m">13</span><span class="w"> </span><span class="n">Unknown</span><span class="w"> </span><span class="n">Gender</span><span class="w"> </span><span class="n">Somewhat</span><span class="w"> </span><span class="n">support</span><span class="w">                            </span><span class="m">2</span><span class="w">                     </span><span class="m">1</span><span class="w">
+</span><span class="m">14</span><span class="w"> </span><span class="n">Unknown</span><span class="w"> </span><span class="n">Gender</span><span class="w"> </span><span class="n">Strongly</span><span class="w"> </span><span class="n">oppose</span><span class="w">                             </span><span class="m">1</span><span class="w">                     </span><span class="m">1</span><span class="w">
+</span><span class="m">15</span><span class="w"> </span><span class="n">Unknown</span><span class="w"> </span><span class="n">Gender</span><span class="w"> </span><span class="n">Strongly</span><span class="w"> </span><span class="n">support</span><span class="w">                            </span><span class="m">3</span><span class="w">                     </span><span class="m">2</span></code></pre></figure>
+
+<p>The new sample has similar results to the original - it’s plausibly from the same population, which is all we’ve aimed for so far - but it’s clearly not <em>exactly</em> the same. For example, my sample has 64 female respondents who neither support or oppose the gun control in question, whereas the original sample published a figure of 55. Close but not exact.</p>
+
+<h3 id="step-4---improving-the-simulated-sample-to-make-it-resemble-the-original-samples-marginal-totals">Step 4 - improving the simulated sample to make it resemble the original sample’s marginal totals</h3>
+
+<p>The fourth step is the tricky stuff. I tried several ways to do the next step and am far from convinced I’ve got it right; in fact even for the approach I’ve ended up with, I have far from optimised code. But it’s good enough for illustrative purposes.</p>
+
+<p>My first idea was to find a row of data (representing a whole respondent) that was in “excess” with regard to at least one of its variables, remove that respondent from the sample and replace them with someone else chosen at random, with extra probability given to new respondents that would improve the marginal totals.</p>
+
+<p>To do this, I defined a function called <code class="highlighter-rouge">improve_rnd()</code> which takes the latest sample and confronts it with a single marginal total, just like I do with gender in the table above.</p>
+
+<ul>
+  <li>From that I identify types of respondents who are in excess (eg Female who Neither support or oppose) and types that are missing (Female who strongly support).</li>
+  <li>I sort my sample with the rows that most represent excess values at the top (with some randomness given there will be lots of ties)</li>
+  <li>I lop off the top row of that sorted sample (noting that this means removing a whole respondent ie also their values for income, age, region, ethnicity, etc)</li>
+  <li>I create a table of under-represented rows from the population with regard to this particular variable, multiplying their original population weights by how badly they are under represented</li>
+  <li>I sample one row from that under-represented set based on those new weights and add it to my new candidate sample</li>
+  <li>I evaluate the candidate sample overall against <em>all</em> marginal totals to see if overall the change improves things or makes them worse (for example, I might have worsened the totals for income even though I improved them for gender)</li>
+  <li>If the candidate sample is better, I return this; otherwise I repeat the last two steps, systematically going through my under-represented set of data until I find one that unambiguously improves the data</li>
+</ul>
+
+<p>As you can probably guess, that second last point above proved to be important - before I did that, I ended up cycling around a modestly improved equilibirium where improving the marginal totals for any one variable was making it worse for the others.</p>
+
+<p>This function then becomes the work horse for an iterative process where I work through all my variables (gender, income, age, etc) one at a time at random, looking to drop one of the rows in my sample that makes it worst for that variable and replace it with an improvement that doesn’t degrade the other variables’ totals. I repeat this until the total discrepency gets down to some acceptable level that is probably from rounding error (noting I never had the exact frequencies from the original data, only proportions and sub-population values of <code class="highlighter-rouge">n</code>).</p>
+
+<p>Here’s the code that does that procedure. This is the expensive part of the computation; it took me many hours to converge to a combined discrepency of less than 400, so in the code below I stop it once it gets below 1,200 - still much higher than I was hoping to get.</p>
+
+<p><em>Post continues after R code</em></p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="cd">#' Improve a sample on basis of discrepency with a single set of marginal totals, while
+#' not making it worse based on the other marginal totals it is matching
+#'
+#' @param latest_sample A sample that is trying to look like the original survey
+#' @param marg_totals A single data frame of marginal totals with three columns, of which the first
+#' two must be variables from full data and the third, Freq, is counts we are trying to match
+#' @param full_data A dataset of all possible combinations that the sample is drawn from, 
+#' with population weights
+#' @param disc 
+#' @param strict if TRUE, whether to insist the end result sample has the same number of rows
+#' as the original latest_sample
+#' @param pops A full set of all marginal totals (as opposed to marg_totals which is just one 
+#' of them) - needed for evaluating how well candidate samples go compared to their aspiration.
+#' @param verbose Whether or not to print out which row of the extra sample data is being tried
+#' to replace an excess row in the sample
+#' @param max_attempts the maximum number of candidate rows to try as a replacement for an excess
+#' row in the sample
+</span><span class="n">improve_rnd</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">latest_sample</span><span class="p">,</span><span class="w"> </span><span class="n">marg_totals</span><span class="p">,</span><span class="w"> </span><span class="n">full_data</span><span class="p">,</span><span class="w"> 
+                   </span><span class="n">disc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.1</span><span class="p">,</span><span class="w"> </span><span class="n">strict</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">pops</span><span class="p">,</span><span class="w"> </span><span class="n">verbose</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w">
+                   </span><span class="n">max_attempts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">100</span><span class="p">){</span><span class="w">
+  
+  </span><span class="c1"># initial discrepency:
+</span><span class="w">  </span><span class="n">starting_disc</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">evaluate_dissim</span><span class="p">(</span><span class="n">latest_sample</span><span class="p">,</span><span class="w"> </span><span class="n">pops</span><span class="p">)</span><span class="w">
+  
+  </span><span class="c1"># initial number of rows (useful for checking if we lose any later):
+</span><span class="w">  </span><span class="n">starting_rows</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">latest_sample</span><span class="p">)</span><span class="w">
+  
+  </span><span class="c1"># variable names we are checking against for just this marginal total
+</span><span class="w">  </span><span class="n">var_names</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">names</span><span class="p">(</span><span class="n">marg_totals</span><span class="p">)[</span><span class="m">1</span><span class="o">:</span><span class="m">2</span><span class="p">]</span><span class="w">
+  
+  </span><span class="c1"># in case we have any excesses recorded from previously, make this NULL
+</span><span class="w">  </span><span class="n">latest_sample</span><span class="o">$</span><span class="n">excesses</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="kc">NULL</span><span class="w">
+  
+  </span><span class="c1"># for convenience, renaming, and being able to go back if necessary, copy the current sample data:
+</span><span class="w">  </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">latest_sample</span><span class="w">
+  </span><span class="nf">names</span><span class="p">(</span><span class="n">x</span><span class="p">)[</span><span class="nf">names</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">var_names</span><span class="p">[</span><span class="m">1</span><span class="p">]]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"var1"</span><span class="w">
+  </span><span class="nf">names</span><span class="p">(</span><span class="n">x</span><span class="p">)[</span><span class="nf">names</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">var_names</span><span class="p">[</span><span class="m">2</span><span class="p">]]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"var2"</span><span class="w">
+  
+  </span><span class="c1"># identify which combinations of the variables listed in marg_data are in latest_sample in excess:
+</span><span class="w">  </span><span class="n">new_excesses</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">group_by</span><span class="p">(</span><span class="n">var1</span><span class="p">,</span><span class="w"> </span><span class="n">var2</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">summarise</span><span class="p">(</span><span class="n">sample_freq</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">())</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">full_join</span><span class="p">(</span><span class="n">marg_totals</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"var1"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">var_names</span><span class="p">[</span><span class="m">1</span><span class="p">],</span><span class="w"> </span><span class="s2">"var2"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">var_names</span><span class="p">[</span><span class="m">2</span><span class="p">]))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">mutate</span><span class="p">(</span><span class="n">sample_freq</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">replace_na</span><span class="p">(</span><span class="n">sample_freq</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">mutate</span><span class="p">(</span><span class="n">excesses</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sample_freq</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">Freq</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">select</span><span class="p">(</span><span class="n">var1</span><span class="p">,</span><span class="w"> </span><span class="n">var2</span><span class="p">,</span><span class="w"> </span><span class="n">excesses</span><span class="p">)</span><span class="w">
+  
+  </span><span class="nf">names</span><span class="p">(</span><span class="n">new_excesses</span><span class="p">)[</span><span class="m">1</span><span class="o">:</span><span class="m">2</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">var_names</span><span class="w">
+  
+  </span><span class="n">y</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">latest_sample</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">left_join</span><span class="p">(</span><span class="n">new_excesses</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">var_names</span><span class="p">)</span><span class="w"> 
+  
+  </span><span class="n">under_rep_vars</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">new_excesses</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">ungroup</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">filter</span><span class="p">(</span><span class="n">excesses</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="o">-</span><span class="n">disc</span><span class="p">)</span><span class="w">
+  
+  </span><span class="c1"># Create and sort the under-represented rows of original data, with those that
+</span><span class="w">  </span><span class="c1"># are more under-represented more likely to be at the top
+</span><span class="w">  </span><span class="n">under_rep_data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">full_data</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">inner_join</span><span class="p">(</span><span class="n">under_rep_vars</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">var_names</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">mutate</span><span class="p">(</span><span class="n">wt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">wt</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nf">abs</span><span class="p">(</span><span class="n">excesses</span><span class="p">),</span><span class="w">
+           </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">runif</span><span class="p">(</span><span class="n">n</span><span class="p">()</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">wt</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">arrange</span><span class="p">(</span><span class="n">desc</span><span class="p">(</span><span class="n">id</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">select</span><span class="p">(</span><span class="o">-</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">slice</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="n">max_attempts</span><span class="p">)</span><span class="w">
+  
+  </span><span class="k">if</span><span class="p">(</span><span class="n">nrow</span><span class="p">(</span><span class="n">under_rep_data</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0</span><span class="p">){</span><span class="w">
+    
+    </span><span class="n">z</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="c1"># knock off one of the worst rows with too many excesses of some variable:
+</span><span class="w">      </span><span class="n">arrange</span><span class="p">(</span><span class="n">desc</span><span class="p">(</span><span class="n">jitter</span><span class="p">(</span><span class="n">excesses</span><span class="p">)))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="n">slice</span><span class="p">(</span><span class="m">-1</span><span class="p">)</span><span class="w">
+    
+    </span><span class="c1"># cycle through all the possible candidates to replace a row of our sample with
+</span><span class="w">    </span><span class="c1"># one that is under represented, and choose the first one that reduces the overall
+</span><span class="w">    </span><span class="c1"># discrepency between our marginal totals and the ones we are aiming for:
+</span><span class="w">    </span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">nrow</span><span class="p">(</span><span class="n">under_rep_data</span><span class="p">)){</span><span class="w">
+      </span><span class="k">if</span><span class="p">(</span><span class="n">verbose</span><span class="p">){</span><span class="n">cat</span><span class="p">(</span><span class="n">i</span><span class="p">)}</span><span class="w">
+      
+      </span><span class="n">candidate_sample</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">z</span><span class="w">  </span><span class="o">%&gt;%</span><span class="w">
+        </span><span class="c1"># replace it with a row from our under-represented set of data:
+</span><span class="w">        </span><span class="n">rbind</span><span class="p">(</span><span class="n">under_rep_data</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">])</span><span class="w">
+      
+      </span><span class="c1"># evaluate our candidate.
+</span><span class="w">      </span><span class="n">new_disc</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">evaluate_dissim</span><span class="p">(</span><span class="n">candidate_sample</span><span class="p">,</span><span class="w"> </span><span class="n">pops</span><span class="p">)</span><span class="w">
+      
+      </span><span class="c1"># Have we made things worse for the other variables by trying to fix it for this one?:
+</span><span class="w">      </span><span class="k">if</span><span class="p">(</span><span class="n">new_disc</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">starting_disc</span><span class="p">){</span><span class="w">
+        </span><span class="c1"># If things are better, we take this sample and break out of the loop
+</span><span class="w">        </span><span class="n">latest_sample</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">candidate_sample</span><span class="w">
+        </span><span class="k">break</span><span class="p">()</span><span class="w">
+      </span><span class="p">}</span><span class="w">
+      </span><span class="c1"># if things aren't better, we keep cycling through under_rep_data until we find one that is
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="c1"># if there's nothing to replace:
+</span><span class="w">    </span><span class="n">new_disc</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">starting_disc</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+  
+  </span><span class="k">if</span><span class="p">(</span><span class="n">strict</span><span class="p">){</span><span class="w">
+    </span><span class="k">if</span><span class="p">(</span><span class="n">nrow</span><span class="p">(</span><span class="n">latest_sample</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">starting_rows</span><span class="p">){</span><span class="w">
+      </span><span class="n">print</span><span class="p">(</span><span class="nf">c</span><span class="p">(</span><span class="n">nrow</span><span class="p">(</span><span class="n">latest_sample</span><span class="p">),</span><span class="w"> </span><span class="n">starting_rows</span><span class="p">))</span><span class="w">
+      </span><span class="n">stop</span><span class="p">(</span><span class="s2">"Somehow gained or lost some rows"</span><span class="p">)</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+  
+  </span><span class="nf">return</span><span class="p">(</span><span class="nf">list</span><span class="p">(</span><span class="n">latest_sample</span><span class="p">,</span><span class="w"> 
+              </span><span class="n">new_disc</span><span class="p">))</span><span class="w">
+  
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">latest_sample</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">Gender</span><span class="p">,</span><span class="w"> </span><span class="n">q</span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">summarise</span><span class="p">(</span><span class="n">latest_sample_total</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">())</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">left_join</span><span class="p">(</span><span class="n">pops1</span><span class="p">[[</span><span class="m">5</span><span class="p">]])</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">rename</span><span class="p">(</span><span class="n">original_sample_total</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Freq</span><span class="p">)</span><span class="w">
+
+</span><span class="n">discrepencies</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">evaluate_dissim</span><span class="p">(</span><span class="n">latest_sample</span><span class="p">,</span><span class="w"> </span><span class="n">pops1</span><span class="p">)</span><span class="w">
+</span><span class="c1"># best result from random version is 344
+</span><span class="k">while</span><span class="p">(</span><span class="nf">min</span><span class="p">(</span><span class="n">discrepencies</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">1200</span><span class="p">){</span><span class="w">
+  
+  </span><span class="c1"># cycle through each of our sets of marginal totals (in random order), 
+</span><span class="w">  </span><span class="c1"># looking to improve the match if we can
+</span><span class="w">  </span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">sample</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="nf">length</span><span class="p">(</span><span class="n">pops1</span><span class="p">))){</span><span class="w">
+    </span><span class="n">y</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">latest_sample</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="n">excess</span><span class="p">(</span><span class="n">marg_totals</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pops1</span><span class="p">[[</span><span class="n">i</span><span class="p">]],</span><span class="w"> </span><span class="n">full_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">full_data</span><span class="p">,</span><span class="w"> </span><span class="n">disc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.2</span><span class="p">,</span><span class="w">
+             </span><span class="n">pops</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pops1</span><span class="p">,</span><span class="w"> </span><span class="n">max_attempts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="n">verbose</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w"> 
+    
+    </span><span class="n">latest_sample</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">y</span><span class="p">[[</span><span class="m">1</span><span class="p">]]</span><span class="w">
+    </span><span class="n">discrepencies</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">discrepencies</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">[[</span><span class="m">2</span><span class="p">]])</span><span class="w">
+    
+    
+    
+  </span><span class="p">}</span><span class="w">
+  
+  </span><span class="c1"># at the end of a cycle of variables, print how well we're going at improving things:
+</span><span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="nf">min</span><span class="p">(</span><span class="n">discrepencies</span><span class="p">))</span><span class="w">
+  
+</span><span class="p">}</span></code></pre></figure>
+
+<p>So it turned out to be a pretty inefficient solution to knock out a whole person at a time and grab a new one in the hope they would be better. In retrospect, this didn’t make much sense as a method - I clearly came to it because I was thinking in terms of “whole people” as though my simulated sample really represented people and I had no choice but to accept and reject. I was thinking in these terms because I liked the idea of continually sampling from my hypothetical population, and felt this would somehow better mimic the known joint distribution. But I don’t think that makes much sense now that I’ve tried it.</p>
+
+<p>An alternative, perhaps an obvious one, is to look at my current sample, find the particular combinations of some variable that is over-represented (eg nine extra females who neither support or oppose), pick nine of them at random and make them male. Clearly not possible in the real world, but that’s the whole point of synthetic data. I’d resisted this originally because I’d been thinking of all the other characteristics that are jointly distributed with being female that I was now changing, but on a bit of reflection this is actually little different from chucking those nine women out of the sample and keeping grabbing more people from the bag until I found some who were right.</p>
+
+<p>So to implement this I built a new function, <code class="highlighter-rouge">improve_fix</code> which does just that. This was much quicker than my first, resampling-based method; but is still prone to being stuck. So in the implementation below I actually combine both methods: using the “swap people’s characteristics” method as the main way of “improving” my sample, but if after 20 efforts of doing this no improvements are happening, trying my original random resampling method to get stuck out of bad equilibrium.</p>
+
+<p><em>Post continues after R code</em>.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#-----------------Alternative approach - brute force, one variable at a time----
+</span><span class="w">
+</span><span class="cd">#' @details This method changes the sample by seeking a way to flick over var1 to a new value
+#' that will improve the marginal combinations of var1 and var2 while leaving all other variables
+#' unchanged. Unlike improve_rnd, which swaps out whole rows at a time.
+</span><span class="n">improve_fix</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">latest_sample</span><span class="p">,</span><span class="w"> </span><span class="n">marg_totals</span><span class="p">,</span><span class="w"> </span><span class="n">full_data</span><span class="p">,</span><span class="w"> </span><span class="n">pops</span><span class="p">){</span><span class="w">
+  
+  </span><span class="c1"># initial discrepency:
+</span><span class="w">  </span><span class="n">starting_disc</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">evaluate_dissim</span><span class="p">(</span><span class="n">latest_sample</span><span class="p">,</span><span class="w"> </span><span class="n">pops</span><span class="p">)</span><span class="w">
+  
+  </span><span class="c1"># variable names we are checking against for just this marginal total
+</span><span class="w">  </span><span class="n">var_names</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">names</span><span class="p">(</span><span class="n">marg_totals</span><span class="p">)[</span><span class="m">1</span><span class="o">:</span><span class="m">2</span><span class="p">]</span><span class="w">
+  
+  </span><span class="c1"># in case we have any excesses recorded from previously, make this NULL
+</span><span class="w">  </span><span class="n">latest_sample</span><span class="o">$</span><span class="n">excesses</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="kc">NULL</span><span class="w">
+  </span><span class="n">latest_sample</span><span class="o">$</span><span class="n">id</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">nrow</span><span class="p">(</span><span class="n">latest_sample</span><span class="p">)</span><span class="w">
+  
+  </span><span class="c1"># for convenience, renaming, and being able to go back if necessary, copy the current sample data:
+</span><span class="w">  </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">latest_sample</span><span class="w">
+  </span><span class="nf">names</span><span class="p">(</span><span class="n">x</span><span class="p">)[</span><span class="nf">names</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">var_names</span><span class="p">[</span><span class="m">1</span><span class="p">]]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"var1"</span><span class="w">
+  </span><span class="nf">names</span><span class="p">(</span><span class="n">x</span><span class="p">)[</span><span class="nf">names</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">var_names</span><span class="p">[</span><span class="m">2</span><span class="p">]]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"var2"</span><span class="w">
+  
+  </span><span class="c1"># identify which combinations of the variables listed in marg_data are in latest_sample in excess:
+</span><span class="w">  </span><span class="n">changes_possible</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">group_by</span><span class="p">(</span><span class="n">var1</span><span class="p">,</span><span class="w"> </span><span class="n">var2</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">summarise</span><span class="p">(</span><span class="n">sample_freq</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">())</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">full_join</span><span class="p">(</span><span class="n">marg_totals</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"var1"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">var_names</span><span class="p">[</span><span class="m">1</span><span class="p">],</span><span class="w"> </span><span class="s2">"var2"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">var_names</span><span class="p">[</span><span class="m">2</span><span class="p">]))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">mutate</span><span class="p">(</span><span class="n">sample_freq</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">replace_na</span><span class="p">(</span><span class="n">sample_freq</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">mutate</span><span class="p">(</span><span class="n">excesses</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">jitter</span><span class="p">(</span><span class="n">sample_freq</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">Freq</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">filter</span><span class="p">(</span><span class="nf">round</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">excesses</span><span class="p">))</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">select</span><span class="p">(</span><span class="n">var1</span><span class="p">,</span><span class="w"> </span><span class="n">var2</span><span class="p">,</span><span class="w"> </span><span class="n">excesses</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">ungroup</span><span class="p">()</span><span class="w">
+  
+  </span><span class="n">candidate_var2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">changes_possible</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">group_by</span><span class="p">(</span><span class="n">var2</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">filter</span><span class="p">(</span><span class="nf">min</span><span class="p">(</span><span class="n">excesses</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="nf">max</span><span class="p">(</span><span class="n">excesses</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">select</span><span class="p">(</span><span class="o">-</span><span class="n">excesses</span><span class="p">)</span><span class="w">
+    
+  </span><span class="n">changes_needed</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">changes_possible</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">inner_join</span><span class="p">(</span><span class="n">candidate_var2</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"var1"</span><span class="p">,</span><span class="w"> </span><span class="s2">"var2"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">arrange</span><span class="p">(</span><span class="n">desc</span><span class="p">(</span><span class="n">rnorm</span><span class="p">(</span><span class="n">n</span><span class="p">())))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">filter</span><span class="p">(</span><span class="n">var2</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">var2</span><span class="p">[</span><span class="m">1</span><span class="p">])</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">filter</span><span class="p">(</span><span class="n">excesses</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="nf">range</span><span class="p">(</span><span class="n">excesses</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">mutate</span><span class="p">(</span><span class="n">excesses</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="n">excesses</span><span class="p">))</span><span class="w">
+ 
+  </span><span class="nf">names</span><span class="p">(</span><span class="n">changes_needed</span><span class="p">)[</span><span class="m">1</span><span class="o">:</span><span class="m">2</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">var_names</span><span class="w">
+   
+  </span><span class="n">number_changes</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">min</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">pull</span><span class="p">(</span><span class="n">changes_needed</span><span class="p">,</span><span class="w"> </span><span class="n">excesses</span><span class="p">)))</span><span class="w">
+  </span><span class="n">change_from</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">filter</span><span class="p">(</span><span class="n">changes_needed</span><span class="p">,</span><span class="w"> </span><span class="n">excesses</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="n">select</span><span class="p">(</span><span class="o">-</span><span class="n">excesses</span><span class="p">)</span><span class="w">
+  </span><span class="n">change_to</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">filter</span><span class="p">(</span><span class="n">changes_needed</span><span class="p">,</span><span class="w"> </span><span class="n">excesses</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w">
+  
+  </span><span class="k">if</span><span class="p">(</span><span class="n">nrow</span><span class="p">(</span><span class="n">change_from</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">change_to</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">1</span><span class="p">){</span><span class="w">
+    </span><span class="n">knock_out</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">latest_sample</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="n">inner_join</span><span class="p">(</span><span class="n">change_from</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">var_names</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="n">sample_n</span><span class="p">(</span><span class="n">number_changes</span><span class="p">)</span><span class="w">
+    
+    </span><span class="n">replace_with</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">knock_out</span><span class="w">
+    </span><span class="n">replace_with</span><span class="p">[,</span><span class="w"> </span><span class="n">var_names</span><span class="p">[</span><span class="m">1</span><span class="p">]]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">change_to</span><span class="p">[,</span><span class="w"> </span><span class="n">var_names</span><span class="p">[</span><span class="m">1</span><span class="p">]]</span><span class="w">
+    </span><span class="n">replace_with</span><span class="p">[,</span><span class="w"> </span><span class="n">var_names</span><span class="p">[</span><span class="m">2</span><span class="p">]]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">change_to</span><span class="p">[,</span><span class="w"> </span><span class="n">var_names</span><span class="p">[</span><span class="m">2</span><span class="p">]]</span><span class="w">
+    
+    </span><span class="n">latest_sample</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">latest_sample</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="n">filter</span><span class="p">(</span><span class="o">!</span><span class="n">id</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="n">knock_out</span><span class="o">$</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="n">rbind</span><span class="p">(</span><span class="n">replace_with</span><span class="p">)</span><span class="w"> 
+    
+  </span><span class="p">}</span><span class="w">
+   </span><span class="n">latest_sample</span><span class="o">$</span><span class="n">id</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="kc">NULL</span><span class="w">
+
+  </span><span class="c1"># new  discrepency:
+</span><span class="w">  </span><span class="n">new_disc</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">evaluate_dissim</span><span class="p">(</span><span class="n">latest_sample</span><span class="p">,</span><span class="w"> </span><span class="n">pops</span><span class="p">)</span><span class="w">
+  
+  </span><span class="c1"># Note that if change_to has zero rows then
+</span><span class="w">  </span><span class="n">stopifnot</span><span class="p">(</span><span class="n">new_disc</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">starting_disc</span><span class="p">)</span><span class="w">
+  </span><span class="nf">return</span><span class="p">(</span><span class="nf">list</span><span class="p">(</span><span class="n">latest_sample</span><span class="p">,</span><span class="w"> 
+              </span><span class="n">new_disc</span><span class="p">))</span><span class="w">
+  
+</span><span class="p">}</span><span class="w">
+
+
+</span><span class="k">while</span><span class="p">(</span><span class="nf">min</span><span class="p">(</span><span class="n">discrepencies</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">10</span><span class="p">){</span><span class="w">
+  
+  </span><span class="c1"># cycle through each of our sets of marginal totals (in random order), 
+</span><span class="w">  </span><span class="c1"># looking to improve the match if we can
+</span><span class="w">  </span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">sample</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="nf">length</span><span class="p">(</span><span class="n">pops1</span><span class="p">))){</span><span class="w">
+    </span><span class="n">y</span><span class="w"> </span><span class="o">&lt;-</span><span class="w">  </span><span class="n">improve_fix</span><span class="p">(</span><span class="n">latest_sample</span><span class="p">,</span><span class="w"> 
+                      </span><span class="n">marg_totals</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pops1</span><span class="p">[[</span><span class="n">i</span><span class="p">]],</span><span class="w"> 
+                      </span><span class="n">full_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">full_data</span><span class="p">,</span><span class="w">
+                      </span><span class="n">pops</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pops1</span><span class="p">)</span><span class="w"> 
+    
+    </span><span class="k">if</span><span class="p">(</span><span class="nf">is.na</span><span class="p">(</span><span class="n">y</span><span class="p">[[</span><span class="m">2</span><span class="p">]])){</span><span class="n">stop</span><span class="p">(</span><span class="s2">"found an NA"</span><span class="p">)}</span><span class="w">
+    </span><span class="n">latest_sample</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">y</span><span class="p">[[</span><span class="m">1</span><span class="p">]]</span><span class="w">
+    </span><span class="n">discrepencies</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">discrepencies</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">[[</span><span class="m">2</span><span class="p">]])</span><span class="w">
+    
+    
+    
+  </span><span class="p">}</span><span class="w">
+  
+  </span><span class="c1"># at the end of a cycle of variables, print how well we're going at improving things:
+</span><span class="w">  </span><span class="n">print</span><span class="p">(</span><span class="nf">min</span><span class="p">(</span><span class="n">discrepencies</span><span class="p">))</span><span class="w">
+  
+  </span><span class="c1"># sometimes we get prematurely stuck with the "fixed" method and it is worth substituting
+</span><span class="w">  </span><span class="c1"># in and out some whole rows of data to kick-start the process:
+</span><span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="nf">length</span><span class="p">(</span><span class="n">unique</span><span class="p">(</span><span class="n">tail</span><span class="p">(</span><span class="n">discrepencies</span><span class="p">,</span><span class="w"> </span><span class="m">20</span><span class="p">)))</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">1</span><span class="p">){</span><span class="w">
+    </span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">sample</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="nf">length</span><span class="p">(</span><span class="n">pops1</span><span class="p">))){</span><span class="w">
+      </span><span class="n">y</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">latest_sample</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+        </span><span class="n">improve_rnd</span><span class="p">(</span><span class="n">marg_totals</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pops1</span><span class="p">[[</span><span class="n">i</span><span class="p">]],</span><span class="w"> </span><span class="n">full_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">full_data</span><span class="p">,</span><span class="w"> </span><span class="n">disc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.2</span><span class="p">,</span><span class="w">
+                    </span><span class="n">pops</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pops1</span><span class="p">,</span><span class="w"> </span><span class="n">max_attempts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="n">verbose</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w"> 
+      
+      </span><span class="n">latest_sample</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">y</span><span class="p">[[</span><span class="m">1</span><span class="p">]]</span><span class="w">
+      </span><span class="n">discrepencies</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">discrepencies</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">[[</span><span class="m">2</span><span class="p">]])</span><span class="w">
+      
+      
+      
+    </span><span class="p">}</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+  
+</span><span class="p">}</span></code></pre></figure>
+
+<p>This method delivers good results in only a few minutes of processing time. Here’s a plot of the decreasing total discrepencies:</p>
+
+<object type="image/svg+xml" data="/img/0159-discrepencies.svg" width="100%"><img src="/img/0159-discrepencies.png" /></object>
+
+<p>You can see the first, slowish descent in total discrepencies in the first 100 or so samples, which represents my first, replacement-based method with <code class="highlighter-rouge">improve_rnd()</code>. Then from a total discrepency of about 1,200 to just about 250 there is a rapid improvement from using the <code class="highlighter-rouge">improve_fix()</code> method. That method stalls at a discrepency level of about 250 but a return to a cycle of <code class="highlighter-rouge">improve_rnd()</code> gets it out of that equilibrium; this pattern recurs a few times until we minimise our total discrepencies at 22. Importantly, we can get to that sample with discrepency of 22 from multiple ways.</p>
+
+<p>So here’s the comparison of just one variable and question 1 of the sample’s marginal totals and the target, to compare with my first synthetic sample. Note that we now have nearly an exact match - we have just one too few females who “strongly support”, and one too many of unknown gender who “somewhat support”. My method as implemented doesn’t have a clear way to improve the sample in this case. Intuitively, we would think we could find one of those two “unknown gender - somewhat support” people and change them to “female - strongly support” but I’ve written my program only to change one variable at a time (in this case Gender), to minimise complications with other sets of variables. So further improvement is still possible, if anyone really wants to pursue this approach</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>&gt; #-----------------End results--------------
+&gt; latest_sample %&gt;%
++   group_by(Gender, q1) %&gt;%
++   summarise(latest_sample_total = n()) %&gt;%
++   left_join(pops1[[5]]) %&gt;%
++   rename(original_sample_total = Freq)
+Joining, by = c("Gender", "q1")
+# A tibble: 15 x 4
+# Groups:   Gender [3]
+   Gender         q1                        latest_sample_total original_sample_total
+   &lt;chr&gt;          &lt;chr&gt;                                   &lt;int&gt;                 &lt;dbl&gt;
+ 1 Female         Neither support or oppose                  55                    55
+ 2 Female         Somewhat oppose                            38                    38
+ 3 Female         Somewhat support                          107                   107
+ 4 Female         Strongly oppose                            21                    21
+ 5 Female         Strongly support                          282                   283
+ 6 Female         Unsure                                      9                     9
+ 7 Male           Neither support or oppose                  63                    63
+ 8 Male           Somewhat oppose                            49                    49
+ 9 Male           Somewhat support                           96                    96
+10 Male           Strongly oppose                            51                    51
+11 Male           Strongly support                          216                   216
+12 Male           Unsure                                      8                     8
+13 Unknown Gender Somewhat support                            2                     1
+14 Unknown Gender Strongly oppose                             1                     1
+15 Unknown Gender Strongly support                            2                     2
+</code></pre>
+</div>
+
+<h2 id="reflections">Reflections</h2>
+
+<p>A few conclusions:</p>
+
+<ul>
+  <li>This was considerably harder to do than I’d realised; and would get harder again with more sets of marginal totals to match.</li>
+  <li>We would need several orders of magnitude more sets of marginal totals before we have to worry about there being a unique solution that gave a snooper (eg someone who knows the one Female Pasifika survey respondent in region X) confidence they had obtained new, sensitive information ie their answers to the survey.</li>
+  <li>Because I have not included any external information (eg on the ethnic characteristics of different regions), I will have only very weak interaction relations between any variables - big underestimates of the true interactions. Considerably more information of that sort would be needed for this exercise to add any value in terms of generating insights beyond what the original marginal totals did.</li>
+</ul>
+
+<p>Overall, at the end of 1,000+ line blog post, I would say my full method set out here is unlikely to be pragmatically helpful for any realistic use case that comes to mind for me. I think the traditional generation of synthetic data (my steps 1 to 3) is potentially useful for purpose of developing models that might then be applied to the gold standard original microdata in a secure setting; but step 4 really doesn’t add much value either for a bona fide researcher or for a ill-intentioned snooper.</p>
+
+<h2 id="acknowledgement-and-caveat">Acknowledgement and caveat</h2>
+
+<p>Gun Control NZ who commissioned the original survey shared the data and gave me permission to write a blog post on the data here but they have not seen the content in advance or been involved any other way; I am not affiliated with them and they are in no sense responsible for any of the content, findings, errors or omissions in the above.</p>
+
+
+		
+	</div>
+</div>
+
+<div class="col-md-1"></div>
+<div class="col-md-4">
+	<div class="side-banner">
+	
+
+
+	<div>
+	   
+	    
+			
+			<p>&larr; Previous post</p>
+			<p><a rel="prev" href="/blog/2019/09/07/mass-shootings-oz">Poisson point processes, mass shootings and clumping</a></p>
+		
+		
+		
+		
+		 
+			
+			<p>Next post &rarr;</p>
+			<p><a rel="next" href="/blog/2019/11/09/sampling-from-urns">A small simple random sample will often be better than a huge not-so-random one</a></p>
+			
+			
+		
+		
+	</div>
+	
+	 
+
+   <div class = "side-footer">
+			
+			<hr></hr>
+			<p><gcse:search></gcse:search></p>
+			<hr></hr>
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.</p>
+			<hr></hr>
+			
+			<p>My day job is Chief Data Scientist at <a href='https://www.nousgroup.com/'>Nous Group</a>, an international management consultancy with over 400 people working across Australia, the UK and Canada. <a href='mailto:peter.ellis@nousgroup.com.au'>Contact me</a> if you are interested working with us on a grand challenge or broad agenda.</p>
+		
+		    <hr></hr>
+			
+       <div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="false" data-share="false"></div>
+			
+			<hr></hr>
+			<p>I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+			<hr></hr>
+
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title"><i>free range statistics</i></span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			<hr></hr>
+			
+
+
+    </div>
+
+
+
+  
+   
+
+
+
+
+		  
+		  
+
+
+
+	   
+	<div id="disqus_thread"></div>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function() {
+				var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+				dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+				(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+			})();
+		</script>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function () {
+				var s = document.createElement('script'); s.async = true;
+				s.type = 'text/javascript';
+				s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+				(document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+			}());
+		</script>
+
+	<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+	</div>	
+</div>    
+   
+   
+
+			
+			</div><!-- /.container -->
+         
+   <!-- Default Statcounter code for Free Range Statistics
+http://Http://freerangestats.info -->
+<script type="text/javascript">
+var sc_project=11673245; 
+var sc_invisible=1; 
+var sc_security="5b7111a4"; 
+</script>
+<script type="text/javascript"
+src="https://www.statcounter.com/counter/counter.js" async></script>
+<noscript><div class="statcounter"><a title="Web Analytics"
+href="http://statcounter.com/" target="_blank"><img class="statcounter"
+src="//c.statcounter.com/11673245/0/5b7111a4/1/" alt="Web
+Analytics"></a></div></noscript>
+<!-- End of Statcounter Code -->
+
+</body>   
+</html>

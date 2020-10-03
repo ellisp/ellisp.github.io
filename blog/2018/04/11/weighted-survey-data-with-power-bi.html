@@ -1,0 +1,427 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Weighted survey data with Power BI compared to dplyr, SQL or survey</title>
+      	
+         
+         
+            <meta name ="description" content ="I show a workaround to make it (relatively) easy to work with weighted survey data in Power BI, and ruminate on how this compares to other approaches of working with weighted data.">
+            <meta property="og:description" content ="I show a workaround to make it (relatively) easy to work with weighted survey data in Power BI, and ruminate on how this compares to other approaches of working with weighted data.">
+         
+         <meta property="og:site_name" content="free range statistics" />
+         <meta property="og:title" content="Weighted survey data with Power BI compared to dplyr, SQL or survey" />
+         
+            <meta property="og:image" content="http://freerangestats.info/img/0121-powerbi.png" />
+         
+		 
+			<meta property="og:url" content="http://freerangestats.info/blog/2018/04/11/weighted-survey-data-with-power-bi.html" />
+		 
+         <meta property="og:author" content= "https://www.facebook.com/peterstats" />
+         <meta property="og:type" content="article" />
+      
+
+<link href='https://fonts.googleapis.com/css?family=Sarala' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Prosto+One' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Ubuntu+Mono' rel='stylesheet'>
+	  
+          <link href="/css/bootstrap.min.css" rel ="stylesheet" type="text/css">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet" type="text/css">
+            <link href="/css/custom.css" rel ="stylesheet" type="text/css">     
+		<link href="/css/syntax.css" rel ="stylesheet" type="text/css">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="free range statistics by Peter Ellis"
+      href="/feed.xml">
+
+	  
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+  <script>
+  (function() {
+    var cx = '015640467633673901770:pk3v2c95baw';
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+  })();
+</script>
+
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">free range statistics</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/about">about</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">all posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">ordered by date</a></li>
+				  <li><a href="/blog/most-popular.html">ordered by popularity</a></li>
+                  <li><a href="/blog/index_by_tag.html">grouped by subject matter</a></li>
+                  <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
+				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
+				  <li><a href = /blog/2020/09/26/nzes-issues>most recent post</a></li>
+				</ul>
+            </li>
+              <li><a href="/blog/showcase.html">showcase</a></li>
+              <li><a href="/presentations/index.html">presentations</a></li>
+			  <li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">forecasts<span class="caret"></span></a>
+                <ul class="dropdown-menu">
+				  <li><a href = "/covid-tracking/index.html">Covid-19 in Australia</a></li>
+                  <li><a href = "/elections/nz-2020/index.html">NZ election 2020</a></li>
+                  <li><a href = "/elections/oz-2019/index.html">Australia federal election 2019</a></li>
+				  <li><a href = "/elections/nz-2017/combined.html">NZ election 2017</a></li>
+                  <li><a href="/blog/voting.html">all blog posts on voting behaviour</a></li>
+                </ul>				
+			  </li>
+			  
+			  
+			  
+		    </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			<div class="jumbotron">
+  <div class="container">
+	<center><h1>Weighted survey data with Power BI compared to dplyr, SQL or survey</h1></center>
+  </div>
+</div>
+
+
+
+	<div class = "post-summary">
+	<h2>At a glance:</h2>
+	   <p>I show a workaround to make it (relatively) easy to work with weighted survey data in Power BI, and ruminate on how this compares to other approaches of working with weighted data.</p>
+	   <p class="meta">11 Apr 2018</p>
+	   <hr></hr>
+	</div>
+
+
+<div class="col-md-7">
+
+	<div class="post">
+		
+	  <h2 id="a-conundrum-for-microsoft-power-bi">A conundrum for Microsoft Power BI</h2>
+
+<p>I’ve been familiarising myself with Microsoft <em>Power BI</em>, which features prominently in any current discussion on data analysis and dissemination tools for organisations.  It’s a good tool with some nice features.  I won’t try to do a full review here, but just ruminate on one aspect - setting it up for non-specialists to explore weighted survey data.  For this, I want to be able to do appropriately weighted cross-tabs, but I’m not expecting anything that is either more sophisticated or more upstream in the data processing chain.  Actually <em>creating</em> the weights, and estimating sampling uncertainty based on them, is something for another tool like R.</p>
+
+<p>Judging from discussion threads like <a href="http://community.powerbi.com/t5/Desktop/case-weighting-in-data/td-p/51599">this one</a> I’m not the only one who wishes you could just say “apply case weights” in the way that you would with SPSS or a market research cross tab tool.  In fact, there are some tutorials out there on elaborate and painful ways of getting around this problem that seem totally surreal to me, being used to the ease with which R or Stata deal with such problems.</p>
+
+<p><em>Caveat on what follows - my total experience with Power BI can be measured in hours rather than days, so please take the below with a grain of salt.  I may have missed something important.</em></p>
+
+<p>I was worried that inability to deal with weighted data could be a deal breaker for the purpose I was thinking of, and when I found out that a recent release <a href="https://powerbi.microsoft.com/en-us/blog/tag/weighted-average/">proudly touted the ability to do a weighted average</a> (in a way that didn’t even help me much) I nearly gave up on it in disgust.  Power BI lets the developer write R code and at one point I was considering the successful workflow was to pass everything through to R and send it back, before realising that this made no sense at all - might as well do the whole thing in R if that’s what it takes.</p>
+
+<p>However, a few hours of experimentation and trying to get my head around a different way of thinking, and it turns out the solution wasn’t too difficult.  It all comes down to understanding the way Power BI differentiates between static <em>columns</em> of data as opposed to <em>measures</em> which are calculated on the fly.</p>
+
+<p>Once I’d cracked the problem I made a couple of Power BI reports with weighted microdata from complex surveys to be sure it worked generally.  Here’s one that’s been made with public data, the New Zealand International Visitor Survey.  It took about 20 minutes to make this, after I’d familiarised myself with the toolkit on another (non-public) dataset.  It’s live and interactive, in fact interactive in too many ways to try to describe, so just have a play with it:</p>
+
+<iframe width="740" height="510" src="https://app.powerbi.com/view?r=eyJrIjoiNjNhZDc3MGEtNDkzOS00ZDAwLWE0NTUtNzBmOTViZWU0NDIwIiwidCI6IjBlNzE2NzI4LTA1MDItNDkwZS04YTU2LTk0Y2Q5N2I1YWE2OCJ9" frameborder="0" allowfullscreen="true"></iframe>
+
+<p><em>Disclaimer - I’ve been responsible for that survey in the past, but not for more than a year now.  What follows is very much written as a private citizen.</em></p>
+
+<h2 id="introducing-some-data">Introducing some data</h2>
+
+<p>This example survey is one I’ve <a href="/blog/2018/02/03/ivs">blogged about before</a>.  It’s an on-going survey of 5,000 to 10,000 tourists per year on their departure from New Zealand.  Sample size, questionnaire and mode have varied over time, but the Ministry of Business, Innovation and Employment <a href="http://www.mbie.govt.nz/info-services/sectors-industries/tourism/tourism-research-data/ivs/data-download">publish a backcast set of the microdata</a> that is as comparable across time as is possible.  It’s about 24MB to download.  For today’s demo, I’m only going to use the simplest part of the data - the <code class="highlighter-rouge">vw_IVSSurveyMainHeader</code> table which has one row for each of the 125,000 respondents since 1997.  Here’s code to download it, including a couple of convenience R functions that MBIE use to help classify countries into groupings (dated I’m afraid - I can criticise them because I wrote them myself in 2011).  I also reduce the dataset to just 8 columns so when I get into Power BI I won’t have to deal with the complexity of the full data:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">readr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">survey</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">dplyr</span><span class="p">)</span><span class="w">
+
+</span><span class="n">source</span><span class="p">(</span><span class="s2">"https://github.com/nz-mbie/mbie-r-package-public/raw/master/pkg/R/CountryManip.R"</span><span class="p">)</span><span class="w"> </span><span class="c1"># for CountryGroup
+</span><span class="n">source</span><span class="p">(</span><span class="s2">"https://github.com/nz-mbie/mbie-r-package-public/raw/master/pkg/R/NZTourism.R"</span><span class="p">)</span><span class="w">    </span><span class="c1"># for rename.levels
+</span><span class="w">
+</span><span class="c1"># download survey data from the MBIE (Ministry of Business, Innovation and Employment) website
+</span><span class="n">download.file</span><span class="p">(</span><span class="s2">"http://www.mbie.govt.nz/info-services/sectors-industries/tourism/tourism-research-data/ivs/documents-image-library/vw_IVS.zip"</span><span class="p">,</span><span class="w">
+              </span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"wb"</span><span class="p">,</span><span class="w"> </span><span class="n">destfile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"vw_IVS.zip"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">unzip</span><span class="p">(</span><span class="s2">"vw_IVS.zip"</span><span class="p">)</span><span class="w">
+</span><span class="n">ivs</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">read_csv</span><span class="p">(</span><span class="s2">"IVS/vw_IVSSurveyMainHeader.csv"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">ivs_sub</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ivs</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">Country</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CountryGroup</span><span class="p">(</span><span class="n">CORNextYr</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">select</span><span class="p">(</span><span class="n">Country</span><span class="p">,</span><span class="w"> </span><span class="n">Year</span><span class="p">,</span><span class="w"> </span><span class="n">PopulationWeight</span><span class="p">,</span><span class="w"> </span><span class="n">WeightedSpend</span><span class="p">,</span><span class="w"> </span><span class="n">POV</span><span class="p">,</span><span class="w"> </span><span class="n">Gender</span><span class="p">,</span><span class="w"> </span><span class="n">AgeRange</span><span class="p">,</span><span class="w"> </span><span class="n">SurveyResponseID</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">rename</span><span class="p">(</span><span class="n">Spend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">WeightedSpend</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">as_tibble</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">arrange</span><span class="p">(</span><span class="n">Year</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># save a copy to use as the data source for Power BI  
+</span><span class="n">write_delim</span><span class="p">(</span><span class="n">ivs_sub</span><span class="p">,</span><span class="w"> </span><span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"ivs-1997-to-2017.txt"</span><span class="p">,</span><span class="w"> </span><span class="n">delim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"|"</span><span class="p">)</span></code></pre></figure>
+
+<p>Of these variables:</p>
+
+<ul>
+  <li><code class="highlighter-rouge">POV</code> stands for “purpose of visit”, a key concept in tourism data analysis that will be familiar to travellers from many countries’ arrival or departure cards.</li>
+  <li><code class="highlighter-rouge">WeightedSpend</code> actually means “outlier-treated spend”</li>
+  <li><code class="highlighter-rouge">PopulationWeight</code> is the survey weight, after all sorts of complex post-stratification including for age, gender, airport, country of residence and purpose of visit.</li>
+</ul>
+
+<p>Now, I’m interested in weighted counts of people for various combinations of dimensions (like year and purpose), and also in weighted averages and totals of continuous variables like “spend” and “nights in New Zealand”.  If I were using <code class="highlighter-rouge">dplyr</code>, to get those yearly summary estimates for the years since 2011 I’d do something like:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">ivs_sub</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">Year</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">2010</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">Year</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">summarise</span><span class="p">(</span><span class="n">total_spend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">Spend</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">PopulationWeight</span><span class="p">),</span><span class="w">
+            </span><span class="n">people</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">PopulationWeight</span><span class="p">),</span><span class="w">
+            </span><span class="n">mean_spend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">total_spend</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">people</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">arrange</span><span class="p">(</span><span class="n">desc</span><span class="p">(</span><span class="n">Year</span><span class="p">))</span></code></pre></figure>
+
+<p>Or the exact equivalent operation in SQL:</p>
+
+<figure class="highlight"><pre><code class="language-sql" data-lang="sql"><span class="k">SELECT</span>
+  <span class="k">SUM</span><span class="p">(</span><span class="n">Spend</span> <span class="o">*</span> <span class="n">PopulationWeight</span><span class="p">)</span>                         <span class="k">AS</span> <span class="n">total_spend</span><span class="p">,</span>
+  <span class="k">SUM</span><span class="p">(</span><span class="n">PopulationWeight</span><span class="p">)</span>                                 <span class="k">AS</span> <span class="n">people</span><span class="p">,</span>
+  <span class="k">SUM</span><span class="p">(</span><span class="n">Spend</span> <span class="o">*</span> <span class="n">PopulationWeight</span><span class="p">)</span> <span class="o">/</span> <span class="k">SUM</span><span class="p">(</span><span class="n">PopulationWeight</span><span class="p">)</span> <span class="k">AS</span> <span class="n">mean_spend</span><span class="p">,</span>
+  <span class="k">Year</span>
+<span class="k">FROM</span> <span class="n">ivs_sub</span>
+<span class="k">WHERE</span> <span class="k">Year</span> <span class="o">&gt;</span> <span class="mi">2010</span>
+<span class="k">GROUP</span> <span class="k">BY</span> <span class="k">Year</span>
+<span class="k">ORDER</span> <span class="k">BY</span> <span class="k">Year</span> <span class="k">DESC</span></code></pre></figure>
+
+<p>I love <code class="highlighter-rouge">dplyr</code> because the code is ordered in the way I think of the operation: take a dataset, filter it, group it by some variable, summarise it in a particular way and then sort the results.  Whereas in SQL you have to look down near the bottom for the <code class="highlighter-rouge">FROM</code> and <code class="highlighter-rouge">WHERE</code> statements to see what data you’re talking about.  But it really doesn’t matter in this sort of case, they both work fine and fast and are pretty readable.</p>
+
+<p>Those are both (to my mind) database-y ways of telling a computer to do something.  A more statistically oriented way is to create a new object that somehow encompasses the survey design and its weights, and abstract the weighting of estimates away from the user.  That’s the approach taken (with greatly varying degrees of statistical rigour) by commercial cross-tab tools used by market researchers, statistical packages like SPSS and Stata, and Thomas Lumley’s <code class="highlighter-rouge">survey</code> package in R.  Here’s how you’d get mean spend per year this way (I’m ignoring the complexity in the survey design as I’m only interested in the point estimates for today)</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">ivs_svy</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">svydesign</span><span class="p">(</span><span class="o">~</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">weights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">~</span><span class="n">PopulationWeight</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ivs_sub</span><span class="p">)</span><span class="w">
+</span><span class="n">mean_spend</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">svyby</span><span class="p">(</span><span class="o">~</span><span class="n">Spend</span><span class="p">,</span><span class="w"> </span><span class="o">~</span><span class="n">Year</span><span class="p">,</span><span class="w"> </span><span class="n">design</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ivs_svy</span><span class="p">,</span><span class="w"> </span><span class="n">FUN</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">svymean</span><span class="p">)</span><span class="w">
+</span><span class="n">tail</span><span class="p">(</span><span class="nf">round</span><span class="p">(</span><span class="n">mean_spend</span><span class="p">))</span></code></pre></figure>
+
+<p>which has these results:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="o">&gt;</span><span class="w"> </span><span class="n">tail</span><span class="p">(</span><span class="nf">round</span><span class="p">(</span><span class="n">mean_spend</span><span class="p">))</span><span class="w">
+     </span><span class="n">Year</span><span class="w"> </span><span class="n">Spend</span><span class="w"> </span><span class="n">se</span><span class="w">
+</span><span class="m">2012</span><span class="w"> </span><span class="m">2012</span><span class="w">  </span><span class="m">2772</span><span class="w"> </span><span class="m">49</span><span class="w">
+</span><span class="m">2013</span><span class="w"> </span><span class="m">2013</span><span class="w">  </span><span class="m">2717</span><span class="w"> </span><span class="m">48</span><span class="w">
+</span><span class="m">2014</span><span class="w"> </span><span class="m">2014</span><span class="w">  </span><span class="m">2879</span><span class="w"> </span><span class="m">50</span><span class="w">
+</span><span class="m">2015</span><span class="w"> </span><span class="m">2015</span><span class="w">  </span><span class="m">3440</span><span class="w"> </span><span class="m">69</span><span class="w">
+</span><span class="m">2016</span><span class="w"> </span><span class="m">2016</span><span class="w">  </span><span class="m">3225</span><span class="w"> </span><span class="m">63</span><span class="w">
+</span><span class="m">2017</span><span class="w"> </span><span class="m">2017</span><span class="w">  </span><span class="m">3187</span><span class="w"> </span><span class="m">75</span></code></pre></figure>
+
+<p>It’s noticeably slower than <code class="highlighter-rouge">dplyr</code> or SQL, but that’s because it’s doing a lot more calculation and giving you the appropriate sampling error as well as the point estimates.  And once you’ve invested in creating the survey design object, it’s a lot simpler to forget about the weights and just use <code class="highlighter-rouge">svymean</code>, <code class="highlighter-rouge">svytotal</code>, <code class="highlighter-rouge">svyquantile</code> and so on.</p>
+
+<h2 id="weights-in-power-bi">Weights in Power BI</h2>
+
+<p>Power BI is an eco-system rather than a single tool, with three main parts: a desktop application, a web service, and a mobile app.  A typical (but by no means the only) workflow is to do some analysis in the desktop application and create an interactive report or dashboard; and “publish” it to the web service where it can be shared either with other Power BI users, or simply as a web page like my example earlier.</p>
+
+<p>Power BI is an amazing tool with things like natural language queries, but unfortunately there’s no simple way to just say “weight the data please, for all subsequent analyses”.  So we have to do it old-school, something closer to those original <code class="highlighter-rouge">dplyr</code> or SQL queries.</p>
+
+<p>For simple counts this is actually easy - we just need to tell it to report the sum of weights for each combination of variables.  This fits in very nicely with how Power BI sees the world, which is basically as a giant pivot table.  So  no problem there.</p>
+
+<p>For totals of spend (or another numeric variable), it’s also fairly straightforward.  You need to create a new <em>column</em> of weight multiplied by the original value, added to the original data rectangle.  This column is just going to be a bunch of static numbers.  It’s defined this way in Power BI:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>spend_by_weight = 'ivs-1997-to-2017'[PopulationWeight] * 'ivs-1997-to-2017'[Spend]
+</code></pre>
+</div>
+
+<p>Now this column can be used as the value cell in reporting tables and charts and we’re all fine.  It’s annoying to have to create a persistent column for each weighted numeric variable rather than do it on the fly (as we did in SQL and <code class="highlighter-rouge">dplyr</code>) during the grouping and aggregation, but the gain comes with all the automated filtering interactivity of working in Power BI.</p>
+
+<p>The weighted average is more complex.  Imagine we now have a table with a row for each year and a column for total spend and for total visitors.  We just want to divide spend by visitors, right?  That’s what happens in <code class="highlighter-rouge">dplyr</code>, where we took advantage of the fact that variables created first in the <code class="highlighter-rouge">summarise()</code> statement can then be referred to further down in the same query.</p>
+
+<p>I wasted a fair bit of time fiddling with how my reporting table was defined before I understood that the problem comes from all the flexibility for the end user such tables have in Power BI, which puts constraints on the developer.  In particular, if the user selects another graph in the same page (or a report-wide filter), the data behind all linked tables gets automatically filtered (go back to my report at the top of the post and try it).  This is like adding new <code class="highlighter-rouge">filter()</code> functions to our <code class="highlighter-rouge">dplyr</code> statement (or <code class="highlighter-rouge">WHERE</code> clauses in SQL).  Power BI won’t let you treat the columns in a reporting table as first class objects in their own right; and there’s no way to add a column to the original static data that can be just neatly aggregated into a weighted average for any combination of filter, slice and dice that is required once it gets into that reporting table.</p>
+
+<p>It turns out that the way around this is to define a “measure”, which is a more powerful concept in Power BI than a simple static column, even though it appears in a data source’s column list and looks similar.  We define the measure we want this way, referring to the <code class="highlighter-rouge">spend_by_weight</code> column we’d already made for use in aggregating totals:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>mean_spend = sum('ivs-1997-to-2017'[spend_by_weight]) / sum('ivs-1997-to-2017'[PopulationWeight]) 
+</code></pre>
+</div>
+
+<p>Once defined this way, the new <code class="highlighter-rouge">mean_spend</code> measure will be calculated dynamically and correctly for whatever combination of variables it is combined with in the visualization.  It’s like defining part of <code class="highlighter-rouge">dplyr</code>’s <code class="highlighter-rouge">summarise()</code> clause in advance, then whatever the user defines as <code class="highlighter-rouge">group_by</code> variables (by pointing and clicking) kicks the measure into action.</p>
+
+<p>So, in summary, to work with weighted data in Power BI you need</p>
+
+<ul>
+  <li>a column of weights (obviously)</li>
+  <li>for each numeric variable you want to the weighted total of by any particular slice and dice, a new static <em>column</em> of the original value multiplied by the weight</li>
+  <li>for each numeric variable you want the weighted mean of by any particular slice and dice, a new dynamic <em>measure</em> defined in advance of the sum of the column defined in the step above (ie total of that variable), divided by the sum of the aggregated weights (ie population)</li>
+</ul>
+
+<p>Note that this means two extra variables (one column and one measure)  for each existing numeric variable.  This has some implications for the most effective data model to use - more normalization, with long and skinny relational tables covering several “variables” probably better than a wide table with a column for each.  Which makes sense for all sorts of other reasons too.</p>
+
+<p>I have other thoughts about Power BI (or close competitors like Tableau) and its place in the world vis a vis either hand-crafted JavaScript or the Shiny platform, but they can wait for a later post.</p>
+
+
+		
+	</div>
+</div>
+
+<div class="col-md-1"></div>
+<div class="col-md-4">
+	<div class="side-banner">
+	
+
+
+	<div>
+	   
+	    
+			
+			<p>&larr; Previous post</p>
+			<p><a rel="prev" href="/blog/2018/04/01/truncated-negbin-gun-violence">Deaths per firearm violence event</a></p>
+		
+		
+		
+		
+		 
+			
+			<p>Next post &rarr;</p>
+			<p><a rel="next" href="/blog/2018/05/05/survey-books-and-courses">Survey books, courses and tools</a></p>
+			
+			
+		
+		
+	</div>
+	
+	 
+
+   <div class = "side-footer">
+			
+			<hr></hr>
+			<p><gcse:search></gcse:search></p>
+			<hr></hr>
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.</p>
+			<hr></hr>
+			
+			<p>My day job is Chief Data Scientist at <a href='https://www.nousgroup.com/'>Nous Group</a>, an international management consultancy with over 400 people working across Australia, the UK and Canada. <a href='mailto:peter.ellis@nousgroup.com.au'>Contact me</a> if you are interested working with us on a grand challenge or broad agenda.</p>
+		
+		    <hr></hr>
+			
+       <div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="false" data-share="false"></div>
+			
+			<hr></hr>
+			<p>I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+			<hr></hr>
+
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title"><i>free range statistics</i></span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			<hr></hr>
+			
+
+
+    </div>
+
+
+
+  
+   
+
+
+
+
+		  
+		  
+
+
+
+	   
+	<div id="disqus_thread"></div>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function() {
+				var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+				dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+				(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+			})();
+		</script>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function () {
+				var s = document.createElement('script'); s.async = true;
+				s.type = 'text/javascript';
+				s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+				(document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+			}());
+		</script>
+
+	<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+	</div>	
+</div>    
+   
+   
+
+			
+			</div><!-- /.container -->
+         
+   <!-- Default Statcounter code for Free Range Statistics
+http://Http://freerangestats.info -->
+<script type="text/javascript">
+var sc_project=11673245; 
+var sc_invisible=1; 
+var sc_security="5b7111a4"; 
+</script>
+<script type="text/javascript"
+src="https://www.statcounter.com/counter/counter.js" async></script>
+<noscript><div class="statcounter"><a title="Web Analytics"
+href="http://statcounter.com/" target="_blank"><img class="statcounter"
+src="//c.statcounter.com/11673245/0/5b7111a4/1/" alt="Web
+Analytics"></a></div></noscript>
+<!-- End of Statcounter Code -->
+
+</body>   
+</html>

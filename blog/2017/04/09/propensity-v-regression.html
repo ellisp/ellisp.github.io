@@ -1,0 +1,598 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Exploring propensity score matching and weighting</title>
+      	
+         
+         
+            <meta name ="description" content ="Compared to the older style propensity matching to create a pseudo control sample, it may be better to weight the full data by inverse propensity score because it doesn't discard data.  Performing a regression (rather than simple cross tabs) after the weighting or matching is a good idea to handle inevitable imperfections.  The whole family of methods doesn't necessarily deliver big gains over more straightforward single stage regressions.  And if you have omitted material variables you're in trouble whatever you do.">
+            <meta property="og:description" content ="Compared to the older style propensity matching to create a pseudo control sample, it may be better to weight the full data by inverse propensity score because it doesn't discard data.  Performing a regression (rather than simple cross tabs) after the weighting or matching is a good idea to handle inevitable imperfections.  The whole family of methods doesn't necessarily deliver big gains over more straightforward single stage regressions.  And if you have omitted material variables you're in trouble whatever you do.">
+         
+         <meta property="og:site_name" content="free range statistics" />
+         <meta property="og:title" content="Exploring propensity score matching and weighting" />
+         
+            <meta property="og:image" content="http://ellisp.github.io/img/0090-job-treatment.png" />
+         
+		 
+			<meta property="og:url" content="http://freerangestats.info/blog/2017/04/09/propensity-v-regression.html" />
+		 
+         <meta property="og:author" content= "https://www.facebook.com/peterstats" />
+         <meta property="og:type" content="article" />
+      
+
+<link href='https://fonts.googleapis.com/css?family=Sarala' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Prosto+One' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Ubuntu+Mono' rel='stylesheet'>
+	  
+          <link href="/css/bootstrap.min.css" rel ="stylesheet" type="text/css">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet" type="text/css">
+            <link href="/css/custom.css" rel ="stylesheet" type="text/css">     
+		<link href="/css/syntax.css" rel ="stylesheet" type="text/css">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="free range statistics by Peter Ellis"
+      href="/feed.xml">
+
+	  
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+  <script>
+  (function() {
+    var cx = '015640467633673901770:pk3v2c95baw';
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+  })();
+</script>
+
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">free range statistics</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/about">about</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">all posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">ordered by date</a></li>
+				  <li><a href="/blog/most-popular.html">ordered by popularity</a></li>
+                  <li><a href="/blog/index_by_tag.html">grouped by subject matter</a></li>
+                  <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
+				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
+				  <li><a href = /blog/2020/09/26/nzes-issues>most recent post</a></li>
+				</ul>
+            </li>
+              <li><a href="/blog/showcase.html">showcase</a></li>
+              <li><a href="/presentations/index.html">presentations</a></li>
+			  <li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">forecasts<span class="caret"></span></a>
+                <ul class="dropdown-menu">
+				  <li><a href = "/covid-tracking/index.html">Covid-19 in Australia</a></li>
+                  <li><a href = "/elections/nz-2020/index.html">NZ election 2020</a></li>
+                  <li><a href = "/elections/oz-2019/index.html">Australia federal election 2019</a></li>
+				  <li><a href = "/elections/nz-2017/combined.html">NZ election 2017</a></li>
+                  <li><a href="/blog/voting.html">all blog posts on voting behaviour</a></li>
+                </ul>				
+			  </li>
+			  
+			  
+			  
+		    </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			<div class="jumbotron">
+  <div class="container">
+	<center><h1>Exploring propensity score matching and weighting</h1></center>
+  </div>
+</div>
+
+
+
+	<div class = "post-summary">
+	<h2>At a glance:</h2>
+	   <p>Compared to the older style propensity matching to create a pseudo control sample, it may be better to weight the full data by inverse propensity score because it doesn't discard data.  Performing a regression (rather than simple cross tabs) after the weighting or matching is a good idea to handle inevitable imperfections.  The whole family of methods doesn't necessarily deliver big gains over more straightforward single stage regressions.  And if you have omitted material variables you're in trouble whatever you do.</p>
+	   <p class="meta">09 Apr 2017</p>
+	   <hr></hr>
+	</div>
+
+
+<div class="col-md-7">
+
+	<div class="post">
+		
+	  <p>This post jots down some playing around with the pros, cons and limits of propensity score matching or weighting for causal social science research.</p>
+
+<h2 id="intro-to-propensity-score-matching">Intro to propensity score matching</h2>
+<p>One is often faced with an analytical question about causality and effect sizes when the only data around is from a  quasi-experiment, not the random controlled trial one would hope for.  This is common in many fields, but some of the most important occurrences are in public policy.  For example, government programs to help individuals or firms are typically not allocated at random, but go to those with higher need, or higher potential to make something out of the assistance.  This makes isolating the effect in the data of the treatment difficult, to say the least.</p>
+
+<p>A frequently-used family of analytical methods to deal with this are grouped under <a href="https://en.wikipedia.org/wiki/Propensity_score_matching">propensity score matching</a> (although not all these methods literally “match”).  Such methods model the probability of each unit (eg individual or firm) receiving the treatment; and then using these predicted probabilities or “propensities” to somehow balance the sample to make up for the confounding of the treatment with the other variablers of interest.</p>
+
+<p>The simplest to explain member of this family involves creating a pseudo control group from the non-treatment individuals that resembles the treatment group in that they have similar propensities to get the treatment, but differs in that they just didn’t get it.  Then analysis can proceed “as though” the data had been generated by an experiment.  This approach is easy to explain to non-statisticians and has the great benefit of creating a tangible, concrete “control” group.</p>
+
+<p>But everything depends on the model of the probabilities of getting the treatment. If it’s a good model, you’re fine.  If not - and in particular, if the chance of getting the treatment is related to unobserved variables which also impact on your response variable of interest - the propensity score approach helps very little if at all.  A good text on all this (and much more) is Morgan and Winship’s <a href="http://www.cambridge.org/vu/academic/subjects/sociology/sociology-general-interest/counterfactuals-and-causal-inference-methods-and-principles-social-research-2nd-edition?format=PB&amp;isbn=9781107694163">Counterfactuals and Causal Inference: Methods and Principles for Social Research</a>.</p>
+
+<h2 id="job-training-example">Job training example</h2>
+
+<h3 id="basics">Basics</h3>
+
+<p>A pretty thorough implementation of various propensity score methods in R comes in <a href="URL http://www.jstatsoft.org/v42/i08/">Daniel E. Ho, Kosuke Imai, Gary King, Elizabeth A. Stuart (2011). MatchIt:  Nonparametric Preprocessing for Parametric Causal Inference. Journal of Statistical
+Software, Vol. 42, No. 8, pp. 1-28</a>.  There’s a good overview in the <a href="https://cran.r-project.org/web/packages/MatchIt/vignettes/matchit.pdf">MatchIt vignette</a>.  I’ll get started with data from one of their examples, which shows a typical application of this technique:</p>
+
+<p>“Our example data set is a subset of the job training program analyzed in Lalonde (1986)
+and Dehejia and Wahba (1999). MatchIt includes a subsample of the original data consisting
+of the National Supported Work Demonstration (NSW) treated group and the comparison
+sample from the Population Survey of Income Dynamics (PSID).1 The variables in
+this data set include participation in the job training program (treat, which is equal to 1
+if participated in the program, and 0 otherwise), age (age), years of education (educ), race
+(black which is equal to 1 if black, and 0 otherwise; hispan which is equal to 1 if hispanic,
+and 0 otherwise), marital status (married, which is equal to 1 if married, 0 otherwise), high
+school degree (nodegree, which is equal to 1 if no degree, 0 otherwise), 1974 real earnings
+(re74), 1975 real earnings (re75), and the main outcome variable, 1978 real earnings (re78).”</p>
+
+<p>First, loading up the functionality I need for the rest of this post</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">forcats</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">MASS</span><span class="p">)</span><span class="w">              </span><span class="c1"># for rlm
+</span><span class="n">library</span><span class="p">(</span><span class="n">boot</span><span class="p">)</span><span class="w">              </span><span class="c1"># for inv.logit
+</span><span class="n">library</span><span class="p">(</span><span class="n">MatchIt</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">boot</span><span class="p">)</span><span class="w">              </span><span class="c1"># for bootstrapping
+</span><span class="n">library</span><span class="p">(</span><span class="n">doParallel</span><span class="p">)</span><span class="w">        </span><span class="c1"># for parallel processing
+</span><span class="n">library</span><span class="p">(</span><span class="n">mgcv</span><span class="p">)</span><span class="w">              </span><span class="c1"># for gam
+</span><span class="w">
+</span><span class="c1">#==============example from the MatchIt vignette=================
+</span><span class="n">data</span><span class="p">(</span><span class="n">lalonde</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># naive comparison - people who got the job training program
+# have lower incomes in 1978 - because the training was given
+# to people with income problems.  So comparison is unfair:
+</span><span class="n">lalonde</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">group_by</span><span class="p">(</span><span class="n">treat</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">summarise</span><span class="p">(</span><span class="n">Income1978</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">re78</span><span class="p">),</span><span class="w">
+             </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">())</span></code></pre></figure>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>  treat Income1978     n
+1     0   6984.170   429
+2     1   6349.144   185
+</code></pre>
+</div>
+
+<p>So we see that the 429 people who didn’t get the job training “treatment” had an average income about $635 more than the 185 beneficiaries.  Program failure!</p>
+
+<p>Obviously that’s unfair on the program, so we use <code class="highlighter-rouge">matchit</code> and <code class="highlighter-rouge">match.data</code> to create an artificial control group that resembles the treatment group in terms of age, education, ethnicity, marital stats, and income in 1974 and 1975:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># Choose one of the large variety of propensity score matching methods to model propensity
+</span><span class="n">match_model</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">matchit</span><span class="p">(</span><span class="n">treat</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">age</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">educ</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">black</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">hispan</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">nodegree</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">married</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">re74</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">re75</span><span class="p">,</span><span class="w"> 
+                       </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lalonde</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"nearest"</span><span class="p">)</span><span class="w">
+</span><span class="n">match_data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">match.data</span><span class="p">(</span><span class="n">match_model</span><span class="p">)</span><span class="w">
+   
+</span><span class="c1"># Simple comparison is now much fairer
+</span><span class="n">match_data</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">group_by</span><span class="p">(</span><span class="n">treat</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">summarise</span><span class="p">(</span><span class="n">Income1978</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">re78</span><span class="p">),</span><span class="w">
+             </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">())</span></code></pre></figure>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>  treat Income1978     n
+1     0   5440.941   185
+2     1   6349.144   185
+</code></pre>
+</div>
+<p>That gives us an average treatment effect of <strong>$908</strong>.  Notice that the new control group is the same size as the treatment group; the rest of the observations have been discarded.</p>
+
+<p>You don’t need to limit yourself to simple comparisons, although in principle they should work.  A regression with the matched control and treatment data, even using the same explanatory variables as were used in the matching model, helps address the inevitable lack of complete balance between the two groups.  That gives us a result of <strong>$960</strong> (output not shown).  I use the robust M-estimator rather than ordinary least squares to deal with breaches of the classical regression assumptions (particularly the non-Normal response, with variance increasing as its mean increases).</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># regression model estimate with matched data
+</span><span class="n">coef</span><span class="p">(</span><span class="n">rlm</span><span class="p">(</span><span class="n">re78</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">age</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">treat</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">educ</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">black</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">hispan</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">nodegree</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">married</span><span class="w"> </span><span class="o">+</span><span class="w">  </span><span class="n">re74</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">re75</span><span class="p">,</span><span class="w"> 
+        </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">match_data</span><span class="p">))[</span><span class="s2">"treat"</span><span class="p">]</span></code></pre></figure>
+
+<h3 id="regression-is-simpler-and-gives-similar-results">Regression is simpler and gives similar results</h3>
+<p>However, a similar estimate could have come from a simpler, single-step regression with the original data, skipping the propensity score modelling altogether (there are arguments pro and con).  The regression below estimates a treatment effect of <strong>$1,183</strong>. I call this “similar” because the uncertainty around all these estimates is huge, which I’ll demonstrate further down the post.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># regression model estimate with original data
+</span><span class="n">coef</span><span class="p">(</span><span class="n">rlm</span><span class="p">(</span><span class="n">re78</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">age</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">treat</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">educ</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">black</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">hispan</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">nodegree</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">married</span><span class="w"> </span><span class="o">+</span><span class="w">  </span><span class="n">re74</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">re75</span><span class="p">,</span><span class="w"> 
+        </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lalonde</span><span class="p">))[</span><span class="s2">"treat"</span><span class="p">]</span></code></pre></figure>
+
+<h3 id="weighting-might-be-better-than-matching">Weighting might be better than matching</h3>
+
+<p>Creating a control group by matching has the distressing side-effect of throwing away large amounts of the data, because the control group is shrunk down to the same size as the treatment group.  A possibly better use of the propensity scores is to keep all observations in play but weight them according to the propensity score - one of the methods described by Peter Austin in <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3144483/">this article on “An introduction to propensity score methods for reducing the effects of confounding in observational studies”</a>.</p>
+
+<p>Under “inverse probability of treatment weighting”, proposed by Imbens in 2000, observations that receive the treatment are given weight of <script type="math/tex">\frac{1}{p}</script> and those that did not receive the treatment are given weight of <script type="math/tex">\frac{1}{1-p}</script>, where p is the probability of getting the treatment.  That is, each observation is given weight of the inverse of the probability of the treatment they actually got.  Intuitively, treatment cases that resemble the controls are interesting and given more weight, and control cases that look like they should have got the treatment are interesting and get more weight.  Analysis can then proceed via weighted average values, or a regression with explanatory variables (which may or may not be the same variables as those used in the model of propensity for treatment).</p>
+
+<p>I implemented this with Lalonde’s data without using the <code class="highlighter-rouge">MatchIt</code> package, partly to convince myself I understood how it worked, and partly because I wanted more flexibility in modelling propensity than is supported by that package.  I’d looked at the generalized linear model with binomial family response that was used for its propensity score matching, and noticed that age was showing up as unhelpful in determining treatment.  My expectation is that age is probably related in a non-linear fashion to the probability of getting job training treatment, so I used a generalized additive model to allow for this…</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">mod</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">gam</span><span class="p">(</span><span class="n">treat</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">s</span><span class="p">(</span><span class="n">age</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">educ</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">black</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">hispan</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">nodegree</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">married</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">re74</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">re75</span><span class="p">,</span><span class="w"> 
+           </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lalonde</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"binomial"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">plot</span><span class="p">(</span><span class="n">mod</span><span class="p">,</span><span class="w"> </span><span class="n">shade</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> 
+     </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Non-linear function of age in treatment propensity"</span><span class="p">)</span></code></pre></figure>
+
+<p>…which turns out to be the case:</p>
+
+<p><img src="/img/0090-gam.svg" width="100%" /></p>
+
+<p>Converting predicted probabilities into weights is straightforward.  In the code below I have a quick look at the resulting density of weights.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">lalonde</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lalonde</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">propensity_gam</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">predict</span><span class="p">(</span><span class="n">mod</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"response"</span><span class="p">),</span><span class="w">
+          </span><span class="n">weight_gam</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">propensity_gam</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">treat</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+                       </span><span class="m">1</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="m">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">propensity_gam</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="m">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">treat</span><span class="p">))</span><span class="w">
+
+</span><span class="n">ggplot</span><span class="p">(</span><span class="n">lalonde</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">weight_gam</span><span class="p">,</span><span class="w"> </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">as.factor</span><span class="p">(</span><span class="n">treat</span><span class="p">)))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_density</span><span class="p">(</span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey50"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">geom_rug</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">scale_x_log10</span><span class="p">(</span><span class="n">breaks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="m">20</span><span class="p">,</span><span class="w"> </span><span class="m">40</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+   </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Distribution of inverse probability weights"</span><span class="p">)</span></code></pre></figure>
+
+<p><img src="/img/0090-weights.svg" width="100%" /></p>
+
+<p>One of the criticisms of this inverse probability of treatment weighting approach is that individual observations can get very high weights and become unduly influential.  For example, in  an <a href="http://www.stat.columbia.edu/~gelman/stuff_for_blog/posner.pdf">incomplete article by Posner and Ash</a> (there may be a complete version somewhere else):</p>
+
+<blockquote>
+  <p>“While this method can be shown to have nice mathematical properties, it does not work well in practice. Consider a lone treated observation that happens to have a very low probability of being treated…. The value of the inverse of the propensity score will be extremely high, asymptotically infinity. The effect size obtained will be dominated by this single value, and any fluctuations in it will produce wildly varied results, which is an undesirable property.”</p>
+</blockquote>
+
+<p>Ouch.  Posner and Ash go on to suggest alternative ways of weighting less vulnerable to these problems.  As a simple starter, in the below I try the obvious first step of truncating the weights at 10.  Here are the average incomes of the treatment and non-treatment groups using the full set of inverse probability weights, and another set truncated at 10.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">lalonde</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">group_by</span><span class="p">(</span><span class="n">treat</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">summarise</span><span class="p">(</span><span class="n">Income_allweights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="n">weighted.mean</span><span class="p">(</span><span class="n">re78</span><span class="p">,</span><span class="w"> </span><span class="n">weight_gam</span><span class="p">)),</span><span class="w">
+             </span><span class="n">Income_truncweights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="n">weighted.mean</span><span class="p">(</span><span class="n">re78</span><span class="p">,</span><span class="w"> </span><span class="n">pmin</span><span class="p">(</span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="n">weight_gam</span><span class="p">))),</span><span class="w">
+             </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">())</span></code></pre></figure>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>  treat Income_allweights Income_truncweights     n  
+1     0              6446                6435   429
+2     1              6814                7167   185
+</code></pre>
+</div>
+
+<p>Note that we now have all 429 of the non-treatment cases, a definite advantage over the matching methods.</p>
+
+<p>We’re not limited to simple weighted averages of course; we can use these weights in the analysis of our choice including our robust regression model.  Ho et al (2007) suggest that (in Morgan and Winship’s paraphrase):</p>
+
+<blockquote>
+  <p>“the general procedure one should carry out in any multivariate analysis that aspires to generate causal inferences is to first balance one’s data as much as possible with a matching routine and then estimate a regression model on the matched data.  From this perspective, matching is a preprocessor, which can be used to prepare the data for subsequent analysis with something such as a regression model.”</p>
+</blockquote>
+
+<p>The “doubly robust” approach to regression modelling to identify causal effects uses weights from propensity score matching as well as a regression.</p>
+
+<blockquote>
+  <p>“There has been considerable debate as to which approach to confounder control is to be preferred, as the first [<em>ie single step regression</em>] is biased if the outcome regression model is misspecified while the second approach [<em>ie propensity score matching</em>] is biased if the treatment regression, ie propensity, model is misspecified.  This controversy could be resolved if an estimator were available that was guaranteed to be consistent … whenever at least one of the two models was correct. … We refer to such combined methods as doubly-robust or doubly-protected as they can protect against misspecification of either the outcome or treatment model, although not against simultaneous misspecification of both.”</p>
+</blockquote>
+
+<p><em>Robins and Rotnitzky 2001, quoted in Morgan and Winship Counterfactuals and Causal Analysis</em></p>
+
+<p>So here is my robust M estimator regression, using inverse propensity of treatment as weights, where propensity of treatment was modelled earlier as a generalized additive model on all explanatory variables and non-linearly with age:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">coef</span><span class="p">(</span><span class="n">rlm</span><span class="p">(</span><span class="n">re78</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">age</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">treat</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">educ</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">black</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">hispan</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">nodegree</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">married</span><span class="w"> </span><span class="o">+</span><span class="w">  </span><span class="n">re74</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">re75</span><span class="p">,</span><span class="w"> 
+         </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lalonde</span><span class="p">,</span><span class="w"> </span><span class="n">weights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">as.vector</span><span class="p">(</span><span class="n">weight_gam</span><span class="p">)))[</span><span class="s2">"treat"</span><span class="p">]</span></code></pre></figure>
+
+<p>This gives a treatment estimate of <em>$910</em> and I think it’s my best point estimate so far.</p>
+
+<p>These weighting methods seem better than simply matching, if only because they retain all the data, but crucially they are still vulnerable to model mis-specification and unobserved explanatory variables. There’s a good <a href="https://www.stat.berkeley.edu/~census/weight.pdf">critical discussion in this article by Freedman and Berk</a>:</p>
+
+<blockquote>
+  <p>“Regressions can be weighted by propensity scores in order to reduce bias. However,
+weighting is likely to increase random error in the estimates, and to bias the
+estimated standard errors downward, even when selection mechanisms are well understood.
+Moreover, in some cases, weighting will increase the bias in estimated
+causal parameters. If investigators have a good causal model, it seems better just to
+fit the model without weights. If the causal model is improperly specified, there can
+be significant problems in retrieving the situation by weighting, although weighting
+may help under some circumstances.”</p>
+</blockquote>
+
+<p>And with respect to the “doubly robust” approach:</p>
+
+<blockquote>
+  <p>“you need to get at least one of the two models (and preferably both) nearly right in order for weighting to help much. If both models are wrong, weighting could easily be a dead end. There are papers suggesting that under some circumstances, estimating a shaky causal model and a shaky selection model should be doubly robust. Our results indicate that under other circumstances, the technique is doubly frail.”</p>
+</blockquote>
+
+<p>When I see multi-stage approaches like propensity score matching or weighting - just like structural equation models, and two or three stage least squares - that aim to deal with causality by adding complexity, I always get very nervous; the more so when I read criticisms like those above.  I’ve done some simulations exploring this issue but a write-up will have to wait for a separate post.</p>
+
+<h3 id="bootstrap-or-cross-validation-must-envelope-the-propensity-modelling">Bootstrap or cross-validation must envelope the propensity modelling</h3>
+
+<p>The literature has a range of (conflicting) views on estimating uncertainty of statistics estimated after propensity score matching or weighting.  Morgan and Winship report in a footnote that the bootstrap does not to work particularly well for matching in particular, because the resampling process leaves fewer distinct cases to match to during the propensity modelling stage. However, <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4260115/">Austin and Small reported in 2014</a> tests of bootstrap methods that seem quite effective.  Definitely, one of the appeals of weighting (rather than matching) is that it should make the overall process more suitable for sitting inside a bootstrap.  However, I don’t have time for a really thorough review of this literature, so let’s just note that estimating uncertainty after propensity score matching is a moving area of uncertainty itself.</p>
+
+<p>I use the method described by Austin and Small as the “complex bootstrap”, which involves resampling from the original data and performing the propensity modelling and matching for each resample.  The propensity modelling is a big source of our uncertainty in the final estimates of interest.  So that source of uncertainty needs to be repeated each time we mimic the sampling process with our bootstrap (the same applies to other pre-processing steps, like imputation).  Austin and Small report that this results in a small overestimate of sampling variability (standard error higher by 7% than it should be; compared to 4% for a simpler bootstrap approach) but my principle, following the approach in Harrell’s <em>Regression Modeling Strategies</em> and elsewhere, is to always include pre-processing inside the bootstrap.  I suspect that with less ideal data than Austin and Small use in their simulations (on my reading, they assume all relevant variables are available, amongst other ideals) this will pay off.  Anyway, the results reported below look plausible.</p>
+
+<p>Here’s code that bootstraps four of the methods of estimating treatment effect above:</p>
+
+<ul>
+  <li>simple comparison of matched data;</li>
+  <li>robust regression with matched data;</li>
+  <li>robust regression with data weighted by inverse propensity of treatment;</li>
+  <li>robust regression with the original data.</li>
+</ul>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#=================bootstrap for confidence intervals=================
+# Set up a cluster for parallel computing
+</span><span class="n">cluster</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">makeCluster</span><span class="p">(</span><span class="m">7</span><span class="p">)</span><span class="w"> </span><span class="c1"># only any good if you have at least 7 processors :)
+</span><span class="n">registerDoParallel</span><span class="p">(</span><span class="n">cluster</span><span class="p">)</span><span class="w">
+
+</span><span class="n">clusterEvalQ</span><span class="p">(</span><span class="n">cluster</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w">
+   </span><span class="n">library</span><span class="p">(</span><span class="n">MatchIt</span><span class="p">)</span><span class="w">
+   </span><span class="n">data</span><span class="p">(</span><span class="n">lalonde</span><span class="p">)</span><span class="w">
+</span><span class="p">})</span><span class="w">
+
+</span><span class="cd">#' Function to estimate treatment effect three different methods
+#' @return a vector of four estimates of treatment effect.  See comments
+#' in function for description of which is which
+</span><span class="n">my_function</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">){</span><span class="w">
+   </span><span class="n">resampled_data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="w">
+   </span><span class="n">match_data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">match.data</span><span class="p">(</span><span class="w">
+      </span><span class="n">matchit</span><span class="p">(</span><span class="n">treat</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">age</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">educ</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">black</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">hispan</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">nodegree</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">married</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">re74</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">re75</span><span class="p">,</span><span class="w"> 
+              </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">resampled_data</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"nearest"</span><span class="p">)</span><span class="w">
+   </span><span class="p">)</span><span class="w">
+   
+   </span><span class="c1"># simple mean of matched groups
+</span><span class="w">   </span><span class="n">est1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">with</span><span class="p">(</span><span class="n">match_data</span><span class="p">,</span><span class="w">
+                </span><span class="n">mean</span><span class="p">(</span><span class="n">re78</span><span class="p">[</span><span class="n">treat</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">1</span><span class="p">])</span><span class="w"> </span><span class="o">-</span><span class="w">
+                   </span><span class="n">mean</span><span class="p">(</span><span class="n">re78</span><span class="p">[</span><span class="n">treat</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">0</span><span class="p">]))</span><span class="w">
+   
+   
+   </span><span class="c1"># regression model estimate with matched groups
+</span><span class="w">   </span><span class="n">est2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">coef</span><span class="p">(</span><span class="n">rlm</span><span class="p">(</span><span class="n">re78</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">treat</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">age</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">educ</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">black</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">hispan</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">nodegree</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">married</span><span class="w"> </span><span class="o">+</span><span class="w">  </span><span class="n">re74</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">re75</span><span class="p">,</span><span class="w"> 
+           </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">match_data</span><span class="p">))[</span><span class="s2">"treat"</span><span class="p">]</span><span class="w">
+   
+   </span><span class="c1"># regression model with IPTW
+</span><span class="w">   </span><span class="n">mod</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">gam</span><span class="p">(</span><span class="n">treat</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">s</span><span class="p">(</span><span class="n">age</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">educ</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">black</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">hispan</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">nodegree</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">married</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">re74</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">re75</span><span class="p">,</span><span class="w"> 
+              </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">resampled_data</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"binomial"</span><span class="p">)</span><span class="w">
+   
+   </span><span class="n">resampled_data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">resampled_data</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="n">mutate</span><span class="p">(</span><span class="n">propensity_gam</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">predict</span><span class="p">(</span><span class="n">mod</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"response"</span><span class="p">),</span><span class="w">
+             </span><span class="n">weight_gam</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">propensity_gam</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">treat</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="m">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">propensity_gam</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="m">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">treat</span><span class="p">))</span><span class="w">
+   
+   </span><span class="n">est3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">coef</span><span class="p">(</span><span class="n">rlm</span><span class="p">(</span><span class="n">re78</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">age</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">treat</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">educ</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">black</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">hispan</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">nodegree</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">married</span><span class="w"> </span><span class="o">+</span><span class="w">  </span><span class="n">re74</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">re75</span><span class="p">,</span><span class="w"> 
+            </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">resampled_data</span><span class="p">,</span><span class="w"> </span><span class="n">weights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">as.vector</span><span class="p">(</span><span class="n">weight_gam</span><span class="p">)))[</span><span class="s2">"treat"</span><span class="p">]</span><span class="w">
+   
+   </span><span class="c1"># regression model estimate with original data
+</span><span class="w">   </span><span class="n">est4</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">coef</span><span class="p">(</span><span class="n">rlm</span><span class="p">(</span><span class="n">re78</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">treat</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">age</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">educ</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">black</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">hispan</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">nodegree</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">married</span><span class="w"> </span><span class="o">+</span><span class="w">  </span><span class="n">re74</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">re75</span><span class="p">,</span><span class="w"> 
+                   </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">resampled_data</span><span class="p">))[</span><span class="s2">"treat"</span><span class="p">]</span><span class="w">
+   </span><span class="nf">return</span><span class="p">(</span><span class="nf">c</span><span class="p">(</span><span class="n">est1</span><span class="p">,</span><span class="w"> </span><span class="n">est2</span><span class="p">,</span><span class="w"> </span><span class="n">est3</span><span class="p">,</span><span class="w"> </span><span class="n">est4</span><span class="p">))</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="c1"># test gives same results as when done earlier in the post:
+</span><span class="n">my_function</span><span class="p">(</span><span class="n">lalonde</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">nrow</span><span class="p">(</span><span class="n">lalonde</span><span class="p">))</span><span class="w">
+
+</span><span class="n">booted</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">boot</span><span class="p">(</span><span class="n">lalonde</span><span class="p">,</span><span class="w"> </span><span class="n">statistic</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">my_function</span><span class="p">,</span><span class="w"> </span><span class="n">R</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5000</span><span class="p">,</span><span class="w"> 
+     </span><span class="n">parallel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"snow"</span><span class="p">,</span><span class="w"> </span><span class="n">cl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cluster</span><span class="p">)</span><span class="w">
+
+</span><span class="n">booted_df</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.data.frame</span><span class="p">(</span><span class="n">booted</span><span class="o">$</span><span class="n">t</span><span class="p">)</span><span class="w">
+</span><span class="nf">names</span><span class="p">(</span><span class="n">booted_df</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Simple difference with matched data"</span><span class="p">,</span><span class="w"> 
+                      </span><span class="s2">"Regression with matched data"</span><span class="p">,</span><span class="w"> 
+                      </span><span class="s2">"Regression with weighted data"</span><span class="p">,</span><span class="w">
+                      </span><span class="s2">"Regression with original data"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">booted_tidy</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">booted_df</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">gather</span><span class="p">(</span><span class="s2">"Method"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Estimate"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">Method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_reorder</span><span class="p">(</span><span class="n">Method</span><span class="p">,</span><span class="w"> </span><span class="n">Estimate</span><span class="p">))</span><span class="w"> 
+
+</span><span class="n">booted_summary</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">booted_tidy</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">group_by</span><span class="p">(</span><span class="n">Method</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">summarise</span><span class="p">(</span><span class="n">lower</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">quantile</span><span class="p">(</span><span class="n">Estimate</span><span class="p">,</span><span class="w"> </span><span class="m">0.025</span><span class="p">),</span><span class="w">
+             </span><span class="n">upper</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">quantile</span><span class="p">(</span><span class="n">Estimate</span><span class="p">,</span><span class="w"> </span><span class="m">0.975</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="n">gather</span><span class="p">(</span><span class="n">type</span><span class="p">,</span><span class="w"> </span><span class="n">Estimate</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">Method</span><span class="p">)</span><span class="w">
+
+</span><span class="n">ggplot</span><span class="p">(</span><span class="n">booted_tidy</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Estimate</span><span class="p">,</span><span class="w"> </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Method</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_density</span><span class="p">(</span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.4</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey50"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_segment</span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">booted_summary</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">xend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Estimate</span><span class="p">),</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">yend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2e-04</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_text</span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">booted_summary</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="n">Estimate</span><span class="p">)),</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2.5e-04</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">Method</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">theme</span><span class="p">(</span><span class="n">legend.position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"none"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_x_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dollar</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Treatment effects from four different modelling methods"</span><span class="p">,</span><span class="w">
+		  </span><span class="s2">"Distribution and 95% confidence intervals of estimated impact on income in 1978 of a job training program"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Estimated treatment effect"</span><span class="p">,</span><span class="w">
+	   </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Lalonde's 1986 data on a job training program"</span><span class="p">,</span><span class="w">
+	   </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span></code></pre></figure>
+
+<p><img src="/img/0090-job-treatment.svg" width="100%" /></p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>&gt; # biases revealed by the bootstrap:
+&gt; booted
+
+Bootstrap Statistics :
+     original     bias    std. error
+t1*  908.2022 -268.85736    766.5107
+t2*  959.5030  -75.55153    655.4119
+t3*  909.9001   12.09643    838.2337
+t4* 1182.5056   33.35265    682.6993
+</code></pre>
+</div>
+
+<p>Those are big confidence intervals - reflecting the small sample size and the difficulty of picking up an impact of an intervention amongst all the complexities of income determinants.  I’m satisfied that those are ok depictions of the uncertainty.</p>
+
+<p>All three of the two stage methods that model propensity first give extremely similar results; and the simpler one-stage regression on the original unweighted data gives a result within a third of a standard error.  In practice which would I do?  I’d probably do it both ways and if there are wildly different results I’d worry, treating that as a diagnostic warning.</p>
+
+<p>Basically with this sort of data, the big gain comes from any modelling strategy that accepts treatment as endogenous and hence you need to control for other variables that are related to both it and the response.  Once you’ve adopted a method to do that, the benefits of which particular method are, to me, not particularly material.</p>
+
+
+
+		
+	</div>
+</div>
+
+<div class="col-md-1"></div>
+<div class="col-md-4">
+	<div class="side-banner">
+	
+
+
+	<div>
+	   
+	    
+			
+			<p>&larr; Previous post</p>
+			<p><a rel="prev" href="/blog/2017/03/26/election-forecasts">New Zealand election forecasts</a></p>
+		
+		
+		
+		
+		 
+			
+			<p>Next post &rarr;</p>
+			<p><a rel="next" href="/blog/2017/04/15/propensity-simulations">Impact of omitted variables on estimating causal effects - simulations</a></p>
+			
+			
+		
+		
+	</div>
+	
+	 
+
+   <div class = "side-footer">
+			
+			<hr></hr>
+			<p><gcse:search></gcse:search></p>
+			<hr></hr>
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.</p>
+			<hr></hr>
+			
+			<p>My day job is Chief Data Scientist at <a href='https://www.nousgroup.com/'>Nous Group</a>, an international management consultancy with over 400 people working across Australia, the UK and Canada. <a href='mailto:peter.ellis@nousgroup.com.au'>Contact me</a> if you are interested working with us on a grand challenge or broad agenda.</p>
+		
+		    <hr></hr>
+			
+       <div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="false" data-share="false"></div>
+			
+			<hr></hr>
+			<p>I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+			<hr></hr>
+
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title"><i>free range statistics</i></span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			<hr></hr>
+			
+
+
+    </div>
+
+
+
+  
+   
+
+
+
+
+		  
+		  
+
+
+
+	   
+	<div id="disqus_thread"></div>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function() {
+				var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+				dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+				(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+			})();
+		</script>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function () {
+				var s = document.createElement('script'); s.async = true;
+				s.type = 'text/javascript';
+				s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+				(document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+			}());
+		</script>
+
+	<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+	</div>	
+</div>    
+   
+   
+
+			
+			</div><!-- /.container -->
+         
+   <!-- Default Statcounter code for Free Range Statistics
+http://Http://freerangestats.info -->
+<script type="text/javascript">
+var sc_project=11673245; 
+var sc_invisible=1; 
+var sc_security="5b7111a4"; 
+</script>
+<script type="text/javascript"
+src="https://www.statcounter.com/counter/counter.js" async></script>
+<noscript><div class="statcounter"><a title="Web Analytics"
+href="http://statcounter.com/" target="_blank"><img class="statcounter"
+src="//c.statcounter.com/11673245/0/5b7111a4/1/" alt="Web
+Analytics"></a></div></noscript>
+<!-- End of Statcounter Code -->
+
+</body>   
+</html>

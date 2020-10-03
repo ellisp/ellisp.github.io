@@ -1,0 +1,658 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Mixture distributions and reporting times for Covid-19 deaths in Florida</title>
+      	
+         
+         
+            <meta name ="description" content ="I look at some unusual data where the median was higher than the mode, and show how to model it in Stan as a mixture of two negative binomial distributions.">
+            <meta property="og:description" content ="I look at some unusual data where the median was higher than the mode, and show how to model it in Stan as a mixture of two negative binomial distributions.">
+         
+         <meta property="og:site_name" content="free range statistics" />
+         <meta property="og:title" content="Mixture distributions and reporting times for Covid-19 deaths in Florida" />
+         
+            <meta property="og:image" content="http://freerangestats.info/img/0192-distributions.png" />
+         
+		 
+			<meta property="og:url" content="http://freerangestats.info/blog/2020/09/06/mixture-distributions.html" />
+		 
+         <meta property="og:author" content= "https://www.facebook.com/peterstats" />
+         <meta property="og:type" content="article" />
+      
+
+<link href='https://fonts.googleapis.com/css?family=Sarala' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Prosto+One' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Ubuntu+Mono' rel='stylesheet'>
+	  
+          <link href="/css/bootstrap.min.css" rel ="stylesheet" type="text/css">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet" type="text/css">
+            <link href="/css/custom.css" rel ="stylesheet" type="text/css">     
+		<link href="/css/syntax.css" rel ="stylesheet" type="text/css">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="free range statistics by Peter Ellis"
+      href="/feed.xml">
+
+	  
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+  <script>
+  (function() {
+    var cx = '015640467633673901770:pk3v2c95baw';
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+  })();
+</script>
+
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">free range statistics</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/about">about</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">all posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">ordered by date</a></li>
+				  <li><a href="/blog/most-popular.html">ordered by popularity</a></li>
+                  <li><a href="/blog/index_by_tag.html">grouped by subject matter</a></li>
+                  <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
+				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
+				  <li><a href = /blog/2020/09/26/nzes-issues>most recent post</a></li>
+				</ul>
+            </li>
+              <li><a href="/blog/showcase.html">showcase</a></li>
+              <li><a href="/presentations/index.html">presentations</a></li>
+			  <li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">forecasts<span class="caret"></span></a>
+                <ul class="dropdown-menu">
+				  <li><a href = "/covid-tracking/index.html">Covid-19 in Australia</a></li>
+                  <li><a href = "/elections/nz-2020/index.html">NZ election 2020</a></li>
+                  <li><a href = "/elections/oz-2019/index.html">Australia federal election 2019</a></li>
+				  <li><a href = "/elections/nz-2017/combined.html">NZ election 2017</a></li>
+                  <li><a href="/blog/voting.html">all blog posts on voting behaviour</a></li>
+                </ul>				
+			  </li>
+			  
+			  
+			  
+		    </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			<div class="jumbotron">
+  <div class="container">
+	<center><h1>Mixture distributions and reporting times for Covid-19 deaths in Florida</h1></center>
+  </div>
+</div>
+
+
+
+	<div class = "post-summary">
+	<h2>At a glance:</h2>
+	   <p>I look at some unusual data where the median was higher than the mode, and show how to model it in Stan as a mixture of two negative binomial distributions.</p>
+	   <p class="meta">06 Sep 2020</p>
+	   <hr></hr>
+	</div>
+
+
+<div class="col-md-7">
+
+	<div class="post">
+		
+	  <p><em>Caution / who should read this - although this blog post uses some data on reporting times for Covid-19 deaths in Florida, it’s not really about that issue at all. It’s a quick dip into how to model data that comes from a mixture of two or more different probability distributions.</em></p>
+
+<h2 id="mixture-distributions">Mixture distributions</h2>
+
+<p>I have thoughts about mixture distributions. Sometimes we get data that could be modelled simply with classical techniques if we make assumptions about its distribution which are mostly right. But the distribution is ‘contaminated’ with another distribution. Very small departures from your assumptions can cause major challenges which are not always visually obvious.</p>
+
+<p>Consider this example, drawn from Rand Wilcox’s excllent <em>Modern Statistics for the Social and Bahvaioral Sciences</em>. A standard normal distribution has been contanimated with 10% of its data coming from a second distribution, also normal but with a much higher variance. Without very large samples and/or a particularly alert approach to the modelling, this sort of data can cause serious pitfalls for inference.</p>
+
+<object type="image/svg+xml" data="/img/0192-normal-eg.svg" width="100%"><img src="/img/0192-normal-eg.png" width="100%" /></object>
+
+<p>Exactly what the pitfalls are, I don’t have time to talk about right now, but they are serious and involve long tails and difficulties in estimating variance.</p>
+
+<p>That example was drawn with this code, which also sets us up for application next in this post to a real life example that crossed my path a week ago:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">ggrepel</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">glue</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">ggtext</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">rstan</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#---------Example adapted from Wilcox Modern Statistics for the Social and Behavioral Sciences---------
+# Wilcox's Figure 3.8
+</span><span class="w">
+</span><span class="n">set.seed</span><span class="p">(</span><span class="m">123</span><span class="p">)</span><span class="w">
+</span><span class="n">egd</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tibble</span><span class="p">(</span><span class="n">diet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="nf">c</span><span class="p">(</span><span class="s2">"Diet"</span><span class="p">,</span><span class="w"> </span><span class="s2">"No diet"</span><span class="p">),</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">10000</span><span class="p">,</span><span class="w"> </span><span class="m">90000</span><span class="p">)))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">weight_loss</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">diet</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Diet"</span><span class="p">,</span><span class="w"> 
+                              </span><span class="n">rnorm</span><span class="p">(</span><span class="n">n</span><span class="p">(),</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">10</span><span class="p">),</span><span class="w">
+                              </span><span class="n">rnorm</span><span class="p">(</span><span class="n">n</span><span class="p">(),</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">)))</span><span class="w"> 
+
+</span><span class="n">ggplot</span><span class="p">(</span><span class="n">egd</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">weight_loss</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_density</span><span class="p">(</span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey"</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"darkblue"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">stat_function</span><span class="p">(</span><span class="n">fun</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dnorm</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"darkgreen"</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1000</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">coord_cartesian</span><span class="p">(</span><span class="n">xlim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">-3</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">annotate</span><span class="p">(</span><span class="s2">"text"</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.3</span><span class="p">,</span><span class="w"> 
+           </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"sigma^2==1"</span><span class="p">,</span><span class="w"> </span><span class="n">parse</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w">
+           </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"darkgreen"</span><span class="p">,</span><span class="w"> </span><span class="n">hjust</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">annotate</span><span class="p">(</span><span class="s2">"text"</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">-1.1</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.17</span><span class="p">,</span><span class="w"> 
+           </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">glue</span><span class="p">(</span><span class="s2">"sigma^2=={round(var(egd$weight_loss), 1)}"</span><span class="p">),</span><span class="w"> </span><span class="n">parse</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w">
+           </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"darkblue"</span><span class="p">,</span><span class="w"> </span><span class="n">hjust</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">annotate</span><span class="p">(</span><span class="s2">"text"</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">-1.1</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.13</span><span class="p">,</span><span class="w"> 
+           </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="s2">"Mixture of standard normal (90%) and\nnormal with sd=10 (10%)"</span><span class="w"> </span><span class="p">,</span><span class="w"> 
+           </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"darkblue"</span><span class="p">,</span><span class="w"> </span><span class="n">hjust</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Adapted from Figure 3.8 of Wilcox, Modern Statistics for the Social and Behavioral Sciences"</span><span class="p">,</span><span class="w">
+       </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Weight loss"</span><span class="p">,</span><span class="w">
+       </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"The perils of a mixed or 'contanimated' distribution"</span><span class="p">,</span><span class="w">
+       </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Comparison of a &lt;span style = 'color:darkgreen;'&gt;standard normal&lt;/span&gt; and a &lt;span style = 'color:darkblue;'&gt;mixed normal&lt;/span&gt; distribution"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">theme</span><span class="p">(</span><span class="n">plot.subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_textbox</span><span class="p">())</span></code></pre></figure>
+
+<h2 id="distribution-of-reporting-delays-for-deaths-in-florida">Distribution of reporting delays for deaths in Florida</h2>
+
+<p>The real life example came from a Twitter thread by Jason Salemi on 28 August 2020, about the distribution of delays in reporting Covid-19 deaths in Florida. I can’t find the actual Twitter thread now, but the discussion in passing mentioned the interesting fact that the mean delay was noticeably smaller than the median. This is unusual for data that has a strict lower bound (report isn’t possible before the actual death) and no upper bound, because typically a long rightwards tail and a few outliers will drag the mean to noticeably higher value than the median.</p>
+
+<p>The example has extra interest for me in thinking about the data generating process for this sort of reporting on deaths. Recently in Victoria it has become clear that there are (at least) two different ways Covid-19 deaths are being reported - via aged care, and everything else. The aged care deaths are characterised by appearing in the official statistics only at some delay (up to a month or more), and in big clumps. This looks like the sort of process that needs to be modelled by a mixture distribution.</p>
+
+<p>Dr Salemi kindly forwarded me the actual Florida data, which looks like this:</p>
+
+<object type="image/svg+xml" data="/img/0192-original.svg" width="100%"><img src="/img/0192-original.png" width="100%" /></object>
+
+<p>The mean delay is 23.25 days and the median is 31. I’ve converted one freqency of minus one in the original data into zero to make my life simpler. That chart was produced with this R code:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#--------Florida delay in death reporting data-----------
+# From Jason Salemi 28 August 2020 via Twitter
+</span><span class="w">
+</span><span class="n">orig_d</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tibble</span><span class="p">(</span><span class="n">freq</span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">11</span><span class="p">,</span><span class="m">18</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">5</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">3</span><span class="p">,</span><span class="m">0</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">3</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">0</span><span class="p">,</span><span class="m">3</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">0</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">0</span><span class="p">,</span><span class="m">0</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="w">
+                    </span><span class="m">3</span><span class="p">,</span><span class="m">0</span><span class="p">,</span><span class="m">0</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">0</span><span class="p">,</span><span class="m">0</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">7</span><span class="p">,</span><span class="m">8</span><span class="p">,</span><span class="m">4</span><span class="p">,</span><span class="m">7</span><span class="p">,</span><span class="m">6</span><span class="p">,</span><span class="m">6</span><span class="p">,</span><span class="m">3</span><span class="p">,</span><span class="m">3</span><span class="p">,</span><span class="m">6</span><span class="p">,</span><span class="m">0</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">3</span><span class="p">,</span><span class="w">
+                    </span><span class="m">0</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">3</span><span class="p">,</span><span class="m">0</span><span class="p">,</span><span class="m">0</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">0</span><span class="p">,</span><span class="m">0</span><span class="p">,</span><span class="m">1</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">delay</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">n</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">cumulative_freq</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">cumsum</span><span class="p">(</span><span class="n">freq</span><span class="p">),</span><span class="w">
+         </span><span class="n">quantile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cumulative_freq</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">freq</span><span class="p">))</span><span class="w">
+
+</span><span class="n">orig_x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">with</span><span class="p">(</span><span class="n">orig_d</span><span class="p">,</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="n">delay</span><span class="p">,</span><span class="w"> </span><span class="n">freq</span><span class="p">))</span><span class="w">
+</span><span class="n">mean</span><span class="p">(</span><span class="n">orig_x</span><span class="p">)</span><span class="w">
+</span><span class="n">median</span><span class="p">(</span><span class="n">orig_x</span><span class="p">)</span><span class="w">
+
+</span><span class="n">ggplot</span><span class="p">(</span><span class="n">orig_d</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">as.ordered</span><span class="p">(</span><span class="n">delay</span><span class="p">),</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">freq</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_vline</span><span class="p">(</span><span class="n">xintercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">orig_x</span><span class="p">),</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"blue"</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_vline</span><span class="p">(</span><span class="n">xintercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">median</span><span class="p">(</span><span class="n">orig_x</span><span class="p">),</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"red"</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_col</span><span class="p">(</span><span class="n">width</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey50"</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.9</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_text</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">freq</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">freq</span><span class="p">,</span><span class="w"> </span><span class="s2">""</span><span class="p">),</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">freq</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">1</span><span class="p">),</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_x_discrete</span><span class="p">(</span><span class="n">breaks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="o">:</span><span class="m">5</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">10</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Time elapsed from death occuring to appearing in confirmed statistics"</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Frequency"</span><span class="p">,</span><span class="w">
+       </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Reporting lags in Covid-19 deaths in Florida"</span><span class="p">,</span><span class="w">
+       </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Data from Jason L. Salemi"</span><span class="p">,</span><span class="w">
+       </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"An interesting example of a mixed distribution; with two modes, and  &lt;span style = 'color:blue;'&gt;mean&lt;/span&gt; &lt; &lt;span style = 'color:red;'&gt;median&lt;/span&gt;."</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">theme</span><span class="p">(</span><span class="n">plot.subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_textbox</span><span class="p">())</span></code></pre></figure>
+
+<p>It seemed to me from this visualisation that this was likely to be from a mixture of two distributions, but I was still surprised that the median and mean worked out this way. This prompted me to consider “is it easy to construct a mixture distribution, given just the overall median and mean?”</p>
+
+<h2 id="brute-force---fitting-a-mixture-of-two-poisson-distributions-based-on-just-mean-and-median">Brute force - fitting a mixture of two Poisson distributions based on just mean and median</h2>
+
+<p>It wasn’t hard to do this if I was prepared to assume both distributions contributing to the mixture are Poisson distributions. This means I have just three parameters to estimate - the lambda (mean and variance) of each Poisson distribution, and the proportion of the data that comes from the first of the two distributions.</p>
+
+<p>If you have the mean of the first distribution and the proportion of data from that distribution, you can calculate the mean of the second that is needed to provide the given total mean. Because:</p>
+
+<script type="math/tex; mode=display">\mu = p\lambda_1 + (1-p)\lambda_2</script>
+
+<p>So:</p>
+
+<script type="math/tex; mode=display">\lambda_2 = (\mu - p\lambda_1) / (1-p)</script>
+
+<p>So really we only have two degrees of freedom to worry about. By brute force we can make a grid of possible values of <script type="math/tex">\lambda_1</script> and <script type="math/tex">p</script>, calculate the <script type="math/tex">\lambda_2</script> as above in a way that the overall mean is 23.25, and then use the probability mass functions of Poisson distributions to calculate the median of the resulting mixture directly. Then we just need to see which combinations of the parameters give the correct median (31.0).</p>
+
+<p>It turns out there are not one but many mixtures of two Poisson distributions that will give you this combination of mean and median. Here is a summary of which combinations of parameters can give you this:</p>
+
+<object type="image/svg+xml" data="/img/0192-different-fits.svg" width="100%"><img src="/img/0192-different-fits.png" width="100%" /></object>
+
+<p>… and here are four examples of the actual fitted distributions. These all have the same mean and median, but differ in other characteristics</p>
+
+<object type="image/svg+xml" data="/img/0192-distributions.svg" width="100%"><img src="/img/0192-distributions.png" width="100%" /></object>
+
+<p>To do all this, I created two functions in R:</p>
+
+<ul>
+  <li><code class="highlighter-rouge">dpois2()</code> calculates the density of a mixture of two Poisson distributions</li>
+  <li><code class="highlighter-rouge">median_pois2()</code> returns the median of a mixture of two Poisson distributions</li>
+</ul>
+
+<p>And then just calculated the median for all combinations of a grid of possible parameters as described above. Here’s the code that does that and produces those two charts:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="cd">#' Density of a mixture of two Poisson distributions
+#' 
+#' @param x vector of non-negative integers
+#' @param lambda1 mean of first Poisson distribution
+#' @param lambda2 mean of second Poisson distribution
+#' @param p1 proportion of values that come from the first distribution
+</span><span class="n">dpois2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">lambda1</span><span class="p">,</span><span class="w"> </span><span class="n">lambda2</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="m">1</span><span class="p">){</span><span class="w">
+  </span><span class="n">d</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dpois</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">lambda1</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">p</span><span class="m">1</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">dpois</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">lambda2</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="m">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">p</span><span class="m">1</span><span class="p">)</span><span class="w">
+  </span><span class="nf">return</span><span class="p">(</span><span class="n">d</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+
+</span><span class="cd">#' Approximate the median of a mixture of two Poisson distributions
+#' 
+#' @param lambda1 mean of first Poisson distribution
+#' @param lambda2 mean of second Poisson distribution
+#' @param p1 proportion of values that come from the first distribution
+#' @param maxx highest value data to take into account
+</span><span class="n">median_pois2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">lambda1</span><span class="p">,</span><span class="w"> </span><span class="n">lambda2</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">maxx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1000</span><span class="p">){</span><span class="w">
+  </span><span class="n">df</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.frame</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="o">:</span><span class="n">maxx</span><span class="p">)</span><span class="w"> 
+  </span><span class="n">df</span><span class="o">$</span><span class="n">dens</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dpois2</span><span class="p">(</span><span class="n">df</span><span class="o">$</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">lambda1</span><span class="p">,</span><span class="w"> </span><span class="n">lambda2</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="m">1</span><span class="p">)</span><span class="w">
+  </span><span class="n">df</span><span class="o">$</span><span class="nb">F</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">cumsum</span><span class="p">(</span><span class="n">df</span><span class="o">$</span><span class="n">dens</span><span class="p">)</span><span class="w">
+  </span><span class="n">which_row</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">which</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">df</span><span class="o">$</span><span class="nb">F</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">0.5</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nf">min</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">df</span><span class="o">$</span><span class="nb">F</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">0.5</span><span class="p">)))[</span><span class="m">1</span><span class="p">]</span><span class="w">
+  </span><span class="n">med</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">df</span><span class="p">[</span><span class="n">which_row</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">x</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">1</span><span class="w">
+  </span><span class="nf">return</span><span class="p">(</span><span class="n">med</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">trial_grid</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">expand.grid</span><span class="p">(</span><span class="n">p</span><span class="m">1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="o">:</span><span class="m">200</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">200</span><span class="p">,</span><span class="w">
+                          </span><span class="n">lambda1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">30</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">6</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">as_tibble</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">lambda2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="m">23.25</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">p</span><span class="m">1</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">lambda1</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="m">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">p</span><span class="m">1</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">med</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Vectorize</span><span class="p">(</span><span class="n">median_pois2</span><span class="p">)(</span><span class="n">lambda1</span><span class="p">,</span><span class="w"> </span><span class="n">lambda2</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="m">1</span><span class="p">))</span><span class="w">
+
+</span><span class="c1"># Visualisation of trade-off between different parameters
+</span><span class="n">set.seed</span><span class="p">(</span><span class="m">42</span><span class="p">)</span><span class="w">
+</span><span class="n">trial_grid</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="nf">round</span><span class="p">(</span><span class="n">med</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">31.0</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">mu2_lab</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">runif</span><span class="p">(</span><span class="n">n</span><span class="p">())</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0.9</span><span class="p">,</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="n">lambda2</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">),</span><span class="w"> </span><span class="s2">""</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lambda1</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_smooth</span><span class="p">(</span><span class="n">se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"lightblue"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_point</span><span class="p">(</span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_text_repel</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mu2_lab</span><span class="p">),</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Proportion of variables from first Poisson distribution"</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Mean of first Poisson distribution"</span><span class="p">,</span><span class="w">
+       </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Different mixtures to give you the same mean and median"</span><span class="p">,</span><span class="w">
+       </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Parameters of a mixture of two Poisson distributions that have a mean of 23.25 and median of 31."</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">annotate</span><span class="p">(</span><span class="s2">"text"</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.378</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Labels show mean of second Poisson\ndistribution (selected points only)."</span><span class="p">,</span><span class="w"> 
+           </span><span class="n">hjust</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">)</span><span class="w">
+		   
+
+</span><span class="c1"># Four example distributions:
+</span><span class="n">top_params</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">trial_grid</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">arrange</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">med</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">31</span><span class="p">),</span><span class="w"> </span><span class="n">runif</span><span class="p">(</span><span class="n">n</span><span class="p">()))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">slice</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">4</span><span class="p">)</span><span class="w">
+
+</span><span class="n">dens_results</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">list</span><span class="p">()</span><span class="w">
+</span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">0</span><span class="o">:</span><span class="m">70</span><span class="w">
+
+</span><span class="c1"># Get the actual densities:
+</span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">nrow</span><span class="p">(</span><span class="n">top_params</span><span class="p">)){</span><span class="w">
+  </span><span class="n">d</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">top_params</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="w">
+  </span><span class="n">dens_results</span><span class="p">[[</span><span class="n">i</span><span class="p">]]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">with</span><span class="p">(</span><span class="n">d</span><span class="p">,</span><span class="w"> 
+                            </span><span class="n">data.frame</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w">
+                              </span><span class="n">dens</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dpois2</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">lambda1</span><span class="p">,</span><span class="w"> </span><span class="n">lambda2</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="m">1</span><span class="p">),</span><span class="w">
+                              </span><span class="n">lambda1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lambda1</span><span class="p">,</span><span class="w">
+                              </span><span class="n">lambda2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lambda2</span><span class="p">,</span><span class="w">
+                              </span><span class="n">p</span><span class="m">1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">1</span><span class="p">,</span><span class="w">
+                              </span><span class="n">parameter_set</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="p">))</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="c1"># Not sure why I have to define my own labeller function, but I can't see
+# otherwise how I pass multi_line through to label_parsed in facet_wrap() !
+</span><span class="n">lp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span><span class="w"> </span><span class="n">multi_line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">){</span><span class="w">
+  </span><span class="n">label_parsed</span><span class="p">(</span><span class="n">labels</span><span class="p">,</span><span class="w"> </span><span class="n">multi_line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">multi_line</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="c1"># Draw the chart for the four example distributions:
+</span><span class="n">bind_rows</span><span class="p">(</span><span class="n">dens_results</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">as_tibble</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">par_lab1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">glue</span><span class="p">(</span><span class="s2">"lambda[1]=={round(lambda1, 1)}"</span><span class="p">),</span><span class="w">
+         </span><span class="n">par_lab2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">glue</span><span class="p">(</span><span class="s2">"lambda[2]=={round(lambda2, 2)}"</span><span class="p">),</span><span class="w">
+         </span><span class="n">par_lab3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">glue</span><span class="p">(</span><span class="s2">"pi[1]=={p1}"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dens</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">par_lab1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">par_lab2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">par_lab3</span><span class="p">,</span><span class="w"> </span><span class="n">labeller</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lp</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_vline</span><span class="p">(</span><span class="n">xintercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">31</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"red"</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_vline</span><span class="p">(</span><span class="n">xintercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">23.5</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"blue"</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_col</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">theme</span><span class="p">(</span><span class="n">panel.spacing</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">unit</span><span class="p">(</span><span class="m">1.5</span><span class="p">,</span><span class="w"> </span><span class="s2">"lines"</span><span class="p">),</span><span class="w">
+        </span><span class="n">plot.title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_textbox</span><span class="p">())</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">xlim</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">60</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"x"</span><span class="p">,</span><span class="w"> 
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Density"</span><span class="p">,</span><span class="w">
+       </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Different mixtures to give you the same &lt;span style = 'color:blue;'&gt;mean&lt;/span&gt; and &lt;span style = 'color:red;'&gt;median&lt;/span&gt;"</span><span class="p">,</span><span class="w">
+       </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Parameters of a mixture of two Poisson distributions that (taken together) have a mean of 23.25 and median of 31."</span><span class="p">)</span><span class="w"> 
+
+</span><span class="c1">#---------------check I'm not going mad and that I do get the right results!-------------------
+</span><span class="n">n</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">1e5</span><span class="w">
+</span><span class="n">xsim</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">rpois</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">top_params</span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">p</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">top_params</span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">lambda1</span><span class="p">),</span><span class="w">
+          </span><span class="n">rpois</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="m">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">top_params</span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">p</span><span class="m">1</span><span class="p">),</span><span class="w"> </span><span class="n">top_params</span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">lambda2</span><span class="p">))</span><span class="w">
+
+</span><span class="nf">c</span><span class="p">(</span><span class="n">mean</span><span class="p">(</span><span class="n">xsim</span><span class="p">),</span><span class="w"> </span><span class="n">median</span><span class="p">(</span><span class="n">xsim</span><span class="p">))</span></code></pre></figure>
+
+<h2 id="better-approach---fitting-mixtures-in-stan-using-all-the-data">Better approach - fitting mixtures in Stan using all the data</h2>
+
+<p>There are two serious shortfalls with the approach to modelling above:</p>
+
+<ol>
+  <li>Because I am using only the mean and the median summary statistics, I am discarding a lot of extra information in the original data</li>
+  <li>While Poisson distributions are easy to use because they are fully charaterised by a single parameter, there is no particular reason to think that they are a good model of the number of days death by which reporting is delayed.</li>
+</ol>
+
+<p>Shortfall 1 suggests I need to find a way to estimate a good mixture of distributions that uses the full original dataset. Shortfall 2 suggests using a different distribution, but still one that works with integers; negative binomial is my usual go-to here.</p>
+
+<p>Luckily, <a href="https://mc-stan.org/docs/2_24/stan-users-guide/mixture-modeling-chapter.html">chapter 5 of the Stan Reference Manual is dedicated to Finite Mixtures</a>. It has a straighforward and adpatable example of a mixture of K different normal distributions.</p>
+
+<p>To address my challenges in easy steps, I started by fitting a mixture of two Poisson distributions to my delays data, using the full data not just the summary statistics. Here’s the simple program in Stan that sets out this model</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="o">//</span><span class="w"> </span><span class="n">Draws</span><span class="w"> </span><span class="n">heavily</span><span class="w"> </span><span class="n">on</span><span class="w"> </span><span class="n">https</span><span class="o">://</span><span class="n">mc</span><span class="o">-</span><span class="n">stan.org</span><span class="o">/</span><span class="n">docs</span><span class="o">/</span><span class="m">2</span><span class="err">_</span><span class="m">24</span><span class="o">/</span><span class="n">stan</span><span class="o">-</span><span class="n">users</span><span class="o">-</span><span class="n">guide</span><span class="o">/</span><span class="n">summing</span><span class="o">-</span><span class="n">out</span><span class="o">-</span><span class="n">the</span><span class="o">-</span><span class="n">responsibility</span><span class="o">-</span><span class="n">parameter.html</span><span class="w">
+
+</span><span class="n">data</span><span class="w"> </span><span class="p">{</span><span class="w">
+  </span><span class="n">int</span><span class="o">&lt;</span><span class="n">lower</span><span class="o">=</span><span class="m">0</span><span class="o">&gt;</span><span class="w"> </span><span class="n">N</span><span class="p">;</span><span class="w">
+  </span><span class="n">int</span><span class="w"> </span><span class="n">x</span><span class="p">[</span><span class="n">N</span><span class="p">];</span><span class="w">
+  </span><span class="n">int</span><span class="o">&lt;</span><span class="n">lower</span><span class="o">=</span><span class="m">1</span><span class="o">&gt;</span><span class="w"> </span><span class="n">K</span><span class="p">;</span><span class="w"> </span><span class="o">//</span><span class="w"> </span><span class="n">number</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">mixture</span><span class="w"> </span><span class="n">components</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">parameters</span><span class="w"> </span><span class="p">{</span><span class="w">
+  </span><span class="n">positive_ordered</span><span class="p">[</span><span class="n">K</span><span class="p">]</span><span class="w"> </span><span class="n">lambda</span><span class="p">;</span><span class="w"> </span><span class="o">//</span><span class="w"> </span><span class="n">arbitrarily</span><span class="w"> </span><span class="n">ordered</span><span class="w"> </span><span class="n">so</span><span class="w"> </span><span class="n">lower</span><span class="w"> </span><span class="n">value</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="n">first</span><span class="p">,</span><span class="w"> </span><span class="n">otherwise</span><span class="w"> </span><span class="n">unidentified</span><span class="w">
+  </span><span class="n">simplex</span><span class="p">[</span><span class="n">K</span><span class="p">]</span><span class="w"> </span><span class="n">p</span><span class="p">;</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">model</span><span class="w"> </span><span class="p">{</span><span class="w">
+  </span><span class="n">vector</span><span class="p">[</span><span class="n">K</span><span class="p">]</span><span class="w"> </span><span class="n">log_p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">log</span><span class="p">(</span><span class="n">p</span><span class="p">);</span><span class="w"> </span><span class="o">//</span><span class="w"> </span><span class="n">cached</span><span class="w"> </span><span class="n">log</span><span class="w"> </span><span class="n">calculation</span><span class="w">
+  </span><span class="n">lambda</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="nf">gamma</span><span class="p">(</span><span class="m">1.5</span><span class="p">,</span><span class="w"> </span><span class="m">0.1</span><span class="p">);</span><span class="w"> </span><span class="o">//</span><span class="w"> </span><span class="n">prior</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">lambdas</span><span class="w">
+  
+  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">N</span><span class="p">){</span><span class="w">
+    </span><span class="n">vector</span><span class="p">[</span><span class="n">K</span><span class="p">]</span><span class="w"> </span><span class="n">lps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">log_p</span><span class="p">;</span><span class="w">
+    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">k</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">K</span><span class="p">)</span><span class="w">
+      </span><span class="n">lps</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">poisson_lpmf</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">lambda</span><span class="p">[</span><span class="n">k</span><span class="p">]);</span><span class="w">
+    </span><span class="n">target</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">log_sum_exp</span><span class="p">(</span><span class="n">lps</span><span class="p">);</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+  
+</span><span class="p">}</span></code></pre></figure>
+
+<p>Running this from R is a one-liner, and it quickly comes back with an estimate that the data could come from two Poisson distributions with means of 3.4 and 35.4, with 38% of the data coming from the first of these. This isn’t <em>hugely</em> different from my cruder estimates based on just the mean and median, but noticeably the mean of the first distribution is now quite a bit higher. Results from Stan are just pasted into the code below as comments, for reference.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">ms1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">stan</span><span class="p">(</span><span class="s2">"0192-poisson.stan"</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">orig_x</span><span class="p">,</span><span class="w"> 
+                                             </span><span class="n">N</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">orig_x</span><span class="p">),</span><span class="w">
+                                             </span><span class="n">K</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">))</span><span class="w">
+</span><span class="n">ms1</span><span class="w">
+</span><span class="c1"># Inference for Stan model: 0192-poisson.
+# 4 chains, each with iter=2000; warmup=1000; thin=1; 
+# post-warmup draws per chain=1000, total post-warmup draws=4000.
+# 
+# mean se_mean   sd    2.5%     25%     50%     75%   97.5% n_eff Rhat
+# lambda[1]    3.42    0.01 0.30    2.84    3.21    3.41    3.61    4.02  2849    1
+# lambda[2]   35.41    0.01 0.68   34.09   34.94   35.41   35.88   36.71  4107    1
+# p[1]         0.38    0.00 0.04    0.30    0.35    0.38    0.41    0.47  3532    1
+# p[2]         0.62    0.00 0.04    0.53    0.59    0.62    0.65    0.70  3532    1
+# lp__      -580.55    0.03 1.29 -584.02 -581.09 -580.22 -579.62 -579.11  2029    1
+# 
+# Samples were drawn using NUTS(diag_e) at Sun Sep 06 11:36:48 2020.
+# For each parameter, n_eff is a crude measure of effective sample size,
+# and Rhat is the potential scale reduction factor on split chains (at 
+</span><span class="err">#</span><span class="w">  </span></code></pre></figure>
+
+<p>What about addressing shortfall 2? It’s straightforward to adapt my Stan program to work with a mixture of K negative binomial distributions. Note that there are two different popular ways to characterise a negative binomial distribution, I am choosing the method that specifies the mean and a dispersion parameter:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="o">//</span><span class="w"> </span><span class="n">Draws</span><span class="w"> </span><span class="n">heavily</span><span class="w"> </span><span class="n">on</span><span class="w"> </span><span class="n">https</span><span class="o">://</span><span class="n">mc</span><span class="o">-</span><span class="n">stan.org</span><span class="o">/</span><span class="n">docs</span><span class="o">/</span><span class="m">2</span><span class="err">_</span><span class="m">24</span><span class="o">/</span><span class="n">stan</span><span class="o">-</span><span class="n">users</span><span class="o">-</span><span class="n">guide</span><span class="o">/</span><span class="n">summing</span><span class="o">-</span><span class="n">out</span><span class="o">-</span><span class="n">the</span><span class="o">-</span><span class="n">responsibility</span><span class="o">-</span><span class="n">parameter.html</span><span class="w">
+</span><span class="o">//</span><span class="w"> </span><span class="n">Save</span><span class="w"> </span><span class="n">as</span><span class="w"> </span><span class="m">0192</span><span class="o">-</span><span class="n">negbin.stan</span><span class="w">
+
+</span><span class="n">data</span><span class="w"> </span><span class="p">{</span><span class="w">
+  </span><span class="n">int</span><span class="o">&lt;</span><span class="n">lower</span><span class="o">=</span><span class="m">0</span><span class="o">&gt;</span><span class="w"> </span><span class="n">N</span><span class="p">;</span><span class="w">
+  </span><span class="n">int</span><span class="w"> </span><span class="n">x</span><span class="p">[</span><span class="n">N</span><span class="p">];</span><span class="w">
+  </span><span class="n">int</span><span class="o">&lt;</span><span class="n">lower</span><span class="o">=</span><span class="m">1</span><span class="o">&gt;</span><span class="w"> </span><span class="n">K</span><span class="p">;</span><span class="w"> </span><span class="o">//</span><span class="w"> </span><span class="n">number</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">mixture</span><span class="w"> </span><span class="n">components</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">parameters</span><span class="w"> </span><span class="p">{</span><span class="w">
+  </span><span class="n">positive_ordered</span><span class="p">[</span><span class="n">K</span><span class="p">]</span><span class="w"> </span><span class="n">mu</span><span class="p">;</span><span class="w"> </span><span class="o">//</span><span class="w"> </span><span class="n">arbitrarily</span><span class="w"> </span><span class="n">ordered</span><span class="w"> </span><span class="n">so</span><span class="w"> </span><span class="n">lower</span><span class="w"> </span><span class="n">value</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="n">first</span><span class="p">,</span><span class="w"> </span><span class="n">otherwise</span><span class="w"> </span><span class="n">unidentified</span><span class="w">
+  </span><span class="n">real</span><span class="o">&lt;</span><span class="n">lower</span><span class="o">=</span><span class="m">0</span><span class="o">&gt;</span><span class="w"> </span><span class="n">phi</span><span class="p">[</span><span class="n">K</span><span class="p">];</span><span class="w">   </span><span class="o">//</span><span class="w"> </span><span class="n">dispersion</span><span class="w"> </span><span class="n">parameter</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">negative</span><span class="w"> </span><span class="n">binomials</span><span class="w">
+  </span><span class="n">simplex</span><span class="p">[</span><span class="n">K</span><span class="p">]</span><span class="w"> </span><span class="n">p</span><span class="p">;</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">model</span><span class="w"> </span><span class="p">{</span><span class="w">
+  </span><span class="n">vector</span><span class="p">[</span><span class="n">K</span><span class="p">]</span><span class="w"> </span><span class="n">log_p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">log</span><span class="p">(</span><span class="n">p</span><span class="p">);</span><span class="w"> </span><span class="o">//</span><span class="w"> </span><span class="n">cached</span><span class="w"> </span><span class="n">log</span><span class="w"> </span><span class="n">calculation</span><span class="w">
+  </span><span class="n">mu</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="nf">gamma</span><span class="p">(</span><span class="m">1.5</span><span class="p">,</span><span class="w"> </span><span class="m">0.1</span><span class="p">);</span><span class="w"> </span><span class="o">//</span><span class="w"> </span><span class="n">prior</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">means</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">negative</span><span class="w"> </span><span class="n">binomial</span><span class="w"> </span><span class="n">distribution</span><span class="w">
+  </span><span class="n">phi</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="nf">gamma</span><span class="p">(</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">);</span><span class="w">     </span><span class="o">//</span><span class="w"> </span><span class="n">prior</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">phi</span><span class="w"> </span><span class="p">(</span><span class="n">dispersion</span><span class="p">)</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">neg</span><span class="w"> </span><span class="n">bin</span><span class="w"> </span><span class="n">distribution</span><span class="w">
+  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">N</span><span class="p">){</span><span class="w">
+    </span><span class="n">vector</span><span class="p">[</span><span class="n">K</span><span class="p">]</span><span class="w"> </span><span class="n">lps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">log_p</span><span class="p">;</span><span class="w">
+    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">k</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">K</span><span class="p">)</span><span class="w">
+      </span><span class="n">lps</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">neg_binomial_2_lpmf</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">mu</span><span class="p">[</span><span class="n">k</span><span class="p">],</span><span class="w"> </span><span class="n">phi</span><span class="p">[</span><span class="n">k</span><span class="p">]);</span><span class="w">
+    </span><span class="n">target</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">log_sum_exp</span><span class="p">(</span><span class="n">lps</span><span class="p">);</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span></code></pre></figure>
+
+<p>Fitting this gives me a mixture with 40% of the data from a negative binomial distribution with (mean, size) parameters of (4.8, 0.77); and 60% from a distribution with (mean, size) of (35.8, 13.7). Closing the circle, if I simulate data in R from that mixture, this is what it looks like:</p>
+
+<object type="image/svg+xml" data="/img/0192-final-sim.svg" width="100%"><img src="/img/0192-final-sim.png" width="100%" /></object>
+
+<p>It’s noticeably not a perfect fit to the original Florida data, suggesting that even this model is perhaps under-fit and more complex things are going on. Also that more data (as always) would be helpful. But I think I’m onto a good approach. As an aside, I find it extraordinary how well Stan works in this situation.</p>
+
+<p>Here’s the final R code for controlling the Stan program with the negative binomial mixture, and simulating data from the result. Again, results from Stan are just pasted into the code below as comments, for reference.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">ms2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">stan</span><span class="p">(</span><span class="s2">"0192-negbin.stan"</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">orig_x</span><span class="p">,</span><span class="w"> 
+                                             </span><span class="n">N</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">orig_x</span><span class="p">),</span><span class="w">
+                                             </span><span class="n">K</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">),</span><span class="w">
+            </span><span class="n">cores</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="p">,</span><span class="w"> </span><span class="n">chains</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="p">)</span><span class="w">
+</span><span class="n">ms2</span><span class="w">
+</span><span class="c1"># Inference for Stan model: 0192-negbin.
+# 4 chains, each with iter=2000; warmup=1000; thin=1; 
+# post-warmup draws per chain=1000, total post-warmup draws=4000.
+# 
+# mean se_mean   sd    2.5%     25%     50%     75%   97.5% n_eff Rhat
+# mu[1]     4.83    0.04 1.64    2.52    3.70    4.49    5.58    9.04  1423    1
+# mu[2]    35.82    0.02 1.50   32.87   34.86   35.80   36.81   38.79  4234    1
+# phi[1]    0.77    0.00 0.23    0.44    0.61    0.74    0.89    1.30  2190    1
+# phi[2]   13.71    0.06 3.22    8.18   11.39   13.48   15.71   20.74  3032    1
+# p[1]      0.40    0.00 0.05    0.31    0.37    0.40    0.44    0.51  2152    1
+# p[2]      0.60    0.00 0.05    0.49    0.56    0.60    0.63    0.69  2152    1
+# lp__   -526.41    0.04 1.64 -530.64 -527.20 -526.08 -525.21 -524.25  1524    1
+# 
+# Samples were drawn using NUTS(diag_e) at Sun Sep 06 12:04:16 2020.
+# For each parameter, n_eff is a crude measure of effective sample size,
+# and Rhat is the potential scale reduction factor on split chains (at 
+# convergence, Rhat=1).
+</span><span class="w">
+</span><span class="c1">#---------------simulated data from that fitted mixed negative binomial distribution-------------------
+</span><span class="n">n</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">1e5</span><span class="w">
+</span><span class="n">xsim</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">rnbinom</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">0.4</span><span class="p">,</span><span class="w"> </span><span class="n">mu</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4.83</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.77</span><span class="p">),</span><span class="w">
+          </span><span class="n">rnbinom</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">0.6</span><span class="p">,</span><span class="w"> </span><span class="n">mu</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">35.82</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">13.71</span><span class="p">)</span><span class="w">
+</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># Plot of simulations
+</span><span class="n">data.frame</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xsim</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_vline</span><span class="p">(</span><span class="n">xintercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">xsim</span><span class="p">),</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"blue"</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_vline</span><span class="p">(</span><span class="n">xintercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">median</span><span class="p">(</span><span class="n">xsim</span><span class="p">),</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"red"</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_histogram</span><span class="p">(</span><span class="n">binwidth</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">..density..</span><span class="p">),</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey50"</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.9</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">comma</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">coord_cartesian</span><span class="p">(</span><span class="n">xlim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">range</span><span class="p">(</span><span class="n">orig_d</span><span class="o">$</span><span class="n">delay</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">theme</span><span class="p">(</span><span class="n">plot.subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_textbox_simple</span><span class="p">())</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Relative frequency"</span><span class="p">,</span><span class="w">
+       </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Simulations from fitted mixture of two negative binomial distributions"</span><span class="p">,</span><span class="w">
+       </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Fit is ok and &lt;span style = 'color:red;'&gt;median&lt;/span&gt; &gt; &lt;span style = 'color:blue;'&gt;mean&lt;/span&gt;, but not by as much as in original."</span><span class="p">)</span></code></pre></figure>
+
+
+
+		
+	</div>
+</div>
+
+<div class="col-md-1"></div>
+<div class="col-md-4">
+	<div class="side-banner">
+	
+
+
+	<div>
+	   
+	    
+			
+			<p>&larr; Previous post</p>
+			<p><a rel="prev" href="/blog/2020/08/29/reff-cv">Time series cross validation of effective reproduction number nowcasts</a></p>
+		
+		
+		
+		
+		 
+			
+			<p>Next post &rarr;</p>
+			<p><a rel="next" href="/blog/2020/09/13/processing-language">Trying out Processing</a></p>
+			
+			
+		
+		
+	</div>
+	
+	 
+
+   <div class = "side-footer">
+			
+			<hr></hr>
+			<p><gcse:search></gcse:search></p>
+			<hr></hr>
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.</p>
+			<hr></hr>
+			
+			<p>My day job is Chief Data Scientist at <a href='https://www.nousgroup.com/'>Nous Group</a>, an international management consultancy with over 400 people working across Australia, the UK and Canada. <a href='mailto:peter.ellis@nousgroup.com.au'>Contact me</a> if you are interested working with us on a grand challenge or broad agenda.</p>
+		
+		    <hr></hr>
+			
+       <div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="false" data-share="false"></div>
+			
+			<hr></hr>
+			<p>I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+			<hr></hr>
+
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title"><i>free range statistics</i></span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			<hr></hr>
+			
+
+
+    </div>
+
+
+
+  
+   
+
+
+
+
+		  
+		  
+
+
+
+	   
+	<div id="disqus_thread"></div>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function() {
+				var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+				dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+				(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+			})();
+		</script>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function () {
+				var s = document.createElement('script'); s.async = true;
+				s.type = 'text/javascript';
+				s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+				(document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+			}());
+		</script>
+
+	<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+	</div>	
+</div>    
+   
+   
+
+			
+			</div><!-- /.container -->
+         
+   <!-- Default Statcounter code for Free Range Statistics
+http://Http://freerangestats.info -->
+<script type="text/javascript">
+var sc_project=11673245; 
+var sc_invisible=1; 
+var sc_security="5b7111a4"; 
+</script>
+<script type="text/javascript"
+src="https://www.statcounter.com/counter/counter.js" async></script>
+<noscript><div class="statcounter"><a title="Web Analytics"
+href="http://statcounter.com/" target="_blank"><img class="statcounter"
+src="//c.statcounter.com/11673245/0/5b7111a4/1/" alt="Web
+Analytics"></a></div></noscript>
+<!-- End of Statcounter Code -->
+
+</body>   
+</html>

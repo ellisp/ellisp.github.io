@@ -1,0 +1,841 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Leading indicators of economic growth</title>
+      	
+         
+         
+            <meta name ="description" content ="A demo of a favourite combination of multiple imputation, bootstrap and elastic net regularization.  I look at what are good leading indicators, with reliable data available, of New Zealand's economic growth.  The results turn out to be last quarter's economic growth; food prices; visitor arrivals; car registrations; business confidence; and electronic card transactions.">
+            <meta property="og:description" content ="A demo of a favourite combination of multiple imputation, bootstrap and elastic net regularization.  I look at what are good leading indicators, with reliable data available, of New Zealand's economic growth.  The results turn out to be last quarter's economic growth; food prices; visitor arrivals; car registrations; business confidence; and electronic card transactions.">
+         
+         <meta property="og:site_name" content="free range statistics" />
+         <meta property="og:title" content="Leading indicators of economic growth" />
+         
+            <meta property="og:image" content="http://freerangestats.info/img/0128-ridge-boot-results.png" />
+         
+		 
+			<meta property="og:url" content="http://freerangestats.info/blog/2018/08/10/leading-indicators.html" />
+		 
+         <meta property="og:author" content= "https://www.facebook.com/peterstats" />
+         <meta property="og:type" content="article" />
+      
+
+<link href='https://fonts.googleapis.com/css?family=Sarala' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Prosto+One' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Ubuntu+Mono' rel='stylesheet'>
+	  
+          <link href="/css/bootstrap.min.css" rel ="stylesheet" type="text/css">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet" type="text/css">
+            <link href="/css/custom.css" rel ="stylesheet" type="text/css">     
+		<link href="/css/syntax.css" rel ="stylesheet" type="text/css">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="free range statistics by Peter Ellis"
+      href="/feed.xml">
+
+	  
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+  <script>
+  (function() {
+    var cx = '015640467633673901770:pk3v2c95baw';
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+  })();
+</script>
+
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">free range statistics</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/about">about</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">all posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">ordered by date</a></li>
+				  <li><a href="/blog/most-popular.html">ordered by popularity</a></li>
+                  <li><a href="/blog/index_by_tag.html">grouped by subject matter</a></li>
+                  <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
+				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
+				  <li><a href = /blog/2020/09/26/nzes-issues>most recent post</a></li>
+				</ul>
+            </li>
+              <li><a href="/blog/showcase.html">showcase</a></li>
+              <li><a href="/presentations/index.html">presentations</a></li>
+			  <li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">forecasts<span class="caret"></span></a>
+                <ul class="dropdown-menu">
+				  <li><a href = "/covid-tracking/index.html">Covid-19 in Australia</a></li>
+                  <li><a href = "/elections/nz-2020/index.html">NZ election 2020</a></li>
+                  <li><a href = "/elections/oz-2019/index.html">Australia federal election 2019</a></li>
+				  <li><a href = "/elections/nz-2017/combined.html">NZ election 2017</a></li>
+                  <li><a href="/blog/voting.html">all blog posts on voting behaviour</a></li>
+                </ul>				
+			  </li>
+			  
+			  
+			  
+		    </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			<div class="jumbotron">
+  <div class="container">
+	<center><h1>Leading indicators of economic growth</h1></center>
+  </div>
+</div>
+
+
+
+	<div class = "post-summary">
+	<h2>At a glance:</h2>
+	   <p>A demo of a favourite combination of multiple imputation, bootstrap and elastic net regularization.  I look at what are good leading indicators, with reliable data available, of New Zealand's economic growth.  The results turn out to be last quarter's economic growth; food prices; visitor arrivals; car registrations; business confidence; and electronic card transactions.</p>
+	   <p class="meta">10 Aug 2018</p>
+	   <hr></hr>
+	</div>
+
+
+<div class="col-md-7">
+
+	<div class="post">
+		
+	  <p>The debate about business confidence as a possible leading indicator of economic growth reminded me of a question that has long been on my back-burner - what data make the best leading indicators (say, a quarter of a year ahead) of economic growth?  There are a number of indicators that get a lot of attention in the media and from economic pundits of course, but I wanted to take a data-driven approach and see what actual evidence there is for the various candidate variables.</p>
+
+<p>To cut to the chase, this graphic summarises my results:</p>
+
+<p><img src="/img/0128-ridge-boot-results.svg" width="100%" /></p>
+
+<p>The previous quarter’s GDP growth is, unsurprisingly, a strong indicator of the coming quarter’s.  Food prices are strongly negatively related to economic growth (in New Zealand anyway - with the strong agriculture sector here food prices may be serving as a proxy for something else, but exactly what I’m not sure although I’ve got some ideas).  Other indicators with fair evidence of value include visitor arrivals, car registrations, business confidence (the OECD measure, which David Hood points out is <a href="https://twitter.com/Thoughtfulnz/status/1027339431638749185">apparently derived from the NZIER’s survey, not the ANZ’s</a>), and electronic card transactions.</p>
+
+<p>One surprise for me is the complete absence of predictive power of merchandise goods exports for growth in GDP.  Any suggestions why welcomed in the comments!</p>
+
+<p>These confidence intervals come from what I believe to be a pretty robust frequentist modelling approach that combines multiple imputation, bootstrap and elastic net regularization.  I have in the back of my head the idea of a follow-up project that uses Bayesian methods to provide actual forecasts of the coming GDP, but I may not get around to it (or if I do, it will probably be for Victorian or Australian data seeing as I’ll be living there from October and more motivated for forecasts in that space).</p>
+
+<h2 id="data">Data</h2>
+
+<p>To address the question, I started with the <a href="https://www.stats.govt.nz/release-calendar/">Stats NZ data release calendar</a> to identify official statistics that are available on a monthly basis and published within a month of the reference period.  I counted seven such collections:</p>
+
+<ul>
+  <li>Electronic card transactions</li>
+  <li>Food price index</li>
+  <li>Transport vehicle registrations</li>
+  <li>International travel and migration</li>
+  <li>Overseas merchandise trade</li>
+  <li>Building consents issued</li>
+  <li>Livestock slaughtering statistics</li>
+</ul>
+
+<p>To these seven, I also added the:</p>
+
+<ul>
+  <li>Reserve Bank’s Trade Weighted Index of the New Zealand dollar compared to a basket of currencies</li>
+  <li>OECD business confidence series (I used this rather than the ANZ or NZIER original series as the OECD version is available freely for reproducibility purposes)</li>
+</ul>
+
+<p>Some of these datasets are available programmatically, and some required manual steps to download from Infoshare.  Slightly more detail on this is <a href="https://github.com/ellisp/nz-lead-indicators/blob/master/data/data-provenance.md">documented in the GitHub repo</a> I set up for the project, as are all the scripts that import and combine the data.  If you’re interested in that, fork the entire repository, as its a combined whole and needs to be run as such, via the <code class="highlighter-rouge">integrate.R</code> script in the root directory of the project.</p>
+
+<p>Here’s the original time series, plus seasonally adjusted versions of all of them except for the trade weighted index (currencies are so random I thought it made little sense to do a seasonally adjusted version of this; possible subject of future investigation):</p>
+
+<p><img src="/img/0128-line-charts.svg" width="100%" /></p>
+
+<p>I did my own seasonal adjustment because even when seasonally adjusted series are available in some of the Stats NZ collections, typically it goes back only to the 1990s or 2000s.  I wanted data at least all the way back to 1987 when the quarterly GDP series starts; time series are difficult enough to analyse as it is without restricting ourselves to a decade or so of data (this is also why I went back to original data series rather than using the Treasury “leading economic indicator” Excel collections, as they cover only a relatively recent period).</p>
+
+<p>Apart from business confidence (which by its nature is restricted to within a constant range), the original data are all clearly non-stationary, so I converted them to growth rates, which gives us the following chart summarising my candidate leading economic indicators:</p>
+
+<p><img src="/img/0128-stationary-line-charts.svg" width="100%" /></p>
+
+<p>Both seasonal adjustment and stationarity are important with time series so we can focus on the underlying relationships and avoid spurious correlations from the structural (growth and episodicity) elements of the series.  An alternative approach would be to model the seasonality and growth directly in a full blown Bayesian model, but even in that case I’d want to look at de-seasoned, stationary versions for the exploratory stage.</p>
+
+<p>Now that we have those de-seasoned, stationary versions of the data, we can look at them and see which ones are correlated one-on-one with economic growth for the quarter.  Remember, the idea here is to use data that are available fairly promptly as leading indicators of economic growth in the same quarter, because economic growth is only reported quarterly and is hard to estimate, and hence is reported at a material lag.  Here are the bivariate correlations:</p>
+
+<p><img src="/img/0128-pairs.svg" width="100%" /></p>
+
+<p>I’ve sequenced the variables in order of strength of relationship with GDP growth in the quarter (<a href="https://github.com/ellisp/nz-lead-indicators/blob/master/grooming/80-combine.R">code</a>). We can see that lagged GDP growth, electronic card transactions growth, and OECD business confidence have the three strongest positive correlations with GDP growth. Food price growth has a strong negative correlation (ie high growth in food prices is a predictor of low growth in GDP).</p>
+
+<p>The lower diagonal in that pairs plot shows connected scatter plots with a single-predictor linear model.  This turned out to be pleasantly easy to do with <code class="highlighter-rouge">GGally::ggpairs</code> and a simple user-defined function.  Here’s the <a href="https://github.com/ellisp/nz-lead-indicators/blob/master/analysis/exploratory.R">code for all three of the exploratory charts</a>.</p>
+
+<h2 id="minimalist-regression-poor">Minimalist regression (poor)</h2>
+
+<p>My starting point was a fairly naive out-of-the-box linear regression, just chucking all the data into <code class="highlighter-rouge">lm()</code>.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">load</span><span class="p">(</span><span class="s2">"data/ind_data.rda"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">summary</span><span class="p">(</span><span class="n">ind_data_wide</span><span class="p">)</span><span class="w"> </span><span class="c1"># 109 cases where even gdp_growth is missing.  No point in using them
+</span><span class="n">ind_data_wide2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">subset</span><span class="p">(</span><span class="n">ind_data_wide</span><span class="p">,</span><span class="w"> </span><span class="o">!</span><span class="nf">is.na</span><span class="p">(</span><span class="n">gdp_growth_lag</span><span class="p">))</span><span class="w">
+
+</span><span class="c1"># naive approach *will* fit a plausible model, but the NA is down to the lowest common denominator, when data available on all variables
+</span><span class="n">mod</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lm</span><span class="p">(</span><span class="n">gdp_growth</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">.</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ind_data_wide2</span><span class="p">)</span><span class="w">
+
+</span><span class="n">stargazer</span><span class="p">(</span><span class="n">mod</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="s2">"html"</span><span class="p">)</span></code></pre></figure>
+
+<p>This gives me this result:</p>
+
+<table style="text-align:center"><tr><td colspan="2" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left"></td><td><em>Dependent variable:</em></td></tr>
+<tr><td></td><td colspan="1" style="border-bottom: 1px solid black"></td></tr>
+<tr><td style="text-align:left"></td><td>gdp_growth</td></tr>
+<tr><td colspan="2" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">gdp_growth_lag</td><td>0.009</td></tr>
+<tr><td style="text-align:left"></td><td>(0.121)</td></tr>
+<tr><td style="text-align:left"></td><td></td></tr>
+<tr><td style="text-align:left">ect_growth</td><td>0.335<sup>***</sup></td></tr>
+<tr><td style="text-align:left"></td><td>(0.114)</td></tr>
+<tr><td style="text-align:left"></td><td></td></tr>
+<tr><td style="text-align:left">bc_sa</td><td>0.0001</td></tr>
+<tr><td style="text-align:left"></td><td>(0.001)</td></tr>
+<tr><td style="text-align:left"></td><td></td></tr>
+<tr><td style="text-align:left">cars_growth</td><td>0.022</td></tr>
+<tr><td style="text-align:left"></td><td>(0.016)</td></tr>
+<tr><td style="text-align:left"></td><td></td></tr>
+<tr><td style="text-align:left">com_vcl_growth</td><td>0.003</td></tr>
+<tr><td style="text-align:left"></td><td>(0.009)</td></tr>
+<tr><td style="text-align:left"></td><td></td></tr>
+<tr><td style="text-align:left">iva_growth</td><td>0.046<sup>**</sup></td></tr>
+<tr><td style="text-align:left"></td><td>(0.020)</td></tr>
+<tr><td style="text-align:left"></td><td></td></tr>
+<tr><td style="text-align:left">bci_growth</td><td>0.001</td></tr>
+<tr><td style="text-align:left"></td><td>(0.008)</td></tr>
+<tr><td style="text-align:left"></td><td></td></tr>
+<tr><td style="text-align:left">twi_growth</td><td>-0.004</td></tr>
+<tr><td style="text-align:left"></td><td>(0.020)</td></tr>
+<tr><td style="text-align:left"></td><td></td></tr>
+<tr><td style="text-align:left">lst_growth</td><td>-0.002</td></tr>
+<tr><td style="text-align:left"></td><td>(0.008)</td></tr>
+<tr><td style="text-align:left"></td><td></td></tr>
+<tr><td style="text-align:left">goods_growth</td><td>0.005</td></tr>
+<tr><td style="text-align:left"></td><td>(0.012)</td></tr>
+<tr><td style="text-align:left"></td><td></td></tr>
+<tr><td style="text-align:left">fpi_growth</td><td>-0.236<sup>***</sup></td></tr>
+<tr><td style="text-align:left"></td><td>(0.080)</td></tr>
+<tr><td style="text-align:left"></td><td></td></tr>
+<tr><td style="text-align:left">yr_num</td><td>0.0001</td></tr>
+<tr><td style="text-align:left"></td><td>(0.0002)</td></tr>
+<tr><td style="text-align:left"></td><td></td></tr>
+<tr><td style="text-align:left">Constant</td><td>-0.177</td></tr>
+<tr><td style="text-align:left"></td><td>(0.354)</td></tr>
+<tr><td style="text-align:left"></td><td></td></tr>
+<tr><td colspan="2" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">Observations</td><td>61</td></tr>
+<tr><td style="text-align:left">R<sup>2</sup></td><td>0.566</td></tr>
+<tr><td style="text-align:left">Adjusted R<sup>2</sup></td><td>0.457</td></tr>
+<tr><td style="text-align:left">Residual Std. Error</td><td>0.004 (df = 48)</td></tr>
+<tr><td style="text-align:left">F Statistic</td><td>5.215<sup>***</sup> (df = 12; 48)</td></tr>
+<tr><td colspan="2" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left"><em>Note:</em></td><td style="text-align:right"><sup>*</sup>p&lt;0.1; <sup>**</sup>p&lt;0.05; <sup>***</sup>p&lt;0.01</td></tr>
+</table>
+
+<p>There’s two big problems with this approach:</p>
+
+<ul>
+  <li>By default, the model is fit to the minimal set of the data that is complete for all variables.  Electronic card transactions is the shortest series, going back only to 2003 when it is treated as a growth rate.  So all the information in the other variables before that time has been thrown out.</li>
+  <li>A big amount of collinearity in the data is inevitable with this sort of collection.  While it doesn’t bias the estimated coefficients, it can make a big increase to the variance, and basically adds a lot of noise to our estimated effect sizes.  I think this is why we have the implausible result in this naive model of lagged GDP growth not being useful as an explanatory variable.</li>
+</ul>
+
+<p>… and one small problem, which is that other than including the lagged value of GDP growth as an explanatory variable, I’m ignoring the time series nature of the data.  More on that later.</p>
+
+<h2 id="multiple-imputation-better">Multiple imputation (better)</h2>
+
+<p>We could address the problem of the short electronic card transactions series either by eliminating that series from the data altogether (which would be a shame as it’s obviously useful), or by imputing it’s previous values.  Conceptually this is a little dubious - what exactly are we saying growth in electronic card transactions in 1988 would mean? - but statistically it’s fine.  The imputed values will capture the relationships between the various variables from 2003 onwards and avoid creating new artefacts, so in effect we will find the relationship between electronic cards and the others for the years we have the data, while still using the full 1987+ data for all other variables.</p>
+
+<p>The appropriate way to do this is to create multiple complete data sets with different imputed values, fit our model to each, and pool the results.  The <code class="highlighter-rouge">mice</code> package makes this spectacularly easy:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">ind_mi</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">mice</span><span class="p">(</span><span class="n">ind_data_wide2</span><span class="p">,</span><span class="w"> </span><span class="n">print</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w">
+
+</span><span class="n">mod_mi</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">with</span><span class="p">(</span><span class="n">ind_mi</span><span class="p">,</span><span class="w"> </span><span class="n">lm</span><span class="p">(</span><span class="n">gdp_growth</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">yr_num</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">gdp_growth_lag</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">bc_sa</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">bci_growth</span><span class="w"> </span><span class="o">+</span><span class="w">
+                            </span><span class="n">ect_growth</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">fpi_growth</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">iva_growth</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">goods_growth</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+                            </span><span class="n">cars_growth</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">com_vcl_growth</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">twi_growth</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">lst_growth</span><span class="p">))</span><span class="w">
+
+</span><span class="n">summary</span><span class="p">(</span><span class="n">pool</span><span class="p">(</span><span class="n">mod_mi</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="n">kable</span><span class="p">(</span><span class="n">digits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="p">)</span></code></pre></figure>
+
+<table>
+  <thead>
+    <tr>
+      <th style="text-align: left"> </th>
+      <th style="text-align: right">estimate</th>
+      <th style="text-align: right">std.error</th>
+      <th style="text-align: right">statistic</th>
+      <th style="text-align: right">df</th>
+      <th style="text-align: right">p.value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: left">(Intercept)</td>
+      <td style="text-align: right">-0.2889</td>
+      <td style="text-align: right">0.1712</td>
+      <td style="text-align: right">-1.6878</td>
+      <td style="text-align: right">54.8951</td>
+      <td style="text-align: right">0.0944</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">yr_num</td>
+      <td style="text-align: right">0.0001</td>
+      <td style="text-align: right">0.0001</td>
+      <td style="text-align: right">1.5128</td>
+      <td style="text-align: right">59.0142</td>
+      <td style="text-align: right">0.1333</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gdp_growth_lag</td>
+      <td style="text-align: right">0.2182</td>
+      <td style="text-align: right">0.0846</td>
+      <td style="text-align: right">2.5785</td>
+      <td style="text-align: right">79.8727</td>
+      <td style="text-align: right">0.0113</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">bc_sa</td>
+      <td style="text-align: right">0.0005</td>
+      <td style="text-align: right">0.0004</td>
+      <td style="text-align: right">1.3342</td>
+      <td style="text-align: right">100.3535</td>
+      <td style="text-align: right">0.1850</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">bci_growth</td>
+      <td style="text-align: right">0.0061</td>
+      <td style="text-align: right">0.0069</td>
+      <td style="text-align: right">0.8820</td>
+      <td style="text-align: right">106.1382</td>
+      <td style="text-align: right">0.3798</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">ect_growth</td>
+      <td style="text-align: right">0.2059</td>
+      <td style="text-align: right">0.1308</td>
+      <td style="text-align: right">1.5741</td>
+      <td style="text-align: right">15.6965</td>
+      <td style="text-align: right">0.1184</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">fpi_growth</td>
+      <td style="text-align: right">-0.1900</td>
+      <td style="text-align: right">0.0566</td>
+      <td style="text-align: right">-3.3599</td>
+      <td style="text-align: right">105.0452</td>
+      <td style="text-align: right">0.0011</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">iva_growth</td>
+      <td style="text-align: right">0.0257</td>
+      <td style="text-align: right">0.0193</td>
+      <td style="text-align: right">1.3335</td>
+      <td style="text-align: right">82.9585</td>
+      <td style="text-align: right">0.1852</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">goods_growth</td>
+      <td style="text-align: right">0.0008</td>
+      <td style="text-align: right">0.0125</td>
+      <td style="text-align: right">0.0628</td>
+      <td style="text-align: right">97.7269</td>
+      <td style="text-align: right">0.9500</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">cars_growth</td>
+      <td style="text-align: right">0.0172</td>
+      <td style="text-align: right">0.0071</td>
+      <td style="text-align: right">2.4403</td>
+      <td style="text-align: right">104.3330</td>
+      <td style="text-align: right">0.0163</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">com_vcl_growth</td>
+      <td style="text-align: right">0.0050</td>
+      <td style="text-align: right">0.0077</td>
+      <td style="text-align: right">0.6501</td>
+      <td style="text-align: right">102.0428</td>
+      <td style="text-align: right">0.5171</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">twi_growth</td>
+      <td style="text-align: right">0.0150</td>
+      <td style="text-align: right">0.0192</td>
+      <td style="text-align: right">0.7807</td>
+      <td style="text-align: right">103.6387</td>
+      <td style="text-align: right">0.4367</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">lst_growth</td>
+      <td style="text-align: right">0.0024</td>
+      <td style="text-align: right">0.0061</td>
+      <td style="text-align: right">0.3999</td>
+      <td style="text-align: right">104.7962</td>
+      <td style="text-align: right">0.6900</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Compared to the naive model on the cut-down dataset, we now have a much more plausible strong relationship with lagged GDP growth (which didn’t show up at all as significant in the first model). Food prices and car/stationwagon registrations the other two variables with “significant” evidence at this stage.  The electronic card transactions (<code class="highlighter-rouge">ect_growth</code>) effect is much smaller now, an unsurprising result from the “blurring” of the data introduced by the imputation approach and the fact that the other variables have long series of actual values to assert their relationships with the response of GDP growth.</p>
+
+<p>So, we’ve dealt with the missing data, but not yet the multi-collinearity.</p>
+
+<h2 id="multiple-imputation-elastic-net-regularization-and-bootstrap-best">Multiple imputation, elastic net regularization, and bootstrap (best)</h2>
+
+<p>My preferred approach to reducing the random noise in effect sizes from having collinear explanatory variables is elastic net regularization, which I’ve written about a number of times in this blog.</p>
+
+<p>Regularization can be combined with multiple imputation if we use a bootstrap.  For each bootstrap re-sample, we perform a single imputation of missing variables, using just the data in the re-sample.  This adds a little to the computational complexity, but this dataset isn’t large, and the more valid inferences possible make it worthwhile.  In general, as much of the data processing stage as possible should be repeated in each bootstrap re-sample, for the re-sampling process to work as intended, ie as a mimic of “what would happen if we could repeat this experiment 999 times”, the fundamental principle of frequentist inference.</p>
+
+<p>Bootstrap of a time series normally needs special methods.  I’m not necessarily happy with the shortcut I’ve taken here, which is to say that I can treat the data as cross-sectional other than by including the lagged GDP growth variable.  However, with all the variables in their stationary state, and with the residual series not showing signs of autocorrelation (more on this later), I think it’s fair enough in a pragmatic way.</p>
+
+<p>I was able to cannibalise code from my previous posts with minimal amendments.</p>
+
+<p>My first step is to estimate good values for the <code class="highlighter-rouge">alpha</code> hyper-parameter in generalised linear regression.  This is the value between 0 and 1 that lets you choose a combination of the <em>type</em> of penalty used to determine the amount that coefficients are shrunk towards zero, to counter the way collinearity adds random noise to their estimates.  I do this by fitting models with a range of different values of <code class="highlighter-rouge">alpha</code>, while using cross-validation (built into the <code class="highlighter-rouge">glmnet</code> package) to get good values of <code class="highlighter-rouge">lambda</code>.  <code class="highlighter-rouge">lambda</code> is the hyper-parameter that indicates how <em>much</em> shrinkage there is.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># I like Michael's answer at https://stats.stackexchange.com/questions/46719/multiple-imputation-and-model-selection:
+# use in combination with bootstrap.
+</span><span class="n">cv_results</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data_frame</span><span class="p">(</span><span class="n">lambda</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">numeric</span><span class="p">(),</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">numeric</span><span class="p">(),</span><span class="w"> </span><span class="n">mcve</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">numeric</span><span class="p">(),</span><span class="w"> </span><span class="n">imputation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">numeric</span><span class="p">())</span><span class="w">
+
+</span><span class="n">set.seed</span><span class="p">(</span><span class="m">765</span><span class="p">)</span><span class="w">
+</span><span class="k">for</span><span class="p">(</span><span class="n">imp</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">5</span><span class="p">){</span><span class="w">
+  </span><span class="n">the_data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">mice</span><span class="o">::</span><span class="n">complete</span><span class="p">(</span><span class="n">ind_mi</span><span class="p">,</span><span class="w"> </span><span class="n">imp</span><span class="p">)</span><span class="w">
+  
+  </span><span class="n">X</span><span class="w"> </span><span class="o">&lt;-</span><span class="n">as.matrix</span><span class="p">(</span><span class="n">select</span><span class="p">(</span><span class="n">the_data</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">gdp_growth</span><span class="p">))</span><span class="w">
+  </span><span class="n">Y</span><span class="w"> </span><span class="o">&lt;-</span><span class="w">  </span><span class="n">the_data</span><span class="o">$</span><span class="n">gdp_growth</span><span class="w">
+  
+  </span><span class="n">alphas</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">seq</span><span class="p">(</span><span class="n">from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">length.out</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">21</span><span class="p">)</span><span class="w">
+  
+  </span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">alphas</span><span class="p">){</span><span class="w">
+    </span><span class="n">cvfit</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">cv.glmnet</span><span class="p">(</span><span class="n">as.matrix</span><span class="p">(</span><span class="n">X</span><span class="p">),</span><span class="w"> </span><span class="n">Y</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w">
+    </span><span class="n">tmp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data_frame</span><span class="p">(</span><span class="n">lambda</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cvfit</span><span class="o">$</span><span class="n">lambda</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">mcve</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cvfit</span><span class="o">$</span><span class="n">cvm</span><span class="p">,</span><span class="w"> </span><span class="n">imputation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">imp</span><span class="p">)</span><span class="w">   
+    </span><span class="n">cv_results</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">rbind</span><span class="p">(</span><span class="n">cv_results</span><span class="p">,</span><span class="w"> </span><span class="n">tmp</span><span class="p">)</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">cv_res_grp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">cv_results</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">lambda</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">summarise</span><span class="p">(</span><span class="n">mcve</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">mcve</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ungroup</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">arrange</span><span class="p">(</span><span class="n">mcve</span><span class="p">)</span><span class="w">
+
+</span><span class="n">cv_res_grp</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">ordered_alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">as.factor</span><span class="p">(</span><span class="nf">round</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">)),</span><span class="w">
+         </span><span class="n">ordered_alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_reorder</span><span class="p">(</span><span class="n">ordered_alpha</span><span class="p">,</span><span class="w"> </span><span class="n">mcve</span><span class="p">,</span><span class="w"> </span><span class="n">.fun</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">min</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lambda</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sqrt</span><span class="p">(</span><span class="n">mcve</span><span class="p">),</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ordered_alpha</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_line</span><span class="p">(</span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_x_log10</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">comma</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_colour_viridis</span><span class="p">(</span><span class="s2">"alpha"</span><span class="p">,</span><span class="w"> </span><span class="n">guide</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">guide_legend</span><span class="p">(</span><span class="n">reverse</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">),</span><span class="w"> </span><span class="n">discrete</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Cross-validation to select hyper parameters in elastic net regression"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="s2">"Square root of mean cross validation error"</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">comma</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">theme</span><span class="p">(</span><span class="n">legend.position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"right"</span><span class="p">)</span><span class="w">
+  
+ </span><span class="n">chosen_alpha</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">arrange</span><span class="p">(</span><span class="n">cv_res_grp</span><span class="p">,</span><span class="w"> </span><span class="n">mcve</span><span class="p">)[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">alpha</span></code></pre></figure>
+
+<p>This gives me a graphic like the following:</p>
+
+<p><img src="/img/0128-hyper-params-glmnet.svg" width="100%" /></p>
+
+<p>We can see that we can get low values of mean error with many combinations of <code class="highlighter-rouge">alpha</code> and <code class="highlighter-rouge">lambda</code>, which is reassuring in suggesting that the choices aren’t critical.  But I store the best value of alpha for use in the actual bootstrapped model fitting to follow.</p>
+
+<p>Here’s the code that does the actual bootstrapped, mulitply-imputed, elastic net regularized fitting of my model.  It has four steps:</p>
+
+<ul>
+  <li>define a function <code class="highlighter-rouge">elastic()</code> that takes a resampled set of data, performs a single imputation on it, determines a good value of lambda, fits the model and returns the values of the coefficients</li>
+  <li>use the <code class="highlighter-rouge">boot::boot</code> function to run that function on 999 different samples with replacement of the original data</li>
+  <li>tidy up the resulting percentile confidence intervals into a neat data frame</li>
+  <li>draw a nice graphic showing the confidence intervals</li>
+</ul>
+
+<p>Most of the code below is actually in the third and fourth of those steps:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># Define a function that creates a single imputed set of data from a bootstrapped resample, then fits ridge regression to it
+</span><span class="n">elastic</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">){</span><span class="w">
+  </span><span class="c1"># create a single complete imputed set of data:
+</span><span class="w">  </span><span class="n">the_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mice</span><span class="o">::</span><span class="n">complete</span><span class="p">(</span><span class="n">mice</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">],</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">print</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">),</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+  </span><span class="n">X</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.matrix</span><span class="p">(</span><span class="n">dplyr</span><span class="o">::</span><span class="n">select</span><span class="p">(</span><span class="n">the_data</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">gdp_growth</span><span class="p">))</span><span class="w">
+  </span><span class="n">Y</span><span class="w"> </span><span class="o">&lt;-</span><span class="w">  </span><span class="n">the_data</span><span class="o">$</span><span class="n">gdp_growth</span><span class="w">
+  
+  </span><span class="c1"># we're going to scale the data so the results are in terms of standard deviations of the 
+</span><span class="w">  </span><span class="c1"># variable in question, to make coefficients more comparable.  Note that this scaling takes
+</span><span class="w">  </span><span class="c1"># place *within* the bootstrap as it is part of the analytical process we are simulating
+</span><span class="w">  </span><span class="c1"># by resampling.  
+</span><span class="w">  </span><span class="n">X</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">scale</span><span class="p">(</span><span class="n">X</span><span class="p">)</span><span class="w">
+
+  </span><span class="c1"># work out the best lambda for this dataset using cross validation"
+</span><span class="w">  </span><span class="n">lambda</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">cv.glmnet</span><span class="p">(</span><span class="n">as.matrix</span><span class="p">(</span><span class="n">X</span><span class="p">),</span><span class="w"> </span><span class="n">Y</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">chosen_alpha</span><span class="p">)</span><span class="o">$</span><span class="n">lambda.min</span><span class="w">
+  
+  </span><span class="c1"># fit the model:
+</span><span class="w">  </span><span class="n">mod_glmnet</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">glmnet</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="n">Y</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">chosen_alpha</span><span class="p">,</span><span class="w"> </span><span class="n">lambda</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lambda</span><span class="p">)</span><span class="w">
+  
+  </span><span class="c1"># return the results:
+</span><span class="w">  </span><span class="n">as.vector</span><span class="p">(</span><span class="n">coef</span><span class="p">(</span><span class="n">mod_glmnet</span><span class="p">))</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="c1"># Now we run the bootstrap, using the function above.
+</span><span class="n">set.seed</span><span class="p">(</span><span class="m">321</span><span class="p">)</span><span class="w">
+</span><span class="n">elastic_bt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">boot</span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ind_data_wide2</span><span class="p">,</span><span class="w"> </span><span class="n">statistic</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">elastic</span><span class="p">,</span><span class="w"> </span><span class="n">R</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">999</span><span class="p">)</span><span class="w">
+
+
+</span><span class="c1"># process results into a tidy data frame
+</span><span class="n">boot_coefs</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data_frame</span><span class="p">(</span><span class="w">
+  </span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">character</span><span class="p">(),</span><span class="w">
+  </span><span class="n">lower</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">numeric</span><span class="p">(),</span><span class="w">
+  </span><span class="n">upper</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">numeric</span><span class="p">(),</span><span class="w">
+  </span><span class="n">point</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">numeric</span><span class="p">()</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><span class="n">var_names</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Intercept"</span><span class="p">,</span><span class="w"> </span><span class="nf">names</span><span class="p">(</span><span class="n">ind_data_wide_names</span><span class="p">)[</span><span class="m">-2</span><span class="p">])</span><span class="w">
+</span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="nf">length</span><span class="p">(</span><span class="n">var_names</span><span class="p">)){</span><span class="w">
+  </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">boot.ci</span><span class="p">(</span><span class="n">elastic_bt</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"perc"</span><span class="p">,</span><span class="w"> </span><span class="n">index</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w">
+  </span><span class="n">boot_coefs</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">rbind</span><span class="p">(</span><span class="n">boot_coefs</span><span class="p">,</span><span class="w">
+                      </span><span class="n">data_frame</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">var_names</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="w">
+                                 </span><span class="n">lower</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="o">$</span><span class="n">percent</span><span class="p">[</span><span class="m">4</span><span class="p">],</span><span class="w">
+                                 </span><span class="n">upper</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="o">$</span><span class="n">percent</span><span class="p">[</span><span class="m">5</span><span class="p">],</span><span class="w">
+                                 </span><span class="n">point</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="o">$</span><span class="n">t</span><span class="m">0</span><span class="p">))</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="c1"># draw graphic
+</span><span class="n">boot_coefs</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="o">!</span><span class="n">variable</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"yr_num"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Intercept"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="c1"># next line is in there in case we do still want the time trend in the graphic.  But it's never significant,
+</span><span class="w">  </span><span class="c1"># and it's hard to explian.
+</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"yr_num"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Linear\ntime trend"</span><span class="p">,</span><span class="w"> </span><span class="n">variable</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_reorder</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">lower</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">variable</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_vline</span><span class="p">(</span><span class="n">xintercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"black"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_segment</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">yend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lower</span><span class="p">,</span><span class="w"> </span><span class="n">xend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">upper</span><span class="p">),</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_point</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">point</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_x_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Estimated impact in percentage points on coming quarter's GDP growth,
+of change in one standard deviation in the explanatory variable"</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w">
+       </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"95% confidence intervals based on bootstrapped elastic net regularized regression, with
+electronic card transactions imputed differently for each bootstrap resample.
+Analysis by http://freerangestats.info"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Previous quarter's economic growth (+ve) and food prices (-ve)
+most useful as leading indicators of this quarter's New Zealand economic growth"</span><span class="p">,</span><span class="w">
+          </span><span class="n">str_wrap</span><span class="p">(</span><span class="s2">"Variables considered are official statistics available from Stats NZ every month, within a month; plus the OECD business confidence measure (which is based on NZIER's Quarterly Survey of Business Opinion); and the trade weighted index for currency published by RBNZ.  Data goes back to 1987."</span><span class="p">,</span><span class="w"> </span><span class="m">80</span><span class="p">))</span></code></pre></figure>
+
+<p><img src="/img/0128-ridge-boot-results.svg" width="100%" /></p>
+
+<p>And I’m sticking to that (same graphic as I started the post with) as my best results.</p>
+
+<h2 id="timeseries-method">Timeseries method</h2>
+
+<p>I’ve mentioned a couple of times my nervousness about how I’ve inadequately treated the timeseries nature of these data.  Here’s a quick look at the residuals of one version of my model (ie one set of imputed values).  It assures me that there is no evidence of the residuals being autocorrelated, but I still think I’m cutting corners:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">lambda</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">cv.glmnet</span><span class="p">(</span><span class="n">as.matrix</span><span class="p">(</span><span class="n">X</span><span class="p">),</span><span class="w"> </span><span class="n">Y</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">chosen_alpha</span><span class="p">)</span><span class="o">$</span><span class="n">lambda.min</span><span class="w">
+</span><span class="n">mod_glmnet</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">glmnet</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="n">Y</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">chosen_alpha</span><span class="p">,</span><span class="w"> </span><span class="n">lambda</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lambda</span><span class="p">)</span><span class="w">
+</span><span class="n">residuals</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ts</span><span class="p">(</span><span class="n">Y</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">predict</span><span class="p">(</span><span class="n">mod_glmnet</span><span class="p">,</span><span class="w"> </span><span class="n">newx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">X</span><span class="p">),</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1987</span><span class="p">,</span><span class="w"> </span><span class="m">4</span><span class="p">),</span><span class="w"> </span><span class="n">frequency</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># Fail to reject null hypothesis of no autocorrelation (which means that it is probably ok to have used the
+# above method, pretending it is cross-sectional other than by including the lagged GDP)
+</span><span class="n">Box.test</span><span class="p">(</span><span class="n">residuals</span><span class="p">,</span><span class="w"> </span><span class="n">lag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Ljung-Box"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">par</span><span class="p">(</span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"myfont"</span><span class="p">,</span><span class="w"> </span><span class="n">font.main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">bty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"l"</span><span class="p">)</span><span class="w">
+</span><span class="n">tsdisplay</span><span class="p">(</span><span class="n">residuals</span><span class="p">,</span><span class="w"> </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Time series of residuals from regression with imputation and regularization"</span><span class="p">)</span></code></pre></figure>
+
+<p><img src="/img/0128-residuals.ts.svg" width="100%" /></p>
+
+<p>As an alternative approach, I used the <code class="highlighter-rouge">forecast::auto.arima()</code> approach to model an imputed set of the data explicitly as a timeseries.  This gets me some results that differ slightly from the above, but perhaps are broadly compatible:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="text-align: left">.rownames</th>
+      <th style="text-align: right">X2.5..</th>
+      <th style="text-align: right">X97.5..</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: left">ar1</td>
+      <td style="text-align: right">0.7812</td>
+      <td style="text-align: right">1.0434</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">ma1</td>
+      <td style="text-align: right">-1.8363</td>
+      <td style="text-align: right">-1.5284</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">ma2</td>
+      <td style="text-align: right">0.6152</td>
+      <td style="text-align: right">0.9077</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">sar1</td>
+      <td style="text-align: right">0.0547</td>
+      <td style="text-align: right">0.5393</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">sar2</td>
+      <td style="text-align: right">-0.4780</td>
+      <td style="text-align: right">-0.0796</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">sma1</td>
+      <td style="text-align: right">-1.0269</td>
+      <td style="text-align: right">-0.7013</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">ect_growth</td>
+      <td style="text-align: right">0.0003</td>
+      <td style="text-align: right">0.0018</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">bc_sa</td>
+      <td style="text-align: right">0.0009</td>
+      <td style="text-align: right">0.0036</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">cars_growth</td>
+      <td style="text-align: right">-0.0001</td>
+      <td style="text-align: right">0.0017</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">com_vcl_growth</td>
+      <td style="text-align: right">-0.0007</td>
+      <td style="text-align: right">0.0010</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">iva_growth</td>
+      <td style="text-align: right">-0.0003</td>
+      <td style="text-align: right">0.0017</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">bci_growth</td>
+      <td style="text-align: right">-0.0010</td>
+      <td style="text-align: right">0.0004</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">twi_growth</td>
+      <td style="text-align: right">-0.0002</td>
+      <td style="text-align: right">0.0013</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">lst_growth</td>
+      <td style="text-align: right">-0.0001</td>
+      <td style="text-align: right">0.0016</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">goods_growth</td>
+      <td style="text-align: right">-0.0011</td>
+      <td style="text-align: right">0.0008</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">fpi_growth</td>
+      <td style="text-align: right">-0.0023</td>
+      <td style="text-align: right">-0.0003</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The key difference is that business confidence (<code class="highlighter-rouge">bc_sa</code>) and, to a lesser extent, electronic card transactions (<code class="highlighter-rouge">ect_growth</code>) are more strongly significant in this version.  Food price (<code class="highlighter-rouge">fpi_growth</code>) is still strongly negative, and other confidence intervals all encompass zero.  Note that lagged GDP growth doesn’t appear in this model explicitly - it comes in automatically as the <code class="highlighter-rouge">ar1</code> (auto-regression at lag 1) term of the algorithmically-chosen ARIMA model.</p>
+
+<p>The results are similar enough that I decide I’m ok with the approach I’ve taken, so I don’t invest in what would be quite an effort (but eminently possible with time) to introduce multiple imputation and regularization into the time series model.</p>
+
+<p>Here’s the code for that bit of time series modelling:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">set.seed</span><span class="p">(</span><span class="m">234</span><span class="p">)</span><span class="w">
+</span><span class="n">ind_imp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">mice</span><span class="o">::</span><span class="n">complete</span><span class="p">(</span><span class="n">mice</span><span class="p">(</span><span class="n">ind_data_wide2</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">print</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">),</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+
+</span><span class="n">Y</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ts</span><span class="p">(</span><span class="n">ind_imp</span><span class="o">$</span><span class="n">gdp_growth</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1987</span><span class="p">,</span><span class="w"> </span><span class="m">4</span><span class="p">),</span><span class="w"> </span><span class="n">frequency</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="p">)</span><span class="w">
+</span><span class="n">X</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">scale</span><span class="p">(</span><span class="n">select</span><span class="p">(</span><span class="n">ind_imp</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">yr_num</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">gdp_growth</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">gdp_growth_lag</span><span class="p">))</span><span class="w">
+
+</span><span class="n">mod</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">auto.arima</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="w"> </span><span class="n">xreg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">X</span><span class="p">)</span><span class="w">
+
+</span><span class="n">confint</span><span class="p">(</span><span class="n">mod</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="n">tidy</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="n">kable</span><span class="p">(</span><span class="n">digits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="p">)</span></code></pre></figure>
+
+<p>All the analysis code, as well as the data downloading and grooming code (which is the bulk of it…), is available in the <a href="https://github.com/ellisp/nz-lead-indicators/">GitHub repository for this project</a>.  The code excerpts above aren’t self-sufficient without the rest of the project, which has a folder system that doesn’t lend itself to representing in a simple blog post; you need to clone the project to get it to work.  For the record, here are the R packages used:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">lubridate</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">seasonal</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">GGally</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">openxlsx</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">mice</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">forecast</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">glmnet</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">viridis</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">boot</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">broom</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">stargazer</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">knitr</span><span class="p">)</span><span class="w">   </span></code></pre></figure>
+
+
+
+		
+	</div>
+</div>
+
+<div class="col-md-1"></div>
+<div class="col-md-4">
+	<div class="side-banner">
+	
+
+
+	<div>
+	   
+	    
+			
+			<p>&larr; Previous post</p>
+			<p><a rel="prev" href="/blog/2018/08/01/business-expectations">Business confidence and economic growth</a></p>
+		
+		
+		
+		
+		 
+			
+			<p>Next post &rarr;</p>
+			<p><a rel="next" href="/blog/2018/08/14/fuel-prices">Time series intervention analysis with fuel prices</a></p>
+			
+			
+		
+		
+	</div>
+	
+	 
+
+   <div class = "side-footer">
+			
+			<hr></hr>
+			<p><gcse:search></gcse:search></p>
+			<hr></hr>
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.</p>
+			<hr></hr>
+			
+			<p>My day job is Chief Data Scientist at <a href='https://www.nousgroup.com/'>Nous Group</a>, an international management consultancy with over 400 people working across Australia, the UK and Canada. <a href='mailto:peter.ellis@nousgroup.com.au'>Contact me</a> if you are interested working with us on a grand challenge or broad agenda.</p>
+		
+		    <hr></hr>
+			
+       <div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="false" data-share="false"></div>
+			
+			<hr></hr>
+			<p>I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+			<hr></hr>
+
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title"><i>free range statistics</i></span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			<hr></hr>
+			
+
+
+    </div>
+
+
+
+  
+   
+
+
+
+
+		  
+		  
+
+
+
+	   
+	<div id="disqus_thread"></div>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function() {
+				var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+				dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+				(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+			})();
+		</script>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function () {
+				var s = document.createElement('script'); s.async = true;
+				s.type = 'text/javascript';
+				s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+				(document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+			}());
+		</script>
+
+	<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+	</div>	
+</div>    
+   
+   
+
+			
+			</div><!-- /.container -->
+         
+   <!-- Default Statcounter code for Free Range Statistics
+http://Http://freerangestats.info -->
+<script type="text/javascript">
+var sc_project=11673245; 
+var sc_invisible=1; 
+var sc_security="5b7111a4"; 
+</script>
+<script type="text/javascript"
+src="https://www.statcounter.com/counter/counter.js" async></script>
+<noscript><div class="statcounter"><a title="Web Analytics"
+href="http://statcounter.com/" target="_blank"><img class="statcounter"
+src="//c.statcounter.com/11673245/0/5b7111a4/1/" alt="Web
+Analytics"></a></div></noscript>
+<!-- End of Statcounter Code -->
+
+</body>   
+</html>

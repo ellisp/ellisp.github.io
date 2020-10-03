@@ -1,0 +1,782 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Analysing large data on your laptop with a database and R</title>
+      	
+         
+         
+            <meta name ="description" content ="SQL Server and R work fine together for analysing 200 GB of the New York City taxi data. There's a lot of effort needed to prepare for analysis even relatively-tidy data. Also, you can't analyse big data without aggregating and summarising it somehow.">
+            <meta property="og:description" content ="SQL Server and R work fine together for analysing 200 GB of the New York City taxi data. There's a lot of effort needed to prepare for analysis even relatively-tidy data. Also, you can't analyse big data without aggregating and summarising it somehow.">
+         
+         <meta property="og:site_name" content="free range statistics" />
+         <meta property="og:title" content="Analysing large data on your laptop with a database and R" />
+         
+            <meta property="og:image" content="http://freerangestats.info/img/0162-nyc-taxi-schema.png" />
+         
+		 
+			<meta property="og:url" content="http://freerangestats.info/blog/2019/12/22/nyc-taxis-sql.html" />
+		 
+         <meta property="og:author" content= "https://www.facebook.com/peterstats" />
+         <meta property="og:type" content="article" />
+      
+
+<link href='https://fonts.googleapis.com/css?family=Sarala' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Prosto+One' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Ubuntu+Mono' rel='stylesheet'>
+	  
+          <link href="/css/bootstrap.min.css" rel ="stylesheet" type="text/css">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet" type="text/css">
+            <link href="/css/custom.css" rel ="stylesheet" type="text/css">     
+		<link href="/css/syntax.css" rel ="stylesheet" type="text/css">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="free range statistics by Peter Ellis"
+      href="/feed.xml">
+
+	  
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+  <script>
+  (function() {
+    var cx = '015640467633673901770:pk3v2c95baw';
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+  })();
+</script>
+
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">free range statistics</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/about">about</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">all posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">ordered by date</a></li>
+				  <li><a href="/blog/most-popular.html">ordered by popularity</a></li>
+                  <li><a href="/blog/index_by_tag.html">grouped by subject matter</a></li>
+                  <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
+				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
+				  <li><a href = /blog/2020/09/26/nzes-issues>most recent post</a></li>
+				</ul>
+            </li>
+              <li><a href="/blog/showcase.html">showcase</a></li>
+              <li><a href="/presentations/index.html">presentations</a></li>
+			  <li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">forecasts<span class="caret"></span></a>
+                <ul class="dropdown-menu">
+				  <li><a href = "/covid-tracking/index.html">Covid-19 in Australia</a></li>
+                  <li><a href = "/elections/nz-2020/index.html">NZ election 2020</a></li>
+                  <li><a href = "/elections/oz-2019/index.html">Australia federal election 2019</a></li>
+				  <li><a href = "/elections/nz-2017/combined.html">NZ election 2017</a></li>
+                  <li><a href="/blog/voting.html">all blog posts on voting behaviour</a></li>
+                </ul>				
+			  </li>
+			  
+			  
+			  
+		    </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			<div class="jumbotron">
+  <div class="container">
+	<center><h1>Analysing large data on your laptop with a database and R</h1></center>
+  </div>
+</div>
+
+
+
+	<div class = "post-summary">
+	<h2>At a glance:</h2>
+	   <p>SQL Server and R work fine together for analysing 200 GB of the New York City taxi data. There's a lot of effort needed to prepare for analysis even relatively-tidy data. Also, you can't analyse big data without aggregating and summarising it somehow.</p>
+	   <p class="meta">22 Dec 2019</p>
+	   <hr></hr>
+	</div>
+
+
+<div class="col-md-7">
+
+	<div class="post">
+		
+	  <p>The New York City Taxi &amp; Limousine Commission’s open data of taxi trip records is rightly a go-to test piece for analytical methods for largish data. Check out, for example:</p>
+
+<ul>
+  <li>The benchmark of interesting analysis is set by <a href="https://toddwschneider.com/posts/analyzing-1-1-billion-nyc-taxi-and-uber-trips-with-a-vengeance/">Todd W Schneider’s well-written and rightly famous blog post ‘Analyzing 1.1 Billion NYC Taxi and Uber Trips, with a Vengeance’</a>, for which he used PostgreSQL, PostGIS and R</li>
+  <li><a href="https://tech.marksblogg.com/benchmarks.html">Mark Litwintschik provides benchmarks</a> of four different queries of the data on different software and hardware setups, mostly clusters of computers operating big data software such as BrytlytDB, MapD, Redshift, BigQuery and Spark (<a href="https://tech.marksblogg.com/billion-nyc-taxi-rides-redshift.html">source code</a>)</li>
+  <li>Various providers use the data to show off the impressive speed of their ingest and analysis tools eg <a href="https://www.memsql.com/blog/nyc-taxi-data-ingested-into-memsql/">MemSQL</a> or <a href="https://medium.com/@gopalaj61/analyzing-1-2-billion-nyc-taxi-rides-83ea8012827e">Ocean9</a></li>
+</ul>
+
+<p>A week or so ago there was a flurry in my corner of the twitterverse with people responding to a great blog post by Jovan Veljanoski <a href="https://towardsdatascience.com/how-to-analyse-100s-of-gbs-of-data-on-your-laptop-with-python-f83363dda94">How to analyse 100 GB of data on your laptop with Python</a>. Veljanoski is one of the co-founders of <a href="http://vaex.io/">vaex.io</a>. Vaex is a powerful Python library that empowers a data scientist with the convenient R-like DataFrame-based feel of Pandas for data that is too large to reside in memory.</p>
+
+<p>The trick used by Vaex is that the data is stored on disk in the efficient HDF5 format.  Vaex only uses the minimal scan of the dataset it needs for any particular action. So once Veljanoski has connected to the data, operations like simple summaries of the 1+ billion taxi ride observations he demonstrates on can be done lightning fast. The most impressive example given is an interactive heatmap of New York, which can go to the right part of the data so fast that the user gets the sort of performance with this 100+ GB dataset that normally is only possible when all the data is in RAM.</p>
+
+<p>That’s genuinely impressive, but how necessary is Vaex to analyse this sort of data on commodity hardware? Veljanoski argues in his post that “There are three strategies commonly employed when working with such datasets” :</p>
+
+<ul>
+  <li>sub-sample the data</li>
+  <li>distributed computing</li>
+  <li>a single strong cloud instance with as much memory as required</li>
+</ul>
+
+<p>As he points out, each of these comes with its disadvantages. But there’s a glaring omission from the list - use a database! A good old-fashioned relational database management system is the tool invented for this sort of data, and today’s database software is the highly optimised beneficiary of untold billions of dollars of investment from firms like IBM, Oracle and Microsoft (for example, Oracle alone spends about <a href="https://www.statista.com/statistics/236990/research-and-development-spending-at-oracle/">$6 billion per year on research and development</a>). Schneider’s post showed that open source relational database technology (PostgreSQL) is more than up to the job.  In fact, a number of the features of Vaex showcased in Veljanoski’s blog post sound almost like a re-invention of some aspects of the database approach:</p>
+
+<ul>
+  <li>data held on disk can be inspected a few rows at once without loading it all into memory;</li>
+  <li>the management system holds key metadata or indexes that let certain kinds of simpler analysis be performed via radical shortcuts;</li>
+  <li>virtual views of the data can be created instantly as filtered subsets or with additional calculated columns, without copying the whole dataset.</li>
+</ul>
+
+<p>So out of curiousity I set out to see how the data can be handled by my unremarkable personal laptop and the software toolkit I most commonly use at the moment - R in combination with Microsoft SQL Server (which I chose because it’s my most common database in work contexts, has a free developer edition, and has powerful columnstore indexes which I think will help handle this sized data).</p>
+
+<p>What did I find?</p>
+
+<ol>
+  <li>Even relatively tidy data is serious work to prepare for analysis - whether the prep is an extract-transform-load to a database, or conversion to HDF5.</li>
+  <li>The combination of a standard laptop, SQL Server (or other powerful database tool) and R is fine for dealing with data of several hundred gigabytes in size, but I would want a bigger computer and a large fast solid state drive for much bigger than this.</li>
+  <li>Most analysis on this sort of data has aggregation and summary operations as its first step, so by the time you hit a statistical model or a graphic you are likely working with a much smaller dataset than the original.</li>
+  <li>Most of the interesting things to say about the NYC taxi data have already been said.</li>
+</ol>
+
+<p>Let’s see how that works out.</p>
+
+<h2 id="data-preparation">Data preparation</h2>
+
+<blockquote>
+  <p>“80% of data scientists’ work is managing, tidying and cleaning data. And most of the other 20% is complaining about it.”</p>
+</blockquote>
+
+<p><i>Source : I wouldn’t know where to start to find who said this first.</i></p>
+
+<p>The original taxicab data can be downloaded, one CSV file per month, from the <a href="https://www1.nyc.gov/site/tlc/about/tlc-trip-record-data.page">New York City Taxi &amp; Limousine Commission’s website</a>. The data are available to 2019, but the data model changed several times, and by the second half of 2016 latitude and longitude were not being reported as per the earlier detail, probably for belated privacy reasons. 
+If you’re interested you can see the full load process in my <a href="https://github.com/ellisp/nyc-taxis">GitHub repo</a>. You could also see <a href="https://github.com/toddwschneider/nyc-taxi-data">Todd W Schneider’s PostgreSQL and R version</a> which I suspect is better managed.</p>
+
+<p>Unfortunately Veljanoski’s post doesn’t link to the code he used to process the original CSVs into HDF5 format. His Jupyter notebook starts on the basis the data is available in HDF5 format on your laptop. He links to example code for converting CSVs to HDF5 but a) it’s for a different dataset and b) it’s clear the task is non-trivial.</p>
+
+<p>So I can’t directly compare his process to mine, but I can say that the load process with my toolkit was a significant effort. The contributing factors to this were:</p>
+
+<ul>
+  <li>irrespective of software choices, the data are large for the hardware I’m using them for, which leads to sub-optimal workarounds. For example, my hard drive isn’t large enough to store at the same time all the original CSVs, a staging copy of the data in the database, and the final analysis-ready copy of the data. This meant I had to delete the CSVs as my transformation process was going; and if I found a problem (as happened several times) I had to repeat some or all of the original downloads (which takes 6+ hours even on my fast-by-Australian-standards 100+ MBPS interent connection).</li>
+  <li>the data model changes several times. For example, there are half a dozen different sets of column names, sometimes varying by just capitalisation, sometimes by name changes such as <code class="highlighter-rouge">trip_pickup_datetime</code> becoming <code class="highlighter-rouge">tpep_pickup_datetime</code>. There is quite a <a href="https://www1.nyc.gov/assets/tlc/downloads/pdf/trip_record_user_guide.pdf">good user guide available</a> but I foolishly didn’t look for it early enough. The <a href="https://www1.nyc.gov/assets/tlc/downloads/pdf/data_dictionary_trip_records_yellow.pdf">data dictionary</a> is for the latest data model; there might be historical versions but I didn’t look hard enough to find them.</li>
+  <li>some of the data is corrupt (eg some of the monthly CSVs in 2010 have several thousand rows with more columns in them than the other rows) - a relatively small amount, but enough to cause problems in combination with the other factors.</li>
+</ul>
+
+<p>In the second half of 2016 something happened to the data I couldn’t understand, and this in combination with the fact that latitude and longitude are no longer recorded led me to give up at that point and confine my analysis to the first 7.5 years. At well over 200GB of CSVs this still seems an adequate test.</p>
+
+<p>I would say I spent at least eight hours of effort over two weeks of calendar time on the extract-transform-load of the CSVs into their eventual form in the database, and I am far from satisfied with the result; I think another person day or three is needed to tidy it up, better document it, and introduce some efficiencies and performance enhancements. The two weeks of calendar time is significant too - because a number of the operations took multiple hours to run it was common to have to let it run and then go do something else (eg sleep, walk around the park, go do my real job, etc) - resulting in task switching costs when I came back to this project several days later, and meaning that even if I had devoted three full time days to the project I wouldn’t have been able to use them efficiently. The physical bottlenecks, ordered from most to least, were writing and reading to my slow physical disk (the only drive I had with space for this data); downloading large data over the internet; and processing.</p>
+
+<p>But ultimately I got a working version of the data I’m fairly happy with. In the database it looks like this:</p>
+
+<p><img src="/img/0162-nyc-taxi-schema.png" width="100%" /></p>
+
+<p>I’m satisfied its more analysis-ready than some of the alternative loads of this data I’ve seen out there. For example, I have all the codes built in to the database; no need to look up elsewhere that payment type 1 is cash, 2 is credit, etc. Plus my loading process standardises the different versions of vendor coding that are used - sometimes “1” and “2”, sometimes “CMT”, “VTS” and “DDS” (which seemed to disappear early in the series and isn’t listed in the data dictionary). To give an idea of what this means in terms of code development, here is one step in the overall process. This chunk of SQL code takes data from a staging table - <code class="highlighter-rouge">dbo.tripdata_0914</code>, with the raw data from the first six years when the column sequencing (but not names or coding) was consistent - and loads it into the evental target table <code class="highlighter-rouge">tripdata</code> in the <code class="highlighter-rouge">yellow</code> schema:</p>
+
+<figure class="highlight"><pre><code class="language-sql" data-lang="sql"><span class="c1">-- First six years, with no surcharge data:</span>
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">yellow</span><span class="p">.</span><span class="n">tripdata</span><span class="p">(</span>
+	<span class="n">vendor_code</span><span class="p">,</span>
+	<span class="n">trip_pickup_datetime</span><span class="p">,</span>
+	<span class="n">trip_dropoff_datetime</span><span class="p">,</span>
+	<span class="n">passenger_count</span><span class="p">,</span>
+	<span class="n">trip_distance</span><span class="p">,</span>
+	<span class="n">start_lon</span><span class="p">,</span>
+	<span class="n">start_lat</span><span class="p">,</span>
+	<span class="n">rate_code</span><span class="p">,</span>
+	<span class="n">store_and_forward_code</span><span class="p">,</span>
+	<span class="n">end_lon</span><span class="p">,</span>
+	<span class="n">end_lat</span><span class="p">,</span>
+	<span class="n">payment_type_code</span><span class="p">,</span>
+	<span class="n">fare_amt</span><span class="p">,</span>
+	<span class="n">extra</span><span class="p">,</span>
+	<span class="n">mta_tax</span><span class="p">,</span>
+	<span class="n">tip_amt</span><span class="p">,</span>
+	<span class="n">tolls_amt</span><span class="p">,</span>
+	<span class="n">total_amt</span>
+<span class="p">)</span>
+<span class="k">SELECT</span> 
+	<span class="k">CASE</span>
+		<span class="k">WHEN</span> <span class="n">vendor_name</span> <span class="o">=</span> <span class="s1">'1'</span> <span class="k">THEN</span> <span class="s1">'CMT'</span>
+		<span class="k">WHEN</span> <span class="n">vendor_name</span> <span class="o">=</span> <span class="s1">'2'</span> <span class="k">THEN</span> <span class="s1">'VTS'</span>
+		<span class="k">ELSE</span> <span class="n">vendor_name</span>
+	<span class="k">END</span><span class="p">,</span>
+	<span class="n">trip_pickup_datetime</span><span class="p">,</span>
+	<span class="n">trip_dropoff_datetime</span><span class="p">,</span>
+	<span class="n">passenger_count</span><span class="p">,</span>
+	<span class="n">TRY_CAST</span><span class="p">(</span><span class="n">trip_distance</span> <span class="k">AS</span> <span class="n">DECIMAL</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">4</span><span class="p">)),</span>
+	<span class="n">TRY_CAST</span><span class="p">(</span><span class="n">start_lon</span> <span class="k">AS</span> <span class="n">DECIMAL</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">6</span><span class="p">)),</span>
+	<span class="n">TRY_CAST</span><span class="p">(</span><span class="n">start_lat</span> <span class="k">AS</span> <span class="n">DECIMAL</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">6</span><span class="p">)),</span>
+	<span class="k">CASE</span> 
+		<span class="k">WHEN</span> <span class="n">rate_code</span> <span class="k">IN</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">)</span> <span class="k">THEN</span> <span class="n">rate_code</span>
+		<span class="k">ELSE</span> <span class="k">NULL</span>
+	<span class="k">END</span><span class="p">,</span>
+	<span class="k">CASE</span> 
+		<span class="k">WHEN</span> <span class="n">store_and_forward</span> <span class="k">IN</span> <span class="p">(</span><span class="s1">'0'</span><span class="p">,</span> <span class="s1">'FALSE'</span><span class="p">,</span> <span class="s1">'N'</span><span class="p">)</span> <span class="k">THEN</span> <span class="s1">'N'</span>
+		<span class="k">WHEN</span> <span class="n">store_and_forward</span> <span class="k">IN</span> <span class="p">(</span><span class="s1">'1'</span><span class="p">,</span> <span class="s1">'TRUE'</span><span class="p">,</span> <span class="s1">'Y'</span><span class="p">)</span> <span class="k">THEN</span> <span class="s1">'Y'</span>
+	<span class="k">END</span><span class="p">,</span>
+	<span class="n">TRY_CAST</span><span class="p">(</span><span class="n">end_lon</span> <span class="k">AS</span> <span class="n">DECIMAL</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">6</span><span class="p">)),</span>
+	<span class="n">TRY_CAST</span><span class="p">(</span><span class="n">end_lat</span> <span class="k">AS</span> <span class="n">DECIMAL</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">6</span><span class="p">)),</span>
+	<span class="k">CASE</span>
+		<span class="k">WHEN</span> <span class="n">payment_type</span> <span class="k">IN</span> <span class="p">(</span><span class="s1">'credit'</span><span class="p">,</span> <span class="s1">'cre'</span><span class="p">,</span> <span class="s1">'1'</span><span class="p">)</span> <span class="k">THEN</span> <span class="mi">1</span>
+		<span class="k">WHEN</span> <span class="n">payment_type</span> <span class="k">IN</span> <span class="p">(</span><span class="s1">'cash'</span><span class="p">,</span> <span class="s1">'csh'</span><span class="p">,</span> <span class="s1">'cas'</span><span class="p">,</span> <span class="s1">'2'</span><span class="p">)</span> <span class="k">THEN</span> <span class="mi">2</span>
+		<span class="k">WHEN</span> <span class="n">payment_type</span> <span class="k">IN</span> <span class="p">(</span><span class="s1">'no'</span><span class="p">,</span> <span class="s1">'no charge'</span><span class="p">,</span> <span class="s1">'noc'</span><span class="p">,</span> <span class="s1">'3'</span><span class="p">)</span> <span class="k">THEN</span> <span class="mi">3</span>
+		<span class="k">WHEN</span> <span class="n">payment_type</span> <span class="k">IN</span> <span class="p">(</span><span class="s1">'disput'</span><span class="p">,</span> <span class="s1">'dis'</span><span class="p">,</span> <span class="s1">'4'</span><span class="p">)</span> <span class="k">THEN</span> <span class="mi">4</span>
+		<span class="k">WHEN</span> <span class="n">payment_type</span> <span class="k">IN</span> <span class="p">(</span><span class="s1">'unknown'</span><span class="p">,</span> <span class="s1">'unk'</span><span class="p">,</span> <span class="s1">'5'</span><span class="p">)</span> <span class="k">THEN</span> <span class="mi">5</span>
+		<span class="k">WHEN</span> <span class="n">payment_type</span> <span class="k">In</span> <span class="p">(</span><span class="s1">'voided trip'</span><span class="p">,</span> <span class="s1">'voi'</span><span class="p">,</span> <span class="s1">'voided'</span><span class="p">,</span> <span class="s1">'6'</span><span class="p">)</span> <span class="k">THEN</span> <span class="mi">6</span>
+		<span class="k">ELSE</span> <span class="k">NULL</span>
+	<span class="k">END</span><span class="p">,</span>
+	<span class="n">TRY_CAST</span><span class="p">(</span><span class="n">fare_amt</span> <span class="k">AS</span> <span class="n">DECIMAL</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span>
+	<span class="n">TRY_CAST</span><span class="p">(</span><span class="n">surcharge</span> <span class="k">AS</span> <span class="n">DECIMAL</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span>
+	<span class="n">TRY_CAST</span><span class="p">(</span><span class="n">mta_tax</span> <span class="k">AS</span> <span class="n">DECIMAL</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span>
+	<span class="n">TRY_CAST</span><span class="p">(</span><span class="n">tip_amt</span> <span class="k">AS</span> <span class="n">DECIMAL</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span>
+	<span class="n">TRY_CAST</span><span class="p">(</span><span class="n">tolls_amt</span> <span class="k">AS</span> <span class="n">DECIMAL</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span>
+	<span class="n">TRY_CAST</span><span class="p">(</span><span class="n">total_amt</span> <span class="k">AS</span> <span class="n">DECIMAL</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="k">FROM</span> <span class="n">dbo</span><span class="p">.</span><span class="n">tripdata_0914</span></code></pre></figure>
+
+<p>You can see that I also handle issues such as the inconsistent coding of “payment type”, and cut down the storage size of various numeric variables. For example, trip_distance was loaded into my staging table as 15 digit precision floating point data which takes up 8 bytes of space per observation; reducing this to <code class="highlighter-rouge">DECIMAL(9, 4)</code> saves three bytes per row of the data while still allowing plenty of range and precision - numbers of the format 99999.1234. Three bytes per row adds up materially over 1+ billion rows. The <code class="highlighter-rouge">TRY_CAST()</code> functions are needed because many of these numeric variables have physically impossible values (eg longitudes with four or more digits left of the decimal point) which cause numeric overflow errors otherwise.</p>
+
+<p>It’s easy to see where that eight hours went… In contrast, I would say I have spent about four hours on analysis of any sort (mostly descriptive) and four hours on writing up this post. So the “80%” of time spent on data cleaning isn’t quite right here - more like 50%. Noting that in this case, the data is <em>exceptionally</em> clean and tidy already - other than having direct access to a well-maintained warehouse, one will rarely get data as nicely released by the NYC Taxi &amp; Limousine Commission.</p>
+
+<p>On the other hand, there’s big economies of scale here. If I did another couple of blog posts on this data, that 50% or so of effort that was on data preparation would pretty quickly go down. Worth noting.</p>
+
+<p>With one of SQL Server’s powerful, fast clustered columnstore indexes on the main table, the total data size on disk is about 45 GB for main data and another 33 GB for an unclustered primary key identifying each row which I think is probably not needed and could be dropped. That 45GB is a lot of compression from the original size of more than 200GB, but more importantly the columnstore approach makes analysis pretty fast for dealing with 1.2+ billion rows even on my poor underpowered laptop and its old-school mechanical hard disk drive.</p>
+
+<h2 id="repeating-previous-analysis---maps-and-variable-distribution">Repeating previous analysis - maps and variable distribution</h2>
+
+<h3 id="passenger-counts-distribution">Passenger counts distribution</h3>
+
+<p>So, let’s see what I can do now that the data’s ready. I repeated the first few bits of exploratory analysis from Veljanoski’s article. For example, here is R code to set up an analytical session and explore the distribution of “number of passengers” on each trip:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">odbc</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">DBI</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">clipr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">knitr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">kableExtra</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">ggmap</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">Cairo</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># assumes you have an ODBC data source named "nyc_taxi" to the database created by https://github.com/ellisp/nyc-taxis:
+</span><span class="n">nyc_taxi</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dbConnect</span><span class="p">(</span><span class="n">odbc</span><span class="p">(),</span><span class="w"> </span><span class="s2">"localhost"</span><span class="p">,</span><span class="w"> </span><span class="n">database</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"nyc_taxi"</span><span class="p">)</span><span class="w">
+
+</span><span class="cd">#' Theme for dark background maps to be used later
+#'
+#' @author minimally  adapted from a Todd Schneider original
+</span><span class="n">theme_dark_map</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">base_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">12</span><span class="p">,</span><span class="w"> </span><span class="n">font_family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Sans"</span><span class="p">){</span><span class="w">
+  </span><span class="n">theme_bw</span><span class="p">(</span><span class="n">base_size</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">theme</span><span class="p">(</span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_text</span><span class="p">(</span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">font_family</span><span class="p">,</span><span class="w"> </span><span class="n">color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"#ffffff"</span><span class="p">),</span><span class="w">
+          </span><span class="n">rect</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_rect</span><span class="p">(</span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"#000000"</span><span class="p">,</span><span class="w"> </span><span class="n">color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"#000000"</span><span class="p">),</span><span class="w">
+          </span><span class="n">plot.background</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_rect</span><span class="p">(</span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"#000000"</span><span class="p">,</span><span class="w"> </span><span class="n">color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"#000000"</span><span class="p">),</span><span class="w">
+          </span><span class="n">panel.background</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_rect</span><span class="p">(</span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"#000000"</span><span class="p">,</span><span class="w"> </span><span class="n">color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"#000000"</span><span class="p">),</span><span class="w">
+          </span><span class="n">plot.title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_text</span><span class="p">(</span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">font_family</span><span class="p">),</span><span class="w">
+          </span><span class="n">panel.grid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_blank</span><span class="p">(),</span><span class="w">
+          </span><span class="n">panel.border</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_blank</span><span class="p">(),</span><span class="w">
+          </span><span class="n">axis.text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_blank</span><span class="p">(),</span><span class="w">
+          </span><span class="n">axis.title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_blank</span><span class="p">(),</span><span class="w">
+          </span><span class="n">axis.ticks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_blank</span><span class="p">())</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">theme_white_map</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">base_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">12</span><span class="p">,</span><span class="w"> </span><span class="n">font_family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">main_font</span><span class="p">){</span><span class="w">
+  </span><span class="n">theme_bw</span><span class="p">(</span><span class="n">base_size</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">theme</span><span class="p">(</span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_text</span><span class="p">(</span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">font_family</span><span class="p">,</span><span class="w"> </span><span class="n">color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"#000000"</span><span class="p">),</span><span class="w">
+          </span><span class="n">rect</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_rect</span><span class="p">(</span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"#ffffff"</span><span class="p">,</span><span class="w"> </span><span class="n">color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"#ffffff"</span><span class="p">),</span><span class="w">
+          </span><span class="n">plot.background</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_rect</span><span class="p">(</span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"#ffffff"</span><span class="p">,</span><span class="w"> </span><span class="n">color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"#ffffff"</span><span class="p">),</span><span class="w">
+          </span><span class="n">panel.background</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_rect</span><span class="p">(</span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"#ffffff"</span><span class="p">,</span><span class="w"> </span><span class="n">color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"#ffffff"</span><span class="p">),</span><span class="w">
+          </span><span class="n">plot.title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_text</span><span class="p">(</span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">font_family</span><span class="p">),</span><span class="w">
+          </span><span class="n">panel.grid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_blank</span><span class="p">(),</span><span class="w">
+          </span><span class="n">panel.border</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_blank</span><span class="p">(),</span><span class="w">
+          </span><span class="n">axis.text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_blank</span><span class="p">(),</span><span class="w">
+          </span><span class="n">axis.title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_blank</span><span class="p">(),</span><span class="w">
+          </span><span class="n">axis.ticks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_blank</span><span class="p">(),</span><span class="w">
+          </span><span class="n">plot.caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_text</span><span class="p">(</span><span class="n">color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey50"</span><span class="p">))</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+
+
+</span><span class="n">the_caption</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"Analysis by http://freerangestats.info with data from NYC Taxi &amp; Limousine Commission"</span><span class="w">
+
+</span><span class="c1">#-----------------------passenger count frequencies------
+</span><span class="n">sql</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"
+SELECT 
+  COUNT(1) AS freq,
+  passenger_count
+FROM yellow.tripdata
+GROUP BY passenger_count
+"</span><span class="w">
+</span><span class="c1"># takes a couple of seconds:
+</span><span class="n">pc_freq</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dbGetQuery</span><span class="p">(</span><span class="n">nyc_taxi</span><span class="p">,</span><span class="w"> </span><span class="n">sql</span><span class="p">)</span><span class="w">
+
+</span><span class="n">pc_freq</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">str_pad</span><span class="p">(</span><span class="n">passenger_count</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="n">pad</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"0"</span><span class="p">),</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">freq</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_col</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_y_log10</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">comma</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_x_discrete</span><span class="p">(</span><span class="n">labels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sort</span><span class="p">(</span><span class="n">unique</span><span class="p">(</span><span class="n">pc_freq</span><span class="o">$</span><span class="n">passenger_count</span><span class="p">)))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Number of passengers (discrete scale - only values with at least one trip shown)"</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Number of trips (log scale)"</span><span class="p">,</span><span class="w">
+       </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Number of passengers per trip"</span><span class="p">,</span><span class="w">
+       </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"New York City yellow cabs January 2009 to mid 2016"</span><span class="p">,</span><span class="w">
+       </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_caption</span><span class="p">)</span></code></pre></figure>
+
+<p>This produces the following image for us, very similar to Veljanoski original. It’s not identical because I’ve got six months more data and I’ve built more data-cleaning into my ETL - most notably where the number of trip passengers is zero I have replaced this with NULL in my database.</p>
+
+<p>My code took less than five seconds to run in contrast to his 23 seconds with Vaex/Python, so I’m pretty pleased by performance so far.</p>
+
+<object type="image/svg+xml" data="/img/0162-passenger-counts.svg" width="100%"><img src="/img/0162-passenger-counts.png" /></object>
+
+<h3 id="trip-distance-distribution">Trip distance distribution</h3>
+
+<p>A very similar bit of SQL and R code gives us a similar plot for distribution of trip distance in miles, truncated at just those less than 250 miles. Because the trip distances are continuous variables, to show their distribution I’m going to need to do some kind of summary. With smaller data I would put all the observations into R and use <code class="highlighter-rouge">geom_density()</code> to do the work, but as this would mean transferring a billion observations from the database to R’s environment for little gain, I opt to round the distances to the nearest tenth of a mile and aggregate them. In effect, I’m building my own fixed-bin-width histogram. Here’s my first go at that:</p>
+
+<object type="image/svg+xml" data="/img/0162-trip-dist1.svg" width="100%"><img src="/img/0162-trip-dist1.png" width="100%" /></object>
+
+<p>…produced with:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#-----------------------distance in miles--------------
+</span><span class="w">
+</span><span class="n">sql</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"
+SELECT 
+  COUNT(1) AS freq,
+  ROUND(trip_distance, 1) AS trip_distance
+FROM yellow.tripdata
+GROUP BY ROUND(trip_distance, 1)
+"</span><span class="w">
+
+</span><span class="c1"># takes about 20 seconds
+</span><span class="n">td_freq</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dbGetQuery</span><span class="p">(</span><span class="n">nyc_taxi</span><span class="p">,</span><span class="w"> </span><span class="n">sql</span><span class="p">)</span><span class="w">
+
+</span><span class="n">td_freq</span><span class="w">  </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">trip_distance</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="m">250</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">trip_distance</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">freq</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_line</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_y_log10</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">comma</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Trip distance in miles - rounded to 0.1 of a mile"</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Number of trips (log scale)"</span><span class="p">,</span><span class="w">
+       </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Trip distances"</span><span class="p">,</span><span class="w">
+       </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"New York City yellow cabs January 2009 to mid 2016"</span><span class="p">,</span><span class="w">
+       </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_caption</span><span class="p">)</span></code></pre></figure>
+
+<p>This looked quite markedly different from Veljanoski’s original so I tried rounding to the nearest mile rather than tenth of a mile and got this result (code not shown):</p>
+
+<object type="image/svg+xml" data="/img/0162-trip-dist0.svg" width="100%"><img src="/img/0162-trip-dist0.png" width="100%" /></object>
+
+<p>Either of these charts gives a good indication of what is happening, but the second is probably better. We see a suspiciously marked drop-off in distances at exactly 100 miles, which is almost certainly measurement error rather than a physical reality.</p>
+
+<p>This time, my database was much slower than Valjanoski’s Vaex/Python combination - 20 seconds versus one second.</p>
+
+<h3 id="maps">Maps</h3>
+
+<p><a href="https://toddwschneider.com/posts/analyzing-1-1-billion-nyc-taxi-and-uber-trips-with-a-vengeance/">Todd Schneider’s ground-breaking post with this data</a> was conspicuous because of the beauty of his clean high resolution images of pickups and drop off points. He wrote “These maps show every taxi pickup and drop off, respectively, in New York City from 2009-2015. The maps are made up of tiny dots, where brighter regions indicate more taxi activity.”</p>
+
+<p>In fact, while the maps do indeed “show” every pickup and drop off, a moments reflection would show that it isn’t physically possible to each individual trip to get its own blob of light. His 10MB high resolution images are 2,880 by 4,068 pixels in size, about 12 million pixels each. There are nearly 100 times as many trips as pixels, so some summary is required. In fact, in lines <a href="https://github.com/toddwschneider/nyc-taxi-data/blob/master/analysis/prepare_analysis.sql">200-230 of his SQL source code prepping for these maps</a> we see how he is doing his - he rounds the latitude and longitude of each point to four decimal places and groups by this rounded location. Effectively he creates a fine grid across the New York City area and returns the average number of trips on each point of his grid.</p>
+
+<p>This approach is fine (in fact I had done it myself even before looking at his source code) - I’m just mentioning it to highlight that when dealing with large datasets of this sort, to visualise them meaningfully you need to somehow reduce the size of the data in a meaningful way first before rendering them on the screen.</p>
+
+<p>Let’s have a go at something similar. Here’s a map showing the pickup points of taxis from 2009 to mid 2016, split into payment by cash or by credit card</p>
+
+<p><img src="/img/0162-nyc-map2-hires.png" width="100%" /></p>
+
+<p>It’s not as polished as Schneider’s original, which I think was enhanced by using GIS methods to remove some of the noise from locations that were in the water. But it’s certainly a nice start.</p>
+
+<p>Performance for producing this charts was acceptable but not that pleasant: about 10 minutes to summarise the data and 4 or 5 to render the graphic. In contrast Veljanoski with Vaex did something of similar complexity at the mid point of his post with about 60 seconds of elapsed time. That’s extremely impressive.</p>
+
+<h3 id="the-time-element">The time element</h3>
+
+<p>Let’s look at ways of looking at our data that takes into account the element of time - particularly periodicity. I might come back to this later as the data is a nice example of multiple seasonalities in a time series. If we aggregate it by hour we have at least three seasonal patterns - hours in the day, days in the week, and the annual cycle.</p>
+
+<p>Again, we need some kind of aggregation before the billion taxi rides can be assimilated by the human eye. If we aggregate it up by hour it is still too dense to take in:</p>
+
+<object type="image/svg+xml" data="/img/0162-hourly.svg" width="100%"><img src="/img/0162-hourly.png" width="100%" /></object>
+
+<p>That’s the level of temporal granularity I’d like to analyse this when I’ve got more time but it’s too much for the eye.</p>
+
+<p>If we aggregate up to months we have lost most of the interest, but it’s still a useful starting point. Note how the rides per hour declines substantially over time as more competition came in:</p>
+
+<object type="image/svg+xml" data="/img/0162-monthly.svg" width="100%"><img src="/img/0162-monthly.png" width="100%" /></object>
+
+<p>There’s a notable dip in taxi rides each winter.</p>
+
+<p>Most other blogs draw some day-of-week by hour-of-day heatmaps at this point, and there’s good reason to - they’re a great summary of this sort of data. Here’s the most obvious one to draw - pure frequency of the start of taxi trips:</p>
+
+<object type="image/svg+xml" data="/img/0162-heatmap1.svg" width="100%"><img src="/img/0162-heatmap1.png" width="100%" /></object>
+
+<p>All that yellow in the top right shows (unsuprisingly) more taxi activity in evenings, and on Wednesday, Thursday, Friday and Saturday rather than earlier in the week.</p>
+
+<p>Here’s a replication of one of Veljanoski’s plots, showing the differing average fare collected per mile travelled at different times</p>
+
+<object type="image/svg+xml" data="/img/0162-heatmap2.svg" width="100%"><img src="/img/0162-heatmap2.png" width="100%" /></object>
+
+<p>Shorter taxi rides have a higher fare per mile, and I suspect we get more short taxi rides in during working hours on working days, which would explain the yellow highlight in the middle of that chart.</p>
+
+<p>This analysis was easy to write with my database, but the performance was slower than Veljanoski’s (while still being totally acceptable). Whether this is due to my slow disk drive or software differences I’m not sure. Here’s the code for that data extract and analysis:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#--------------hour, week, year------------
+</span><span class="w">
+</span><span class="c1"># aggregate some summary data at hourly level
+</span><span class="n">sql</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"
+WITH a AS
+   (SELECT
+      trip_distance,
+      fare_amt,
+      YEAR(trip_pickup_datetime) AS yy,
+      DATEPART(hh, trip_pickup_datetime) AS hd,
+      DATEPART(dy, trip_pickup_datetime) AS dy,
+      DATEPART(dw, trip_pickup_datetime) AS dw,
+      DATEPART(m, trip_pickup_datetime) AS my
+   FROM yellow.tripdata
+   WHERE trip_distance &gt; 0 AND total_amt &gt; 0)
+SELECT
+  COUNT(1) AS freq,
+  AVG(fare_amt / trip_distance) AS fare_per_mile,
+  yy, hd, dy, dw, my
+FROM a
+GROUP BY yy, hd, dy, dw, my
+ORDER BY yy, dy, hd"</span><span class="w">
+
+</span><span class="n">pickup_ts</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dbGetQuery</span><span class="p">(</span><span class="n">nyc_taxi</span><span class="p">,</span><span class="w"> </span><span class="n">sql</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="n">as_tibble</span><span class="p">()</span><span class="w">
+
+</span><span class="c1"># Note that weekday = 1 means sunday
+</span><span class="w">
+
+</span><span class="c1"># Hourly time series
+</span><span class="n">pickup_ts</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">meta_hour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">n</span><span class="p">())</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">meta_hour</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">freq</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">as.ordered</span><span class="p">(</span><span class="n">my</span><span class="p">)))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">yy</span><span class="p">,</span><span class="w"> </span><span class="n">scales</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"free_x"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_line</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_colour_viridis_d</span><span class="p">(</span><span class="n">breaks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">12</span><span class="p">,</span><span class="w"> </span><span class="n">labels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">month.abb</span><span class="p">,</span><span class="w">
+                         </span><span class="n">guide</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">guide_legend</span><span class="p">(</span><span class="n">ncol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">comma</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Day of the year"</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Number of taxi pickups"</span><span class="p">,</span><span class="w">
+       </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w">
+       </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_caption</span><span class="p">,</span><span class="w">
+       </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Taxi pickups time series"</span><span class="p">,</span><span class="w">
+       </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Hourly observations 2009 to mid 2016"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">theme</span><span class="p">(</span><span class="n">legend.position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">0.85</span><span class="p">,</span><span class="w"> </span><span class="m">0.15</span><span class="p">))</span><span class="w">
+
+
+</span><span class="c1"># Monthly time series
+</span><span class="n">pickup_ts</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">yy</span><span class="p">,</span><span class="w"> </span><span class="n">my</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">summarise</span><span class="p">(</span><span class="n">freq</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">freq</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">my</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">freq</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">yy</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_line</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">comma</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_x_continuous</span><span class="p">(</span><span class="n">breaks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">12</span><span class="p">,</span><span class="w"> </span><span class="n">labels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">month.abb</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Average hourly taxi pickups\n"</span><span class="p">,</span><span class="w">
+       </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_caption</span><span class="p">,</span><span class="w">
+       </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Taxi pickups time series"</span><span class="p">,</span><span class="w">
+       </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Monthly averages based on hourly observations 2009 to mid 2016"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">theme</span><span class="p">(</span><span class="n">axis.text.x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_text</span><span class="p">(</span><span class="n">angle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">45</span><span class="p">,</span><span class="w"> </span><span class="n">hjust</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">),</span><span class="w">
+        </span><span class="n">panel.grid.minor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_blank</span><span class="p">())</span><span class="w">
+
+</span><span class="c1"># Heatmap of frequency of trips
+# add a labelled day of the week variable, still keeping the ordering
+</span><span class="n">pickup_ts2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">pickup_ts</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">dwl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">factor</span><span class="p">(</span><span class="n">dw</span><span class="p">,</span><span class="w"> </span><span class="n">labels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Sun"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Mon"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Tue"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Wed"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Thur"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Fri"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Sat"</span><span class="p">)))</span><span class="w">
+
+</span><span class="n">pickup_ts2</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">dwl</span><span class="p">,</span><span class="w"> </span><span class="n">hd</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">summarise</span><span class="p">(</span><span class="n">freq</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">freq</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">as.factor</span><span class="p">(</span><span class="n">hd</span><span class="p">),</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dwl</span><span class="p">,</span><span class="w"> </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">freq</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_tile</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_fill_viridis_c</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">comma</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_caption</span><span class="p">,</span><span class="w">
+       </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Hour of the day"</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Day of the week"</span><span class="p">,</span><span class="w">
+       </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Taxi frequency by time of day and day of week"</span><span class="p">,</span><span class="w">
+       </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Hourly observations from 2009 to mid 2016"</span><span class="p">,</span><span class="w">
+       </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Pickups\nper hour"</span><span class="p">)</span><span class="o">+</span><span class="w">
+  </span><span class="n">theme</span><span class="p">(</span><span class="n">legend.position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"right"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># Heatmap of average fare per distance
+</span><span class="n">pickup_ts2</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">dwl</span><span class="p">,</span><span class="w"> </span><span class="n">hd</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">summarise</span><span class="p">(</span><span class="n">fare_per_mile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">fare_per_mile</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">freq</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">freq</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">as.factor</span><span class="p">(</span><span class="n">hd</span><span class="p">),</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dwl</span><span class="p">,</span><span class="w"> </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fare_per_mile</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_tile</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_fill_viridis_c</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dollar</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_caption</span><span class="p">,</span><span class="w">
+       </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Hour of the day"</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Day of the week"</span><span class="p">,</span><span class="w">
+       </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Taxi fare per distance by time of day and day of week"</span><span class="p">,</span><span class="w">
+       </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Hourly observations from 2009 to mid 2016"</span><span class="p">,</span><span class="w">
+       </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"fare\nper mile"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">theme</span><span class="p">(</span><span class="n">legend.position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"right"</span><span class="p">)</span></code></pre></figure>
+
+<h2 id="modelling-average-fare">Modelling average fare</h2>
+
+<p>Finally, I wanted to go beyond simple exploratory analysis to at least touch on some statistical modelling. I’ve only time for a taster here (both in terms of my writing time, and wondering if any readers will get this far…). I thought I’d start with a simple statistical model layer over some of the spatial charts I’d been playing with. So here’s a contour map (in the style of a weather forecast) showing average fare to be expected by location. While it’s not as beautiful as some of the high res point maps we’ve seen with this data, it’s probably more useful in terms of helping understand a fairly complex phenomenon:</p>
+
+<object type="image/svg+xml" data="/img/0162-fare-map.svg" width="100%"><img src="/img/0162-fare-map.png" width="100%" /></object>
+
+<p>It’s a nice illustration of how, even in primarily exploratory analysis, a statistical model can be powerful for helping shape thinking. In this case, the model is a generalized additive model, fit to the data by the <code class="highlighter-rouge">mgcv::bam</code> function which is optimised for working with larger data. I commonly use a generalized additive model with a smoother over latitude and longitude (think a rubbery sheet in three dimensional space) as a way of dealing with spatially correlated data.</p>
+
+<p>In this case, rather than fit the model to the original individual trip data I’ve taken average fares over a grid of about 100,000 observations and used that data, weighted by the number of observations at each point, to train my simple model. Here’s this final bit of code for this analysis:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#-------------Modelling average fare by space-------------------
+</span><span class="w">
+</span><span class="c1"># extract data
+</span><span class="n">sql</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"
+SELECT 
+  AVG(fare_amt) AS fare_amt,
+  COUNT(1) AS freq,
+  ROUND(start_lon, 3) AS start_lon,
+  ROUND(start_lat, 3) AS start_lat
+FROM yellow.tripdata
+WHERE fare_amt IS NOT NULL AND 
+      start_lon &gt; -74.05 AND start_lon &lt; -73.75 AND
+      start_lat &gt; 40.58 AND start_lat &lt; 40.90 AND
+      end_lon &gt; -74.05 AND end_lon &lt; -73.75 AND
+      end_lat &gt; 40.58 AND end_lat &lt; 40.90 AND
+      passenger_count &gt; 0 AND passenger_count &lt; 7 AND
+      trip_distance &gt; 0 AND trip_distance &lt; 100
+GROUP BY 
+  ROUND(start_lon, 3),
+  ROUND(start_lat, 3)"</span><span class="w">
+
+</span><span class="n">fare_rounded</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dbGetQuery</span><span class="p">(</span><span class="n">nyc_taxi</span><span class="p">,</span><span class="w"> </span><span class="n">sql</span><span class="p">)</span><span class="w">  </span><span class="c1"># takes a while - 10 minutes or so
+# about 95,000 observations
+</span><span class="w">
+</span><span class="c1"># Fit model
+</span><span class="n">model</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">bam</span><span class="p">(</span><span class="n">fare_amt</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">s</span><span class="p">(</span><span class="n">start_lon</span><span class="p">,</span><span class="w"> </span><span class="n">start_lat</span><span class="p">),</span><span class="w"> </span><span class="n">weights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">freq</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fare_rounded</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># predict values over a regular grid
+</span><span class="n">all_lons</span><span class="w"> </span><span class="o">&lt;-</span><span class="n">seq</span><span class="p">(</span><span class="n">from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">-74.05</span><span class="p">,</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">-73.75</span><span class="p">,</span><span class="w"> </span><span class="n">length.out</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">200</span><span class="p">)</span><span class="w">
+</span><span class="n">all_lats</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">seq</span><span class="p">(</span><span class="n">from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">40.58</span><span class="p">,</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">40.90</span><span class="p">,</span><span class="w"> </span><span class="n">length.out</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">200</span><span class="p">)</span><span class="w">
+
+</span><span class="n">the_grid</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">expand.grid</span><span class="p">(</span><span class="w">
+  </span><span class="n">start_lon</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">all_lons</span><span class="p">,</span><span class="w">
+  </span><span class="n">start_lat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">all_lats</span><span class="w">
+</span><span class="p">)</span><span class="w">
+
+</span><span class="n">predicted</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">predict.bam</span><span class="p">(</span><span class="n">model</span><span class="p">,</span><span class="w"> </span><span class="n">newdata</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_grid</span><span class="p">)</span><span class="w">
+
+</span><span class="n">d</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">the_grid</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">as_tibble</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">predicted_fare</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">predicted</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">start_lat</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">40.8</span><span class="p">)</span><span class="w"> 
+
+
+</span><span class="c1"># get a background map
+</span><span class="n">nyc_map</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ggmap</span><span class="o">::</span><span class="n">get_stamenmap</span><span class="p">(</span><span class="n">bbox</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">-74.05</span><span class="p">,</span><span class="w"> </span><span class="m">40.58</span><span class="p">,</span><span class="w"> 
+                                         </span><span class="m">-73.75</span><span class="p">,</span><span class="w"> </span><span class="m">40.80</span><span class="p">),</span><span class="w"> 
+                                </span><span class="n">maptype</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"toner-background"</span><span class="p">)</span><span class="w">
+
+
+</span><span class="c1"># draw a contour map over that background:
+</span><span class="n">ggmap</span><span class="p">(</span><span class="n">nyc_map</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_raster</span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">d</span><span class="p">,</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">start_lon</span><span class="p">,</span><span class="w">
+                           </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">start_lat</span><span class="p">,</span><span class="w">
+                           </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">predicted_fare</span><span class="p">),</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.6</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_contour</span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">d</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">start_lon</span><span class="p">,</span><span class="w">
+                              </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">start_lat</span><span class="p">,</span><span class="w">
+                              </span><span class="n">z</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">predicted_fare</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_text_contour</span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">d</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">start_lon</span><span class="p">,</span><span class="w">
+                                  </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">start_lat</span><span class="p">,</span><span class="w">
+                                  </span><span class="n">z</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">predicted_fare</span><span class="p">),</span><span class="w">
+                    </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"white"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">theme_white_map</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_fill_viridis_c</span><span class="p">(</span><span class="n">option</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"A"</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dollar</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="c1"># we need cartesian coordinates because of raster. Probably better ways to fix this:
+</span><span class="w">  </span><span class="n">coord_cartesian</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Expected taxi fare by pick-up point in New York"</span><span class="p">,</span><span class="w">
+       </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"New York City yellow cabs January 2009 to mid 2016"</span><span class="p">,</span><span class="w">
+       </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">paste</span><span class="p">(</span><span class="n">the_caption</span><span class="p">,</span><span class="w"> 
+                       </span><span class="s2">"Map tiles by Stamen Design, under CC BY 3.0. Data by OpenStreetMap, under ODbL."</span><span class="p">,</span><span class="w">
+                       </span><span class="n">sep</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"\n"</span><span class="p">),</span><span class="w">
+       </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Predicted\naverage fare"</span><span class="p">)</span></code></pre></figure>
+
+<p>It would be easy to extend this by looking for different spatial patterns (for example) by vendor, payment type, etc., but I’m lacking any particular motivation for that one. For now, I’m happy to conclude that my hardware and software is totally adequate for analysing this size data and I feel I’ve answered the implicit challenge of the “how to analyse 100s of GBs of data on your laptop with Python” blog post from a few week’s back. But I’ll need a bigger hard drive (or, more sensibly, to move to the cloud) if I do anything much bigger than this.</p>
+
+
+
+		
+	</div>
+</div>
+
+<div class="col-md-1"></div>
+<div class="col-md-4">
+	<div class="side-banner">
+	
+
+
+	<div>
+	   
+	    
+			
+			<p>&larr; Previous post</p>
+			<p><a rel="prev" href="/blog/2019/11/24/cost-benefit-analysis">Cost-benefit analysis in R</a></p>
+		
+		
+		
+		
+		 
+			
+			<p>Next post &rarr;</p>
+			<p><a rel="next" href="/blog/2020/01/26/tennis-seeding">Analysing the effectiveness of tennis tournament seeding</a></p>
+			
+			
+		
+		
+	</div>
+	
+	 
+
+   <div class = "side-footer">
+			
+			<hr></hr>
+			<p><gcse:search></gcse:search></p>
+			<hr></hr>
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.</p>
+			<hr></hr>
+			
+			<p>My day job is Chief Data Scientist at <a href='https://www.nousgroup.com/'>Nous Group</a>, an international management consultancy with over 400 people working across Australia, the UK and Canada. <a href='mailto:peter.ellis@nousgroup.com.au'>Contact me</a> if you are interested working with us on a grand challenge or broad agenda.</p>
+		
+		    <hr></hr>
+			
+       <div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="false" data-share="false"></div>
+			
+			<hr></hr>
+			<p>I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+			<hr></hr>
+
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title"><i>free range statistics</i></span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			<hr></hr>
+			
+
+
+    </div>
+
+
+
+  
+   
+
+
+
+
+		  
+		  
+
+
+
+	   
+	<div id="disqus_thread"></div>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function() {
+				var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+				dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+				(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+			})();
+		</script>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function () {
+				var s = document.createElement('script'); s.async = true;
+				s.type = 'text/javascript';
+				s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+				(document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+			}());
+		</script>
+
+	<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+	</div>	
+</div>    
+   
+   
+
+			
+			</div><!-- /.container -->
+         
+   <!-- Default Statcounter code for Free Range Statistics
+http://Http://freerangestats.info -->
+<script type="text/javascript">
+var sc_project=11673245; 
+var sc_invisible=1; 
+var sc_security="5b7111a4"; 
+</script>
+<script type="text/javascript"
+src="https://www.statcounter.com/counter/counter.js" async></script>
+<noscript><div class="statcounter"><a title="Web Analytics"
+href="http://statcounter.com/" target="_blank"><img class="statcounter"
+src="//c.statcounter.com/11673245/0/5b7111a4/1/" alt="Web
+Analytics"></a></div></noscript>
+<!-- End of Statcounter Code -->
+
+</body>   
+</html>

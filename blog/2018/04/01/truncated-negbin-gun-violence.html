@@ -1,0 +1,676 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Deaths per firearm violence event</title>
+      	
+         
+         
+            <meta name ="description" content ="A negative binomial model isn't adequate for modelling the number of people killed per firearm incident in the USA; the real data has more events of one death, and also more extreme values, than the model.  But estimating the model was an interesting exercise in fitting a single negative binomial model to two truncated subsets of data.">
+            <meta property="og:description" content ="A negative binomial model isn't adequate for modelling the number of people killed per firearm incident in the USA; the real data has more events of one death, and also more extreme values, than the model.  But estimating the model was an interesting exercise in fitting a single negative binomial model to two truncated subsets of data.">
+         
+         <meta property="og:site_name" content="free range statistics" />
+         <meta property="og:title" content="Deaths per firearm violence event" />
+         
+            <meta property="og:image" content="http://freerangestats.info/img/0119-results.png" />
+         
+		 
+			<meta property="og:url" content="http://freerangestats.info/blog/2018/04/01/truncated-negbin-gun-violence.html" />
+		 
+         <meta property="og:author" content= "https://www.facebook.com/peterstats" />
+         <meta property="og:type" content="article" />
+      
+
+<link href='https://fonts.googleapis.com/css?family=Sarala' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Prosto+One' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Ubuntu+Mono' rel='stylesheet'>
+	  
+          <link href="/css/bootstrap.min.css" rel ="stylesheet" type="text/css">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet" type="text/css">
+            <link href="/css/custom.css" rel ="stylesheet" type="text/css">     
+		<link href="/css/syntax.css" rel ="stylesheet" type="text/css">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="free range statistics by Peter Ellis"
+      href="/feed.xml">
+
+	  
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+  <script>
+  (function() {
+    var cx = '015640467633673901770:pk3v2c95baw';
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+  })();
+</script>
+
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">free range statistics</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/about">about</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">all posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">ordered by date</a></li>
+				  <li><a href="/blog/most-popular.html">ordered by popularity</a></li>
+                  <li><a href="/blog/index_by_tag.html">grouped by subject matter</a></li>
+                  <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
+				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
+				  <li><a href = /blog/2020/09/26/nzes-issues>most recent post</a></li>
+				</ul>
+            </li>
+              <li><a href="/blog/showcase.html">showcase</a></li>
+              <li><a href="/presentations/index.html">presentations</a></li>
+			  <li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">forecasts<span class="caret"></span></a>
+                <ul class="dropdown-menu">
+				  <li><a href = "/covid-tracking/index.html">Covid-19 in Australia</a></li>
+                  <li><a href = "/elections/nz-2020/index.html">NZ election 2020</a></li>
+                  <li><a href = "/elections/oz-2019/index.html">Australia federal election 2019</a></li>
+				  <li><a href = "/elections/nz-2017/combined.html">NZ election 2017</a></li>
+                  <li><a href="/blog/voting.html">all blog posts on voting behaviour</a></li>
+                </ul>				
+			  </li>
+			  
+			  
+			  
+		    </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			<div class="jumbotron">
+  <div class="container">
+	<center><h1>Deaths per firearm violence event</h1></center>
+  </div>
+</div>
+
+
+
+	<div class = "post-summary">
+	<h2>At a glance:</h2>
+	   <p>A negative binomial model isn't adequate for modelling the number of people killed per firearm incident in the USA; the real data has more events of one death, and also more extreme values, than the model.  But estimating the model was an interesting exercise in fitting a single negative binomial model to two truncated subsets of data.</p>
+	   <p class="meta">01 Apr 2018</p>
+	   <hr></hr>
+	</div>
+
+
+<div class="col-md-7">
+
+	<div class="post">
+		
+	  <p><em>Caution - this blog post discusses homicide and suicide statistics and could be upsetting.  If you feel disturbed or unhappy then <a href="https://en.wikipedia.org/wiki/List_of_suicide_crisis_lines">here is a list of ways to get some emergency counselling help</a> around the world.</em></p>
+
+<h2 id="a-grim-research-question">A grim research question</h2>
+
+<p>In my last post I looked at fitting a Poisson distribution to a set of count data that had been truncated so that observations below a certain threshold were not available.  My reason for doing that was as a small step forward to today’s task, which is to model the number of deaths per “firearm violence incident” in the United States of America.</p>
+
+<p>My original research question was “what is the distribution of number of fatalities per incident in USA firearm-related violence?”.  The motivation was to better understand how material mass shooting or multiple-shooting events are in a broader context, and what proportion of violence is in smaller events than those that get the headlines.</p>
+
+<p>Of course, there’s a lot written on this topic already.  For example, Five Thirty Eight addressed the question in Maggie Koerth-Baker’s piece <a href="https://fivethirtyeight.com/features/mass-shootings-are-a-bad-way-to-understand-gun-violence/">Mass shootings are a bad way to understand gun violence</a>.  Some of the important points made there:</p>
+
+<ul>
+  <li>Mass shootings are rare despite the publicity they get; and the people doing them are different from most firearm violence perpetrators</li>
+  <li>Two-thirds of firearm deaths are suicides (which may or may not be part of an incident involving other injuries and fatalities)</li>
+  <li>Most firearm homicide victims are men between the ages of 15 and 34, and two-thirds are black; again, the profile of most firearm homicide victims differs from that of mass shootings (where 50% of victims are women, and around have of mass shootings involve domestic or family violence)</li>
+</ul>
+
+<p>Putting aside the natural interest, importance and indeed horror that firearm violence in the USA  attracts around the world, my question was more about the number of deaths as interesting <a href="https://cran.r-project.org/web/views/ExtremeValue.html">extreme values</a>.  Most firearm incidents have few if any deaths, but some have very many; how can this be statistically modelled?</p>
+
+<p>Some final bits of context.  I wrote about <a href="/blog/2015/11/26/violent-deaths">violent deaths as a percentage of population</a> in an earlier post.  The USA has more homicides per capita than other rich countries, although less than the front runners Colombia, Brazil and Russia.  Here’s a key graphic from that post:</p>
+
+<p><img src="/img/0020-deaths-trends.svg" width="100%" /></p>
+
+<p>On the particular issue of suicides that make up so many firearm-related deaths, here is a new chart along similar lines to the assaults graphic from that earlier post:</p>
+
+<p><img src="/img/0119-suicides.svg" width="100%" /></p>
+
+<p>Note that I’ve chosen to keep the vertical scales “fixed” this time, to give a better sense of comparison across countries.  Also that the suicide numbers are higher for many countries than they are for deaths from assault, but less variable (both between countries, and over time), which is why fixed vertical scales is more of an option here.</p>
+
+<p>Like the earlier post, this is based on the OECD’s synthesis of data from national governments.  I can’t vouch for the data’s comparability across countries - there are some definite surprises here - other than to say that I’m sure every possible effort has been made by the various national statistical offices to get it right.  Here’s the code to download and draw the chart of suicide rates:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">readr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">lubridate</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">ggrepel</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">viridis</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">rstan</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">rsdmx</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">ISOcodes</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#----------contextual data on suicides---------------
+</span><span class="n">url</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"http://stats.oecd.org/restsdmx/sdmx.ashx/GetData/HEALTH_STAT/CICDHARM.TXCMFETF+TXCMHOTH+TXCMILTX.AUS+AUT+BEL+CAN+CHL+CZE+DNK+EST+FIN+FRA+DEU+GRC+HUN+ISL+IRL+ISR+ITA+JPN+KOR+LVA+LUX+MEX+NLD+NZL+NOR+POL+PRT+SVK+SVN+ESP+SWE+CHE+TUR+GBR+USA+NMEC+BRA+CHN+COL+CRI+IND+IDN+LTU+RUS+ZAF/all?startTime=2000&amp;endTime=2020"</span><span class="w">
+
+</span><span class="c1"># Deaths per 100,000 population, standardised only
+</span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">exists</span><span class="p">(</span><span class="s2">"suic_sdmx"</span><span class="p">)){</span><span class="w">
+  </span><span class="n">dataset</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">readSDMX</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="w"> 
+  </span><span class="n">suic_sdmx</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.data.frame</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">data</span><span class="p">(</span><span class="n">ISO_3166_1</span><span class="p">)</span><span class="w">
+
+</span><span class="n">suicide</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">suic_sdmx</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">UNIT</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"TXCMILTX"</span><span class="p">,</span><span class="w"> </span><span class="s2">"All"</span><span class="p">,</span><span class="w"> </span><span class="s2">""</span><span class="p">),</span><span class="w">
+         </span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">UNIT</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"TXCMHOTH"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Males"</span><span class="p">,</span><span class="w"> </span><span class="n">variable</span><span class="p">),</span><span class="w">
+         </span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">UNIT</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"TXCMFETF"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Females"</span><span class="p">,</span><span class="w"> </span><span class="n">variable</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">rename</span><span class="p">(</span><span class="n">year</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">obsTime</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">obsValue</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">select</span><span class="p">(</span><span class="n">year</span><span class="p">,</span><span class="w"> </span><span class="n">COU</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">variable</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">left_join</span><span class="p">(</span><span class="n">distinct</span><span class="p">(</span><span class="n">ISO_3166_1</span><span class="p">[</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Alpha_3"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Alpha_2"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Name"</span><span class="p">)]),</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"COU"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Alpha_3"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">year</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">year</span><span class="p">),</span><span class="w">
+         </span><span class="n">country</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Name</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">as_tibble</span><span class="p">()</span><span class="w">
+
+</span><span class="n">suicide</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="w">
+    </span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_reorder</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">value</span><span class="p">),</span><span class="w">
+    </span><span class="n">country</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_reorder</span><span class="p">(</span><span class="n">country</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w">
+  </span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">year</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">variable</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">country</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_line</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_colour_manual</span><span class="p">(</span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"blue"</span><span class="p">,</span><span class="w"> </span><span class="s2">"grey10"</span><span class="p">,</span><span class="w"> </span><span class="s2">"red"</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Deaths per 100,000 population (standardised rates)"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Suicide rates around the world (all methods)"</span><span class="p">,</span><span class="w">
+          </span><span class="s2">"USA is moderately high, but not as high as it features when compared on firearm-related deaths"</span><span class="p">)</span></code></pre></figure>
+
+<h2 id="data-sources">Data sources</h2>
+
+<p>The <a href="http://www.gunviolencearchive.org">Gun Violence Archive</a> aims to record every firearm violence event in the USA, certainly all those with fatalities.  However, it won’t let you do a bulk download; and my requests for a way to do this have not gotten anywhere.  The database query tool is set up to return individual cases rather than aggregate statistics, which is a shame for my purposes.  In fact, only 500 incidents can be downloaded at once, and as far as I can tell it will give you the most recent 500 incidents matching your criteria.  Because of the astonishing number of firearm violence incidents in the USA (the database includes non-lethal incidents), this makes downloading them all an impractical proposition without breaching the intent of the original limitation.</p>
+
+<p>I tried a couple of things to get around this.</p>
+
+<p>First, I queried the Gun Violence Archive database for each month in 2017 for incidents with at least one victim, and downloaded the c. 6,000 incidents it gave me as 12 CSV files (the latest 500 in the relevant month).  This isn’t a simple random sample - events closer to the end of each month are more likely to be chosen; and events in shorter months eg February are more like to be chosen - but I thought it was close enough to act as though it was.  I’ve saved all the data I got from this (and a few abortive additional efforts) in a zip file accessible from this website</p>
+
+<p>Second, I queried the database for incidents with at least four victims (which could include both killed and injured) in each year from 2014 to 2018.  Unless I misunderstood how the database worked, this returned less than 500 incidents each year.  I then counted on screen (having first sorted by <code class="highlighter-rouge"># Killed</code>) the frequency of events with 4, 5, 6 or more people killed, and manually entered the data myself.</p>
+
+<p>My plan was to treat 2017 as my year for a representative sample, then to supplement that with a special census of all the large events over a longer period.  Then I could combine the two datasets for a model of the overall distribution that paid due attention to the rare, large events.</p>
+
+<h2 id="the-2017-data">The 2017 data</h2>
+
+<p>Here’s how it looks if you just take the sample I got of 2017 data, from the first, simple method. In all the analysis that follows I exclude events with zero deaths.  This is because I distrust the boundaries that need to be crossed for such events to get into the archive.  I suspect there are large numbers of zero-death events that fail to make it to the archive due to the limitations of the reporting process.  In fact, it is difficult even to define a zero-death violent event (how violent? how much does it need to be known to the authorities?); whereas once at least one death has taken place, the chances of reporting become much greater, and certainly the definition is clearer.  This difficulty of counting zero-death events has big implications when we come to modelling the data later.</p>
+
+<p>First, a histogram of the distribution of number of deaths in each event:</p>
+
+<p><img src="/img/0119-histogram.svg" width="100%" /></p>
+
+<p>We can see that my sample missed the two rare events of 2017: 59 deaths at Las Vegas and 27 in the attack on at the church in Sutherland Springs, Texas. This is a nice illustration of how many events we have - even with a sample of 6,000 firearm incidents causing injury or death, we didn’t pick up the two highest profile such events in the year.</p>
+
+<p>Then if we look at a scatterplot to get a sense of the basic question of what proportion of deaths come from different scale incidents:</p>
+
+<p><img src="/img/0119-scatterplot.svg" width="100%" /></p>
+
+<p>Not only are single death incidents 80% of all firearm violence events with fatalities (remember, in this analysis I am excluding zero-death incidents), more than 80% of fatalities come from such events.</p>
+
+<p>Or even a humble pie chart (yes, I believe they do have their purposes, if done properly):</p>
+
+<p><img src="/img/0119-pie.svg" width="100%" /></p>
+
+<p>Here’s the code to download the data and draw those charts.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#===============downloading gun violence archives==============
+</span><span class="w">
+</span><span class="c1"># to download these files you need to go to http://www.gunviolencearchive.org/query/
+# and do a query, then choose download to CSV.  It only downloads 500 at a time.
+# "Save" actually means "Execute the query".  Then you need to explicitly download CSV.
+# And then you need to pick "download" (even though you're already in the "download CSV"
+# environment and it has downloaded it = "download" here means "yes, really download it,
+# and save it to my local drive")
+</span><span class="w">
+</span><span class="c1"># to save others doing this, a subset of the data is on my website
+</span><span class="w">
+</span><span class="c1"># download the data
+</span><span class="n">try</span><span class="p">(</span><span class="n">unlink</span><span class="p">(</span><span class="s2">"gun-violence"</span><span class="p">,</span><span class="w"> </span><span class="n">recursive</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">))</span><span class="w">
+</span><span class="n">dir.create</span><span class="p">(</span><span class="s2">"gun-violence"</span><span class="p">)</span><span class="w">
+</span><span class="n">download.file</span><span class="p">(</span><span class="s2">"http://freerangestats.info/data/gva.zip"</span><span class="p">,</span><span class="w">              
+              </span><span class="n">destfile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"gun-violence/gva.zip"</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"wb"</span><span class="p">)</span><span class="w">
+</span><span class="n">unzip</span><span class="p">(</span><span class="s2">"gun-violence/gva.zip"</span><span class="p">,</span><span class="w"> </span><span class="n">exdir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"gun-violence"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># read into a list in R
+</span><span class="n">files</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">list.files</span><span class="p">(</span><span class="s2">"gun-violence"</span><span class="p">,</span><span class="w"> </span><span class="n">full.names</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> </span><span class="n">pattern</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">".csv$"</span><span class="p">)</span><span class="w">
+</span><span class="n">gva_l</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lapply</span><span class="p">(</span><span class="n">files</span><span class="p">,</span><span class="w"> </span><span class="n">read_csv</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># convert into a data frame and do a bit of tidying up of dates etc
+</span><span class="n">gva</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">do.call</span><span class="p">(</span><span class="s2">"rbind"</span><span class="p">,</span><span class="w"> </span><span class="n">gva_l</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">date</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">as.Date</span><span class="p">(</span><span class="n">`Incident Date`</span><span class="p">,</span><span class="w"> </span><span class="n">format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"%B %d, %Y"</span><span class="p">),</span><span class="w">
+         </span><span class="n">year</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">year</span><span class="p">(</span><span class="n">date</span><span class="p">),</span><span class="w">
+         </span><span class="n">month</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">month</span><span class="p">(</span><span class="n">date</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="c1"># filter out zero deaths incidents, which we can't exclude from the original query
+</span><span class="w">  </span><span class="c1"># (can only filter by number of victims, not number killed)
+</span><span class="w">  </span><span class="n">filter</span><span class="p">(</span><span class="n">`# Killed`</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="c1"># remove duplicates in case I downloaded some data twice or there is a database error:
+</span><span class="w">  </span><span class="n">distinct</span><span class="p">()</span><span class="w">
+
+</span><span class="c1"># this next graph not shown in the blog post, is just to illustrate that the data
+# includes some non-2017 points to be wary of
+</span><span class="n">gva</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">date</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">`# Killed`</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_jitter</span><span class="p">(</span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Fatal firearm incidents in the USA; 500 sampled from selected months"</span><span class="p">,</span><span class="w">
+          </span><span class="s2">"Points are jittered to give a sense of how much concentration there is in '1 death per incident'"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Number killed in each incident"</span><span class="p">,</span><span class="w">
+       </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Searches from Gun Violence Archive"</span><span class="p">)</span><span class="w">
+</span><span class="c1"># Only 2014 onwards is complete data
+# Only 2017 is at all representative; the rest includes various other downloads!
+</span><span class="w">
+</span><span class="c1"># Histogram
+</span><span class="n">gva</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">year</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">2017</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">`# Killed`</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_histogram</span><span class="p">(</span><span class="n">binwidth</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">..density..</span><span class="p">),</span><span class="w"> </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.8</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_x_continuous</span><span class="p">(</span><span class="n">breaks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">8</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="s2">"Percentage of events"</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Random sample of firearm-events in 2017"</span><span class="p">,</span><span class="w">
+          </span><span class="s2">"Excludes events with zero people killed"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># Scatterplot
+</span><span class="n">gva</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">year</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">2017</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">n_killed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">paste0</span><span class="p">(</span><span class="s2">"'"</span><span class="p">,</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">`# Killed`</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="n">`# Killed`</span><span class="p">,</span><span class="w"> </span><span class="s2">"More than 4"</span><span class="p">),</span><span class="w"> </span><span class="s2">" death' incidents"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">n_killed</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">summarise</span><span class="p">(</span><span class="n">incidents</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">(),</span><span class="w">
+            </span><span class="n">deaths</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">`# Killed`</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ungroup</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">incidents</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">incidents</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">incidents</span><span class="p">),</span><span class="w">
+            </span><span class="n">deaths</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">deaths</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">deaths</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">incidents</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">deaths</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_killed</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_killed</span><span class="p">))</span><span class="w">  </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_point</span><span class="p">(</span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_text_repel</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">theme</span><span class="p">(</span><span class="n">legend.position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"none"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_x_continuous</span><span class="p">(</span><span class="s2">"Proportion of incidents"</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="s2">"Proportion of deaths"</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">)</span><span class="w">  </span><span class="o">+</span><span class="w">
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"The vast majority of firearm deaths come from single-death incidents."</span><span class="p">,</span><span class="w">
+          </span><span class="s2">"Estimated firearms incidents and deaths in the USA in 2017, aggregated by number of deaths per incident"</span><span class="w">
+    </span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="c1"># scale_color_viridis(discrete = TRUE, option = "D")
+</span><span class="w">  </span><span class="n">scale_color_brewer</span><span class="p">(</span><span class="n">palette</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Set2"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># Pie chart
+</span><span class="n">blank_theme</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">theme_minimal</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">theme</span><span class="p">(</span><span class="w">
+    </span><span class="n">axis.title.x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_blank</span><span class="p">(),</span><span class="w">
+    </span><span class="n">axis.title.y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_blank</span><span class="p">(),</span><span class="w">
+    </span><span class="n">panel.border</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_blank</span><span class="p">(),</span><span class="w">
+    </span><span class="n">panel.grid</span><span class="o">=</span><span class="n">element_blank</span><span class="p">(),</span><span class="w">
+    </span><span class="n">axis.ticks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_blank</span><span class="p">(),</span><span class="w">
+    </span><span class="n">plot.title</span><span class="o">=</span><span class="n">element_text</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="m">14</span><span class="p">,</span><span class="w"> </span><span class="n">face</span><span class="o">=</span><span class="s2">"bold"</span><span class="p">),</span><span class="w">
+    </span><span class="n">axis.text.x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_blank</span><span class="p">()</span><span class="w">
+  </span><span class="p">)</span><span class="w">
+
+</span><span class="n">gva</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">year</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">2017</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">n_killed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">paste0</span><span class="p">(</span><span class="s2">"'"</span><span class="p">,</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">`# Killed`</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="n">`# Killed`</span><span class="p">,</span><span class="w"> </span><span class="s2">"More than 4"</span><span class="p">),</span><span class="w"> </span><span class="s2">" death' incidents"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">n_killed</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">summarise</span><span class="p">(</span><span class="n">incidents</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">(),</span><span class="w">
+            </span><span class="n">deaths</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">`# Killed`</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ungroup</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">incidents</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">incidents</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">incidents</span><span class="p">),</span><span class="w">
+         </span><span class="n">deaths</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">deaths</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">deaths</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">weight</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">deaths</span><span class="p">,</span><span class="w"> </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_killed</span><span class="p">,</span><span class="w"> </span><span class="n">stat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"identity"</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="c1"># make width 0.5 if prefer a donut...
+</span><span class="w">  </span><span class="n">geom_bar</span><span class="p">(</span><span class="n">width</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">coord_polar</span><span class="p">(</span><span class="s2">"y"</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_fill_brewer</span><span class="p">(</span><span class="s2">"Number of deaths per incident"</span><span class="p">,</span><span class="w"> </span><span class="n">palette</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Set2"</span><span class="p">,</span><span class="w">
+                     </span><span class="n">guide</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">guide_legend</span><span class="p">(</span><span class="n">reverse</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">blank_theme</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"The vast majority of firearm deaths come from single-death incidents."</span><span class="p">,</span><span class="w">
+          </span><span class="s2">"Estimated firearms deaths in the USA in 2017, aggregated by number of deaths per incident"</span><span class="p">)</span></code></pre></figure>
+
+<h2 id="truncated-negative-binomial-distribution">Truncated negative binomial distribution</h2>
+
+<p>My starting point for modelling the count of deaths per event was a negative binomial distribution.  This is often a good model for counts that vary more than a Poisson distribution would predict, which I was certain would be the case here.  In fact, one way of deriving a negative binomial distribution is as a whole collection of different Poisson distributions, whose means themselves have a Gamma distribution.  This lets a negative binomial distribution cover quite a variety of types of count data.</p>
+
+<p>I have two datasets to fit with this distribution:</p>
+
+<ul>
+  <li>a sample from 2017 truncated so only those with one or more deaths were observed (ie I have discarded the zero-killed events as probably incomplete, as mentioned above)</li>
+  <li>a census from 2014 to 2018 that is complete for high-death events but truncated so only those with four or more deaths were observed.</li>
+</ul>
+
+<p>Both are cases of truncated data for which we are interested in the underlying negative binomial distribution that plausibly could have generated it.  Even the 2017 dataset of incidents with one or more deaths is truncated, by failing to include the great number of zero death incidents.  Remember, I had doubts about whether these could be archived sufficiently comprehensively, hence decided to exclude them systematically.</p>
+
+<p>There are a variety of ways to fit this model, but I chose to write a simple Stan program.  I started with a very broad prior distribution for my expectation of what the underlying negative binomial distribution might be, and refined this by fitting the first, large set of 2017 data to it.  Then I took the posterior distribution for the parameters of that negative binomial distribution and used them as the prior when fitting the model to just the larger, rarer events of four deaths or more per incident.  My strategy here was to first get a broad sense of the distribution from the random sample, then to refine it so it matches with the extreme events.</p>
+
+<p>As things turned out, the estimation tactic worked fine but the model didn’t work particularly well.  I think no simple negative binomial distribution will adequately model this data.  Here’s a comparison of the two original datasets (truncated at 1+ deaths for 2017, and truncated at 4+ deaths for all available years) with data for 100,000 events simulated from the model after fitting it in this two-step process:</p>
+
+<p><img src="/img/0119-results.svg" width="100%" /></p>
+
+<p>It fits badly in two aspects noticeable to the human eye:</p>
+
+<ul>
+  <li>There are too <em>many</em> predicted incidents with between 2 and 10 people killed.  This is most obvious in the left-most panels, where we can see the actual distribution has much more probability mass concentrated at 1 death, and drops off more rapidly, compared to the data simulated from the model.</li>
+  <li>There are too <em>few</em> predicted incidents with 50+ people killed.  Effectively none of the mass of the modelled distribution is to the right of 20 deaths, and it has no explanation for two events with 50+ people killed in the space of two years (Orlando and Las Vegas), or even three others between 15 and 30 in the past three years.</li>
+</ul>
+
+<p>Instead, the response variable should have a distribution that varies conditional on which part of the mixture the event is. I suspect a plausible model might be something like five types of incidents:</p>
+
+<ul>
+  <li>suicides that don’t involve homicides</li>
+  <li>family and intimate partner related violence</li>
+  <li>aimless non-family inter-personal violence (eg road rage, argument at the pub)</li>
+  <li>related to crimes other than family violence (eg theft, drugs, turf wars)</li>
+  <li>mass shootings</li>
+</ul>
+
+<p>The last of these stands out as an event where the perpetrator aims for as many deaths as possible. However, there are obvious grey areas and overlaps between several of the categories (as noted earlier, family violence is a factor in about half of mass shootings). And for my purposes, I simply don’t have access to the explanatory variables necessary to do this kind of modelling.</p>
+
+<p>I made one half-hearted attempt at modelling the data as a mixture of two distributions but it wasn’t much better than what I had originally.  As well as the mixture question, I’m pretty sure a more skewed right-tailed distribution than the negative binomial will be needed, and that takes me well beyond this blog post.</p>
+
+<p>Anyway, here’s how I did the two stage modelling.  Perhaps it will be more useful in other situations with truncated count data.  First, here’s the program written in Stan that fits a negative binomial model to truncated count data.  It’s quite similar to the program in my last blog on fitting a model to truncated Poisson count data.</p>
+
+<figure class="highlight"><pre><code class="language-stan" data-lang="stan">data {
+  int n;
+  int lower_limit;
+  int &lt;lower = lower_limit&gt; x[n];
+  real mu_prior_mean;
+  real mu_prior_sd;
+  real phi_prior_mean;
+  real phi_prior_sd;
+}
+
+parameters {
+  real&lt;lower=0&gt;mu;
+  real&lt;lower=0&gt;phi;
+}
+
+model {
+  mu ~ normal(mu_prior_mean, mu_prior_sd);
+  phi ~ normal(phi_prior_sd, phi_prior_sd);
+  
+  for(i in 1:n){
+    x[i] ~ neg_binomial_2(mu, phi) T[lower_limit, ];
+  }
+  
+}</code></pre></figure>
+
+<p>And here’s the R code that fits two sets of data to two models</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#=================neg binomial modelling====================
+</span><span class="n">options</span><span class="p">(</span><span class="n">mc.cores</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">8</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#------------------2017 sample first--------------------
+</span><span class="n">data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="w">
+  </span><span class="c1"># x = sample(filter(gva, year == 2017)$`# Killed`, 100),
+</span><span class="w">  </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">filter</span><span class="p">(</span><span class="n">gva</span><span class="p">,</span><span class="w"> </span><span class="n">year</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">2017</span><span class="p">)</span><span class="o">$</span><span class="n">`# Killed`</span><span class="p">,</span><span class="w">
+  </span><span class="n">lower_limit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w">
+  </span><span class="n">mu_prior_mean</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w">
+  </span><span class="n">mu_prior_sd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10</span><span class="p">,</span><span class="w">
+  </span><span class="n">phi_prior_mean</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="p">,</span><span class="w">
+  </span><span class="n">phi_prior_sd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">20</span><span class="w">
+</span><span class="p">)</span><span class="w">
+
+</span><span class="n">data</span><span class="o">$</span><span class="n">n</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">data</span><span class="o">$</span><span class="n">x</span><span class="p">)</span><span class="w">
+
+</span><span class="n">fit1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">stan</span><span class="p">(</span><span class="s2">"0119-trunc-negbin.stan"</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#----------------------2016 data second-------------------
+# hand comparisons of the CSV download data with that on the screen at GVA show that
+# some kind of unusual sampling is going on with dispoprotionate numbers of 
+# incidents with 4 deaths being dropped from the data.  It's not possible to download 
+# reliably as a CSV so we'll just enter the values.
+</span><span class="w">
+</span><span class="n">other_years</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">rbind</span><span class="p">(</span><span class="w">
+  </span><span class="n">data_frame</span><span class="p">(</span><span class="w">
+    </span><span class="n">killed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">4</span><span class="p">,</span><span class="w"> </span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="m">6</span><span class="p">,</span><span class="m">7</span><span class="p">,</span><span class="m">8</span><span class="p">),</span><span class="w">
+    </span><span class="n">freq</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">25</span><span class="p">,</span><span class="w"> </span><span class="m">8</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">),</span><span class="w">
+    </span><span class="n">year</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2014</span><span class="w">
+  </span><span class="p">),</span><span class="w"> 
+  </span><span class="n">data_frame</span><span class="p">(</span><span class="w">
+    </span><span class="n">killed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">4</span><span class="p">,</span><span class="w"> </span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="m">6</span><span class="p">,</span><span class="w"> </span><span class="m">8</span><span class="p">,</span><span class="w"> </span><span class="m">9</span><span class="p">,</span><span class="w"> </span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="m">16</span><span class="p">),</span><span class="w">
+    </span><span class="n">freq</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">31</span><span class="p">,</span><span class="w"> </span><span class="m">7</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">),</span><span class="w">
+    </span><span class="n">year</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2015</span><span class="w">
+  </span><span class="p">),</span><span class="w"> 
+  </span><span class="n">data_frame</span><span class="p">(</span><span class="w">
+    </span><span class="n">killed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">4</span><span class="p">,</span><span class="m">5</span><span class="p">,</span><span class="m">6</span><span class="p">,</span><span class="m">8</span><span class="p">,</span><span class="m">50</span><span class="p">),</span><span class="w">
+    </span><span class="n">freq</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">23</span><span class="p">,</span><span class="m">13</span><span class="p">,</span><span class="m">3</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">1</span><span class="p">),</span><span class="w">
+    </span><span class="n">year</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2016</span><span class="w">
+  </span><span class="p">),</span><span class="w">
+  </span><span class="n">data_frame</span><span class="p">(</span><span class="w">
+    </span><span class="n">killed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">4</span><span class="p">,</span><span class="m">5</span><span class="p">,</span><span class="m">6</span><span class="p">,</span><span class="m">8</span><span class="p">,</span><span class="m">9</span><span class="p">,</span><span class="m">27</span><span class="p">,</span><span class="m">59</span><span class="p">),</span><span class="w">
+    </span><span class="n">freq</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">33</span><span class="p">,</span><span class="w"> </span><span class="m">4</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">),</span><span class="w">
+    </span><span class="n">year</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2017</span><span class="w">
+  </span><span class="p">),</span><span class="w">
+  </span><span class="n">data_frame</span><span class="p">(</span><span class="w">
+    </span><span class="n">killed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">4</span><span class="p">,</span><span class="w"> </span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="m">17</span><span class="p">),</span><span class="w">
+    </span><span class="n">freq</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">11</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">),</span><span class="w">
+    </span><span class="n">year</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2018</span><span class="w">
+  </span><span class="p">)</span><span class="w">
+</span><span class="p">)</span><span class="w">
+
+
+
+</span><span class="n">data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="w">
+  </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="n">other_years</span><span class="o">$</span><span class="n">killed</span><span class="p">,</span><span class="w"> </span><span class="n">other_years</span><span class="o">$</span><span class="n">freq</span><span class="p">),</span><span class="w">
+  </span><span class="n">lower_limit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="p">,</span><span class="w">
+  </span><span class="n">mu_prior_mean</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">summary</span><span class="p">(</span><span class="n">fit1</span><span class="p">)</span><span class="o">$</span><span class="n">summary</span><span class="p">[</span><span class="s2">"mu"</span><span class="p">,</span><span class="w"> </span><span class="s2">"mean"</span><span class="p">],</span><span class="w">
+  </span><span class="n">mu_prior_sd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">summary</span><span class="p">(</span><span class="n">fit1</span><span class="p">)</span><span class="o">$</span><span class="n">summary</span><span class="p">[</span><span class="s2">"mu"</span><span class="p">,</span><span class="w"> </span><span class="s2">"sd"</span><span class="p">],</span><span class="w">
+  </span><span class="n">phi_prior_mean</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">summary</span><span class="p">(</span><span class="n">fit1</span><span class="p">)</span><span class="o">$</span><span class="n">summary</span><span class="p">[</span><span class="s2">"phi"</span><span class="p">,</span><span class="w"> </span><span class="s2">"mean"</span><span class="p">],</span><span class="w">
+  </span><span class="n">phi_prior_sd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">summary</span><span class="p">(</span><span class="n">fit1</span><span class="p">)</span><span class="o">$</span><span class="n">summary</span><span class="p">[</span><span class="s2">"phi"</span><span class="p">,</span><span class="w"> </span><span class="s2">"sd"</span><span class="p">]</span><span class="w">
+</span><span class="p">)</span><span class="w">
+
+</span><span class="n">data</span><span class="o">$</span><span class="n">n</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">data</span><span class="o">$</span><span class="n">x</span><span class="p">)</span><span class="w">
+
+</span><span class="n">fit2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">stan</span><span class="p">(</span><span class="s2">"0119-trunc-negbin.stan"</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#---------------comparison of modelled to actual-----------
+</span><span class="n">phi</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">summary</span><span class="p">(</span><span class="n">fit2</span><span class="p">)</span><span class="o">$</span><span class="n">summary</span><span class="p">[</span><span class="s2">"phi"</span><span class="p">,</span><span class="w"> </span><span class="s2">"mean"</span><span class="p">]</span><span class="w">
+</span><span class="n">mu</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">summary</span><span class="p">(</span><span class="n">fit2</span><span class="p">)</span><span class="o">$</span><span class="n">summary</span><span class="p">[</span><span class="s2">"mu"</span><span class="p">,</span><span class="w"> </span><span class="s2">"mean"</span><span class="p">]</span><span class="w">
+
+</span><span class="n">x_sim</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">rnbinom</span><span class="p">(</span><span class="m">100000</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">phi</span><span class="p">,</span><span class="w"> </span><span class="n">mu</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mu</span><span class="p">)</span><span class="w">
+
+</span><span class="n">comp_data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">rbind</span><span class="p">(</span><span class="w">
+  </span><span class="n">data_frame</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="n">other_years</span><span class="o">$</span><span class="n">killed</span><span class="p">,</span><span class="w"> </span><span class="n">other_years</span><span class="o">$</span><span class="n">freq</span><span class="p">),</span><span class="w"> </span><span class="n">source</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Actual, 4+ deaths"</span><span class="p">),</span><span class="w">
+  </span><span class="n">data_frame</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">filter</span><span class="p">(</span><span class="n">gva</span><span class="p">,</span><span class="w"> </span><span class="n">year</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">2017</span><span class="p">)</span><span class="o">$</span><span class="n">`# Killed`</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Actual, 1+ deaths"</span><span class="p">),</span><span class="w">
+  </span><span class="n">data_frame</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x_sim</span><span class="p">[</span><span class="n">x_sim</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="m">1</span><span class="p">],</span><span class="w"> </span><span class="n">source</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Simulated, 1+ deaths"</span><span class="p">),</span><span class="w">
+  </span><span class="n">data_frame</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x_sim</span><span class="p">[</span><span class="n">x_sim</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="m">4</span><span class="p">],</span><span class="w"> </span><span class="n">source</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Simulated, 4+ deaths"</span><span class="p">)</span><span class="w">
+</span><span class="p">)</span><span class="w"> 
+
+</span><span class="n">comp_data</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">..density..</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">source</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_histogram</span><span class="p">(</span><span class="n">binwidth</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Comparison of actual and simulated deaths per incident"</span><span class="p">,</span><span class="w">
+          </span><span class="s2">"Negative binomial model fit iteratively to two sets of truncated data.
+Simulated data based on the model does not feature the rare, large events observed in reality."</span><span class="p">)</span></code></pre></figure>
+
+<h2 id="summary">Summary</h2>
+
+<p>To recap:</p>
+
+<ul>
+  <li>I wanted to characterise the distribution of deaths per firearm incident the USA, and in particular try to model it with a single negative binomial distribution.</li>
+  <li>I couldn’t get the full data I needed from the Gun Violence Archive, aggregated by deaths per incident.  So I downloaded a representative sample of data from 2017 for incidents with at least 1 death, and a census sample of data for 2014 to present (early 2018) for incidents with at least 4 deaths.</li>
+  <li>I used Bayesian methods to fit negative binomial distributions to the truncated data.  I started with a very broad prior distribution for the mean and shape, and narrowed down estimates for those parameters by fitting to the data truncated at 1 death.  Then I used the posterior distribution for the parameters from that model as the prior distribution for fitting to the data truncated at 4 deaths.</li>
+  <li>The estimation method worked, but showed that a single negative binomial distribution is too simple a model to fit this data.  There is a wider dispersal of counts of deaths per incident than the model allows for.  In particular, in reality there are even more incidents with one death than modelled; and also a small number of high-death incidents that do not fit well into the model.  An alternative model that takes into account the mixture of several different distributions, and that is better at predicting rare, large events, is needed.</li>
+</ul>
+
+
+		
+	</div>
+</div>
+
+<div class="col-md-1"></div>
+<div class="col-md-4">
+	<div class="side-banner">
+	
+
+
+	<div>
+	   
+	    
+			
+			<p>&larr; Previous post</p>
+			<p><a rel="prev" href="/blog/2018/03/20/truncated-poisson">Truncated Poisson distributions in R and Stan</a></p>
+		
+		
+		
+		
+		 
+			
+			<p>Next post &rarr;</p>
+			<p><a rel="next" href="/blog/2018/04/11/weighted-survey-data-with-power-bi">Weighted survey data with Power BI compared to dplyr, SQL or survey</a></p>
+			
+			
+		
+		
+	</div>
+	
+	 
+
+   <div class = "side-footer">
+			
+			<hr></hr>
+			<p><gcse:search></gcse:search></p>
+			<hr></hr>
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.</p>
+			<hr></hr>
+			
+			<p>My day job is Chief Data Scientist at <a href='https://www.nousgroup.com/'>Nous Group</a>, an international management consultancy with over 400 people working across Australia, the UK and Canada. <a href='mailto:peter.ellis@nousgroup.com.au'>Contact me</a> if you are interested working with us on a grand challenge or broad agenda.</p>
+		
+		    <hr></hr>
+			
+       <div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="false" data-share="false"></div>
+			
+			<hr></hr>
+			<p>I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+			<hr></hr>
+
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title"><i>free range statistics</i></span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			<hr></hr>
+			
+
+
+    </div>
+
+
+
+  
+   
+
+
+
+
+		  
+		  
+
+
+
+	   
+	<div id="disqus_thread"></div>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function() {
+				var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+				dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+				(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+			})();
+		</script>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function () {
+				var s = document.createElement('script'); s.async = true;
+				s.type = 'text/javascript';
+				s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+				(document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+			}());
+		</script>
+
+	<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+	</div>	
+</div>    
+   
+   
+
+			
+			</div><!-- /.container -->
+         
+   <!-- Default Statcounter code for Free Range Statistics
+http://Http://freerangestats.info -->
+<script type="text/javascript">
+var sc_project=11673245; 
+var sc_invisible=1; 
+var sc_security="5b7111a4"; 
+</script>
+<script type="text/javascript"
+src="https://www.statcounter.com/counter/counter.js" async></script>
+<noscript><div class="statcounter"><a title="Web Analytics"
+href="http://statcounter.com/" target="_blank"><img class="statcounter"
+src="//c.statcounter.com/11673245/0/5b7111a4/1/" alt="Web
+Analytics"></a></div></noscript>
+<!-- End of Statcounter Code -->
+
+</body>   
+</html>

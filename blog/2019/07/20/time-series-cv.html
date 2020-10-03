@@ -1,0 +1,556 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Time series forecast cross-validation</title>
+      	
+         
+         
+            <meta name ="description" content ="I use time series forecast cross-validation to explore simulated data and sort out the real and the fake effects between variables.">
+            <meta property="og:description" content ="I use time series forecast cross-validation to explore simulated data and sort out the real and the fake effects between variables.">
+         
+         <meta property="og:site_name" content="free range statistics" />
+         <meta property="og:title" content="Time series forecast cross-validation" />
+         
+            <meta property="og:image" content="http://freerangestats.info/img/0156-ts.png" />
+         
+		 
+			<meta property="og:url" content="http://freerangestats.info/blog/2019/07/20/time-series-cv.html" />
+		 
+         <meta property="og:author" content= "https://www.facebook.com/peterstats" />
+         <meta property="og:type" content="article" />
+      
+
+<link href='https://fonts.googleapis.com/css?family=Sarala' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Prosto+One' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Ubuntu+Mono' rel='stylesheet'>
+	  
+          <link href="/css/bootstrap.min.css" rel ="stylesheet" type="text/css">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet" type="text/css">
+            <link href="/css/custom.css" rel ="stylesheet" type="text/css">     
+		<link href="/css/syntax.css" rel ="stylesheet" type="text/css">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="free range statistics by Peter Ellis"
+      href="/feed.xml">
+
+	  
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+  <script>
+  (function() {
+    var cx = '015640467633673901770:pk3v2c95baw';
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+  })();
+</script>
+
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">free range statistics</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/about">about</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">all posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">ordered by date</a></li>
+				  <li><a href="/blog/most-popular.html">ordered by popularity</a></li>
+                  <li><a href="/blog/index_by_tag.html">grouped by subject matter</a></li>
+                  <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
+				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
+				  <li><a href = /blog/2020/09/26/nzes-issues>most recent post</a></li>
+				</ul>
+            </li>
+              <li><a href="/blog/showcase.html">showcase</a></li>
+              <li><a href="/presentations/index.html">presentations</a></li>
+			  <li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">forecasts<span class="caret"></span></a>
+                <ul class="dropdown-menu">
+				  <li><a href = "/covid-tracking/index.html">Covid-19 in Australia</a></li>
+                  <li><a href = "/elections/nz-2020/index.html">NZ election 2020</a></li>
+                  <li><a href = "/elections/oz-2019/index.html">Australia federal election 2019</a></li>
+				  <li><a href = "/elections/nz-2017/combined.html">NZ election 2017</a></li>
+                  <li><a href="/blog/voting.html">all blog posts on voting behaviour</a></li>
+                </ul>				
+			  </li>
+			  
+			  
+			  
+		    </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			<div class="jumbotron">
+  <div class="container">
+	<center><h1>Time series forecast cross-validation</h1></center>
+  </div>
+</div>
+
+
+
+	<div class = "post-summary">
+	<h2>At a glance:</h2>
+	   <p>I use time series forecast cross-validation to explore simulated data and sort out the real and the fake effects between variables.</p>
+	   <p class="meta">20 Jul 2019</p>
+	   <hr></hr>
+	</div>
+
+
+<div class="col-md-7">
+
+	<div class="post">
+		
+	  <p>Time series cross-validation is important part of the toolkit for good evaluation of forecasting models.  <code class="highlighter-rouge">forecast::tsCV</code> makes it straightforward to implement, even with different combinations of explanatory regressors in the different candidate models for evaluation.</p>
+
+<p>Suprious correlation between time series is a well documented and mocked problem, with <a href="https://www.tylervigen.com/spurious-correlations">Tyler Vigen’s educational website on the topic</a> (“per capita cheese consumption correlated with number of people dying by becoming entangled in their bedsheets”) even spawning a whole book of humourous examples.</p>
+
+<p>Identifying genuinely-correlated series can be immensely helpful for time series forecasting. Forecasting is hard, and experience generally shows that complex causal models don’t do as well as much simpler methods. However, a well chosen small set of “x regressors” can improve forecasting performance in many situations. I have been investigating one of those situations for a future blog post on forecasting unemployment rates. One method I’ll be using is time series cross-validation, as well described in <a href="https://robjhyndman.com/hyndsight/tscv/">this Rob Hyndman post</a>. The implementation was sufficiently non-trivial in my real-data case that I’m writing today a separate post with simulated data to be sure I’m doing it right.</p>
+
+<h2 id="simulated-data">Simulated data</h2>
+
+<p>So here’s my simulated data. I have made three time series which are causally related to eachother:</p>
+
+<ul>
+  <li><code class="highlighter-rouge">x</code> is an ARIMA(1, 1, 1) process, which means that if you took its first difference (the change from day to day rather than the original observation) it would be an ARMA(1, 1) process with an autoregression coefficient of 0.5 and a moving average coefficient of 0.5</li>
+  <li><code class="highlighter-rouge">y</code> has a random component which is generated in a similar way to x, and a structural component which is a simple multiplier of x</li>
+  <li><code class="highlighter-rouge">z</code> has a similar random component again and a structural component which is a simple multiplier of the lagged values of y.</li>
+</ul>
+
+<p>In other words, <code class="highlighter-rouge">x</code> causes <code class="highlighter-rouge">y</code> and <code class="highlighter-rouge">y</code> causes <code class="highlighter-rouge">z</code> via a delay. Our job is to forecast <code class="highlighter-rouge">y</code>. We would expect the best model to do this to be one that uses <code class="highlighter-rouge">x</code> as an explanatory variable and which ignores <code class="highlighter-rouge">z</code>. We would expect <code class="highlighter-rouge">z</code> to be a tempting but ultimately unhelpful explanatory variable in a model of <code class="highlighter-rouge">y</code>.</p>
+
+<p>Here’s what the data looks like:</p>
+
+<object type="image/svg+xml" data="/img/0156-ts.svg" width="100%"></object>
+
+<p>Generated with this:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">forecast</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">ggplot2</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># Simulate data:
+</span><span class="n">set.seed</span><span class="p">(</span><span class="m">125</span><span class="p">)</span><span class="w">
+</span><span class="n">n</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">100</span><span class="w">
+</span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ts</span><span class="p">(</span><span class="nf">cumsum</span><span class="p">(</span><span class="n">arima.sim</span><span class="p">(</span><span class="nf">list</span><span class="p">(</span><span class="n">ar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">,</span><span class="w"> </span><span class="n">ma</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">),</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">)))</span><span class="w">
+</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ts</span><span class="p">(</span><span class="m">0.6</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nf">cumsum</span><span class="p">(</span><span class="n">arima.sim</span><span class="p">(</span><span class="nf">list</span><span class="p">(</span><span class="n">ar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">,</span><span class="w"> </span><span class="n">ma</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">),</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">)))</span><span class="w">
+</span><span class="n">z</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ts</span><span class="p">(</span><span class="m">0.6</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nf">cumsum</span><span class="p">(</span><span class="n">arima.sim</span><span class="p">(</span><span class="nf">list</span><span class="p">(</span><span class="n">ar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">,</span><span class="w"> </span><span class="n">ma</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">),</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">)))</span><span class="w">
+</span><span class="n">z</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">z</span><span class="p">[</span><span class="m">1</span><span class="o">:</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">1</span><span class="p">)])</span><span class="w">
+  
+</span><span class="n">d</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">cbind</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">z</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># Exploratory plot:
+</span><span class="n">autoplot</span><span class="p">(</span><span class="n">d</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Three simulated, related, time-series"</span><span class="p">,</span><span class="w">
+          </span><span class="s2">"x causes y and y causes z; our job is to forecast y."</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="s2">""</span><span class="p">)</span></code></pre></figure>
+
+<p>If this were a real analysis, I would always start with the partial auto correlations and cross correlations. Auto-correlation means the correlation of a time series with lagged versions of itself. The “partial” means we look at these correlations after controlling for the higher order lags (for example, we look at the autocorrelation at lag of 2 time periods, after controlling for the autocorrelation at lag 1). Cross correlations are the same statistics, but with the variously lagged versions of another variable instead of with itself. Here are the partial auto correlations of our three simulated series:</p>
+
+<object type="image/svg+xml" data="/img/0156-pacf1.svg" width="100%"></object>
+
+<p>To the experienced eye it is immediately obvious from this PACF plot, if not from the original simple plot, that these time series are non-stationary and are heavily correlated with themselves - that is, knowing its value at time t gives you a strong indication of its location time t + 1. The giveaway in the PACF plots is the tall line indicating high autocorrelation (close to 1.0) at lag 1 for each of the three series. This non-stationarity hides the other relationships in the data and gets in the way of effective modelling, and the standard response is to try “differencing” the series. This technique alone would eliminate the big majority of the mis-inferences in the “spurious correlation” time series collection.</p>
+
+<p>Here are the PACF plots for the first-differenced versions of these series:</p>
+
+<object type="image/svg+xml" data="/img/0156-pacf2.svg" width="100%"></object>
+
+<p>The series are still heavily correlated with themselves - each with an autocorrelation of about 0.6 at lag 1 - but no longer so much so that they are obviously non-stationary. We can now see some of the secondary relationships, including correlations between the various variables at several lags that suggest there could be something going on between them (as in fact we know is the case).</p>
+
+<p>Those PACF plots use the handy <code class="highlighter-rouge">ggPacf</code> function that comes with Hyndman’s <code class="highlighter-rouge">forecast</code> R package.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">ggPacf</span><span class="p">(</span><span class="n">d</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+  </span><span class="n">theme</span><span class="p">(</span><span class="n">panel.grid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_blank</span><span class="p">())</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Partial autocorrelations and cross correlations"</span><span class="p">,</span><span class="w"> 
+          </span><span class="s2">"Original series"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">ggPacf</span><span class="p">(</span><span class="n">diff</span><span class="p">(</span><span class="n">d</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+  </span><span class="n">theme</span><span class="p">(</span><span class="n">panel.grid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_blank</span><span class="p">())</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Partial autocorrelations and cross correlations"</span><span class="p">,</span><span class="w"> 
+          </span><span class="s2">"First differenced series"</span><span class="p">)</span></code></pre></figure>
+
+<h2 id="modelling">Modelling</h2>
+
+<p>When I first learnt time series analysis in the 1990s we used to use PACF plots to try to infer the order of the auto-regressive and moving-average components of a worthwhile model to fit. These days we just use highly effective and tested automated algorithms such as that behind the <code class="highlighter-rouge">forecast::auto.arima</code> function. I’m going to fit four models for my hypothetical forecast job:</p>
+
+<ol>
+  <li>univariate model just using <code class="highlighter-rouge">y</code></li>
+  <li><code class="highlighter-rouge">x</code> as an explanatory variable</li>
+  <li><code class="highlighter-rouge">z</code> as an explanatory variable</li>
+  <li>both <code class="highlighter-rouge">x</code> and <code class="highlighter-rouge">z</code> as explanatory variables</li>
+</ol>
+
+<p>For each model I am going to manually specify the level of differencing as one lag only, so my resulting models can all be compared on the same basis.</p>
+
+<p>Because I made up the data, I happen to know that model 2 is the “correct” specification. I was pleased to see that fitting the four models and comparing their AIC agreed with this foreknown correct answer. The AIC of <code class="highlighter-rouge">mod2</code> is lowest, correctly implying that any reduction in deviance from including <code class="highlighter-rouge">z</code> in the model is not justified by the use of an additional degree of freedom, whether <code class="highlighter-rouge">z</code> is included by itself or in addition to <code class="highlighter-rouge">x</code>:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="text-align: left"> </th>
+      <th style="text-align: right">df</th>
+      <th style="text-align: right">AIC</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: left">mod1</td>
+      <td style="text-align: right">3</td>
+      <td style="text-align: right">313.1799</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">mod2</td>
+      <td style="text-align: right">5</td>
+      <td style="text-align: right">290.6071</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">mod3</td>
+      <td style="text-align: right">4</td>
+      <td style="text-align: right">315.0472</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">mod4</td>
+      <td style="text-align: right">6</td>
+      <td style="text-align: right">292.3268</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The models were fit with the code below - the perfect example of fitting enormously complex models with a single line of code each:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">mod1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">auto.arima</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+</span><span class="n">mod2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">auto.arima</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">xreg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+</span><span class="n">mod3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">auto.arima</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">xreg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">z</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+</span><span class="n">mod4</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">auto.arima</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">xreg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cbind</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">z</span><span class="p">),</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+
+</span><span class="n">knitr</span><span class="o">::</span><span class="n">kable</span><span class="p">(</span><span class="n">AIC</span><span class="p">(</span><span class="n">mod1</span><span class="p">,</span><span class="w"> </span><span class="n">mod2</span><span class="p">,</span><span class="w"> </span><span class="n">mod3</span><span class="p">,</span><span class="w"> </span><span class="n">mod4</span><span class="p">))</span></code></pre></figure>
+
+<h2 id="time-series-cross-validation">Time series cross-validation</h2>
+
+<p>OK, so the simple expedient of comparing AIC values worked in this case, but my actual motivation for today was to check that time series cross-validation would similarly pick the known-best model in a situation comparing time series forecasting models with different numbers (or no) explanatory variables. Cross-validation for time series is more complex than for cross-sectional data because we can’t simply divide the data into training and test sets without taking into account the intrinsic connections of data in each time period with its neighbours on either side. It is well explained in <a href="https://robjhyndman.com/hyndsight/tscv/">the Hyndman blog post I linked to earlier</a>. The intuition is well presented in this image from that post:</p>
+
+<p><img src="https://robjhyndman.com/files/cv4-1.png" width="100%" /></p>
+
+<p>Basically you use the data from the blue dots to forecast the red dots.</p>
+
+<p>The <code class="highlighter-rouge">forecasts::tsCV</code> function implements this approach. It takes as its main argument a function that returns an object of class <code class="highlighter-rouge">forecast</code>. The complication (such as it is) in my case comes from the need to write a function that combines fitting an <code class="highlighter-rouge">auto.arima</code> model and then converting it to a forecast object. Building on an example provided by (again) Hyndman, here’s my version of this which I think I will find myself re-using and hence will put in the <code class="highlighter-rouge">frs</code> package for future use:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#---------Cross validation---------------
+</span><span class="cd">#' auto.arima forecast function for time series cross validation
+#' 
+#' adapted from https://gist.github.com/robjhyndman/d9eb5568a78dbc79f7acc49e22553e96 
+</span><span class="n">aafc</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="n">xreg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">NULL</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p">){</span><span class="w">
+  </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nf">is.null</span><span class="p">(</span><span class="n">xreg</span><span class="p">)){</span><span class="w">
+    
+    </span><span class="n">ncol</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">NCOL</span><span class="p">(</span><span class="n">xreg</span><span class="p">)</span><span class="w">
+    </span><span class="n">X</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">matrix</span><span class="p">(</span><span class="n">xreg</span><span class="p">[</span><span class="m">1</span><span class="o">:</span><span class="nf">length</span><span class="p">(</span><span class="n">y</span><span class="p">),</span><span class="w"> </span><span class="p">],</span><span class="w"> </span><span class="n">ncol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ncol</span><span class="p">)</span><span class="w">
+    </span><span class="k">if</span><span class="p">(</span><span class="n">NROW</span><span class="p">(</span><span class="n">xreg</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">h</span><span class="p">)</span><span class="w">
+      </span><span class="n">stop</span><span class="p">(</span><span class="s2">"Not enough xreg data for forecasting"</span><span class="p">)</span><span class="w">
+    </span><span class="n">newX</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">matrix</span><span class="p">(</span><span class="n">xreg</span><span class="p">[</span><span class="nf">length</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="n">h</span><span class="p">),</span><span class="w"> </span><span class="p">],</span><span class="w"> </span><span class="n">ncol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ncol</span><span class="p">)</span><span class="w">
+    
+    </span><span class="n">fit</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">auto.arima</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">xreg</span><span class="o">=</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p">)</span><span class="w">
+    </span><span class="nf">return</span><span class="p">(</span><span class="n">forecast</span><span class="p">(</span><span class="n">fit</span><span class="p">,</span><span class="w"> </span><span class="n">xreg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">newX</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">h</span><span class="p">))</span><span class="w">
+    
+  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">
+    
+    </span><span class="n">fit</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">auto.arima</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p">)</span><span class="w">
+    </span><span class="nf">return</span><span class="p">(</span><span class="n">forecast</span><span class="p">(</span><span class="n">fit</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">h</span><span class="p">))</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="c1"># this CV takes about 50 seconds
+</span><span class="n">system.time</span><span class="p">({</span><span class="w">
+  </span><span class="n">aa1_cv</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tsCV</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">aafc</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+  </span><span class="n">aa2_cv</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tsCV</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">aafc</span><span class="p">,</span><span class="w"> </span><span class="n">xreg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+  </span><span class="n">aa3_cv</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tsCV</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">aafc</span><span class="p">,</span><span class="w"> </span><span class="n">xreg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">z</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+  </span><span class="n">aa4_cv</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tsCV</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">aafc</span><span class="p">,</span><span class="w"> </span><span class="n">xreg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cbind</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">z</span><span class="p">),</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+  </span><span class="p">})</span></code></pre></figure>
+
+<p>The <code class="highlighter-rouge">tsCV</code> function returns a numerical time series object containing the forecast errors as a vector (if forecasting is for only one period forward, as is the case in my example). Interpreting and presenting the results takes a bit of care. All my models return some NAs in the forecast errors after cross-validation, including the final observation in each case. The <code class="highlighter-rouge">tsCV</code> helpfile includes the helpful comment that in the output of <code class="highlighter-rouge">tsCV</code>:</p>
+
+<blockquote>
+  <p>The time index corresponds to the last period of the training data</p>
+</blockquote>
+
+<p>So if we want to line up the forecast errors to the actual values they apply to, we need to be careful! In my case, I need to knock out the <em>first</em> value of the original time series, and the <em>last</em> value of the forecast errors, if I want to line them up (eg for use in the <code class="highlighter-rouge">accuracy</code> function). Here’s how I did that:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">rbind</span><span class="p">(</span><span class="n">accuracy</span><span class="p">(</span><span class="n">ts</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="m">-1</span><span class="p">]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">aa1_cv</span><span class="p">[</span><span class="o">-</span><span class="n">n</span><span class="p">]),</span><span class="w"> </span><span class="n">ts</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="m">-1</span><span class="p">])),</span><span class="w">
+      </span><span class="n">accuracy</span><span class="p">(</span><span class="n">ts</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="m">-1</span><span class="p">]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">aa2_cv</span><span class="p">[</span><span class="o">-</span><span class="n">n</span><span class="p">]),</span><span class="w"> </span><span class="n">ts</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="m">-1</span><span class="p">])),</span><span class="w">
+      </span><span class="n">accuracy</span><span class="p">(</span><span class="n">ts</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="m">-1</span><span class="p">]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">aa3_cv</span><span class="p">[</span><span class="o">-</span><span class="n">n</span><span class="p">]),</span><span class="w"> </span><span class="n">ts</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="m">-1</span><span class="p">])),</span><span class="w">
+      </span><span class="n">accuracy</span><span class="p">(</span><span class="n">ts</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="m">-1</span><span class="p">]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">aa4_cv</span><span class="p">[</span><span class="o">-</span><span class="n">n</span><span class="p">]),</span><span class="w"> </span><span class="n">ts</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="m">-1</span><span class="p">])))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">as.data.frame</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Univariate"</span><span class="p">,</span><span class="w"> 
+                   </span><span class="s2">"With x regressor"</span><span class="p">,</span><span class="w"> 
+                   </span><span class="s2">"With z regressor"</span><span class="p">,</span><span class="w"> 
+                   </span><span class="s2">"Both x and z as regressors"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">dplyr</span><span class="o">::</span><span class="n">select</span><span class="p">(</span><span class="n">model</span><span class="p">,</span><span class="w"> </span><span class="n">everything</span><span class="p">())</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">knitr</span><span class="o">::</span><span class="n">kable</span><span class="p">()</span></code></pre></figure>
+
+<p>I’m not sure this is the best way to evaluate those forecast errors (ie by using <code class="highlighter-rouge">forecast::accuracy</code>) but it’s a method that fits in with how I think about it and returns lots of performance metrics at once. Here are the results:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="text-align: left">model</th>
+      <th style="text-align: right">ME</th>
+      <th style="text-align: right">RMSE</th>
+      <th style="text-align: right">MAE</th>
+      <th style="text-align: right">MPE</th>
+      <th style="text-align: right">MAPE</th>
+      <th style="text-align: right">ACF1</th>
+      <th style="text-align: right">Theil’s U</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: left">Univariate</td>
+      <td style="text-align: right">-0.0238600</td>
+      <td style="text-align: right">1.249621</td>
+      <td style="text-align: right">0.9706499</td>
+      <td style="text-align: right">28.28211</td>
+      <td style="text-align: right">47.15084</td>
+      <td style="text-align: right">0.0725987</td>
+      <td style="text-align: right">0.4626243</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">With x regressor</td>
+      <td style="text-align: right">-0.0560274</td>
+      <td style="text-align: right">1.177935</td>
+      <td style="text-align: right">0.9507106</td>
+      <td style="text-align: right">20.91153</td>
+      <td style="text-align: right">45.24956</td>
+      <td style="text-align: right">0.1673370</td>
+      <td style="text-align: right">0.3950919</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">With z regressor</td>
+      <td style="text-align: right">-0.0156043</td>
+      <td style="text-align: right">1.245264</td>
+      <td style="text-align: right">0.9824904</td>
+      <td style="text-align: right">29.08816</td>
+      <td style="text-align: right">47.88510</td>
+      <td style="text-align: right">0.0453596</td>
+      <td style="text-align: right">0.5016008</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Both x and z as regressors</td>
+      <td style="text-align: right">-0.0909384</td>
+      <td style="text-align: right">1.212325</td>
+      <td style="text-align: right">0.9823389</td>
+      <td style="text-align: right">22.85555</td>
+      <td style="text-align: right">46.54281</td>
+      <td style="text-align: right">0.1491128</td>
+      <td style="text-align: right">0.4872987</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Model 2, with just the x regressor, has the lowest root mean square error, mean absolute error, mean percentage error, mean absolute percentage error and Theil’s U. The autocorrelation of its errors is relatively high, but I don’t think that matters. It has more biased forecasts (mean error) than the models that don’t include x but depending on context we might accept that in return for being closer on average. Overall, this method comes up with good support for the correct underlying model.</p>
+
+<p>Just to check I haven’t mangled anything, gotten the signs the wrong way around, etc I calculated a few of these stats by hand directly from the <code class="highlighter-rouge">tsCV</code> output:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>&gt; # mean error of univariate model:
+&gt; mean(aa1_cv, na.rm = TRUE)
+[1] -0.02386004
+&gt; 
+&gt; # root mean square error of x regressor model
+&gt; sqrt(mean(aa2_cv ^ 2, na.rm = TRUE))
+[1] 1.177935
+&gt; 
+&gt; # mean absolute error of z regressor model
+&gt; mean(abs(aa3_cv), na.rm = TRUE)
+[1] 0.9824904
+</code></pre>
+</div>
+
+<p>Final word on this is that I tried running this program with various other settings (eg just changing the random seed from 125 to another number, or making the relationships between the variables a little weaker) and sometimes the AIC was slightly better at picking the correct model than was the cross-validation.  Neither method is fool-proof - remember, forecasting is hard, there is always a lot of noise around the signal!</p>
+
+<p>OK, c’est tout. Today’s key thought again: Time series cross-validation is important part of the toolkit, and <code class="highlighter-rouge">forecast::tsCV</code> makes it straightforward to implement.</p>
+
+
+
+		
+	</div>
+</div>
+
+<div class="col-md-1"></div>
+<div class="col-md-4">
+	<div class="side-banner">
+	
+
+
+	<div>
+	   
+	    
+			
+			<p>&larr; Previous post</p>
+			<p><a rel="prev" href="/blog/2019/06/28/too-important-for-data-scientists">Too important to leave to the data scientists</a></p>
+		
+		
+		
+		
+		 
+			
+			<p>Next post &rarr;</p>
+			<p><a rel="next" href="/blog/2019/07/28/unemployment-forecasts">Forecasting unemployment</a></p>
+			
+			
+		
+		
+	</div>
+	
+	 
+
+   <div class = "side-footer">
+			
+			<hr></hr>
+			<p><gcse:search></gcse:search></p>
+			<hr></hr>
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.</p>
+			<hr></hr>
+			
+			<p>My day job is Chief Data Scientist at <a href='https://www.nousgroup.com/'>Nous Group</a>, an international management consultancy with over 400 people working across Australia, the UK and Canada. <a href='mailto:peter.ellis@nousgroup.com.au'>Contact me</a> if you are interested working with us on a grand challenge or broad agenda.</p>
+		
+		    <hr></hr>
+			
+       <div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="false" data-share="false"></div>
+			
+			<hr></hr>
+			<p>I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+			<hr></hr>
+
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title"><i>free range statistics</i></span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			<hr></hr>
+			
+
+
+    </div>
+
+
+
+  
+   
+
+
+
+
+		  
+		  
+
+
+
+	   
+	<div id="disqus_thread"></div>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function() {
+				var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+				dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+				(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+			})();
+		</script>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function () {
+				var s = document.createElement('script'); s.async = true;
+				s.type = 'text/javascript';
+				s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+				(document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+			}());
+		</script>
+
+	<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+	</div>	
+</div>    
+   
+   
+
+			
+			</div><!-- /.container -->
+         
+   <!-- Default Statcounter code for Free Range Statistics
+http://Http://freerangestats.info -->
+<script type="text/javascript">
+var sc_project=11673245; 
+var sc_invisible=1; 
+var sc_security="5b7111a4"; 
+</script>
+<script type="text/javascript"
+src="https://www.statcounter.com/counter/counter.js" async></script>
+<noscript><div class="statcounter"><a title="Web Analytics"
+href="http://statcounter.com/" target="_blank"><img class="statcounter"
+src="//c.statcounter.com/11673245/0/5b7111a4/1/" alt="Web
+Analytics"></a></div></noscript>
+<!-- End of Statcounter Code -->
+
+</body>   
+</html>

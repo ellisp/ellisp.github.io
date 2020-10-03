@@ -1,0 +1,635 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Setting up RStudio Server, Shiny Server and PostgreSQL</title>
+      	
+         
+         
+            <meta name ="description" content ="A few months back, I set up a server on Amazon Web Services with a data sciencey toolkit on it. Amongst other things, this means I can collect data around the clock when necessary, as well as host my little RRobot twitter bot, without having a physical machine humming in my living room. There are lots of fiddly things to sort out to make such a setup actually fit for purpose.">
+            <meta property="og:description" content ="A few months back, I set up a server on Amazon Web Services with a data sciencey toolkit on it. Amongst other things, this means I can collect data around the clock when necessary, as well as host my little RRobot twitter bot, without having a physical machine humming in my living room. There are lots of fiddly things to sort out to make such a setup actually fit for purpose.">
+         
+         <meta property="og:site_name" content="free range statistics" />
+         <meta property="og:title" content="Setting up RStudio Server, Shiny Server and PostgreSQL" />
+         
+            <meta property="og:image" content="http://freerangestats.info/img/0125-hashtags.png" />
+         
+		 
+			<meta property="og:url" content="http://freerangestats.info/blog/2018/07/07/twitter-monitor.html" />
+		 
+         <meta property="og:author" content= "https://www.facebook.com/peterstats" />
+         <meta property="og:type" content="article" />
+      
+
+<link href='https://fonts.googleapis.com/css?family=Sarala' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Prosto+One' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Ubuntu+Mono' rel='stylesheet'>
+	  
+          <link href="/css/bootstrap.min.css" rel ="stylesheet" type="text/css">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet" type="text/css">
+            <link href="/css/custom.css" rel ="stylesheet" type="text/css">     
+		<link href="/css/syntax.css" rel ="stylesheet" type="text/css">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="free range statistics by Peter Ellis"
+      href="/feed.xml">
+
+	  
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+  <script>
+  (function() {
+    var cx = '015640467633673901770:pk3v2c95baw';
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+  })();
+</script>
+
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">free range statistics</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/about">about</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">all posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">ordered by date</a></li>
+				  <li><a href="/blog/most-popular.html">ordered by popularity</a></li>
+                  <li><a href="/blog/index_by_tag.html">grouped by subject matter</a></li>
+                  <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
+				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
+				  <li><a href = /blog/2020/09/26/nzes-issues>most recent post</a></li>
+				</ul>
+            </li>
+              <li><a href="/blog/showcase.html">showcase</a></li>
+              <li><a href="/presentations/index.html">presentations</a></li>
+			  <li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">forecasts<span class="caret"></span></a>
+                <ul class="dropdown-menu">
+				  <li><a href = "/covid-tracking/index.html">Covid-19 in Australia</a></li>
+                  <li><a href = "/elections/nz-2020/index.html">NZ election 2020</a></li>
+                  <li><a href = "/elections/oz-2019/index.html">Australia federal election 2019</a></li>
+				  <li><a href = "/elections/nz-2017/combined.html">NZ election 2017</a></li>
+                  <li><a href="/blog/voting.html">all blog posts on voting behaviour</a></li>
+                </ul>				
+			  </li>
+			  
+			  
+			  
+		    </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			<div class="jumbotron">
+  <div class="container">
+	<center><h1>Setting up RStudio Server, Shiny Server and PostgreSQL</h1></center>
+  </div>
+</div>
+
+
+
+	<div class = "post-summary">
+	<h2>At a glance:</h2>
+	   <p>A few months back, I set up a server on Amazon Web Services with a data sciencey toolkit on it. Amongst other things, this means I can collect data around the clock when necessary, as well as host my little RRobot twitter bot, without having a physical machine humming in my living room. There are lots of fiddly things to sort out to make such a setup actually fit for purpose.</p>
+	   <p class="meta">07 Jul 2018</p>
+	   <hr></hr>
+	</div>
+
+
+<div class="col-md-7">
+
+	<div class="post">
+		
+	  <h2 id="motivation">Motivation</h2>
+
+<p>For a variety of reasons I wanted a Linux server in the cloud with data science software on it. In no particular order:</p>
+
+<ol>
+  <li>so I could access a reliable setup from anywhere with a web browser, including on networks without the software I need (which happens a lot in corporate/government environments)</li>
+  <li>so I could do round-the-clock data gathering when necessary</li>
+  <li>to run my pet <a href="https://twitter.com/HappyRrobot">HappyRrobot twitterbot</a>, having retired the old physical linux box it used to be hosted from</li>
+  <li>to make sure I stay familiar with what’s needed to set up such a system from scratch.</li>
+</ol>
+
+<p>I couldn’t tell you which of these are the more important.</p>
+
+<p>In this blog post I’ll be noting down the steps necessary for setting up this server, and illustrating purpose 2 with a Shiny app, hosted on the server and drawing data from a database on the server, which is collecting a round-the-clock random sample of Twitter.  The end result looks like this (click on the image to go to the actual working app):</p>
+
+<p><a href="http://twitter-monitor.freerangestats.info/"><img src="/img/0125-hashtags.png" width="100%" /></a></p>
+
+<p>If you’re interested in Twitter data but not in setting up a Linux server with R, Shiny and PostgreSQL on it <a href="#twitter">you can skip straight to where I talk about getting the data in and analysing it</a>.</p>
+
+<h2 id="setting-up-a-server-for-data-and-stats">Setting up a server for data and stats</h2>
+
+<p>I chose Amazon Web Services Elastic Cloud to host the server.  I used the Elastic IP service (fairly cheap) to allocate a permanent IP address to the instance.</p>
+
+<p>I was keen on using Red Hat or similar flavoured Linux, because of purpose #4 noted above; I already knew a bit about Ubuntu and wanted to expand my knowledge sphere, and Red Hat is the flavour that seems to pop up on corporate and government servers.  In the end I opted for CentOS, which is <a href="https://en.wikipedia.org/wiki/CentOS">“a Linux distribution that provides a free, enterprise-class, community-supported computing platform functionally compatible with its upstream source, Red Hat Enterprise Linux (RHEL)”</a>.  In fact, installing R is a bit easier on CentOS that it was on my Red Hat experiments.</p>
+
+<p>I want the following on this machine:</p>
+
+<ul>
+  <li>R, RStudio Server and Python 3 for analysis and for data munging</li>
+  <li>PostgreSQL for storing data and supporting analysis</li>
+  <li>Shiny Server for dissemination</li>
+  <li>A webserver (I chose Nginx) to support RStudio Server and Shiny Server through reverse proxy so I can access them on regular web browser ports rather than ports 8787 and 3838, which will often not be available from a corporate network</li>
+  <li>all the other utilities and extras to support all this, such as curl, mail and fonts</li>
+</ul>
+
+<p>This was non-trivial, which is one of the reasons why I’m blogging about it!  There are lots of fishhooks and little things to sort through and while there are some excellent blog posts and tutorials out there to help do it, none of them covered quite the end-to-end setup I needed.  One of my outputs from the process was a set of notes - not quite a single run-and-forget configuration script as you’d want in a professional setup, but fairly easy to use - that makes it easy to do similar in the future.</p>
+
+<h3 id="r-and-a-few-basics">R and a few basics</h3>
+
+<p>Here’s where I started, once having started up the server (plenty of tutorials on how to do that provided by Amazon themselves and others).  I start by installing R, including the <a href="https://fedoraproject.org/wiki/EPEL"><code class="highlighter-rouge">epel</code> “Extra Packages for Enterprise Linux”</a> that are needed beforehand.</p>
+
+<figure class="highlight"><pre><code class="language-sh" data-lang="sh"><span class="c"># we'll want mail later</span>
+sudo yum install -y mailx
+
+<span class="c">#-----------------R and its dependencies------------------------</span>
+<span class="c">#install R.  We need epel first</span>
+sudo yum update -y
+sudo yum install –y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+sudo yum install -y texlive
+sudo yum install -y texinfo
+
+<span class="c"># clean up</span>
+rm <span class="k">*</span>.rpm
+
+sudo yum install -y R
+
+<span class="c"># and version control of course</span>
+sudo yum install -y git</code></pre></figure>
+
+<h3 id="database">Database</h3>
+
+<p>Next thing was to install PostgreSQL.  I found it useful to install this before I started installing R packages, because some R packages that speak to PostgreSQL behave differently on installation depending on whether PostgreSQL is found on the machine or not</p>
+
+<figure class="highlight"><pre><code class="language-sh" data-lang="sh"><span class="c">#=====================postgresql=======================</span>
+<span class="c"># install postgresql.  Good to do this before we start installing R packages</span>
+sudo yum install -y postgresql-server postgresql-contrib postgresql-devel
+
+sudo postgresql-setup initdb
+
+<span class="c"># stop to give postgres account a password for the operating system</span>
+sudo passwd postgres
+
+<span class="c"># start the postgresql service</span>
+sudo systemctl start postgresql
+
+<span class="c"># I think this next line means the database service restarts when the machine is rebooted</span>
+sudo systemctl <span class="nb">enable </span>postgresql</code></pre></figure>
+
+<h3 id="extending-r-via-packages-and-their-dependencies">Extending R via packages and their dependencies</h3>
+
+<p>I find installing all the R packages I regularly use a harder job in Linux than Windows.  I’m sorry, but I do.  In particular, Windows installations of packages like <code class="highlighter-rouge">gdal</code> seems to look after upstream dependencies seamlessly and quietly.  Not so on Linux.  Here’s what I needed to do at the command line to get all the R packages I wanted installed.</p>
+
+<figure class="highlight"><pre><code class="language-sh" data-lang="sh"><span class="c">#======================miscellaneous dependencies needed by R packages===============</span>
+<span class="c"># iBest to do this on a large instance, even if you only start it as big</span>
+<span class="c"># during the install.  8GB seems a minimum</span>
+
+<span class="c">#----------------tidyverse and Cairo---------</span>
+<span class="c"># First, some dependencies that rvest, devtools, Cairo need:</span>
+sudo yum install -y libcurl-devel libxml2-devel openssl-devel 
+sudo yum install -y cairo-devel  libXt-devel  udunits2-devel gdal-devel poppler-cpp-devel
+
+
+<span class="c">#------------The gdal epic---------------------</span>
+<span class="c"># needed for spatial stuff and in particular sf which needs version &gt; 2 (currently 2.2).</span>
+<span class="c"># This should work according to the sf github page (excluding udunits2 which we look after later):</span>
+sudo yum install -y gdal-devel proj-devel proj-epsg proj-nad geos-devel
+<span class="c"># but that installs the wrong version of gdal!  We have to install it by hand.</span>
+<span class="c"># see https://gis.stackexchange.com/questions/263495/how-to-install-gdal-on-centos-7-4</span>
+
+
+<span class="c"># adapted from https://gist.github.com/simondobner/f859b2db15ad65090c3c316d3c224f45</span>
+wget http://download.osgeo.org/gdal/2.2.4/gdal-2.2.4.tar.gz 
+tar zxvf gdal-2.2.4.tar.gz 
+<span class="nb">cd </span>gdal-2.2.4/
+./configure --prefix<span class="o">=</span>/usr/ --with-sfcgal<span class="o">=</span>no 
+make -j4
+sudo make install
+
+<span class="c"># should have a test here to only do the next two things if installed correctly!</span>
+rm <span class="k">*</span>.tar.gz
+rm gdal-2.2.4 -r
+
+<span class="c">#======================R packages=====================</span>
+<span class="c"># Now we can install R packages that need all the above system dependencies first.</span>
+<span class="c">#</span>
+<span class="c"># udunits2 needs special configuration when installing in R so let's do that first and get it out of the way</span>
+sudo R -e <span class="s2">"install.packages('udunits2',configure.args='--with-udunits2-include=/usr/include/udunits2', repos='http://cran.rstudio.com/')"</span>
+
+<span class="c"># these are a bunch of packages that are heavily used and that I want installed up front and available</span>
+<span class="c"># for all users (hence installing them as super user)</span>
+sudo R -e <span class="s2">"install.packages(c('Rcpp', 'rlang', 'bindrcpp', 'dplyr', 'digest', 'htmltools', 'tidyverse', 
+'shiny', 'leaflet', 'sf', 'scales', 'Cairo', 'forecast', 'forcats', 'h2o', 'seasonal', 'data.table', 
+'extrafont','survey', 'forecastHybrid', 'ggseas', 'treemap', 'glmnet', 'ranger', 'RPostgres', 'igraph', 
+'ggraph', 'nzelect', 'tm', 'wordcloud', 'praise', 'showtext', 'ngram', 'pdftools', 'rtweet', 'GGally', 
+'ggExtra', 'lettercase', 'xgboost'), repos='http://cran.rstudio.com/')"</span>
+
+<span class="c"># fonts</span>
+sudo yum install dejavu-sans-fonts
+sudo yum install -y google-droid-<span class="k">*</span>-fonts
+sudo yum install -y gnu-free-<span class="k">*</span>-fonts
+sudo R -e <span class="s2">"extrafont::font_import(prompt = FALSE)"</span></code></pre></figure>
+
+<p>I did all of this with my server set up as a “large” instance with 8GB of RAM.  This particularly makes a difference when installing Rcpp.  After all the initial is setup you can stop the instance, downsize it something cheaper, and restart it.</p>
+
+<p>Note that I am using <code class="highlighter-rouge">sudo</code> to install R packages so they are available to all users (which will include the <code class="highlighter-rouge">shiny</code> user down the track), not just to me.  I wanted everyone using this server to have the same set of packages available; obviously whether this is desirable or not depends on the purpose of the setup.</p>
+
+<h3 id="server-related-stuff">Server-related stuff</h3>
+
+<p>Next I want to get RStudio Server and Shiny Server working, and accessible via a web browser that just talks to standard port 80.  There is a step here where the Nginx configuration file gets edited by hand; the links to RStudio support for <a href="https://support.rstudio.com/hc/en-us/articles/200552326-Running-RStudio-Server-with-a-Proxy">RStudio Server</a> and for <a href="ttps://support.rstudio.com/hc/en-us/articles/213733868-Running-Shiny-Server-with-a-Proxy">Shiny Server</a> contain instructions on what needs to go where.</p>
+
+<p>Also note that the actual versions of RStudio Server and of Shiny Server below are date-specific (because they are installed via local install), and probably the links are already out of date.</p>
+
+<figure class="highlight"><pre><code class="language-sh" data-lang="sh"><span class="c">#-------------webby stuff------------</span>
+<span class="c"># install a web server so we can deliver things through it via reverse proxy</span>
+<span class="c"># see  https://support.rstudio.com/hc/en-us/articles/200552326-Running-RStudio-Server-with-a-Proxy</span>
+<span class="c"># and https://support.rstudio.com/hc/en-us/articles/213733868-Running-Shiny-Server-with-a-Proxy </span>
+sudo yum install -y nginx
+
+<span class="c">#install RStudio-Server (2018-04-23)</span>
+wget https://download2.rstudio.org/rstudio-server-rhel-1.1.447-x86_64.rpm
+sudo yum localinstall -y --nogpgcheck rstudio-server-rhel-1.1.447-x86_64.rpm
+
+<span class="c">#install shiny and shiny-server (2018-04-23)</span>
+
+wget https://download3.rstudio.org/centos6.3/x86_64/shiny-server-1.5.7.907-rh6-x86_64.rpm
+sudo yum localinstall -y --nogpgcheck shiny-server-1.5.7.907-rh6-x86_64.rpm
+rm <span class="k">*</span>.rpm
+
+<span class="c"># now go make the necessary edits to /etc/nginx/nginx.conf</span>
+<span class="c"># note that the additions are made in two different bits of that file, you don't just past the whole</span>
+<span class="c"># lot in.  </span>
+
+sudo nano /etc/nginx/nginx.conf 
+
+sudo systemctl restart nginx
+<span class="c"># go to yr.ip.number/shiny/ and yr.ip.number/rstudio/ to check all working</span>
+
+<span class="c"># add some more users if wanted at this point</span>
+<span class="c"># sudo useradd ellisp</span>
+<span class="c"># sudo passwd ellisp</span>
+
+<span class="c"># not sure if all these are needed:</span>
+sudo systemctl <span class="nb">enable </span>nginx
+sudo systemctl <span class="nb">enable </span>rstudio-server
+sudo systemctl <span class="nb">enable </span>shiny-server
+
+<span class="c"># set the ownership of the directory we're going to keep apps in so the `shiny`</span>
+<span class="c"># user can access it</span>
+sudo chown -R shiny:shiny /srv/shiny-server</code></pre></figure>
+
+<h3 id="python">Python</h3>
+
+<p>Centos currently comes with Python 2.7, but I wanted to be using Python 3.  My Python skills are halting at best but I want them to be as future-proofed as possible.  Anaconda seems a relatively straightforward way to manage Python.</p>
+
+<figure class="highlight"><pre><code class="language-sh" data-lang="sh"><span class="c">#---------------Anaconda / python----------------</span>
+<span class="c"># go to https://repo.continuum.io/archive/ or https://www.anaconda.com/download/#linux to see the latest version</span>
+<span class="c"># Anaconda3 is with python 3.X, Anaconda2 is wit python 2.7.  Note</span>
+<span class="c"># that python 2.7 is part of the Centos linux dsitribution and shouldn't be</span>
+<span class="c"># overwritten ie python xxx.py  should run python 2.7.  But doing the process below does this;</span>
+<span class="c"># watch out for if this causes problems later...</span>
+<span class="c"># </span>
+wget https://repo.continuum.io/archive/Anaconda3-5.1.0-Linux-x86_64.sh
+sudo bash Anaconda3-5.1.0-Linux-x86_64.sh
+<span class="c"># agree to the license, and specify /opt/anaconda3 as location when asked</span>
+
+<span class="c"># we want to give all users anaconda on their path, so I snitched this from:</span>
+<span class="c"># https://www.vultr.com/docs/how-to-install-jupyter-notebook-on-a-vultr-centos-7-server-instance</span>
+sudo cp /etc/profile /etc/profile_backup
+<span class="nb">echo</span> <span class="s1">'export PATH=/opt/anaconda3/bin:$PATH'</span> | sudo tee -a /etc/profile
+<span class="nb">source</span> /etc/profile
+<span class="nb">echo</span> <span class="nv">$PATH</span>
+
+sudo /opt/anaconda3/bin/conda conda install psycopg2
+
+<span class="c"># as far as I can tell this makes python3.6 the default python, which is surely going to cause problems down</span>
+<span class="c"># the track...</span></code></pre></figure>
+
+<h3 id="configuring-postgresql">Configuring PostgreSQL</h3>
+
+<p>I installed PostgreSQL and started its database service early in this process, but in the next step need to actually set up some database and users for use.  The PostgreSQL security model is thorough and comprehensive but with lots of fishhooks.  Here’s how I set it up for this particular (very simple) use case.  First, I enter the <code class="highlighter-rouge">psql</code> environment as the <code class="highlighter-rouge">postgres</code> user (currently the only user with any access to the database server)</p>
+
+<figure class="highlight"><pre><code class="language-sh" data-lang="sh">sudo -u postgres psql</code></pre></figure>
+
+<p>Now we can set up the users we want to be accessing our databases; some databases for them to use; and schemas within those database.  In this case, I set up two databases for now</p>
+
+<ul>
+  <li><code class="highlighter-rouge">survey_microdata</code></li>
+  <li><code class="highlighter-rouge">twitter</code></li>
+</ul>
+
+<p>and three different users, in addition to <code class="highlighter-rouge">postgres</code>:</p>
+
+<ul>
+  <li><code class="highlighter-rouge">ellisp</code> (ie me, in development mode)</li>
+  <li><code class="highlighter-rouge">external_analyst</code> (ie me or others, in read-only mode)</li>
+  <li><code class="highlighter-rouge">shiny</code> (the Shiny Server’s id on the server, needed so Shiny apps can access the database)</li>
+</ul>
+
+<figure class="highlight"><pre><code class="language-sql" data-lang="sql"><span class="c1">-- you are now in psql as user postgres.  Although default is to use unix's identification of you,</span>
+<span class="c1">-- and you don't need a password to access the database from the local host, it's good to have a </span>
+<span class="c1">-- password if you want to set up other connections later</span>
+<span class="err">\</span><span class="n">password</span> <span class="n">postgres</span>
+
+<span class="k">CREATE</span> <span class="k">DATABASE</span> <span class="n">survey_microdata</span><span class="p">;</span>
+<span class="k">CREATE</span> <span class="k">DATABASE</span> <span class="n">twitter</span><span class="p">;</span>
+
+<span class="k">CREATE</span> <span class="k">ROLE</span> <span class="n">ellisp</span><span class="p">;</span>
+<span class="err">\</span><span class="n">password</span> <span class="n">ellisp</span><span class="p">;</span>
+<span class="k">ALTER</span> <span class="k">ROLE</span> <span class="n">ellisp</span> <span class="k">WITH</span> <span class="n">LOGIN</span><span class="p">;</span>
+
+<span class="k">CREATE</span> <span class="k">ROLE</span> <span class="n">shiny</span><span class="p">;</span>
+<span class="c1">-- no need for a password for shiny, it can only access the db from this machine</span>
+
+<span class="k">CREATE</span> <span class="k">ROLE</span> <span class="n">external_analyst</span><span class="p">;</span>
+<span class="err">\</span><span class="n">password</span> <span class="n">external_analyst</span><span class="p">;</span>
+
+<span class="k">GRANT</span> <span class="k">ALL</span> <span class="k">PRIVILEGES</span> <span class="k">ON</span> <span class="k">DATABASE</span> <span class="n">twitter</span> <span class="k">TO</span> <span class="n">ellisp</span><span class="p">;</span>
+<span class="k">GRANT</span> <span class="k">ALL</span> <span class="k">PRIVILEGES</span> <span class="k">ON</span> <span class="k">DATABASE</span> <span class="n">survey_microdata</span> <span class="k">TO</span> <span class="n">ellisp</span><span class="p">;</span> 
+
+<span class="err">\</span><span class="k">c</span> <span class="n">survey_microdata</span><span class="p">;</span>
+<span class="k">CREATE</span> <span class="k">SCHEMA</span> <span class="n">nzivs</span><span class="p">;</span>
+<span class="k">CREATE</span> <span class="k">SCHEMA</span> <span class="n">nzis2011</span><span class="p">;</span>
+<span class="k">GRANT</span> <span class="k">ALL</span> <span class="k">PRIVILEGES</span> <span class="k">ON</span> <span class="k">SCHEMA</span> <span class="n">nzivs</span> <span class="k">TO</span> <span class="n">ellisp</span><span class="p">;</span> 
+<span class="k">GRANT</span> <span class="k">ALL</span> <span class="k">PRIVILEGES</span> <span class="k">ON</span> <span class="k">SCHEMA</span> <span class="n">nzis2011</span> <span class="k">TO</span> <span class="n">ellisp</span><span class="p">;</span> 
+<span class="k">GRANT</span> <span class="k">ALL</span> <span class="k">PRIVILEGES</span> <span class="k">ON</span> <span class="k">ALL</span> <span class="n">TABLES</span> <span class="k">IN</span> <span class="k">SCHEMA</span> <span class="n">nzivs</span> <span class="k">TO</span> <span class="n">ellisp</span><span class="p">;</span> 
+<span class="k">GRANT</span> <span class="k">ALL</span> <span class="k">PRIVILEGES</span> <span class="k">ON</span> <span class="k">ALL</span> <span class="n">TABLES</span> <span class="k">IN</span> <span class="k">SCHEMA</span> <span class="n">nzis2011</span> <span class="k">TO</span> <span class="n">ellisp</span><span class="p">;</span> 
+
+<span class="k">GRANT</span> <span class="k">SELECT</span> <span class="k">ON</span> <span class="k">ALL</span> <span class="n">TABLES</span> <span class="k">IN</span> <span class="k">SCHEMA</span> <span class="n">nzis2011</span> <span class="k">to</span> <span class="n">external_analyst</span><span class="p">;</span>
+<span class="k">GRANT</span> <span class="k">SELECT</span> <span class="k">ON</span> <span class="k">ALL</span> <span class="n">TABLES</span> <span class="k">IN</span> <span class="k">SCHEMA</span> <span class="n">nzivs</span> <span class="k">to</span> <span class="n">external_analyst</span><span class="p">;</span>
+
+<span class="err">\</span><span class="k">c</span> <span class="n">twitter</span>
+<span class="k">CREATE</span> <span class="k">SCHEMA</span> <span class="n">tweets</span><span class="p">;</span>
+<span class="k">GRANT</span> <span class="k">ALL</span> <span class="k">PRIVILEGES</span> <span class="k">ON</span> <span class="k">ALL</span> <span class="n">TABLES</span> <span class="k">IN</span> <span class="k">SCHEMA</span> <span class="k">public</span> <span class="k">TO</span> <span class="n">ellisp</span><span class="p">;</span> 
+<span class="k">GRANT</span> <span class="k">ALL</span> <span class="k">PRIVILEGES</span> <span class="k">ON</span> <span class="k">ALL</span> <span class="n">TABLES</span> <span class="k">IN</span> <span class="k">SCHEMA</span> <span class="n">tweets</span> <span class="k">TO</span> <span class="n">ellisp</span><span class="p">;</span> 
+<span class="k">GRANT</span> <span class="k">SELECT</span> <span class="k">ON</span> <span class="k">ALL</span> <span class="n">TABLES</span> <span class="k">IN</span> <span class="k">SCHEMA</span> <span class="n">tweets</span> <span class="k">TO</span> <span class="n">shiny</span><span class="p">;</span>
+<span class="k">GRANT</span> <span class="k">CONNECT</span> <span class="k">ON</span> <span class="k">DATABASE</span> <span class="n">twitter</span> <span class="k">TO</span> <span class="n">shiny</span><span class="p">;</span>
+<span class="err">\</span><span class="n">q</span></code></pre></figure>
+
+<p>We also need to tweak the configuration so the PostgreSQL database is accessible from the outside world (if that’s what we want, which I do).</p>
+
+<figure class="highlight"><pre><code class="language-sh" data-lang="sh"><span class="c"># follow instructions at https://blog.bigbinary.com/2016/01/23/configure-postgresql-to-allow-remote-connection.html if</span>
+<span class="c"># you want to remotely access eg from DBeaver on your laptop.  Definitely need a password then</span>
+<span class="c"># first add in listen_addresses = 'localhost' just above the commented out version of #listen_addresses = 'localhost'</span>
+sudo nano /var/lib/pgsql/data/postgresql.conf
+
+<span class="c"># now the client authentication file about how individuals can actually log on.  </span>
+<span class="c"># Add the below two lines (not the # at beginning) to the bottom of the table.</span>
+<span class="c"># lets users log on via password form anywhere.  If this doesn't suit your</span>
+<span class="c"># risk profile, find something more constrictive...</span>
+<span class="c"># host    all             all              0.0.0.0/0                       md5</span>
+<span class="c"># host    all             all              ::/0                            md5</span>
+sudo nano /var/lib/pgsql/data/pg_hba.conf
+
+sudo systemctl restart postgresql</code></pre></figure>
+
+<h2 id="a-nametwittera-twitter-sample-stream-databasea"><a name="twitter">A Twitter sample stream database</a></h2>
+
+<h3 id="collecting-data">Collecting data</h3>
+
+<p>OK, that wasn’t so bad was it (or was it…).  I now have my server running (I stopped it and restarted it as a smaller cheaper instance than the 8GB of RAM I used during that setup) and available to do Useful Stuff.  Like collect Twitter data for analysis and dissemination in Shiny:</p>
+
+<p><a href="http://twitter-monitor.freerangestats.info/"><img src="/img/0125-tweets.png" width="100%" /></a></p>
+
+<p>For a while, I’ve been mildly exercised by the problem of sampling from Twitter.  See for example <a href="http://freerangestats.info/blog/2018/02/24/following-followers">this earlier post</a> where I was reduced to using a snowballing network method to find users, and searching for tweets with the letter “e” in them to get a sample of tweets.  Both of these methods have obvious problems if you want to do inference about how people as a whole are using Twitter.</p>
+
+<p>On the other hand, Twitter make available several sets of public Tweets that are fully representative:</p>
+
+<ul>
+  <li>The free <a href="https://developer.twitter.com/en/products/tweets/sample.html">Sample Tweets API</a> “returns a small random sample of all public Tweets.”</li>
+  <li>The <a href="https://developer.twitter.com/en/docs/tweets/sample-realtime/overview/decahose.html">Decahose stream</a> provides a 10% sample of all public Tweets</li>
+  <li>The Firehose provides all public tweets</li>
+</ul>
+
+<p>The latter two 	services are for paying customers only.  My interest in Twitter is curiousity at most, so I’m only interested in the free sample, which is thought to be around 1% of the Firehose (exactly what proportion it is of the Firehose isn’t publicly known, and is a question of some inferential interest).</p>
+
+<p>So I was interested in the sample stream, but I wanted to collect a sample over a period of time, not just from the day I was going to do some analysis.  Even this 1% sample was more than I wanted to pay disk space to store if I were to collect over time, so I decided I would collect 30 seconds of sample streaming data every hour, at a random time within the hour to avoid problems associated with doing the sampling at the same time each day.</p>
+
+<p>I designed a data model to capture the data I was most interested in while discarding attached video and images (this was about saving me disk space; I think serious Twitter analysis would have to do better than just collecting text).  It looks like this:</p>
+
+<p><img src="/img/0125-erd.png" width="100%" /></p>
+
+<p>BTW that diagram (and much of the database development) was done with the excellent <a href="https://dbeaver.com/">universal SQL editor and database admin tool, DBeaver</a>. It works with different flavours of relational database and is awesome.</p>
+
+<p>The code that creates and populates that database is available on GitHub:</p>
+
+<ul>
+  <li>the <a href="https://github.com/ellisp/twitter-misc/blob/master/gather-data/setup-db.sql">SQL that builds the empty database</a>.</li>
+  <li>the <a href="https://github.com/ellisp/twitter-misc/blob/master/gather-data/import-stream.R">R code that imports a 30 second window of the sample stream</a> and uploads it to the <code class="highlighter-rouge">public</code> schema of the <code class="highlighter-rouge">twitter</code> database.  All the heavy lifting is done by the awesome <a href="http://rtweet.info/">rtweet package</a>.</li>
+  <li>the <a href="https://github.com/ellisp/twitter-misc/blob/master/gather-data/etl.sql">SQL that transforms and loads the data into the <code class="highlighter-rouge">twitter.tweets</code> schema</a>. This does the work, for example, of matching users in the latest sample with previously observed users; making sure that re-tweeted users are in the <code class="highlighter-rouge">users</code> table even if we haven’t seen them directly tweet something themselves; and so on.</li>
+  <li>the <a href="https://github.com/ellisp/twitter-misc/blob/master/gather-data/import-stream.sh">shell script</a> that is activated by a cron job 24 times a day and runs the above R and SQL.</li>
+</ul>
+
+<p>This has now been running smoothly since 17 May 2018, apart from one day last week when I botched an R upgrade and it all went down for half a day before I noticed (lesson learned - run <code class="highlighter-rouge">update.package(ask = FALSE, checkBuilt = TRUE)</code> to ensure your R packages all keep working after the R internals change).  So far the database is about 3GB in size, and I’m quite happy to let it grow quite a bit more than that.</p>
+
+<p><a href="http://twitter-monitor.freerangestats.info/"><img src="/img/0125-sampling.png" width="100%" /></a></p>
+
+<h3 id="what-do-we-find-out">What do we find out?</h3>
+
+<p>So far the main use I’ve put this data to is the Shiny app that I’ve scattered a few screenshots of in this blog post.  The <a href="https://github.com/ellisp/twitter-misc/tree/master/twitter-monitor">source code is on GitHub</a> of course.  That Shiny app writes its own SQL based on the inputs provided by the user (eg date range), queries the database and produces charts.</p>
+
+<p>So what have I learned about Twitter (as opposed to about Linux administration) from the exercise?  No time to explore in much depth right now, but some of the interesting things include:</p>
+
+<ul>
+  <li>Tweets have a daily cycle, peaking at around 15:30 UTC each day (this assumes that the sampling ratio in the Twitter sample stream is roughly constant; which I think is likely as otherwise why would we see this seasonality).</li>
+  <li>The most tweeted hashtags all relate to teen-oriented popular music. I had to look up <a href="https://www.fox.com/teen-choice/">TeenChoice</a> just to find out what it was…  My filter bubble isn’t so much a liberal-v-conservative one as something relating to different interests to most people in the world altogether. The things that dominate my own Twitter feed are not even faintly representative of Twitter as a whole (I expected this with regard to statistical computing of course, but it was interesting to find out that even US politics hardly makes a dent in the most common tweets/retweets in any particular day, compared to popular retweets such as “If the Cleveland Cavaliers win the 2018 NBA finals I’ll buy everyone who retweet’s this a jersey…” (sic) - 1.1 million retweets - and several suspiciously similar variants)</li>
+  <li>If you ignore tweets in Japanese, Korean, Thai and Arabic script you are missing three of the top seven languages on Twitter.  Any serious analysis needs to find a way to bring them on board (my first obstacle in this was getting a font that could represent as many different scripts and emojis as possible without knowing in advance the language; in the end I opted for GNU FreeFont, as described in <a href="https://stackoverflow.com/questions/50457328/non-latin-text-eg-arabic-in-r-graphics-works-on-three-machines-but-not-another">my own answer to my question on StackOverflow about this problem</a>)</li>
+  <li>Only six of the <a href="https://twittercounter.com/pages/tweets">ten most prolific Tweeters listed on Twitter Counter</a> are currently prolifically tweeting.   In particular, @venethis @AmexOffers @BEMANISoundTeam and @<code class="highlighter-rouge">__Scc__</code> seem to have gone either completely quiet or just much lower frequency tweeting (<a href="https://github.com/ellisp/twitter-misc/blob/master/analysis/most-prolific.R">code for analysis</a>).</li>
+  <li>The currently most prolific tweeter is @akiko_lawson, which I think (I don’t read Japanese) is an account associated with <a href="http://lawson.jp/en/">Lawson convenience stores</a>.  This single account issues around 1 tweet for every 5,000 tweets by anyone on the planet.</li>
+  <li>The currently second most prolific tweeter is probably a <a href="https://twitter.com/test5f1798">spam bot, called @test5f1798</a>, that amongst other things tweets pictures of Spam.  Very meta.</li>
+</ul>
+
+<p><a href="http://twitter-monitor.freerangestats.info/"><img src="/img/0125-tweeters.png" width="100%" /></a></p>
+
+<p>There’s some interesting statistical challenges with using this database for inference that I might come back to.  For example, I could use a small amount of auxiliary information such as the 1.1 million retweets of that Cleveland Cavaliers jersey tweet and compare it to the 105 times I found the tweet in my sample; and deduce that my sample is about 1 in 10,000 of the full population of tweets.  This is consistent with the sample stream being a genuine 1% sample, of which I collect 1/120th (30 seconds every hour).  So I should be able to treat my sample as a 1/12,000 sample of the whole population, clustered by the 30 second window they are in.  Something for later.</p>
+
+
+		
+	</div>
+</div>
+
+<div class="col-md-1"></div>
+<div class="col-md-4">
+	<div class="side-banner">
+	
+
+
+	<div>
+	   
+	    
+			
+			<p>&larr; Previous post</p>
+			<p><a rel="prev" href="/blog/2018/07/01/petrol-spend">Spend on petrol by income</a></p>
+		
+		
+		
+		
+		 
+			
+			<p>Next post &rarr;</p>
+			<p><a rel="next" href="/blog/2018/08/01/business-expectations">Business confidence and economic growth</a></p>
+			
+			
+		
+		
+	</div>
+	
+	 
+
+   <div class = "side-footer">
+			
+			<hr></hr>
+			<p><gcse:search></gcse:search></p>
+			<hr></hr>
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.</p>
+			<hr></hr>
+			
+			<p>My day job is Chief Data Scientist at <a href='https://www.nousgroup.com/'>Nous Group</a>, an international management consultancy with over 400 people working across Australia, the UK and Canada. <a href='mailto:peter.ellis@nousgroup.com.au'>Contact me</a> if you are interested working with us on a grand challenge or broad agenda.</p>
+		
+		    <hr></hr>
+			
+       <div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="false" data-share="false"></div>
+			
+			<hr></hr>
+			<p>I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+			<hr></hr>
+
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title"><i>free range statistics</i></span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			<hr></hr>
+			
+
+
+    </div>
+
+
+
+  
+   
+
+
+
+
+		  
+		  
+
+
+
+	   
+	<div id="disqus_thread"></div>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function() {
+				var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+				dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+				(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+			})();
+		</script>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function () {
+				var s = document.createElement('script'); s.async = true;
+				s.type = 'text/javascript';
+				s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+				(document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+			}());
+		</script>
+
+	<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+	</div>	
+</div>    
+   
+   
+
+			
+			</div><!-- /.container -->
+         
+   <!-- Default Statcounter code for Free Range Statistics
+http://Http://freerangestats.info -->
+<script type="text/javascript">
+var sc_project=11673245; 
+var sc_invisible=1; 
+var sc_security="5b7111a4"; 
+</script>
+<script type="text/javascript"
+src="https://www.statcounter.com/counter/counter.js" async></script>
+<noscript><div class="statcounter"><a title="Web Analytics"
+href="http://statcounter.com/" target="_blank"><img class="statcounter"
+src="//c.statcounter.com/11673245/0/5b7111a4/1/" alt="Web
+Analytics"></a></div></noscript>
+<!-- End of Statcounter Code -->
+
+</body>   
+</html>
