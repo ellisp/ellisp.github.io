@@ -1,0 +1,1338 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Hamlet, data models, interaction graphs and other cool stuff</title>
+      	
+         
+         
+            <meta name ="description" content ="I play around with Hamlet's text to set it up for easy data analysis. Hamlet is awesome, this post is really just an excuse to spend time with it; but it does perhaps start to show something useful about data models for text.">
+            <meta property="og:description" content ="I play around with Hamlet's text to set it up for easy data analysis. Hamlet is awesome, this post is really just an excuse to spend time with it; but it does perhaps start to show something useful about data models for text.">
+         
+         <meta property="og:site_name" content="free range statistics" />
+         <meta property="og:title" content="Hamlet, data models, interaction graphs and other cool stuff" />
+         
+            <meta property="og:image" content="http://freerangestats.info/img/0179-interactions.png" />
+         
+		 
+			<meta property="og:url" content="http://freerangestats.info/blog/2020/10/11/hamlet.html" />
+		 
+         <meta property="og:author" content= "https://www.facebook.com/peterstats" />
+         <meta property="og:type" content="article" />
+      
+
+<link href='https://fonts.googleapis.com/css?family=Sarala' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Prosto+One' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Ubuntu+Mono' rel='stylesheet'>
+	  
+          <link href="/css/bootstrap.min.css" rel ="stylesheet" type="text/css">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet" type="text/css">
+            <link href="/css/custom.css" rel ="stylesheet" type="text/css">     
+		<link href="/css/syntax.css" rel ="stylesheet" type="text/css">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="free range statistics by Peter Ellis"
+      href="/feed.xml">
+
+	  
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+  <script>
+  (function() {
+    var cx = '015640467633673901770:pk3v2c95baw';
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+  })();
+</script>
+
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">free range statistics</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/about">about</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">all posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">ordered by date</a></li>
+				  <li><a href="/blog/most-popular.html">ordered by popularity</a></li>
+                  <li><a href="/blog/index_by_tag.html">grouped by subject matter</a></li>
+                  <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
+				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
+                  <li><a href="/blog/surveys.html">all posts on surveys</a></li> 
+				  <li><a href = /blog/2020/10/11/hamlet>most recent post</a></li>
+				</ul>
+            </li>
+              <li><a href="/blog/showcase.html">showcase</a></li>
+              <li><a href="/presentations/index.html">presentations</a></li>
+			  <li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">forecasts<span class="caret"></span></a>
+                <ul class="dropdown-menu">
+				  <li><a href = "/covid-tracking/index.html">Covid-19 in Australia</a></li>
+                  <li><a href = "/elections/nz-2020/index.html">NZ election 2020</a></li>
+                  <li><a href = "/elections/oz-2019/index.html">Australia federal election 2019</a></li>
+				  <li><a href = "/elections/nz-2017/combined.html">NZ election 2017</a></li>
+                  <li><a href="/blog/voting.html">all blog posts on voting behaviour</a></li>
+                </ul>				
+			  </li>
+			  
+			  
+			  
+		    </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			<div class="jumbotron">
+  <div class="container">
+	<center><h1>Hamlet, data models, interaction graphs and other cool stuff</h1></center>
+  </div>
+</div>
+
+
+
+	<div class = "post-summary">
+	<h2>At a glance:</h2>
+	   <p>I play around with Hamlet's text to set it up for easy data analysis. Hamlet is awesome, this post is really just an excuse to spend time with it; but it does perhaps start to show something useful about data models for text.</p>
+	   <p class="meta">11 Oct 2020</p>
+	   <hr></hr>
+	</div>
+
+
+<div class="col-md-7">
+
+	<div class="post">
+		
+	  <h2 id="you-should-all-go-watch-branaghs-hamlet-1996">You should all go watch Branagh’s Hamlet (1996)</h2>
+
+<p>Earlier this year I watched <a href="https://en.wikipedia.org/wiki/Hamlet_(1996_film)">Kenneth Branagh’s Hamlet (1996)</a> and wow, I cannot recommend this movie enough. Not only is it by far the best Hamlet I have ever seen (on stage or screen), it has a fair claim to being the best Shakespeare ‘full stop’ (or ‘period’ as our American cousins say), and makes it to my list of favourite films of any sort. Gorgeously filmed on 70 mm film (including the spectacular setting of Blenheim Palace),  242 minutes long, brilliant direction, amazing atmosphere and ability to surface all the subplots and character quirks. Despite knowing the story backwards - having seen so many renderings of it, and every second line feeling like a quotation built into my cultural DNA - this film moved me in a new ways and depths that I rarely get from any work of art.</p>
+
+<p>And yes, it does have a star-studded cast (perhaps excessively star-studded - Robin Williams and Gerard Depardieu seem wasted, and imagine using John Gielgud and Judi Dench for walk-on non-speaking parts), but the most important thing is that these people can really act. Branagh himself is a faultless tour-de-force, Kate Winslet is perfect as Ophelia, Julie Christie a wonderful Gertrude, and Derek Jacobi’s Claudius is spot-on. (Well noticed, observers of quality theatrical film and TV - Derek Jacobi became famous for the title role in I Claudius - but this is unrelated). Richard Briers seems to be made to play Polonius, with the perfect combination of humour, pomposity and pathos.</p>
+
+<p>Some of the greatness of the movie comes from seeing famous stars in what are sometimes seen as also-ran parts in ways that make you see both the greatness of both the role and the actor - Billy Crystal as a gravedigger, and Charlton Heston bringing dignity and depth to the leader of the players.</p>
+
+<p>This movie’s interpretation of the story plays up the role and dark aspects of Hamlet senior, whose statue broods over Elsinore and whose relationship to ‘our’ Hamlet is mirrored in Fortinbras senior and junior… ok I don’t have time to explain that here, but well, it’s complicated, right? Which is the point.</p>
+
+<p>Anyway, “do yourself a favour” as Molly Meldrum would have said, and see this movie.</p>
+
+<p>Now, I need something data-related if I am going to justify having a blog on this. So I thought I would tie my refreshed enthusiasm for the full text of Hamlet with a familiarisation project that has been on my to-do list for months (understand biterm topic modelling). As it happened, events (in the form of a <a href="/blog/2020/09/26/nzes-issues">blog post on another topic</a>) overtook the topic model focus. I think the biggest interest here turns out to actually be the start of a generalisable, efficient way of representing text from a play in a tidy data model. So let’s have a go.</p>
+
+<h2 id="tidying-hamlet">Tidying Hamlet</h2>
+
+<h3 id="basic-structure-of-the-raw-data">Basic structure of the raw data</h3>
+
+<p>When I first download one of the five or more versions of Hamlet from the Gutenberg project, it looks like this:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>  [1] "HAMLET, PRINCE OF DENMARK"                                        
+  [2] ""                                                                 
+  [3] "by William Shakespeare"                                           
+  [4] ""                                                                 
+  [5] ""                                                                 
+  [6] ""                                                                 
+  [7] ""                                                                 
+  [8] "PERSONS REPRESENTED."                                             
+  [9] ""                                                                 
+ [10] "Claudius, King of Denmark."                                       
+ [11] "Hamlet, Son to the former, and Nephew to the present King."       
+ [12] "Polonius, Lord Chamberlain."                                      
+ [13] "Horatio, Friend to Hamlet."                                       
+ [14] "Laertes, Son to Polonius."                                        
+ [15] "Voltimand, Courtier."                                             
+ [16] "Cornelius, Courtier."                                             
+ [17] "Rosencrantz, Courtier."                                           
+ [18] "Guildenstern, Courtier."                                          
+ [19] "Osric, Courtier."                                                 
+ [20] "A Gentleman, Courtier."                                           
+ [21] "A Priest."                                                        
+ [22] "Marcellus, Officer."                                              
+ [23] "Bernardo, Officer."                                               
+ [24] "Francisco, a Soldier"                                             
+ [25] "Reynaldo, Servant to Polonius."                                   
+ [26] "Players."                                                         
+ [27] "Two Clowns, Grave-diggers."                                       
+ [28] "Fortinbras, Prince of Norway."                                    
+ [29] "A Captain."                                                       
+ [30] "English Ambassadors."                                             
+ [31] "Ghost of Hamlet's Father."                                        
+ [32] ""                                                                 
+ [33] "Gertrude, Queen of Denmark, and Mother of Hamlet."                
+ [34] "Ophelia, Daughter to Polonius."                                   
+ [35] ""                                                                 
+ [36] "Lords, Ladies, Officers, Soldiers, Sailors, Messengers, and other"
+ [37] "Attendants."                                                      
+ [38] ""                                                                 
+ [39] "SCENE. Elsinore."                                                 
+ [40] ""                                                                 
+ [41] ""                                                                 
+ [42] ""                                                                 
+ [43] "ACT I."                                                           
+ [44] ""                                                                 
+ [45] "Scene I. Elsinore. A platform before the Castle."                 
+ [46] ""                                                                 
+ [47] "[Francisco at his post. Enter to him Bernardo.]"                  
+ [48] ""                                                                 
+ [49] "Ber."                                                             
+ [50] "Who's there?"                                                     
+ [51] ""                                                                 
+ [52] "Fran."                                                            
+ [53] "Nay, answer me: stand, and unfold yourself."                      
+ [54] ""                                                                 
+ [55] "Ber."                                                             
+ [56] "Long live the king!"                                              
+ [57] ""                                                                 
+ [58] "Fran."                                                            
+ [59] "Bernardo?"                                                        
+ [60] ""                                                                 
+ [61] "Ber."                                                             
+ [62] "He."                                                              
+ [63] ""                                                                 
+ [64] "Fran."                                                            
+ [65] "You come most carefully upon your hour."                          
+ [66] ""                                                                 
+ [67] "Ber."                                                             
+ [68] "'Tis now struck twelve. Get thee to bed, Francisco."              
+ [69] ""                                                                 
+ [70] "Fran."                                                            
+ [71] "For this relief much thanks: 'tis bitter cold,"                   
+ [72] "And I am sick at heart."                                          
+ [73] ""                                                                 
+ [74] "Ber."                                                             
+ [75] "Have you had quiet guard?"                                        
+ [76] ""                                                                 
+ [77] "Fran."                                                            
+ [78] "Not a mouse stirring."                                            
+ [79] ""                                                                 
+ [80] "Ber."                                                             
+ [81] "Well, good night."                                                
+ [82] "If you do meet Horatio and Marcellus,"                            
+ [83] "The rivals of my watch, bid them make haste."                     
+ [84] ""                                                                 
+ [85] "Fran."                                                            
+ [86] "I think I hear them.--Stand, ho! Who is there?"                   
+ [87] ""                                                                 
+ [88] "[Enter Horatio and Marcellus.]"                                   
+ [89] ""                                                                 
+ [90] "Hor."                                                             
+ [91] "Friends to this ground."                                          
+ [92] ""                                                                 
+ [93] "Mar."                                                             
+ [94] "And liegemen to the Dane."                                        
+ [95] ""                                                                 
+ [96] "Fran."                                                            
+ [97] "Give you good-night."                                             
+ [98] ""                                                                 
+ [99] "Mar."                                                             
+[100] "O, farewell, honest soldier;"  
+</code></pre>
+</div>
+
+<p>So this is interesting. Here are some things we need to take into account in putting this into a data model that loses no or minimal information from its structure and content:</p>
+
+<ul>
+  <li>We have about 40 lines of preamble, then we are on to a combination of dialogue and stage directions.</li>
+  <li>The play is structured into Acts and Scenes. Scenes have numbers and descriptions (eg <code class="highlighter-rouge">Scene I. Elsinore. A platform before the Castle.</code>) but Acts just have numbers. Scenes are strictly hierarchically ordered under Acts (ie there is no Scene that continues over the boundary between two Acts).</li>
+  <li>The stage directions are in square brackets <code class="highlighter-rouge">[Enter Horatio and Marcellus]</code>. A stage direction can be seen as applying until it is countermanded (for example, once Francisco and Bernardo have entered, they should be considered as present on stage until we are told otherwise)</li>
+  <li>A continuous line of speech can go over several lines, such as Francisco in lines 71 and 72 of the above. The line breaks may be significant (and sometimes certainly are when the line is in verse), or not.</li>
+  <li>The character speaking is referred to be abbrevaition (eg <code class="highlighter-rouge">Fran.</code>), which needs decoding to be fully human-readable (an actor learning the play, or a reader familiar with it would know that <code class="highlighter-rouge">Hor.</code> is Horatio, but only by mental decoding - something that should be done in the data model)</li>
+</ul>
+
+<p>Here is the R code that sets up my session, including preparation for things I haven’t talked about yet, downloads the play and gets us to this point of looking at the first 100 lines:</p>
+
+<p><em>Post continues below R code</em></p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">tidytext</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">gutenbergr</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">SnowballC</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">tidygraph</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">ggraph</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">Cairo</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">BTM</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">textplot</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">concaveman</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># TODO - a problem with lines 6380:6381 which has a stage direction across two lines.
+</span><span class="w">
+</span><span class="cd">#' Replace NA values in a vector with counting from the previous value
+#' 
+#' @param x a vector character
+#' @examples 
+#' replace_na_with_num(c(1,1,1,1, NA, NA, 1, 1, 1, NA))
+</span><span class="n">replace_na_with_num</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">){</span><span class="w">
+  </span><span class="c1"># I can't think of a way to do this next operation without a loop because there is iteration
+</span><span class="w">  </span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">2</span><span class="o">:</span><span class="nf">length</span><span class="p">(</span><span class="n">x</span><span class="p">)){</span><span class="w">
+    </span><span class="k">if</span><span class="p">(</span><span class="nf">is.na</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">])){</span><span class="w">
+      </span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="m">-1</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">1</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+  </span><span class="nf">return</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span><span class="n">stopifnot</span><span class="p">(</span><span class="n">replace_na_with_num</span><span class="p">(</span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="kc">NA</span><span class="p">,</span><span class="w"> </span><span class="kc">NA</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="kc">NA</span><span class="p">))</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">3</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">2</span><span class="p">))</span><span class="w">
+
+</span><span class="c1"># There seem to be two Shakespeares, definitely duplicates:
+</span><span class="n">filter</span><span class="p">(</span><span class="n">gutenberg_authors</span><span class="p">,</span><span class="w"> </span><span class="n">grepl</span><span class="p">(</span><span class="s2">"Shakespeare"</span><span class="p">,</span><span class="w"> </span><span class="n">author</span><span class="p">))</span><span class="w">
+
+</span><span class="c1"># At least five versions of Hamlet
+</span><span class="n">filter</span><span class="p">(</span><span class="n">gutenberg_metadata</span><span class="p">,</span><span class="w"> </span><span class="n">grepl</span><span class="p">(</span><span class="s2">"Hamlet"</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> 
+         </span><span class="n">author</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Shakespeare, William"</span><span class="w"> </span><span class="o">&amp;</span><span class="w">
+         </span><span class="n">grepl</span><span class="p">(</span><span class="s2">"Public domain"</span><span class="p">,</span><span class="w"> </span><span class="n">rights</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w">
+         </span><span class="n">language</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"en"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">select</span><span class="p">(</span><span class="n">gutenberg_id</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">gutenberg_bookshelf</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># I'll download the first mentioned. May not be the best.
+</span><span class="n">hamlet</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">gutenberg_download</span><span class="p">(</span><span class="m">1524</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">original_line_number</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">n</span><span class="p">())</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">select</span><span class="p">(</span><span class="o">-</span><span class="n">gutenberg_id</span><span class="p">)</span><span class="w">
+
+</span><span class="n">hamlet</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">select</span><span class="p">(</span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">slice</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">100</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">pull</span><span class="p">(</span><span class="n">text</span><span class="p">)</span></code></pre></figure>
+
+<h3 id="stage-directions">Stage directions</h3>
+
+<p>With one annoying exception, the stage directions are all single lines so we can pick them up easily with a regular expression that looks for lines that begin and finish in square brackets.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>&gt; # Number of times each stage direction used
+&gt; hamlet %&gt;%
++   filter(grepl("^\\[.*\\]$", text)) %&gt;%
++   count(text, name = "times_used", sort = TRUE) 
+# A tibble: 129 x 2
+   text                                   times_used
+   &lt;chr&gt;                                       &lt;int&gt;
+ 1 [Exit.]                                        19
+ 2 [Exeunt.]                                      13
+ 3 [Sings.]                                       11
+ 4 [Enter Polonius.]                               5
+ 5 [Exit Polonius.]                                5
+ 6 [Enter Hamlet.]                                 4
+ 7 [Exeunt Rosencrantz and Guildenstern.]          4
+ 8 [Dies.]                                         3
+ 9 [Enter Rosencrantz and Guildenstern.]           3
+10 [Exit Ghost.]                                   3
+</code></pre>
+</div>
+
+<p>Here is the exception - it comes from near the end, when a whole bunch of people (too many to list in a single line) come in with weapons to be used in the duel between Hamlet and Laertes:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="o">&gt;</span><span class="w"> </span><span class="n">hamlet</span><span class="p">[</span><span class="m">6380</span><span class="o">:</span><span class="m">6381</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="w">
+</span><span class="c1"># A tibble: 2 x 2
+</span><span class="w">  </span><span class="n">text</span><span class="w">                                                           </span><span class="n">original_line_number</span><span class="w">
+  </span><span class="o">&lt;</span><span class="n">chr</span><span class="o">&gt;</span><span class="w">                                                                         </span><span class="o">&lt;</span><span class="n">int</span><span class="o">&gt;</span><span class="w">
+</span><span class="m">1</span><span class="w"> </span><span class="p">[</span><span class="n">Enter</span><span class="w"> </span><span class="n">King</span><span class="p">,</span><span class="w"> </span><span class="n">Queen</span><span class="p">,</span><span class="w"> </span><span class="n">Laertes</span><span class="p">,</span><span class="w"> </span><span class="n">Lords</span><span class="p">,</span><span class="w"> </span><span class="n">Osric</span><span class="p">,</span><span class="w"> </span><span class="n">and</span><span class="w"> </span><span class="n">Attendants</span><span class="w"> </span><span class="n">with</span><span class="w">                 </span><span class="m">6380</span><span class="w">
+</span><span class="m">2</span><span class="w"> </span><span class="n">foils</span><span class="w"> </span><span class="o">&amp;</span><span class="n">c.</span><span class="p">]</span><span class="w">                                                                     </span><span class="m">6381</span></code></pre></figure>
+
+<h3 id="scenes-and-acts">Scenes and Acts</h3>
+
+<p>Similarly, we can use regular expression to find with nearly 100% accuracy the beginnings of Scenes and Acts. Note that the capitalisation of <code class="highlighter-rouge">Act</code> is inconsistent:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>&gt; # Scenes and acts. Sometimes upper case sometimes not
+&gt; hamlet %&gt;%
++   filter(grepl("^Scene\\s", text, ignore.case = TRUE) | grepl("^Act\\s", text, ignore.case = TRUE))
+# A tibble: 26 x 2
+   text                                               original_line_number
+   &lt;chr&gt;                                                             &lt;int&gt;
+ 1 ACT I.                                                               43
+ 2 Scene I. Elsinore. A platform before the Castle.                     45
+ 3 Scene II. Elsinore. A room of state in the Castle.                  378
+ 4 Scene III. A room in Polonius's house.                              822
+ 5 Scene IV. The platform.                                            1029
+ 6 Scene V. A more remote part of the Castle.                         1211
+ 7 Act II.                                                            1560
+ 8 Scene I. A room in Polonius's house.                               1562
+ 9 Scene II. A room in the Castle.                                    1779
+10 ACT III.                                                           2744
+# ... with 16 more rows
+</code></pre>
+</div>
+
+<h3 id="character-names">Character names</h3>
+
+<p>Generally, a line indicating a new speaker can be identified by the pattern of “capital letter - lower case letters - full stop - end of line”. So it is straightforward to pull out lines that meet this pattern with a regular expression and count them:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>&gt; hamlet %&gt;%
++   filter(grepl("^[A-Z][a-z]+\\.$", text)) %&gt;%
++   count(text, name= "number_speeches", sort = TRUE) %&gt;%
++   slice(1:20)
+# A tibble: 20 x 2
+   text   number_speeches
+   &lt;chr&gt;            &lt;int&gt;
+ 1 Ham.               358
+ 2 Hor.               108
+ 3 King.              102
+ 4 Pol.                86
+ 5 Queen.              69
+ 6 Laer.               62
+ 7 Oph.                57
+ 8 Ros.                45
+ 9 Mar.                31
+10 Guil.               29
+11 Osr.                25
+12 Ber.                19
+13 Ghost.              14
+14 Rey.                13
+15 Fran.                8
+16 Capt.                7
+17 Fort.                4
+18 All.                 3
+19 Danes.               3
+20 Gent.                3
+</code></pre>
+</div>
+
+<p>358 distinct speeches to learn if you want to play Hamlet, versus (for example) 29 for Guildenstern. Basically that simple search-and-count works, although there are annoyingly some context-specific uses of <code class="highlighter-rouge">Both.</code> and <code class="highlighter-rouge">All.</code>; and there are a few spoken lines (<code class="highlighter-rouge">Farewell.</code> and <code class="highlighter-rouge">Good.</code>) that get mixed up into this pattern. It’s very difficult to identify an algorithm that can tell these apart, particularly because (for example) <code class="highlighter-rouge">Good.</code> is a plausible abbreviation of a character name. I think only a human could be sure of the difference in a specific context, so we will need a bit of careful manual coding of some parts.</p>
+
+<p>To decode abbreviations into character names and add some useful metadata for later, I created by hand a vector of the eight main characters (using my human interpretation to decide on what constituted “main”), and table that relates the abbreviations (<code class="highlighter-rouge">King.</code>, etc) to full names of the character (“Claudius, King of Denmark.”) and human-friendly abbreviations for plots and the like using the term more commonly used today (“Claudius”).</p>
+
+<p>I also made a vector of words that looked like character names and feature as single word lines in the play but aren’t referring to characters: <code class="highlighter-rouge">No.</code>, <code class="highlighter-rouge">Dead.</code>, <code class="highlighter-rouge">He.</code>, etc.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#==================Processing========================
+</span><span class="n">main_chars</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Hamlet"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Horatio"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Claudius"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Gertrude"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Ophelia"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Polonius"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Laertes"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Ghost"</span><span class="p">)</span><span class="w">
+</span><span class="c1"># These aren't the top 8 characters - First gravedigger and Rosencrantz both have more words than Ghost -
+# but seem the 8 most fully-rounded real people.
+</span><span class="w">
+</span><span class="n">personae</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tribble</span><span class="p">(</span><span class="o">~</span><span class="n">speaker</span><span class="p">,</span><span class="w"> </span><span class="o">~</span><span class="n">speaker_abb</span><span class="p">,</span><span class="w"> </span><span class="o">~</span><span class="n">speaker_sh</span><span class="p">,</span><span class="w">
+                     </span><span class="s2">"Claudius, King of Denmark."</span><span class="p">,</span><span class="w"> </span><span class="s2">"King."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Claudius"</span><span class="p">,</span><span class="w">
+                     </span><span class="s2">"Hamlet, Son to the former, and Nephew to the present King."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Ham."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Hamlet"</span><span class="p">,</span><span class="w">
+                     </span><span class="s2">"Polonius, Lord Chamberlain."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Pol."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Polonius"</span><span class="p">,</span><span class="w">
+                     </span><span class="s2">"Horatio, Friend to Hamlet."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Hor."</span><span class="p">,</span><span class="w">             </span><span class="s2">"Horatio"</span><span class="p">,</span><span class="w">                 
+                     </span><span class="s2">"Laertes, Son to Polonius."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Laer."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Laertes"</span><span class="p">,</span><span class="w">
+                     </span><span class="s2">"Voltimand, Courtier."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Volt."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Voltimand"</span><span class="p">,</span><span class="w">
+                     </span><span class="s2">"Cornelius, Courtier."</span><span class="p">,</span><span class="w"> </span><span class="s2">"???"</span><span class="p">,</span><span class="w">               </span><span class="s2">"Cornelius"</span><span class="p">,</span><span class="w">                      
+                     </span><span class="s2">"Rosencrantz, Courtier."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Ros."</span><span class="p">,</span><span class="w">                        </span><span class="s2">"Rosencrantz"</span><span class="p">,</span><span class="w">               
+                     </span><span class="s2">"Guildenstern, Courtier."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Guil."</span><span class="p">,</span><span class="w">                                  </span><span class="s2">"Guildenstern"</span><span class="p">,</span><span class="w">
+                     </span><span class="s2">"Osric, Courtier."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Osr."</span><span class="p">,</span><span class="w">                                </span><span class="s2">"Osric"</span><span class="p">,</span><span class="w">
+                     </span><span class="s2">"A Gentleman, Courtier."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Gent."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Gentleman"</span><span class="p">,</span><span class="w">
+                     </span><span class="s2">"Marcellus, Officer."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Mar."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Marcellus"</span><span class="p">,</span><span class="w">
+                     </span><span class="s2">"Bernardo, Officer."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Ber."</span><span class="p">,</span><span class="w">              </span><span class="s2">"Bernardo"</span><span class="p">,</span><span class="w">                         
+                     </span><span class="s2">"Francisco, a Soldier"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Fran."</span><span class="p">,</span><span class="w">                      </span><span class="s2">"Francisco"</span><span class="p">,</span><span class="w">                
+                     </span><span class="s2">"Reynaldo, Servant to Polonius."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Rey."</span><span class="p">,</span><span class="s2">"Reynaldo"</span><span class="p">,</span><span class="w">
+                     </span><span class="s2">"Players"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Players."</span><span class="p">,</span><span class="w">                            </span><span class="s2">"Players"</span><span class="p">,</span><span class="w">
+                     </span><span class="s2">"Fortinbras, Prince of Norway."</span><span class="p">,</span><span class="w"> </span><span class="s2">"For."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Fortinbras"</span><span class="p">,</span><span class="w">
+                     </span><span class="s2">"Fortinbras, Prince of Norway."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Fort."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Fortinbras"</span><span class="p">,</span><span class="w">
+                     </span><span class="s2">"A Captain."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Capt."</span><span class="p">,</span><span class="w">                                 </span><span class="s2">"Captain"</span><span class="p">,</span><span class="w">              
+                     </span><span class="s2">"English Ambassador 1."</span><span class="p">,</span><span class="w"> </span><span class="s2">"1 Ambassador."</span><span class="p">,</span><span class="w"> </span><span class="s2">"English Ambassador"</span><span class="p">,</span><span class="w">
+                     </span><span class="s2">"Ghost of Hamlet's Father."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Ghost."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Ghost"</span><span class="p">,</span><span class="w">
+                     </span><span class="s2">"Gertrude, Queen of Denmark, and Mother of Hamlet."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Queen."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Gertrude"</span><span class="p">,</span><span class="w">
+                     </span><span class="s2">"Ophelia, Daughter to Polonius."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Oph."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Ophelia"</span><span class="p">,</span><span class="w">
+                     </span><span class="s2">"Prologue to The Murder of Gonzago, a play within a play"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Pro."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Player prologue"</span><span class="p">,</span><span class="w">
+                      </span><span class="s2">"King in The Murder of Gonzago, a play within a play"</span><span class="p">,</span><span class="w"> </span><span class="s2">"P. King."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Player King"</span><span class="p">,</span><span class="w">
+                    </span><span class="s2">"Queen in The Murder of Gonzago, a play within a play"</span><span class="p">,</span><span class="w"> </span><span class="s2">"P. Queen."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Player Queen"</span><span class="p">,</span><span class="w">
+                      </span><span class="s2">"Lucianus, nephew to the King in play within a play"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Luc."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Lucianus"</span><span class="p">,</span><span class="w">
+                    </span><span class="s2">"Danes"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Danes."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Danes"</span><span class="p">,</span><span class="w">
+                    </span><span class="s2">"Servant"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Servant."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Servant"</span><span class="p">,</span><span class="w">
+                    </span><span class="s2">"Sailor"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Sailor."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Sailor"</span><span class="p">,</span><span class="w">
+                    </span><span class="s2">"Messenger"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Mess."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Messenger"</span><span class="p">,</span><span class="w">
+                    </span><span class="s2">"First gravedigger clown"</span><span class="p">,</span><span class="w"> </span><span class="s2">"1 Clown."</span><span class="p">,</span><span class="w"> </span><span class="s2">"First gravedigger"</span><span class="p">,</span><span class="w">
+                    </span><span class="s2">"Second gravedigger clown"</span><span class="p">,</span><span class="w"> </span><span class="s2">"2 Clown."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Second gravedigger"</span><span class="p">,</span><span class="w">
+                    </span><span class="s2">"First priest"</span><span class="p">,</span><span class="w"> </span><span class="s2">"1 Priest."</span><span class="p">,</span><span class="w"> </span><span class="s2">"First Priest"</span><span class="p">,</span><span class="w">
+                    </span><span class="s2">"Second priest"</span><span class="p">,</span><span class="w"> </span><span class="s2">"2 Priest."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Second Priest"</span><span class="p">,</span><span class="w">
+                    </span><span class="s2">"Danish courtier lord"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Lord."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Lord"</span><span class="p">,</span><span class="w">
+                    </span><span class="c1"># There are 3 uses of 'All.', in each case mean different groups
+</span><span class="w">                    </span><span class="s2">"All present on stage"</span><span class="p">,</span><span class="w"> </span><span class="s2">"All."</span><span class="p">,</span><span class="w"> </span><span class="s2">"All"</span><span class="p">,</span><span class="w">
+                    </span><span class="c1"># only two uses of 'Both.', near the beginning:
+</span><span class="w">                    </span><span class="s2">"Marcellus and Bernardo together"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Both."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Marcellus and Bernardo"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">main_character</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">speaker_sh</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="n">main_chars</span><span class="p">)</span><span class="w">
+
+</span><span class="n">not_people</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"He."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Say."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Farewell."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Perpend."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Nothing."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Good."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Swear."</span><span class="p">,</span><span class="w"> </span><span class="s2">"No."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Dead."</span><span class="p">,</span><span class="w"> </span><span class="s2">"One."</span><span class="p">)</span><span class="w">
+
+
+</span><span class="c1"># This chunk of code was how I identified the abbreviations that weren't in the original list of personae
+# (eg "1 Clown."), and also refined the list above of not_people.
+</span><span class="n">hamlet</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">slice</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">38</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">speaker_abb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">case_when</span><span class="p">(</span><span class="w">
+    </span><span class="c1"># Most people picked up by this
+</span><span class="w">    </span><span class="n">grepl</span><span class="p">(</span><span class="s2">"^[A-Z][a-z]+\\.$"</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w">         </span><span class="o">~</span><span class="w"> </span><span class="n">text</span><span class="p">,</span><span class="w">
+    </span><span class="c1"># "1 Ambassador", "2 Clown" and similar are picked up by this:
+</span><span class="w">    </span><span class="n">grepl</span><span class="p">(</span><span class="s2">"^[1-9]\\s[A-Z][a-z]+\\.$"</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">text</span><span class="p">,</span><span class="w">
+    </span><span class="c1"># P. King. etc picked up by this:
+</span><span class="w">    </span><span class="n">grepl</span><span class="p">(</span><span class="s2">"^[A-Z]\\.\\s[A-Z][a-z]+\\.$"</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">text</span><span class="w">
+    </span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">text</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">speaker_abb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">if_else</span><span class="p">(</span><span class="n">speaker_abb</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="n">not_people</span><span class="p">,</span><span class="w"> </span><span class="kc">NA_character_</span><span class="p">,</span><span class="w"> </span><span class="n">speaker_abb</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">fill</span><span class="p">(</span><span class="n">speaker_abb</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="o">!</span><span class="nf">is.na</span><span class="p">(</span><span class="n">speaker_abb</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">anti_join</span><span class="p">(</span><span class="n">personae</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"speaker_abb"</span><span class="p">)</span></code></pre></figure>
+
+<h3 id="a-table-of-data-with-spoken-line-as-grain">A table of data with “spoken line” as grain</h3>
+
+<p>I use these lookup tables and vectors to create my first tidier version of the data, <code class="highlighter-rouge">hamlet_lines</code>. This object is shown below. In this version, each row of the table is a complete line of dialogue. Rows of the original data that are not dialogue but refer to the Act, Scene, stage direction or who is speaking have been pivoted wider to appear as columns such as <code class="highlighter-rouge">speaker</code>, <code class="highlighter-rouge">last_stage_direction</code>, <code class="highlighter-rouge">act</code> and <code class="highlighter-rouge">scene</code>.</p>
+
+<p>Here is how that object looks:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>&gt; hamlet_lines
+# A tibble: 3,945 x 11
+   text        original_line_nu~ speaker_abb speaker   speaker_sh main_character last_stage_direction act    scene      new_speaker_thi~ line_number_thi~
+   &lt;chr&gt;                   &lt;int&gt; &lt;chr&gt;       &lt;chr&gt;     &lt;chr&gt;      &lt;lgl&gt;          &lt;chr&gt;                &lt;chr&gt;  &lt;chr&gt;      &lt;lgl&gt;                       &lt;dbl&gt;
+ 1 Who's ther~                50 Ber.        Bernardo~ Bernardo   FALSE          Francisco at his po~ ACT I. Scene I. ~ TRUE                            1
+ 2 Nay, answe~                53 Fran.       Francisc~ Francisco  FALSE          Francisco at his po~ ACT I. Scene I. ~ TRUE                            1
+ 3 Long live ~                56 Ber.        Bernardo~ Bernardo   FALSE          Francisco at his po~ ACT I. Scene I. ~ TRUE                            1
+ 4 Bernardo?                  59 Fran.       Francisc~ Francisco  FALSE          Francisco at his po~ ACT I. Scene I. ~ TRUE                            1
+ 5 He.                        62 Ber.        Bernardo~ Bernardo   FALSE          Francisco at his po~ ACT I. Scene I. ~ TRUE                            1
+ 6 You come m~                65 Fran.       Francisc~ Francisco  FALSE          Francisco at his po~ ACT I. Scene I. ~ TRUE                            1
+ 7 'Tis now s~                68 Ber.        Bernardo~ Bernardo   FALSE          Francisco at his po~ ACT I. Scene I. ~ TRUE                            1
+ 8 For this r~                71 Fran.       Francisc~ Francisco  FALSE          Francisco at his po~ ACT I. Scene I. ~ TRUE                            1
+ 9 And I am s~                72 Fran.       Francisc~ Francisco  FALSE          Francisco at his po~ ACT I. Scene I. ~ FALSE                           2
+10 Have you h~                75 Ber.        Bernardo~ Bernardo   FALSE          Francisco at his po~ ACT I. Scene I. ~ TRUE                            1
+# ... with 3,935 more rows
+</code></pre>
+</div>
+
+<p>Note that we have kept the successive lines of text by a single character as per the original - for instance rows 71 and 72 of the original data, spoken by Fancisco, are now rows 8 and 9 but are still two separate rows. A logical flag <code class="highlighter-rouge">new_speaker_this_line</code> helps us identify such cases for future.</p>
+
+<p>Here’s the chunk of code that creates this table, with “line” as its granularity, from the original messy data. Most of this code is dealing with various quirks in the data, such as <code class="highlighter-rouge">2 Clown</code> (for “second clown”, or second gravedigger) having a different structure of character abbreviation from most of the roles.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">hamlet_lines</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">hamlet</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">slice</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">39</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="c1"># Identify the speaker:
+</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">speaker_abb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">case_when</span><span class="p">(</span><span class="w">
+    </span><span class="c1"># Most people picked up by this
+</span><span class="w">    </span><span class="n">grepl</span><span class="p">(</span><span class="s2">"^[A-Z][a-z]+\\.$"</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w">         </span><span class="o">~</span><span class="w"> </span><span class="n">text</span><span class="p">,</span><span class="w">
+    </span><span class="c1"># "1 Ambassador", "2 Clown" and similar are picked up by this:
+</span><span class="w">    </span><span class="n">grepl</span><span class="p">(</span><span class="s2">"^[1-9]\\s[A-Z][a-z]+\\.$"</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">text</span><span class="p">,</span><span class="w">
+    </span><span class="c1"># P. King. etc picked up by this:
+</span><span class="w">    </span><span class="n">grepl</span><span class="p">(</span><span class="s2">"^[A-Z]\\.\\s[A-Z][a-z]+\\.$"</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">text</span><span class="w">
+  </span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">text</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">speaker_abb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">if_else</span><span class="p">(</span><span class="n">speaker_abb</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="n">not_people</span><span class="p">,</span><span class="w"> </span><span class="kc">NA_character_</span><span class="p">,</span><span class="w"> </span><span class="n">speaker_abb</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">fill</span><span class="p">(</span><span class="n">speaker_abb</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="nf">is.na</span><span class="p">(</span><span class="n">speaker_abb</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">text</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">speaker_abb</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">left_join</span><span class="p">(</span><span class="n">personae</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"speaker_abb"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="c1"># Identify stage directions:
+</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">last_stage_direction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">case_when</span><span class="p">(</span><span class="w">
+         </span><span class="n">grepl</span><span class="p">(</span><span class="s2">"^\\[.*\\]$"</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">text</span><span class="w">
+  </span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">fill</span><span class="p">(</span><span class="n">last_stage_direction</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="nf">is.na</span><span class="p">(</span><span class="n">last_stage_direction</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">text</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">last_stage_direction</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">last_stage_direction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"["</span><span class="p">,</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">last_stage_direction</span><span class="p">,</span><span class="w"> </span><span class="n">fixed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">),</span><span class="w">
+         </span><span class="n">last_stage_direction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"]"</span><span class="p">,</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">last_stage_direction</span><span class="p">,</span><span class="w"> </span><span class="n">fixed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="c1"># Identify Act:
+</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">act</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">case_when</span><span class="p">(</span><span class="w">
+    </span><span class="n">grepl</span><span class="p">(</span><span class="s2">"^A[Cc][Tt]\\s"</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">text</span><span class="w">
+  </span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">fill</span><span class="p">(</span><span class="n">act</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="nf">is.na</span><span class="p">(</span><span class="n">act</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">text</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">act</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="c1"># Identify Scene
+</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">scene</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">case_when</span><span class="p">(</span><span class="w">
+    </span><span class="n">grepl</span><span class="p">(</span><span class="s2">"^S[Cc][Ee][Nn][Ee]\\s"</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">text</span><span class="w">
+  </span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">fill</span><span class="p">(</span><span class="n">scene</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="nf">is.na</span><span class="p">(</span><span class="n">scene</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">text</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">scene</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="c1"># regularise some spelling:
+</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">scene</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"Castle"</span><span class="p">,</span><span class="w"> </span><span class="s2">"castle"</span><span class="p">,</span><span class="w"> </span><span class="n">scene</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="c1"># identify the actual speeches and count the lines in each speech by a continuing speaker
+</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">new_speaker_this_line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">is.na</span><span class="p">(</span><span class="n">lag</span><span class="p">(</span><span class="n">speaker</span><span class="p">))</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">speaker</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">lag</span><span class="p">(</span><span class="n">speaker</span><span class="p">),</span><span class="w">
+         </span><span class="n">line_number_this_speech</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">new_speaker_this_line</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="kc">NA</span><span class="p">),</span><span class="w">
+         </span><span class="n">line_number_this_speech</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">replace_na_with_num</span><span class="p">(</span><span class="n">line_number_this_speech</span><span class="p">))</span></code></pre></figure>
+
+<p>This tidy table of data, at the granularity of line of dialogue, makes it easy to count lines per speaker, Act, Scene, etc. For example, we can see that Act II, Scene II has the most spoken lines (590):</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>&gt; count(hamlet_lines, act, scene)
+# A tibble: 20 x 3
+   act      scene                                                  n
+   &lt;chr&gt;    &lt;chr&gt;                                              &lt;int&gt;
+ 1 ACT I.   Scene I. Elsinore. A platform before the castle.     190
+ 2 ACT I.   Scene II. Elsinore. A room of state in the castle.   280
+ 3 ACT I.   Scene III. A room in Polonius's house.               141
+ 4 ACT I.   Scene IV. The platform.                              101
+ 5 ACT I.   Scene V. A more remote part of the castle.           212
+ 6 Act II.  Scene I. A room in Polonius's house.                 130
+ 7 Act II.  Scene II. A room in the castle.                      590
+ 8 ACT III. Scene I. A room in the castle.                       196
+ 9 ACT III. Scene II. A hall in the castle.                      383
+10 ACT III. Scene III. A room in the castle.                     102
+11 ACT III. Scene IV. Another room in the castle.                236
+12 ACT IV.  Scene I. A room in the castle.                        46
+13 ACT IV.  Scene II. Another room in the castle.                 28
+14 ACT IV.  Scene III. Another room in the castle.                71
+15 ACT IV.  Scene IV. A plain in Denmark.                         68
+16 ACT IV.  Scene V. Elsinore. A room in the castle.             228
+17 ACT IV.  Scene VI. Another room in the castle.                 29
+18 ACT IV.  Scene VII. Another room in the castle.               212
+19 ACT V.   Scene I. A churchyard.                               283
+20 ACT V.   Scene II. A hall in the castle.                      419
+</code></pre>
+</div>
+
+<h3 id="a-table-of-data-with-spoken-word-as-grain">A table of data with “spoken word” as grain</h3>
+
+<p>My next step is to make a table or data frame with <em>spoken word</em> as the grain. Here I want not just bags of words, but the original sequence preserved, and whether a word was originally at the beginning of a line, as well as who is speaking (and all the different abbreviations of their name and groups that person belongs to), the last stage direction, the Act and Scene, etc. For future use I also want a stemmed version of each word (eg so “answered”, “answering” and “answers” all reduce to their stem “answer”), and a flag of whether each word is a stop word or not.</p>
+
+<p>Here’s how that table is going to look, capturing all 30,000 or so words spoken in the uncut version of Hamlet”</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>&gt; hamlet_words %&gt;% select(contains("word"), everything())
+# A tibble: 30,022 x 20
+   word  stopword word_stem new_speaker_thi~ word_number_thi~ word_number word_number_thi~ word_number_thi~ original_line_n~ speaker_abb
+   &lt;chr&gt; &lt;lgl&gt;    &lt;chr&gt;     &lt;lgl&gt;                       &lt;dbl&gt;       &lt;int&gt;            &lt;int&gt;            &lt;int&gt;            &lt;int&gt; &lt;chr&gt;      
+ 1 who's TRUE     who'      TRUE                            1           1                1                1               50 Ber.       
+ 2 there TRUE     there     FALSE                           2           2                2                2               50 Ber.       
+ 3 nay   FALSE    nai       TRUE                            1           3                3                3               53 Fran.      
+ 4 answ~ FALSE    answer    FALSE                           2           4                4                4               53 Fran.      
+ 5 me    TRUE     me        FALSE                           3           5                5                5               53 Fran.      
+ 6 stand FALSE    stand     FALSE                           4           6                6                6               53 Fran.      
+ 7 and   TRUE     and       FALSE                           5           7                7                7               53 Fran.      
+ 8 unfo~ FALSE    unfold    FALSE                           6           8                8                8               53 Fran.      
+ 9 your~ TRUE     yourself  FALSE                           7           9                9                9               53 Fran.      
+10 long  FALSE    long      TRUE                            1          10               10               10               56 Ber.       
+# ... with 30,012 more rows, and 10 more variables: speaker &lt;chr&gt;, speaker_sh &lt;fct&gt;, main_character &lt;lgl&gt;, last_stage_direction &lt;chr&gt;,
+#   act &lt;chr&gt;, scene &lt;chr&gt;, new_speaker_this_line &lt;lgl&gt;, line_number_this_speech &lt;dbl&gt;, speech_number &lt;int&gt;, top_20_char &lt;lgl&gt;
+</code></pre>
+</div>
+
+<p>Note that the <code class="highlighter-rouge">hamlet_words</code> data frame has about 30,000 words - one for each word in Hamlet, excluding stage directions.</p>
+
+<p>And here is how I made that table out of the <code class="highlighter-rouge">hamlet_lines</code></p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># Make up a set of stopwords.
+# The concept of stopwords seems a bit arbitrary. Why aren't "shall", "go", "us" and "one" 
+# already stopwords in the snowball lexicon whereas "i", "our" are?
+</span><span class="n">our_stopwords</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tibble</span><span class="p">(</span><span class="n">word</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="w">
+  </span><span class="s2">"thou"</span><span class="p">,</span><span class="w"> </span><span class="s2">"thine"</span><span class="p">,</span><span class="w"> </span><span class="s2">"o"</span><span class="p">,</span><span class="w"> </span><span class="s2">"tis"</span><span class="p">,</span><span class="w"> </span><span class="s2">"thee"</span><span class="p">,</span><span class="w"> </span><span class="s2">"thy"</span><span class="p">,</span><span class="w"> </span><span class="s2">"sir"</span><span class="p">,</span><span class="w"> </span><span class="s2">"hath"</span><span class="p">,</span><span class="w"> </span><span class="s2">"lord"</span><span class="p">,</span><span class="w"> </span><span class="s2">"us"</span><span class="p">,</span><span class="w"> </span><span class="s2">"one"</span><span class="w">
+</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">lexicon</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"made up"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">rbind</span><span class="p">(</span><span class="n">get_stopwords</span><span class="p">())</span><span class="w">
+
+</span><span class="c1"># First iteration of data frame with word as grain  
+</span><span class="n">hamlet_words</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">hamlet_lines</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">tidytext</span><span class="o">::</span><span class="n">unnest_tokens</span><span class="p">(</span><span class="n">output</span><span class="w"> </span><span class="o">=</span><span class="s2">"word"</span><span class="p">,</span><span class="w"> </span><span class="n">input</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"text"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">left_join</span><span class="p">(</span><span class="n">our_stopwords</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"word"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">stopword</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">!</span><span class="nf">is.na</span><span class="p">(</span><span class="n">lexicon</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">select</span><span class="p">(</span><span class="o">-</span><span class="n">lexicon</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">word_stem</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">wordStem</span><span class="p">(</span><span class="n">word</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="c1"># identify the actual speeches and count the words in each speech by a continuing speaker
+</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">new_speaker_this_word</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">is.na</span><span class="p">(</span><span class="n">lag</span><span class="p">(</span><span class="n">speaker</span><span class="p">))</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">speaker</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">lag</span><span class="p">(</span><span class="n">speaker</span><span class="p">),</span><span class="w">
+         </span><span class="n">word_number_this_speech</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">new_speaker_this_word</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="kc">NA</span><span class="p">),</span><span class="w">
+         </span><span class="n">word_number_this_speech</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">replace_na_with_num</span><span class="p">(</span><span class="n">word_number_this_speech</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">word_number</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">n</span><span class="p">())</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">act</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">word_number_this_act</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">n</span><span class="p">())</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">act</span><span class="p">,</span><span class="w"> </span><span class="n">scene</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">word_number_this_scene</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">n</span><span class="p">())</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ungroup</span><span class="p">()</span><span class="w">
+
+</span><span class="c1"># Identify if starting a speech or not...
+</span><span class="n">words_starting_speeches</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">hamlet_words</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">new_speaker_this_word</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">select</span><span class="p">(</span><span class="n">word_number</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">speech_number</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">n</span><span class="p">())</span><span class="w">
+
+</span><span class="c1"># ... and rejoin to the original:
+</span><span class="n">hamlet_words</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">hamlet_words</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">left_join</span><span class="p">(</span><span class="n">words_starting_speeches</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"word_number"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">fill</span><span class="p">(</span><span class="n">speech_number</span><span class="p">)</span><span class="w"> 
+
+</span><span class="c1"># words per speaker:
+</span><span class="n">char_summary</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">hamlet_words</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">speaker_sh</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">summarise</span><span class="p">(</span><span class="n">words</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">(),</span><span class="w">
+            </span><span class="n">speeches</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">new_speaker_this_word</span><span class="p">),</span><span class="w">
+            </span><span class="n">words_per_speech</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">words</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">speeches</span><span class="p">,</span><span class="w">
+            </span><span class="n">stopwords</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">stopword</span><span class="p">),</span><span class="w">
+            </span><span class="n">prop_non_stop</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">stopwords</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">words</span><span class="p">,</span><span class="w">
+            </span><span class="n">most_words_single_speech</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">max</span><span class="p">(</span><span class="n">word_number_this_speech</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">arrange</span><span class="p">(</span><span class="n">desc</span><span class="p">(</span><span class="n">words</span><span class="p">))</span><span class="w">
+
+</span><span class="c1"># are you one of the top 20 speakers?...
+</span><span class="n">top_20_chars</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">char_summary</span><span class="p">[</span><span class="m">1</span><span class="o">:</span><span class="m">20</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">speaker_sh</span><span class="w">
+
+
+</span><span class="c1"># ... and rejoin to the original:
+</span><span class="n">hamlet_words</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">hamlet_words</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">top_20_char</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">speaker_sh</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="n">top_20_chars</span><span class="p">,</span><span class="w">
+         </span><span class="n">speaker_sh</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">factor</span><span class="p">(</span><span class="n">speaker_sh</span><span class="p">,</span><span class="w"> </span><span class="n">levels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">char_summary</span><span class="o">$</span><span class="n">speaker_sh</span><span class="p">))</span></code></pre></figure>
+
+<h2 id="analysis">Analysis</h2>
+
+<h3 id="how-many-words-each">How many words each?</h3>
+
+<p>OK, it’s time to do something fun now that we have tidied the data. Let’s start with just counting words. Out of the 30,000 words in Hamlet, who says how many?</p>
+
+<p>You might have noticed in the code that <code class="highlighter-rouge">char_summary</code> data frame I make along the way there. It has some summary information on each character such as the number of words and speeches, words per speech, stop words, proportion of words that aren’t stopwords, etc. Here’s what that looks like. We see that (of course), Hamlet himself has the most words to say; in fact, just over a third of all the words in Hamlet are spoken by the titular character:</p>
+
+<table class="table" style="margin-left: auto; margin-right: auto;">
+ <thead>
+  <tr>
+   <th style="text-align:left;"> speaker_sh </th>
+   <th style="text-align:right;"> words </th>
+   <th style="text-align:right;"> speeches </th>
+   <th style="text-align:right;"> words_per_speech </th>
+   <th style="text-align:right;"> stopwords </th>
+   <th style="text-align:right;"> prop_non_stop </th>
+   <th style="text-align:right;"> most_words_single_speech </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr>
+   <td style="text-align:left;"> Hamlet </td>
+   <td style="text-align:right;"> 11907 </td>
+   <td style="text-align:right;"> 346 </td>
+   <td style="text-align:right;"> 34.413295 </td>
+   <td style="text-align:right;"> 6412 </td>
+   <td style="text-align:right;"> 0.4614932 </td>
+   <td style="text-align:right;"> 473 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Claudius </td>
+   <td style="text-align:right;"> 4116 </td>
+   <td style="text-align:right;"> 101 </td>
+   <td style="text-align:right;"> 40.752475 </td>
+   <td style="text-align:right;"> 2189 </td>
+   <td style="text-align:right;"> 0.4681730 </td>
+   <td style="text-align:right;"> 392 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Polonius </td>
+   <td style="text-align:right;"> 3017 </td>
+   <td style="text-align:right;"> 84 </td>
+   <td style="text-align:right;"> 35.916667 </td>
+   <td style="text-align:right;"> 1661 </td>
+   <td style="text-align:right;"> 0.4494531 </td>
+   <td style="text-align:right;"> 241 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Horatio </td>
+   <td style="text-align:right;"> 2034 </td>
+   <td style="text-align:right;"> 106 </td>
+   <td style="text-align:right;"> 19.188679 </td>
+   <td style="text-align:right;"> 1128 </td>
+   <td style="text-align:right;"> 0.4454277 </td>
+   <td style="text-align:right;"> 225 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Laertes </td>
+   <td style="text-align:right;"> 1463 </td>
+   <td style="text-align:right;"> 62 </td>
+   <td style="text-align:right;"> 23.596774 </td>
+   <td style="text-align:right;"> 764 </td>
+   <td style="text-align:right;"> 0.4777854 </td>
+   <td style="text-align:right;"> 274 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Ophelia </td>
+   <td style="text-align:right;"> 1163 </td>
+   <td style="text-align:right;"> 57 </td>
+   <td style="text-align:right;"> 20.403509 </td>
+   <td style="text-align:right;"> 661 </td>
+   <td style="text-align:right;"> 0.4316423 </td>
+   <td style="text-align:right;"> 125 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Gertrude </td>
+   <td style="text-align:right;"> 1084 </td>
+   <td style="text-align:right;"> 68 </td>
+   <td style="text-align:right;"> 15.941176 </td>
+   <td style="text-align:right;"> 561 </td>
+   <td style="text-align:right;"> 0.4824723 </td>
+   <td style="text-align:right;"> 137 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> First gravedigger </td>
+   <td style="text-align:right;"> 741 </td>
+   <td style="text-align:right;"> 33 </td>
+   <td style="text-align:right;"> 22.454545 </td>
+   <td style="text-align:right;"> 421 </td>
+   <td style="text-align:right;"> 0.4318489 </td>
+   <td style="text-align:right;"> 76 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Rosencrantz </td>
+   <td style="text-align:right;"> 695 </td>
+   <td style="text-align:right;"> 45 </td>
+   <td style="text-align:right;"> 15.444444 </td>
+   <td style="text-align:right;"> 411 </td>
+   <td style="text-align:right;"> 0.4086331 </td>
+   <td style="text-align:right;"> 103 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Ghost </td>
+   <td style="text-align:right;"> 682 </td>
+   <td style="text-align:right;"> 14 </td>
+   <td style="text-align:right;"> 48.714286 </td>
+   <td style="text-align:right;"> 332 </td>
+   <td style="text-align:right;"> 0.5131965 </td>
+   <td style="text-align:right;"> 375 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Marcellus </td>
+   <td style="text-align:right;"> 429 </td>
+   <td style="text-align:right;"> 31 </td>
+   <td style="text-align:right;"> 13.838710 </td>
+   <td style="text-align:right;"> 228 </td>
+   <td style="text-align:right;"> 0.4685315 </td>
+   <td style="text-align:right;"> 80 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Osric </td>
+   <td style="text-align:right;"> 358 </td>
+   <td style="text-align:right;"> 25 </td>
+   <td style="text-align:right;"> 14.320000 </td>
+   <td style="text-align:right;"> 200 </td>
+   <td style="text-align:right;"> 0.4413408 </td>
+   <td style="text-align:right;"> 64 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Player King </td>
+   <td style="text-align:right;"> 337 </td>
+   <td style="text-align:right;"> 4 </td>
+   <td style="text-align:right;"> 84.250000 </td>
+   <td style="text-align:right;"> 154 </td>
+   <td style="text-align:right;"> 0.5430267 </td>
+   <td style="text-align:right;"> 233 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Guildenstern </td>
+   <td style="text-align:right;"> 323 </td>
+   <td style="text-align:right;"> 29 </td>
+   <td style="text-align:right;"> 11.137931 </td>
+   <td style="text-align:right;"> 206 </td>
+   <td style="text-align:right;"> 0.3622291 </td>
+   <td style="text-align:right;"> 43 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Player Queen </td>
+   <td style="text-align:right;"> 238 </td>
+   <td style="text-align:right;"> 5 </td>
+   <td style="text-align:right;"> 47.600000 </td>
+   <td style="text-align:right;"> 112 </td>
+   <td style="text-align:right;"> 0.5294118 </td>
+   <td style="text-align:right;"> 102 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Fortinbras </td>
+   <td style="text-align:right;"> 222 </td>
+   <td style="text-align:right;"> 6 </td>
+   <td style="text-align:right;"> 37.000000 </td>
+   <td style="text-align:right;"> 113 </td>
+   <td style="text-align:right;"> 0.4909910 </td>
+   <td style="text-align:right;"> 98 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Bernardo </td>
+   <td style="text-align:right;"> 205 </td>
+   <td style="text-align:right;"> 19 </td>
+   <td style="text-align:right;"> 10.789474 </td>
+   <td style="text-align:right;"> 109 </td>
+   <td style="text-align:right;"> 0.4682927 </td>
+   <td style="text-align:right;"> 35 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Gentleman </td>
+   <td style="text-align:right;"> 192 </td>
+   <td style="text-align:right;"> 3 </td>
+   <td style="text-align:right;"> 64.000000 </td>
+   <td style="text-align:right;"> 86 </td>
+   <td style="text-align:right;"> 0.5520833 </td>
+   <td style="text-align:right;"> 104 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Voltimand </td>
+   <td style="text-align:right;"> 149 </td>
+   <td style="text-align:right;"> 1 </td>
+   <td style="text-align:right;"> 149.000000 </td>
+   <td style="text-align:right;"> 73 </td>
+   <td style="text-align:right;"> 0.5100671 </td>
+   <td style="text-align:right;"> 149 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Second gravedigger </td>
+   <td style="text-align:right;"> 98 </td>
+   <td style="text-align:right;"> 12 </td>
+   <td style="text-align:right;"> 8.166667 </td>
+   <td style="text-align:right;"> 55 </td>
+   <td style="text-align:right;"> 0.4387755 </td>
+   <td style="text-align:right;"> 22 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> First Priest </td>
+   <td style="text-align:right;"> 91 </td>
+   <td style="text-align:right;"> 2 </td>
+   <td style="text-align:right;"> 45.500000 </td>
+   <td style="text-align:right;"> 49 </td>
+   <td style="text-align:right;"> 0.4615385 </td>
+   <td style="text-align:right;"> 65 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Captain </td>
+   <td style="text-align:right;"> 84 </td>
+   <td style="text-align:right;"> 7 </td>
+   <td style="text-align:right;"> 12.000000 </td>
+   <td style="text-align:right;"> 48 </td>
+   <td style="text-align:right;"> 0.4285714 </td>
+   <td style="text-align:right;"> 53 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Lord </td>
+   <td style="text-align:right;"> 67 </td>
+   <td style="text-align:right;"> 3 </td>
+   <td style="text-align:right;"> 22.333333 </td>
+   <td style="text-align:right;"> 39 </td>
+   <td style="text-align:right;"> 0.4179104 </td>
+   <td style="text-align:right;"> 42 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Reynaldo </td>
+   <td style="text-align:right;"> 65 </td>
+   <td style="text-align:right;"> 13 </td>
+   <td style="text-align:right;"> 5.000000 </td>
+   <td style="text-align:right;"> 49 </td>
+   <td style="text-align:right;"> 0.2461538 </td>
+   <td style="text-align:right;"> 11 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Francisco </td>
+   <td style="text-align:right;"> 55 </td>
+   <td style="text-align:right;"> 8 </td>
+   <td style="text-align:right;"> 6.875000 </td>
+   <td style="text-align:right;"> 25 </td>
+   <td style="text-align:right;"> 0.5454545 </td>
+   <td style="text-align:right;"> 14 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> English Ambassador </td>
+   <td style="text-align:right;"> 40 </td>
+   <td style="text-align:right;"> 1 </td>
+   <td style="text-align:right;"> 40.000000 </td>
+   <td style="text-align:right;"> 23 </td>
+   <td style="text-align:right;"> 0.4250000 </td>
+   <td style="text-align:right;"> 40 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Lucianus </td>
+   <td style="text-align:right;"> 40 </td>
+   <td style="text-align:right;"> 1 </td>
+   <td style="text-align:right;"> 40.000000 </td>
+   <td style="text-align:right;"> 8 </td>
+   <td style="text-align:right;"> 0.8000000 </td>
+   <td style="text-align:right;"> 40 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Messenger </td>
+   <td style="text-align:right;"> 36 </td>
+   <td style="text-align:right;"> 2 </td>
+   <td style="text-align:right;"> 18.000000 </td>
+   <td style="text-align:right;"> 25 </td>
+   <td style="text-align:right;"> 0.3055556 </td>
+   <td style="text-align:right;"> 23 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Sailor </td>
+   <td style="text-align:right;"> 35 </td>
+   <td style="text-align:right;"> 1 </td>
+   <td style="text-align:right;"> 35.000000 </td>
+   <td style="text-align:right;"> 23 </td>
+   <td style="text-align:right;"> 0.3428571 </td>
+   <td style="text-align:right;"> 35 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Player prologue </td>
+   <td style="text-align:right;"> 16 </td>
+   <td style="text-align:right;"> 1 </td>
+   <td style="text-align:right;"> 16.000000 </td>
+   <td style="text-align:right;"> 10 </td>
+   <td style="text-align:right;"> 0.3750000 </td>
+   <td style="text-align:right;"> 16 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Danes </td>
+   <td style="text-align:right;"> 13 </td>
+   <td style="text-align:right;"> 3 </td>
+   <td style="text-align:right;"> 4.333333 </td>
+   <td style="text-align:right;"> 9 </td>
+   <td style="text-align:right;"> 0.3076923 </td>
+   <td style="text-align:right;"> 5 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> All </td>
+   <td style="text-align:right;"> 9 </td>
+   <td style="text-align:right;"> 3 </td>
+   <td style="text-align:right;"> 3.000000 </td>
+   <td style="text-align:right;"> 3 </td>
+   <td style="text-align:right;"> 0.6666667 </td>
+   <td style="text-align:right;"> 5 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Marcellus and Bernardo </td>
+   <td style="text-align:right;"> 9 </td>
+   <td style="text-align:right;"> 2 </td>
+   <td style="text-align:right;"> 4.500000 </td>
+   <td style="text-align:right;"> 6 </td>
+   <td style="text-align:right;"> 0.3333333 </td>
+   <td style="text-align:right;"> 6 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Servant </td>
+   <td style="text-align:right;"> 9 </td>
+   <td style="text-align:right;"> 1 </td>
+   <td style="text-align:right;"> 9.000000 </td>
+   <td style="text-align:right;"> 6 </td>
+   <td style="text-align:right;"> 0.3333333 </td>
+   <td style="text-align:right;"> 9 </td>
+  </tr>
+</tbody>
+</table>
+
+<p>Hang on, didn’t we see earlier that Hamlet had 358 speeches, and now we find only 346? That’s an anomaly related to how the data tidying worked. The 358 came from counting likes that appeared as <code class="highlighter-rouge">Ham.</code>; the 346 is more complex and looks for when Hamlet starts speaking after someone else had. My first guess at the cause of the anomaly is scene breaks where Hamlet was the last person speaking in the previous scene, and also first in the new one. But this would need checking. I don’t have the inclination to fix that now, so let’s just note this as an example of the sort of detail that needs fixing.</p>
+
+<h3 id="distinctive-words">Distinctive words</h3>
+
+<p>It’s interesting to look at the most distinctive words spoken by each character. The plot below shows the proportion of each character’s words that are a particular wordstem, divided by that proportion for the whole play. Effectively, this is the term frequency - inverse document frequency (TFIDF).Some of this is interesting (Polonius talks about his ‘daughter’ Ophelia; the Ghost talks about ‘blood’, ‘foul’, and being ‘beneath’), some not so much (Hamlet’s distinctive words in particular seem to have little message for me).</p>
+
+<object type="image/svg+xml" data="/img/0179-distinctive-words.svg" width="100%"><img src="/img/0179-distinctive-words.png" width="100%" /></object>
+
+<p>Here’s the code to calculate those TFIDF values (I am using <code class="highlighter-rouge">dplyr</code> to do this explicitly so I can be sure of what is going on, rather than using specialist functions) and draw that chart of distinctive words:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#--------------------Distinctive words-------------------
+</span><span class="w">
+</span><span class="c1"># most distinctive word stem for each of the main cast
+</span><span class="n">dist_words</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">hamlet_words</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="o">!</span><span class="n">stopword</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">count</span><span class="p">(</span><span class="n">word_stem</span><span class="p">,</span><span class="w"> </span><span class="n">speaker_sh</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">speaker_sh</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">prop_this_speaker</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">n</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ungroup</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">prop_overall</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">n</span><span class="p">),</span><span class="w">
+         </span><span class="n">relative</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">prop_this_speaker</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">prop_overall</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">speaker_sh</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">arrange</span><span class="p">(</span><span class="n">desc</span><span class="p">(</span><span class="n">relative</span><span class="p">),</span><span class="w"> </span><span class="n">desc</span><span class="p">(</span><span class="n">n</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">slice</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">5</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">speaker_sh</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="n">top_20_chars</span><span class="p">)</span><span class="w"> 
+</span><span class="c1"># note that "mai" is the word stem for "may", and "joi" for "joy"
+</span><span class="w">
+</span><span class="c1"># plot of disinctive word stems
+</span><span class="n">dist_words</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">speaker_sh</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">rank</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">n</span><span class="p">())</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rank</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reorder</span><span class="p">(</span><span class="n">speaker_sh</span><span class="p">,</span><span class="w"> </span><span class="n">desc</span><span class="p">(</span><span class="n">speaker_sh</span><span class="p">)),</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">word_stem</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_text</span><span class="p">(</span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">theme</span><span class="p">(</span><span class="n">panel.grid.major.x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_blank</span><span class="p">(),</span><span class="w">
+        </span><span class="n">panel.grid.minor.x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_blank</span><span class="p">(),</span><span class="w">
+        </span><span class="n">axis.text.x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_blank</span><span class="p">())</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w">
+       </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Most distinctive word stems for the top 20 characters in Hamlet"</span><span class="p">)</span></code></pre></figure>
+
+<h3 id="how-long-are-characters-speeches">How long are characters’ speeches</h3>
+
+<p>Beyond simple counts and averages of words, lines and speeches, it might be interesting to see how the <em>distribution</em> of how long the various speeches different characters deliver. Here’s how that looks for nine of the main characters:</p>
+
+<object type="image/svg+xml" data="/img/0179-distribution-speeches-length.svg" width="100%"><img src="/img/0179-distribution-speeches-length.png" width="100%" /></object>
+
+<p>The main thing I spot here is that the Ghost of Hamlet’s father gets only a few speeches but they tend to be long and uninterrupted compared to the other characters. Gertrude, Ophelia and Horatio tend to have short speeches less than 100 words, acting as foils for their interlocutors (normally Hamlet himself). Hamlet of course has the full range - many short bits of snappy dialogue, but also three or four lengthy 400+ word speeches.</p>
+
+<p>The longest speech is Hamlet’s in Act III Scene I. In this speech he reflects on the impromptu play just put on by the Players; contrasts their acted emotion and passion with his own indecision; considers he must still be unsure whether the Ghost is misleading him about the villainy of Caludius; and explains his plan to use a play (within a play) to get to test Caludius’ conscience (paragraph breaks added by hand):</p>
+
+<p>“Ay, so, God b’ wi’ ye!</p>
+
+<p>Now I am alone. O, what a rogue and peasant slave am I! Is it not monstrous that this player here, But in a fiction, in a dream of passion, Could force his soul so to his own conceit That from her working all his visage wan’d; Tears in his eyes, distraction in’s aspect, A broken voice, and his whole function suiting With forms to his conceit? And all for nothing! For Hecuba? What’s Hecuba to him, or he to Hecuba, That he should weep for her? What would he do, Had he the motive and the cue for passion That I have? He would drown the stage with tears And cleave the general ear with horrid speech; Make mad the guilty, and appal the free; Confound the ignorant, and amaze, indeed, The very faculties of eyes and ears.</p>
+
+<p>“Yet I, A dull and muddy-mettled rascal, peak, Like John-a-dreams, unpregnant of my cause, And can say nothing; no, not for a king Upon whose property and most dear life A damn’d defeat was made. Am I a coward? Who calls me villain? breaks my pate across? Plucks off my beard and blows it in my face? Tweaks me by the nose? gives me the lie i’ the throat As deep as to the lungs? who does me this, ha? ‘Swounds, I should take it: for it cannot be But I am pigeon-liver’d, and lack gall To make oppression bitter; or ere this I should have fatted all the region kites With this slave’s offal: bloody, bawdy villain! Remorseless, treacherous, lecherous, kindless villain! O, vengeance!</p>
+
+<p>“Why, what an ass am I! This is most brave, That I, the son of a dear father murder’d, Prompted to my revenge by heaven and hell, Must, like a whore, unpack my heart with words And fall a-cursing like a very drab, A scullion! Fie upon’t! foh!–About, my brain!</p>
+
+<p>“I have heard That guilty creatures, sitting at a play, Have by the very cunning of the scene Been struck so to the soul that presently They have proclaim’d their malefactions; For murder, though it have no tongue, will speak With most miraculous organ, I’ll have these players Play something like the murder of my father Before mine uncle: I’ll observe his looks; I’ll tent him to the quick: if he but blench, I know my course.</p>
+
+<p>“The spirit that I have seen May be the devil: and the devil hath power To assume a pleasing shape; yea, and perhaps Out of my weakness and my melancholy,– As he is very potent with such spirits,– Abuses me to damn me: I’ll have grounds More relative than this.–the play’s the thing Wherein I’ll catch the conscience of the king. [Enter King, Queen, Polonius, Ophelia, Rosencrantz, and Guildenstern.]”</p>
+
+<p>Here’s the R code to plot the distribution of speech lengths, and extract in full an original speech that has been identified from our tidied row-grain data frame:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#--------------------Distribution of length of speeches--------------------
+</span><span class="w">
+</span><span class="c1"># chart of distribution of length of speeches
+</span><span class="n">hamlet_words</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">main_character</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">speaker_sh</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"First gravedigger"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">speech_number</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">word_number_this_speech</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nf">max</span><span class="p">(</span><span class="n">word_number_this_speech</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">select</span><span class="p">(</span><span class="n">speaker_sh</span><span class="p">,</span><span class="w"> </span><span class="n">speech_number</span><span class="p">,</span><span class="w"> </span><span class="n">word_number_this_speech</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">word_number_this_speech</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">speaker_sh</span><span class="p">,</span><span class="n">scales</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"free_y"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_density</span><span class="p">(</span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">,</span><span class="w"> </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">NA</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_rug</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_x_sqrt</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Number of continuous words in row"</span><span class="p">,</span><span class="w">
+       </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Length of uninterrupted speeches in Shakespeare's Hamlet"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">theme</span><span class="p">(</span><span class="n">panel.spacing</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">unit</span><span class="p">(</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="s2">"lines"</span><span class="p">))</span><span class="w">
+
+</span><span class="c1"># Find the longest speech:
+</span><span class="n">longest_speech</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">hamlet_words</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">arrange</span><span class="p">(</span><span class="n">desc</span><span class="p">(</span><span class="n">word_number_this_speech</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">slice</span><span class="p">(</span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">pull</span><span class="p">(</span><span class="n">speech_number</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># Full text of that speech:
+</span><span class="n">hamlet_words</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">speech_number</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">longest_speech</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">distinct</span><span class="p">(</span><span class="n">original_line_number</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">inner_join</span><span class="p">(</span><span class="n">hamlet</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"original_line_number"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">select</span><span class="p">(</span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">pull</span><span class="p">(</span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">cat</span><span class="p">()</span></code></pre></figure>
+
+<p>Incidentally, this exercise drew my attention to another problem - the final stage direction here <code class="highlighter-rouge">[Enter King, Queen, Polonius, Ophelia, Rosencrantz, and Guildenstern.]</code> had not been correctly identified as such in my tidying program. So another detail to fix (I count about four of these so far…).</p>
+
+<h3 id="who-interacts-with-whom">Who interacts with whom?</h3>
+
+<p>Something that’s of interest that we can find out with tidied, structured data that is difficult otherwise is the interactions between different characters. A play features (mostly) a single character talking at a time, and can be analysed as a series of hand-offs from one character to another. We can count each transition and turn it into a network chart. For illustrative purposes here, I am ignoring the direction of these transitions, and just counting the absolute number. This gives us a nice illustration of who interacts (either interrupting, or simply taking turns) with whom:</p>
+
+<object type="image/svg+xml" data="/img/0179-interactions.svg" width="100%"><img src="/img/0179-interactions.png" width="100%" /></object>
+
+<p>What I like about this graph is how it shows the relationship between Hamlet and his wingman Horatio as core to the play; while also making clear who are the other major speaking characters (Claudius, Polonius, Laertes, Gertrude, etc) and the relationhsips between them.</p>
+
+<p>Here’s the code for that network graph, made simple by the wonder of Thomas Pedersen’s <code class="highlighter-rouge">tidygraph</code> and <code class="highlighter-rouge">ggraph</code> R packages.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#=========who interacts with whom==============
+</span><span class="w">
+</span><span class="n">hamlet_handovers</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">hamlet_words</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">new_speaker_this_word</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">previous_speaker</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lag</span><span class="p">(</span><span class="n">speaker_sh</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">select</span><span class="p">(</span><span class="n">new_speaker</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">speaker_sh</span><span class="p">,</span><span class="w"> </span><span class="n">previous_speaker</span><span class="p">,</span><span class="w"> </span><span class="n">act</span><span class="p">,</span><span class="w"> </span><span class="n">scene</span><span class="p">,</span><span class="w"> </span><span class="n">word_number</span><span class="p">)</span><span class="w">  </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">words_this_speech</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lead</span><span class="p">(</span><span class="n">word_number</span><span class="p">,</span><span class="w"> </span><span class="n">default</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">max</span><span class="p">(</span><span class="n">hamlet_words</span><span class="o">$</span><span class="n">word_number</span><span class="p">))</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">word_number</span><span class="p">)</span><span class="w">
+
+</span><span class="n">d</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">hamlet_handovers</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="o">!</span><span class="nf">is.na</span><span class="p">(</span><span class="n">previous_speaker</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">count</span><span class="p">(</span><span class="n">new_speaker</span><span class="p">,</span><span class="w"> </span><span class="n">previous_speaker</span><span class="p">,</span><span class="w"> </span><span class="n">sort</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w">  </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">select</span><span class="p">(</span><span class="n">from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">previous_speaker</span><span class="p">,</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">new_speaker</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.character</span><span class="p">(</span><span class="n">from</span><span class="p">),</span><span class="w">
+         </span><span class="n">to</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.character</span><span class="p">(</span><span class="n">to</span><span class="p">))</span><span class="w">
+
+</span><span class="c1"># we are going to count from-to and to-from as though they are the same,
+# ie ignoring direction
+</span><span class="n">d</span><span class="m">1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">rename</span><span class="p">(</span><span class="n">new_from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">to</span><span class="p">,</span><span class="w">
+         </span><span class="n">to</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">from</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">rename</span><span class="p">(</span><span class="n">from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">new_from</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">rbind</span><span class="p">(</span><span class="n">d</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">from</span><span class="p">,</span><span class="w"> </span><span class="n">to</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">summarise</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">n</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">from</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">to</span><span class="p">)</span><span class="w">
+</span><span class="c1"># to do = tidy up Marcellus and Bernardo here
+</span><span class="w">
+</span><span class="n">d</span><span class="m">2</span><span class="w"> </span><span class="o">&lt;-</span><span class="n">as_tbl_graph</span><span class="p">(</span><span class="n">d</span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">activate</span><span class="p">(</span><span class="n">nodes</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">left_join</span><span class="p">(</span><span class="n">char_summary</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"name"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"speaker_sh"</span><span class="p">))</span><span class="w">
+
+</span><span class="n">layout</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">create_layout</span><span class="p">(</span><span class="n">d</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">layout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'igraph'</span><span class="p">,</span><span class="w"> </span><span class="n">algorithm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'kk'</span><span class="p">)</span><span class="w"> 
+
+</span><span class="n">ggraph</span><span class="p">(</span><span class="n">layout</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_edge_arc</span><span class="p">(</span><span class="n">strength</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> 
+                </span><span class="n">aes</span><span class="p">(</span><span class="n">edge_colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">edge_width</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_node_label</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">name</span><span class="p">),</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"white"</span><span class="p">,</span><span class="w"> </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey10"</span><span class="p">,</span><span class="w"> </span><span class="n">label.size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_node_point</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">words</span><span class="p">),</span><span class="w"> </span><span class="n">shape</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">19</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_edge_colour_viridis</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">theme</span><span class="p">(</span><span class="n">panel.background</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_rect</span><span class="p">(</span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"black"</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_size_area</span><span class="p">(</span><span class="n">max_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">22</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">comma</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">edge_colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Number of transitions:"</span><span class="p">,</span><span class="w">
+       </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Total words spoken:"</span><span class="p">)</span></code></pre></figure>
+
+<h3 id="topics-of-the-play">Topics of the play</h3>
+
+<p>Finally, some bi-term topic modelling. In the various short speeches (from 1 word to 500), which word stems tend to come together? Here’s a first look at this.</p>
+
+<object type="image/svg+xml" data="/img/0179-topics.svg" width="100%"><img src="/img/0179-topics.png" width="100%" /></object>
+
+<p>Does this help? Well, not so much. I probably need some more thinking, certainly about how many topics to use for starters.</p>
+
+<p>I originally intended this topic modelling to be the main point of this blog, but in the six months that this post has sat in “it’s good, but <a href="https://www.google.com/search?rlz=1C1CHBF_enNZ696NZ696&amp;sxsrf=ALeKk01H8wGoy3MYFbWo0rnh_qAq4YK_-Q%3A1602390134643&amp;ei=doiCX_jfJsaR9QO_q4bgBQ&amp;q=%22it+needs+fixing%22+wodehouse&amp;oq=%22it+needs+fixing%22+wodehouse&amp;gs_lcp=CgZwc3ktYWIQAzIHCCEQChCgAToHCAAQsAMQHjoJCAAQsAMQCBAeOgkIABDJAxAWEB46BggAEBYQHjoICCEQFhAdEB46BQghEKABOgQIIRAVUNcRWK4qYKAraARwAHgAgAHcAYgB2hGSAQUwLjguNJgBAKABAaoBB2d3cy13aXrIAQXAAQE&amp;sclient=psy-ab&amp;ved=0ahUKEwj48pC22KvsAhXGSH0KHb-VAVwQ4dUDCA0&amp;uact=5">it needs fixing</a>” purgatory I have since <a href="/blog/2020/09/26/nzes-issues">used bi-term topic modelling elsewhere</a>, and no longer feel great motivation to finish this idea off immediately. I <em>do</em> think there is big potential in using topic modelling to understand topics within a Shakespeare play (ie treating each speech as a document), not just between the plays (treating each play as a document). Most examples using Shakespeare for topic modelling are of the latter variety, probably because (as today’s post shows) there’s a fair bit of wrangling required before one can start analysing speeches as documents.</p>
+
+<p>Anyway, here is the absurdly short code to fit the bi-term topic model.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#======================Topic modelling================
+# We could do this for each individual speech; or for all speeches.
+# Here we treat each speech as a document.
+</span><span class="w">
+</span><span class="n">hw_for_btm</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">hamlet_words</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="o">!</span><span class="n">stopword</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">select</span><span class="p">(</span><span class="n">speech_number</span><span class="p">,</span><span class="w"> </span><span class="n">word_stem</span><span class="p">)</span><span class="w">
+
+</span><span class="n">btm_model</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">BTM</span><span class="p">(</span><span class="n">hw_for_btm</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">20</span><span class="p">)</span><span class="w">
+
+</span><span class="n">print</span><span class="p">(</span><span class="n">plot</span><span class="p">(</span><span class="n">btm_model</span><span class="p">,</span><span class="w"> </span><span class="n">top_n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">7</span><span class="p">))</span></code></pre></figure>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>Well, that’s it. I’ve had a good go at tidying one  Shakespeare play into a data model that loses minimal original information, and puts us in good shape to analyse words, topics, interactions between characters, how Acts and Scenes and stage directions work, etc. There are a handful of small details I haven’t fixed, but the overall project works. It wouldn’t be hard to extend this to work with other Shakespeare plays, and maybe for plays in general.</p>
+
+<p>The process of doing this has produced one piece of analysis I like, which is the network graph of hand-offs (one character speaking after the other). I think that has potential, to show at a glance what the characters are doing in a play. I’d like to try that elsewhere.</p>
+
+<p>In the meantime, that’s all folks. Take care out there, wear a mask, and don’t go out if you don’t have to. Unless you’re in New Zealand or Western Australia, in which case, sure, go out, see if the rest of us mind, just don’t rub it in.</p>
+
+
+		
+	</div>
+</div>
+
+<div class="col-md-1"></div>
+<div class="col-md-4">
+	<div class="side-banner">
+	
+
+
+	<div>
+	   
+	    
+			
+			<p>&larr; Previous post</p>
+			<p><a rel="prev" href="/blog/2020/10/04/covid-symptom-challenge">Facebook survey data for the Covid-19 Symptom Data Challenge</a></p>
+		
+		
+		
+		
+		
+		
+	</div>
+	
+	 
+
+   <div class = "side-footer">
+			
+			<hr></hr>
+			<p><gcse:search></gcse:search></p>
+			<hr></hr>
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.</p>
+			<hr></hr>
+			
+			<p>My day job is Chief Data Scientist at <a href='https://www.nousgroup.com/'>Nous Group</a>, an international management consultancy with over 400 people working across Australia, the UK and Canada. <a href='mailto:peter.ellis@nousgroup.com.au'>Contact me</a> if you are interested working with us on a grand challenge or broad agenda.</p>
+		
+		    <hr></hr>
+			
+       <div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="false" data-share="false"></div>
+			
+			<hr></hr>
+			<p>I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+			<hr></hr>
+
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title"><i>free range statistics</i></span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			<hr></hr>
+			
+
+
+    </div>
+
+
+
+  
+   
+
+
+
+
+		  
+		  
+
+
+
+	   
+	<div id="disqus_thread"></div>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function() {
+				var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+				dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+				(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+			})();
+		</script>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function () {
+				var s = document.createElement('script'); s.async = true;
+				s.type = 'text/javascript';
+				s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+				(document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+			}());
+		</script>
+
+	<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+	</div>	
+</div>    
+   
+   
+
+			
+			</div><!-- /.container -->
+         
+   <!-- Default Statcounter code for Free Range Statistics
+http://Http://freerangestats.info -->
+<script type="text/javascript">
+var sc_project=11673245; 
+var sc_invisible=1; 
+var sc_security="5b7111a4"; 
+</script>
+<script type="text/javascript"
+src="https://www.statcounter.com/counter/counter.js" async></script>
+<noscript><div class="statcounter"><a title="Web Analytics"
+href="http://statcounter.com/" target="_blank"><img class="statcounter"
+src="//c.statcounter.com/11673245/0/5b7111a4/1/" alt="Web
+Analytics"></a></div></noscript>
+<!-- End of Statcounter Code -->
+
+</body>   
+</html>
