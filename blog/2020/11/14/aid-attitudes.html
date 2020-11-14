@@ -1,0 +1,723 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Reproduce analysis of a political attitudes experiment</title>
+      	
+         
+         
+            <meta name ="description" content ="I reproduce the analysis of data from a recently published experiment on the impact on Australians' and New Zealanders' attitudes to overseas aid of being exposed to writing about Chinese aid in the Pacific. Along the way I muse about the Table 2 fallacy, and try to avoid it while still using multiple imputation, bootstrap and adjusting for covariates to slightly improve the original analysis.">
+            <meta property="og:description" content ="I reproduce the analysis of data from a recently published experiment on the impact on Australians' and New Zealanders' attitudes to overseas aid of being exposed to writing about Chinese aid in the Pacific. Along the way I muse about the Table 2 fallacy, and try to avoid it while still using multiple imputation, bootstrap and adjusting for covariates to slightly improve the original analysis.">
+         
+         <meta property="og:site_name" content="free range statistics" />
+         <meta property="og:title" content="Reproduce analysis of a political attitudes experiment" />
+         
+            <meta property="og:image" content="http://freerangestats.info/img/0198-support-aus.png" />
+         
+		 
+			<meta property="og:url" content="http://freerangestats.info/blog/2020/11/14/aid-attitudes.html" />
+		 
+         <meta property="og:author" content= "https://www.facebook.com/peterstats" />
+         <meta property="og:type" content="article" />
+      
+
+<link href='https://fonts.googleapis.com/css?family=Sarala' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Prosto+One' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Ubuntu+Mono' rel='stylesheet'>
+	  
+          <link href="/css/bootstrap.min.css" rel ="stylesheet" type="text/css">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet" type="text/css">
+            <link href="/css/custom.css" rel ="stylesheet" type="text/css">     
+		<link href="/css/syntax.css" rel ="stylesheet" type="text/css">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="free range statistics by Peter Ellis"
+      href="/feed.xml">
+
+	  
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+  <script>
+  (function() {
+    var cx = '015640467633673901770:pk3v2c95baw';
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+  })();
+</script>
+
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">free range statistics</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/about">about</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">all posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">ordered by date</a></li>
+				  <li><a href="/blog/most-popular.html">ordered by popularity</a></li>
+                  <li><a href="/blog/index_by_tag.html">grouped by subject matter</a></li>
+                  <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
+				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
+                  <li><a href="/blog/surveys.html">all posts on surveys</a></li> 
+				  <li><a href = /blog/2020/11/14/aid-attitudes>most recent post</a></li>
+				</ul>
+            </li>
+              <li><a href="/blog/showcase.html">showcase</a></li>
+              <li><a href="/presentations/index.html">presentations</a></li>
+			  <li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">forecasts<span class="caret"></span></a>
+                <ul class="dropdown-menu">
+				  <li><a href = "/covid-tracking/index.html">Covid-19 in Australia</a></li>
+                  <li><a href = "/elections/nz-2020/index.html">NZ election 2020</a></li>
+                  <li><a href = "/elections/oz-2019/index.html">Australia federal election 2019</a></li>
+				  <li><a href = "/elections/nz-2017/combined.html">NZ election 2017</a></li>
+                  <li><a href="/blog/voting.html">all blog posts on voting behaviour</a></li>
+                </ul>				
+			  </li>
+			  
+			  
+			  
+		    </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			<div class="jumbotron">
+  <div class="container">
+	<center><h1>Reproduce analysis of a political attitudes experiment</h1></center>
+  </div>
+</div>
+
+
+
+	<div class = "post-summary">
+	<h2>At a glance:</h2>
+	   <p>I reproduce the analysis of data from a recently published experiment on the impact on Australians' and New Zealanders' attitudes to overseas aid of being exposed to writing about Chinese aid in the Pacific. Along the way I muse about the Table 2 fallacy, and try to avoid it while still using multiple imputation, bootstrap and adjusting for covariates to slightly improve the original analysis.</p>
+	   <p class="meta">14 Nov 2020</p>
+	   <hr></hr>
+	</div>
+
+
+<div class="col-md-7">
+
+	<div class="post">
+		
+	  <p>Terence Wood, Chris Hoy and Jonathan Pryke recently published this paper on
+<a href="https://www.cambridge.org/core/journals/journal-of-experimental-political-science/article/effect-of-geostrategic-competition-on-public-attitudes-to-aid/A3761D2D3A9D4574DACA4D8530BE7C0D">The Effect of Geostrategic Competition on Public Attitudes to Aid</a>. I was interested a) because of my past professional engagement with public attitudes to aid (my very first real, full time permanent job was a a community campaigns coordinator for Community Aid Abroad, which later rebranded as Oxfam Australia) b) because Terence and I used to share a cubicle in NZAID / DFAT and c) because I am particularly interested in experiments at the moment, and this was a nice example of an experiment in a non-medical area with reproducible data and code.</p>
+
+<p>The experiment was to compare members’ of the Australian and New Zealand public attitudes to overseas aid, with and without the “treatment” of being exposed to written vignettes of varying degrees of forcefulness about China’s rise as an aid donor in the Pacific. Data collection was by questions included in Ipsos MORI online omnibus surveys.</p>
+
+<p>From the Australian findings:</p>
+
+<blockquote>
+  <p>“As expected, treating participants reduced hostility to aid and increased support for more aid focused on the Pacific. Counter to expectations, however, treatment reduced support for using aid to advance Australian interests.”</p>
+</blockquote>
+
+<p>The result in the first sentence, but not the second, was replicated with the New Zealand subjects (with questions appropriately reworded for New Zealand, rather than Australia, of course).</p>
+
+<p>The finding about treatment reducing support for using aid to advance Australian interests was a surprise. China’s aid activities in the Pacific are fairly transparently undertaken with a heavy dose of geo-strategic competitive motivation. The researchers had expected, based on other literature to date, that being exposed to this phenomenon would make Australians <strong>more</strong> inclined to use our own aid program the same way.</p>
+
+<h2 id="reproducing-results">Reproducing results</h2>
+
+<p>Terence and friends have made the <a href="https://t.co/svo2zDhm3B?amp=1">data and Stata code for the analysis available on the Harvard Dataverse</a>. My first move was to check that I could reproduce their results.  Here’s the original table of results from the Australian analysis:</p>
+
+<p><img src="/img/0198-original-tab1.png" width="100%" /></p>
+
+<h3 id="regression-results">Regression results</h3>
+
+<p>That table combines the regression coefficients in the odd-numbered columns with contrasts between the ‘Measured’ and ‘Forceful’ versions of the vignette in the even-numbered columns. I found this mixture presentation slightly untidy so will reproduce these in two different steps. Here’s my reproduction of columns (1), (3) and (5) from that first table ie the regression results:</p>
+
+<hr />
+
+<h4 id="table-1a---regression-results-experiment-with-three-response-variables-australian-public">Table 1a - Regression results, experiment with three response variables, Australian public</h4>
+
+<table style="text-align:center"><caption><strong>Regression results for Australians</strong></caption>
+<tr><td colspan="4" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left"></td><td colspan="3"><em>Dependent variable:</em></td></tr>
+<tr><td></td><td colspan="3" style="border-bottom: 1px solid black"></td></tr>
+<tr><td style="text-align:left"></td><td>Too much aid</td><td>More to Pacific</td><td>Help Australia</td></tr>
+<tr><td style="text-align:left"></td><td>(1)</td><td>(2)</td><td>(3)</td></tr>
+<tr><td colspan="4" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">Measured vignette</td><td>-0.079<sup>***</sup></td><td>0.052<sup>*</sup></td><td>-0.063<sup>**</sup></td></tr>
+<tr><td style="text-align:left"></td><td>(0.029)</td><td>(0.028)</td><td>(0.028)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">Forceful vignette</td><td>-0.093<sup>***</sup></td><td>0.089<sup>***</sup></td><td>-0.097<sup>***</sup></td></tr>
+<tr><td style="text-align:left"></td><td>(0.029)</td><td>(0.028)</td><td>(0.028)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">Control group mean</td><td>0.518<sup>***</sup></td><td>0.257<sup>***</sup></td><td>0.598<sup>***</sup></td></tr>
+<tr><td style="text-align:left"></td><td>(0.020)</td><td>(0.020)</td><td>(0.020)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td></tr>
+<tr><td colspan="4" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">Observations</td><td>1,816</td><td>1,647</td><td>1,844</td></tr>
+<tr><td style="text-align:left">R<sup>2</sup></td><td>0.007</td><td>0.006</td><td>0.007</td></tr>
+<tr><td style="text-align:left">Adjusted R<sup>2</sup></td><td>0.006</td><td>0.005</td><td>0.005</td></tr>
+<tr><td style="text-align:left">Residual Std. Error</td><td>0.497 (df = 1813)</td><td>0.459 (df = 1644)</td><td>0.497 (df = 1841)</td></tr>
+<tr><td style="text-align:left">F Statistic</td><td>6.077<sup>***</sup> (df = 2; 1813)</td><td>5.150<sup>***</sup> (df = 2; 1644)</td><td>6.028<sup>***</sup> (df = 2; 1841)</td></tr>
+<tr><td colspan="4" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left"><em>Note:</em></td><td colspan="3" style="text-align:right"><sup>*</sup>p&lt;0.1; <sup>**</sup>p&lt;0.05; <sup>***</sup>p&lt;0.01</td></tr>
+</table>
+
+<hr />
+
+<p>Good, I seem to have exactly the same results. Here’s my R code that does the analysis so far for both the Australian and New Zealand results.</p>
+
+<p><em>Post continues below R code</em></p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># Wood, Terence, 2020, "Replication Data for The effect of geostrategic
+# competition on public attitudes to aid", https://doi.org/10.7910/DVN/3VVWPL,
+# Harvard Dataverse, V1, UNF:6:a3zSXQF/lkQQhkGYNqchGg== [fileUNF]
+</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">haven</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">glue</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">stargazer</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">kableExtra</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">emmeans</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">patchwork</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">boot</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">mice</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">ggdag</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">clipr</span><span class="p">)</span><span class="w">
+
+</span><span class="n">the_caption</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"Reproduction data from Terence Wood et al, 'The Effect of Geostrategic Competition on Public Attitudes to Aid'"</span><span class="w">
+
+</span><span class="c1"># Data needed downloaded manually from Harvard Dataverse
+# https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/3VVWPL
+</span><span class="n">aust</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">read_stata</span><span class="p">(</span><span class="s2">"1 Australia data JEPS FINAL.dta"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">treatment_group</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">as_factor</span><span class="p">(</span><span class="n">treatment_group</span><span class="p">))</span><span class="w">
+
+</span><span class="n">nz</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">read_stata</span><span class="p">(</span><span class="s2">"2 NZ data JEPS FINAL.dta"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">treatment_group</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">as_factor</span><span class="p">(</span><span class="n">treatment</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">rename</span><span class="p">(</span><span class="n">too_much_aid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">toomuchaid</span><span class="p">,</span><span class="w">
+         </span><span class="n">more_to_pac</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">morepac</span><span class="p">,</span><span class="w">
+         </span><span class="n">favour_nz</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">favournz</span><span class="p">)</span><span class="w">
+
+
+</span><span class="c1"># nz gets this error, but it is only a problem for the print method
+# Error in gsub(finish, start, ..., fixed = TRUE) : 
+#   input string 3 is invalid UTF-8
+</span><span class="w">
+</span><span class="c1">#-------------Australian models--------------------
+</span><span class="w">
+</span><span class="n">aust_mods</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">list</span><span class="p">()</span><span class="w">
+</span><span class="n">all_response_vars</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"too_much_aid"</span><span class="p">,</span><span class="w"> </span><span class="s2">"more_to_pac"</span><span class="p">,</span><span class="w"> </span><span class="s2">"favour_aus"</span><span class="p">)</span><span class="w">
+</span><span class="n">all_response_labs</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Too much aid"</span><span class="p">,</span><span class="w"> </span><span class="s2">"More to Pacific"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Help Australia"</span><span class="p">)</span><span class="w">
+
+</span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="nf">length</span><span class="p">(</span><span class="n">all_response_vars</span><span class="p">)){</span><span class="w">
+  </span><span class="n">form</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.formula</span><span class="p">(</span><span class="n">glue</span><span class="p">(</span><span class="s2">"{all_response_vars[[i]]} ~ treatment_group"</span><span class="p">))</span><span class="w">
+  
+  </span><span class="n">aust_mods</span><span class="p">[[</span><span class="n">i</span><span class="p">]]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lm</span><span class="p">(</span><span class="n">form</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">aust</span><span class="p">)</span><span class="w">
+  
+</span><span class="p">}</span><span class="w">
+
+</span><span class="c1"># Regression results:
+</span><span class="n">stargazer</span><span class="p">(</span><span class="n">aust_mods</span><span class="p">[[</span><span class="m">1</span><span class="p">]],</span><span class="w"> </span><span class="n">aust_mods</span><span class="p">[[</span><span class="m">2</span><span class="p">]],</span><span class="w"> </span><span class="n">aust_mods</span><span class="p">[[</span><span class="m">3</span><span class="p">]],</span><span class="w"> 
+          </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"html"</span><span class="p">,</span><span class="w">
+          </span><span class="n">dep.var.labels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">all_response_labs</span><span class="p">,</span><span class="w">
+          </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Regression results for Australians"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">write_clip</span><span class="p">()</span><span class="w">
+
+
+</span><span class="c1">#---------------------New Zealand models------------------
+</span><span class="n">nz_mods</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">list</span><span class="p">()</span><span class="w">
+</span><span class="n">all_response_vars_nz</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"too_much_aid"</span><span class="p">,</span><span class="w"> </span><span class="s2">"more_to_pac"</span><span class="p">,</span><span class="w"> </span><span class="s2">"favour_nz"</span><span class="p">)</span><span class="w">
+</span><span class="n">all_response_labs_nz</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Too much aid"</span><span class="p">,</span><span class="w"> </span><span class="s2">"More to Pacific"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Help New Zealand"</span><span class="p">)</span><span class="w">
+
+</span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="nf">length</span><span class="p">(</span><span class="n">all_response_vars_nz</span><span class="p">)){</span><span class="w">
+  </span><span class="n">form</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.formula</span><span class="p">(</span><span class="n">glue</span><span class="p">(</span><span class="s2">"{all_response_vars_nz[[i]]} ~ treatment_group"</span><span class="p">))</span><span class="w">
+  
+  </span><span class="n">nz_mods</span><span class="p">[[</span><span class="n">i</span><span class="p">]]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lm</span><span class="p">(</span><span class="n">form</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nz</span><span class="p">)</span><span class="w">
+  
+</span><span class="p">}</span><span class="w">
+
+</span><span class="c1"># Regression results:
+</span><span class="n">stargazer</span><span class="p">(</span><span class="n">nz_mods</span><span class="p">[[</span><span class="m">1</span><span class="p">]],</span><span class="w"> </span><span class="n">nz_mods</span><span class="p">[[</span><span class="m">2</span><span class="p">]],</span><span class="w"> </span><span class="n">nz_mods</span><span class="p">[[</span><span class="m">3</span><span class="p">]],</span><span class="w"> 
+          </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"html"</span><span class="p">,</span><span class="w">
+          </span><span class="n">dep.var.labels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">all_response_labs_nz</span><span class="p">,</span><span class="w">
+          </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Regression results for New Zealanders"</span><span class="p">)</span></code></pre></figure>
+
+<p>… and here are the results for the New Zealand side of the experiment. Again, these match the original article. Note that the New Zealand experiment only had one version of the vignette on the Chinese aid program (unlike the Australian which had ‘forceful’ and ‘measured’ versions).</p>
+
+<hr />
+
+<h4 id="table-1b---regression-results-experiment-with-three-response-variables-new-zealand-public">Table 1b - Regression results, experiment with three response variables, New Zealand public</h4>
+
+<table style="text-align:center"><caption><strong>Regression results for New Zealanders</strong></caption>
+<tr><td colspan="4" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left"></td><td colspan="3"><em>Dependent variable:</em></td></tr>
+<tr><td></td><td colspan="3" style="border-bottom: 1px solid black"></td></tr>
+<tr><td style="text-align:left"></td><td>Too much aid</td><td>More to Pacific</td><td>Help New Zealand</td></tr>
+<tr><td style="text-align:left"></td><td>(1)</td><td>(2)</td><td>(3)</td></tr>
+<tr><td colspan="4" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">Vignette</td><td>-0.077<sup>***</sup></td><td>0.070<sup>**</sup></td><td>-0.027</td></tr>
+<tr><td style="text-align:left"></td><td>(0.028)</td><td>(0.030)</td><td>(0.031)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td></tr>
+<tr><td style="text-align:left">Control group mean</td><td>0.350<sup>***</sup></td><td>0.310<sup>***</sup></td><td>0.531<sup>***</sup></td></tr>
+<tr><td style="text-align:left"></td><td>(0.020)</td><td>(0.021)</td><td>(0.021)</td></tr>
+<tr><td style="text-align:left"></td><td></td><td></td><td></td></tr>
+<tr><td colspan="4" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">Observations</td><td>1,070</td><td>998</td><td>1,070</td></tr>
+<tr><td style="text-align:left">R<sup>2</sup></td><td>0.007</td><td>0.005</td><td>0.001</td></tr>
+<tr><td style="text-align:left">Adjusted R<sup>2</sup></td><td>0.006</td><td>0.004</td><td>-0.0002</td></tr>
+<tr><td style="text-align:left">Residual Std. Error</td><td>0.463 (df = 1068)</td><td>0.474 (df = 996)</td><td>0.500 (df = 1068)</td></tr>
+<tr><td style="text-align:left">F Statistic</td><td>7.341<sup>***</sup> (df = 1; 1068)</td><td>5.422<sup>**</sup> (df = 1; 996)</td><td>0.798 (df = 1; 1068)</td></tr>
+<tr><td colspan="4" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left"><em>Note:</em></td><td colspan="3" style="text-align:right"><sup>*</sup>p&lt;0.1; <sup>**</sup>p&lt;0.05; <sup>***</sup>p&lt;0.01</td></tr>
+</table>
+
+<hr />
+
+<h3 id="contrasts">Contrasts</h3>
+
+<p>Tables (2), (4) and (6) of the original Australian table present the contrasts between the ‘measured’ and ‘forceful’ versions of the vignette on Chinese aid activity. There’s no significant evidence that the two versions of the vignette have different effects, but it’s important to check I can get the same results. Here’s my estimate of those contrasts, calculated with the help of the <a href="https://cran.r-project.org/package=emmeans"><code class="highlighter-rouge">emmeans</code> R package by Russell Lenth et al</a>.</p>
+
+<hr />
+
+<h4 id="table-2---contrast-between-effect-of-two-vignettes---measured-and-forceful---on-three-different-response-variables">Table 2 - Contrast between effect of two vignettes - ‘measured’ and ‘forceful’ - on three different response variables</h4>
+
+<table class="table" style="margin-left: auto; margin-right: auto;">
+ <thead>
+  <tr>
+   <th style="text-align:left;"> response </th>
+   <th style="text-align:right;"> 'Measured' minus 'Forceful' </th>
+   <th style="text-align:right;"> SE </th>
+   <th style="text-align:right;"> df </th>
+   <th style="text-align:right;"> t.ratio </th>
+   <th style="text-align:right;"> p.value </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr>
+   <td style="text-align:left;"> Too much aid </td>
+   <td style="text-align:right;"> -0.01 </td>
+   <td style="text-align:right;"> 0.03 </td>
+   <td style="text-align:right;"> 1813 </td>
+   <td style="text-align:right;"> 0.49 </td>
+   <td style="text-align:right;"> 0.62 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> More to Pacific </td>
+   <td style="text-align:right;"> 0.04 </td>
+   <td style="text-align:right;"> 0.03 </td>
+   <td style="text-align:right;"> 1644 </td>
+   <td style="text-align:right;"> -1.33 </td>
+   <td style="text-align:right;"> 0.18 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Help Australia </td>
+   <td style="text-align:right;"> -0.03 </td>
+   <td style="text-align:right;"> 0.03 </td>
+   <td style="text-align:right;"> 1841 </td>
+   <td style="text-align:right;"> 1.19 </td>
+   <td style="text-align:right;"> 0.24 </td>
+  </tr>
+</tbody>
+</table>
+
+<hr />
+
+<p><code class="highlighter-rouge">emmeans</code> is a nice package for comparing different levels of a factor in a linear model. It helps create plots of the comparisons too, looking after the tedious calculations of confidence intervals for you. This next chart, for just one of the response variables, is similar to Figure 1 from the original article. It shows the average proportion of the sample favouring the national interest as a motivation for aid for the different types of treatment. The red arrows inside the bars are an interpretive aid to help make confidence intervals for comparisons between two different effects, whereas the blue bars are the confidence intervals for a single level of the effect.</p>
+
+<object type="image/svg+xml" data="/img/0198-margins.svg" width="100%"><img src="/img/0198-margins.png" width="100%" /></object>
+
+<p>This finding - exposure to information about China leads to more support for a poverty-focused Australian aid program - is definitely interesting, and as mentioned earlier not what would be expected. It’s worth noting that it didn’t replicate with the New Zealand data. My main question about the interpretation of this finding is how much it depends on the vignette about Chinese aid activity, as opposed to a general priming on aid.</p>
+
+<p>The three treatments in the Australian case were a strident piece on Chinese aid, a measured one, and no information at all. The comparison that would be interesting for future research would be a vignette about aid but perhaps without mentioning specific country donors at all. Because overseas aid and economic development in the Pacific are very low profile topics in Australia, it could be that almost any information about the issues leads to changes in how aid objectives are perceived. But other than noting the lack of obvious difference in impact between the “measured” and “foreceful” treatment groups, I am speculating here.</p>
+
+<p>Here is the R code for the table and chart showing the contrasts between different treatment levels:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#----------Australian Contrasts--------------
+</span><span class="n">rbind</span><span class="p">(</span><span class="w">
+  </span><span class="n">as_tibble</span><span class="p">(</span><span class="n">pairs</span><span class="p">(</span><span class="n">emmeans</span><span class="p">(</span><span class="n">aust_mods</span><span class="p">[[</span><span class="m">1</span><span class="p">]],</span><span class="w"> </span><span class="s2">"treatment_group"</span><span class="p">))[</span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="p">]),</span><span class="w">
+  </span><span class="n">as_tibble</span><span class="p">(</span><span class="n">pairs</span><span class="p">(</span><span class="n">emmeans</span><span class="p">(</span><span class="n">aust_mods</span><span class="p">[[</span><span class="m">2</span><span class="p">]],</span><span class="w"> </span><span class="s2">"treatment_group"</span><span class="p">))[</span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="p">]),</span><span class="w">
+  </span><span class="n">as_tibble</span><span class="p">(</span><span class="n">pairs</span><span class="p">(</span><span class="n">emmeans</span><span class="p">(</span><span class="n">aust_mods</span><span class="p">[[</span><span class="m">3</span><span class="p">]],</span><span class="w"> </span><span class="s2">"treatment_group"</span><span class="p">))[</span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="p">])</span><span class="w">
+</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="c1"># pairs actually gives us the Measured estimate relative to Forceful; we want
+</span><span class="w">  </span><span class="c1"># the reverse:
+</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">estimate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="n">estimate</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="c1"># shuffle some stuff for presentation:
+</span><span class="w">  </span><span class="n">select</span><span class="p">(</span><span class="o">-</span><span class="n">contrast</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">rename</span><span class="p">(</span><span class="n">`'Measured' minus 'Forceful'`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">estimate</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">all_response_labs</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">select</span><span class="p">(</span><span class="n">response</span><span class="p">,</span><span class="w"> </span><span class="n">everything</span><span class="p">())</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">kable</span><span class="p">(</span><span class="n">digits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">kable_styling</span><span class="p">()</span><span class="w">
+
+
+</span><span class="c1">#-------------margins plot, Figure 1:---------------
+</span><span class="n">p</span><span class="m">3</span><span class="n">a</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">plot</span><span class="p">(</span><span class="n">emmeans</span><span class="p">(</span><span class="n">lm</span><span class="p">(</span><span class="n">favour_aus</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">treatment_group</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">aust</span><span class="p">),</span><span class="w"> </span><span class="n">specs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"treatment_group"</span><span class="p">),</span><span class="w">
+            </span><span class="n">comparisons</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Aid should help Australia"</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span><span class="w">
+</span><span class="n">p</span><span class="m">3</span><span class="n">b</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">plot</span><span class="p">(</span><span class="n">emmeans</span><span class="p">(</span><span class="n">lm</span><span class="p">(</span><span class="n">favour_poor</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">treatment_group</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">aust</span><span class="p">),</span><span class="w"> </span><span class="n">specs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"treatment_group"</span><span class="p">),</span><span class="w">
+            </span><span class="n">comparisons</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Aid should help the poor"</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span><span class="w">
+
+</span><span class="n">p</span><span class="m">3</span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+    </span><span class="n">p</span><span class="m">3</span><span class="n">b</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">plot_annotation</span><span class="p">(</span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Telling Australians about Chinese aid might make them more focused on helping the poor"</span><span class="p">,</span><span class="w">
+                    </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Subjects were given a description of Chinese aid that was either forceful, measured or none (control)"</span><span class="p">,</span><span class="w">
+                    </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_caption</span><span class="p">)</span></code></pre></figure>
+
+<h2 id="more-complex-models">More complex models</h2>
+
+<p>The <a href="https://globaldataversecommunityconsortium.github.io/dataverse-previewers/previewers/TextPreview.html?fileid=4002954&amp;siteUrl=https://dataverse.harvard.edu&amp;datasetid=4002952&amp;datasetversion=1.0&amp;locale=en">code for Wood et al’s online appendix is available with the rest of the replication data</a>. It involves some more complex models that control for variables other than the treatment, like gender, age and income. And they use logistic regression rather than ordinary least squares, with a possible gain in robustness of findings at a considerable cost in ease of interpretability.</p>
+
+<p>Even with data from a randomised control trial (which this study can be considered an example of), it is good practice to fit a statistical model that adjusts for explanatory variables that aren’t of direct interest. This definitely leads to better estimates of the treatment effect. Maybe the main article should have done this, rather than relegating this analysis to the online appendix, but I can see an argument for focusing on the simplest comparison in the main text.</p>
+
+<p>Having fit the more complete model, an interpretive problem comes from the presentation of the results of that regression. Philosophically, there is a profound difference between the coefficients in front of the treatment variable (in this case, “did you get a vignette about China’s activities in the Pacific”) and those for the control variables. This difference is important enough to have its own name, <i>Table 2 Fallacy</i>, so called because in some fields Table 1 in a journal article is typically basic summary statistics about the sample and Table 2 presents the results of a regresssion with the coefficients for the treatment and confounder variables. The term <a href="https://academic.oup.com/aje/article/177/4/292/147738">Table 2 Fallacy was coined in 2013 by Westreich and Greenland</a>.</p>
+
+<p>The coefficient for the primary treatment can be legitimately interpreted as “the total impact of this variable on the outcome”. This is fine, and this inference is usually the whole justification of the experiment. However, the coefficients in front of the other variables can only be interpreted as “the impact of this variable, after controlling for the particular confounding variables in this model”. The critical differences come from the choice of variables to include in the model, some of which are on the causal path between other variables and the outcome of interest.</p>
+
+<blockquote>
+  <p>“In sum, presenting estimates of effect measures for secondary risk factors (confounders and modifiers of the exposure effect measure) obtained from the same model as that used to estimate the primary exposure effects can lead readers astray in a number of ways. Extra thought and description will be needed when interpreting such secondary estimates.”</p>
+</blockquote>
+
+<p><i>Westreich and Greenland in “The Table 2 Fallacy: Presenting and Interpreting Confounder and Modifier Coefficients”</i></p>
+
+<p>Basically, while we have the power of a controlled experiment for drawing inferences about the main treatment, we are back in the world of observational inference with the other variables.</p>
+
+<p>In the case of this attitudes to aid study, here is my crude attempt at a causal diagram of the variables we have data on plus one latent unobserved variable (“political views”) that is of obvious importance:</p>
+
+<hr />
+
+<object type="image/svg+xml" data="/img/0198-graph.svg" width="100%"><img src="/img/0198-graph.png" width="100%" /></object>
+
+<hr />
+
+<p>Because the treatment (<code class="highlighter-rouge">which_vignette</code>) does not impact on any of the secondary variables (academic status, background political views, gender, etc) and is not impacted by them (because it was allocated at random), we can safely conclude that the estimated effect for the treatment is the total effect. This applies whether we control for the secondary variables (as we are about to) or we don’t (as was the case in the main paper, and the tables of results shown above).</p>
+
+<p>In the case of the other variables, there are big complications. For example, all four of the variables gender, income, age and academic status are expected to impact on attitudes to aid, but probably mediated by the unobserved general “political views” variable. The variables all have complex relations with eachother and with political views; for example, gender impacts on income (in complex ways that might relate to  the individual and certainly to the environment they are in), and both gender and income impact on political views. If income is excluded from the model, some of the reported gender effect will in fact be a proxy for an income effect. In other words, if there are important variables we have missed from the model (and there might be some we haven’t thought of here), we get <a href="https://en.wikipedia.org/wiki/Omitted-variable_bias#:~:text=In%20statistics%2C%20omitted%2Dvariable%20bias,to%20those%20that%20were%20included.">omitted-variable bias</a>. We can never be sure that (for example) the gender effect in relation to attitudes to aid isn’t standing in as a proxy for something else related to that “political views” circle.</p>
+
+<p>Here’s how I drew that causal graph with R. Everyone should draw more causal graphs, I think.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#===============extra analysis with more variables================
+</span><span class="w">
+</span><span class="c1">#--------------Direction of causality-------------
+# Direct graph (not 'acyclic' because the connections go in circles!)
+</span><span class="n">dagified</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dagify</span><span class="p">(</span><span class="n">aid_attitude</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">which_vignette</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">political_views</span><span class="p">,</span><span class="w">
+                   </span><span class="n">political_views</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">income</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">gender</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">age</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">academic</span><span class="p">,</span><span class="w">
+                   </span><span class="n">income</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">gender</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">age</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">academic</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">political_views</span><span class="p">,</span><span class="w">
+                   </span><span class="n">academic</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">gender</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">age</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">political_views</span><span class="p">,</span><span class="w">
+                   </span><span class="n">latent</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"political_views"</span><span class="p">,</span><span class="w">
+                   </span><span class="n">outcome</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"aid_attitude"</span><span class="w">
+                   </span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># Draw causal graph
+</span><span class="n">set.seed</span><span class="p">(</span><span class="m">123</span><span class="p">)</span><span class="w">
+</span><span class="n">tidy_dagitty</span><span class="p">(</span><span class="n">dagified</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="n">xend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xend</span><span class="p">,</span><span class="w"> </span><span class="n">yend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">yend</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_dag_edges_arc</span><span class="p">(</span><span class="n">edge_colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey50"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_dag_node</span><span class="p">(</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="s2">"grey80"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_dag_text</span><span class="p">(</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">main_font</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">theme_void</span><span class="p">(</span><span class="n">base_family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">main_font</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Simplified causal diagram of factors in this experiment and views on aid"</span><span class="p">,</span><span class="w">
+       </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_caption</span><span class="p">)</span></code></pre></figure>
+
+<p>So having fit the results, how to present them without leading readers into Table 2 fallacy? The obvious thing is to just highlight that these are two different types of effect. Here’s how I did that with the three regressions in question - one for each of the outcome variables included in Table 1:</p>
+
+<hr />
+
+<object type="image/svg+xml" data="/img/0198-bs-too-much.svg" width="100%"><img src="/img/0198-bs-too-much.png" width="100%" /></object>
+
+<hr />
+
+<object type="image/svg+xml" data="/img/0198-more-pacific.svg" width="100%"><img src="/img/0198-more-pacific.png" width="100%" /></object>
+
+<hr />
+
+<object type="image/svg+xml" data="/img/0198-support-aus.svg" width="100%"><img src="/img/0198-support-aus.png" width="100%" /></object>
+
+<hr />
+
+<p>I’m frankly not sure of the best terminology here. Westreich and Greenland say “extra thought and description” is needed for secondary estimates, but what’s the one word to put in my legend of these charts? I’ve chosen “mediated” because it so happens they are all <a href="https://en.wikipedia.org/wiki/Mediation_(statistics)">mediated</a> by the “political views” latent variable, but in other situations this wouldn’t be quite right.</p>
+
+<p>Anyway, I’m pretty happy with those charts. I like the way the confidence interval is shown directly (rather than in a mess of numbers as per the table of regression coefficients that is still - shockingly - standard in academic hournlas). I like the way the total effects are distinguished from the more complex, mediated ones. And I like the way we can see that:</p>
+
+<ul>
+  <li>people from an academic background are much less likely to say Australia gives too much aid or that aid should help Australia, and this seems to be a stronger effect than whether the respondent was given a China vignette or not;</li>
+  <li>that older people and men are more likely to support giving more aid to the Pacific</li>
+  <li>no evidence that income impacts on these attitudes</li>
+</ul>
+
+<p>That last case is an interesting one in the light of Table 2 fallacy. I expected income to relate to aid attitudes, but more because of how it stands as a proxy for industry, occupation, age, education and indeed general attitudes to life. So the more of these other variables we can include in the model, the less omitted-variables bias we get and the lower the income effect.</p>
+
+<p>Here’s the R code for fitting these logistic regression models with multiple explanatory variables. Note that we have a material amount of missing income information. To get around this I impute income, and include the imputation algorithm within a bootstrap, so the randomness of the imputation is reflected in the eventual estimates.</p>
+
+<p>The process of imputing and fitting the model to one sample is done in the <code class="highlighter-rouge">my_reg()</code> function. I use the handy <code class="highlighter-rouge">mice</code> package to do the imputation, even though I’m not using all the multiple-imputation functionality in that package, just imputing a set of individual values. The imputatin and regression function is then called multiple times with different bootstrap resamples by <code class="highlighter-rouge">boot</code> from the invaluable <code class="highlighter-rouge">boot</code> package.</p>
+
+<p>This is a method I use all the time - good, powerful, robust, general-purpose approach to many regression problems.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#-----------Bootstrap and imputation---------------------
+</span><span class="w">
+</span><span class="cd">#' Imputation and regression
+#' 
+#' @param d data frame with the necessary columns in it
+#' @param w 'weights' used to indicate which rows of d to use
+</span><span class="n">my_reg</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">d</span><span class="p">,</span><span class="w"> </span><span class="n">w</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">nrow</span><span class="p">(</span><span class="n">d</span><span class="p">),</span><span class="w"> 
+                   </span><span class="n">resp_var</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"too_much_aid"</span><span class="p">,</span><span class="w"> </span><span class="s2">"more_to_pac"</span><span class="p">,</span><span class="w"> </span><span class="s2">"favour_aus"</span><span class="p">)){</span><span class="w">
+  
+  </span><span class="n">resp_var</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">match.arg</span><span class="p">(</span><span class="n">resp_var</span><span class="p">)</span><span class="w">
+  
+  </span><span class="n">d_select</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">rename</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">mutate</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">y</span><span class="p">),</span><span class="w"> </span><span class="c1"># eg 1 = 'Favour Aus', 0 = 'Help overseas'
+</span><span class="w">           </span><span class="n">male</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">male</span><span class="p">),</span><span class="w">
+           </span><span class="n">over_fifty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">over_fifty</span><span class="p">),</span><span class="w">
+           </span><span class="n">academic</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">academic</span><span class="p">),</span><span class="w">
+           </span><span class="n">log_inc_pp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">log</span><span class="p">(</span><span class="n">income_per_person</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">select</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w">
+           </span><span class="n">treatment_group</span><span class="p">,</span><span class="w">
+           </span><span class="n">male</span><span class="p">,</span><span class="w">
+           </span><span class="n">over_fifty</span><span class="p">,</span><span class="w">
+           </span><span class="n">academic</span><span class="p">,</span><span class="w">
+           </span><span class="n">log_inc_pp</span><span class="p">)</span><span class="w"> 
+  
+  </span><span class="n">d_imputed</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">complete</span><span class="p">(</span><span class="w">
+    </span><span class="n">mice</span><span class="p">(</span><span class="n">d_select</span><span class="p">[</span><span class="n">w</span><span class="p">,</span><span class="w"> </span><span class="p">],</span><span class="w"> 
+         </span><span class="n">m</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> 
+         </span><span class="n">printFlag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w">
+         </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"cart"</span><span class="p">,</span><span class="w"> </span><span class="s2">"cart"</span><span class="p">,</span><span class="w"> </span><span class="s2">"cart"</span><span class="p">,</span><span class="w"> </span><span class="s2">"cart"</span><span class="p">,</span><span class="w"> </span><span class="s2">"cart"</span><span class="p">,</span><span class="w"> </span><span class="s2">"norm"</span><span class="p">))</span><span class="w">
+    </span><span class="p">)</span><span class="w">
+  
+  </span><span class="n">tmp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">dim</span><span class="p">(</span><span class="n">with</span><span class="p">(</span><span class="n">d_imputed</span><span class="p">,</span><span class="w"> </span><span class="n">table</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">treatment_group</span><span class="p">)))</span><span class="w">
+  </span><span class="k">if</span><span class="p">(</span><span class="nf">length</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">tmp</span><span class="p">[</span><span class="m">1</span><span class="p">]</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">tmp</span><span class="p">[</span><span class="m">2</span><span class="p">]</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">3</span><span class="p">){</span><span class="w">
+    
+    </span><span class="n">full_mod</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">glm</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">treatment_group</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">male</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">over_fifty</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">academic</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">log_inc_pp</span><span class="p">,</span><span class="w"> 
+                   </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">d_imputed</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"quasibinomial"</span><span class="p">)</span><span class="w">
+    
+    </span><span class="nf">return</span><span class="p">(</span><span class="n">coef</span><span class="p">(</span><span class="n">full_mod</span><span class="p">))</span><span class="w"> 
+  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nf">return</span><span class="p">(</span><span class="kc">NULL</span><span class="p">)</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="c1"># Demo use:
+</span><span class="n">my_reg</span><span class="p">(</span><span class="n">aust</span><span class="p">,</span><span class="w"> </span><span class="n">resp_var</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"more_to_pac"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># Apply to all three different response variables, bootstrapped 999 times each
+</span><span class="n">boot_reg</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lapply</span><span class="p">(</span><span class="n">all_response_vars</span><span class="p">,</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">v</span><span class="p">){</span><span class="w">
+  </span><span class="n">set.seed</span><span class="p">(</span><span class="m">123</span><span class="p">)</span><span class="w">
+  </span><span class="n">boot</span><span class="p">(</span><span class="n">aust</span><span class="p">,</span><span class="w"> </span><span class="n">my_reg</span><span class="p">,</span><span class="w"> </span><span class="n">R</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">999</span><span class="p">,</span><span class="w"> </span><span class="n">resp_var</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v</span><span class="p">)</span><span class="w">
+</span><span class="p">})</span><span class="w">
+
+</span><span class="n">boot_plots</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">list</span><span class="p">()</span><span class="w">
+
+</span><span class="k">for</span><span class="p">(</span><span class="n">j</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="nf">length</span><span class="p">(</span><span class="n">boot_reg</span><span class="p">)){</span><span class="w">
+  </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lapply</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">7</span><span class="p">,</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">i</span><span class="p">){</span><span class="n">boot.ci</span><span class="p">(</span><span class="n">boot_reg</span><span class="p">[[</span><span class="n">j</span><span class="p">]],</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"perc"</span><span class="p">,</span><span class="w"> </span><span class="n">index</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="o">$</span><span class="n">percent</span><span class="p">[</span><span class="m">4</span><span class="o">:</span><span class="m">5</span><span class="p">]})</span><span class="w">
+  
+  </span><span class="n">set.seed</span><span class="p">(</span><span class="m">322</span><span class="p">)</span><span class="w">
+  </span><span class="n">boot_plots</span><span class="p">[[</span><span class="n">j</span><span class="p">]]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">do.call</span><span class="p">(</span><span class="n">rbind</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w">  </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">as.data.frame</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">mutate</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Intercept"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Measured vignette re China"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Forceful vignette re China"</span><span class="p">,</span><span class="w"> 
+                        </span><span class="s2">"Male"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Over fifty"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Academic"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Log Income Per Person"</span><span class="p">),</span><span class="w">
+           </span><span class="n">var_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="nf">c</span><span class="p">(</span><span class="s2">"doesn't matter"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Total"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Mediated"</span><span class="p">),</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">4</span><span class="p">)))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">cbind</span><span class="p">(</span><span class="n">point</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">my_reg</span><span class="p">(</span><span class="n">aust</span><span class="p">,</span><span class="w"> </span><span class="n">resp_var</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">all_response_vars</span><span class="p">[[</span><span class="n">j</span><span class="p">]]))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">filter</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">"Intercept"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">rename</span><span class="p">(</span><span class="n">lower</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">V</span><span class="m">1</span><span class="p">,</span><span class="w">
+           </span><span class="n">upper</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">V</span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">mutate</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_reorder</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">point</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">point</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">variable</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">geom_vline</span><span class="p">(</span><span class="n">xintercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"brown"</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">/</span><span class="m">4</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">geom_segment</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">xend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lower</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">upper</span><span class="p">,</span><span class="w"> </span><span class="n">yend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">var_type</span><span class="p">),</span><span class="w"> 
+                 </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.25</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">geom_point</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">guides</span><span class="p">(</span><span class="n">color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">guide_legend</span><span class="p">(</span><span class="n">override.aes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">labs</span><span class="p">(</span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_caption</span><span class="p">,</span><span class="w">
+         </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">glue</span><span class="p">(</span><span class="s2">"Impact (on log-odds scale) on probability of saying '{all_response_labs[j]}'"</span><span class="p">),</span><span class="w">
+         </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w">
+         </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"How to interpret the effect of the variable:"</span><span class="p">,</span><span class="w">
+         </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"The effect of geostrategic competition on public attitudes to aid"</span><span class="p">,</span><span class="w">
+         </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">str_wrap</span><span class="p">(</span><span class="n">glue</span><span class="p">(</span><span class="s2">"Impact of a measured or forceful vignette about 
+         Chinese aid, and other secondary variables, on likelihood
+         of supporting '{all_response_labs[j]}'"</span><span class="p">),</span><span class="w"> </span><span class="m">80</span><span class="p">))</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">boot_plots</span><span class="p">[[</span><span class="m">1</span><span class="p">]]</span><span class="w">
+</span><span class="n">boot_plots</span><span class="p">[[</span><span class="m">2</span><span class="p">]]</span><span class="w">
+</span><span class="n">boot_plots</span><span class="p">[[</span><span class="m">3</span><span class="p">]]</span></code></pre></figure>
+
+<p>That’s all folks. Today’s thoughts:</p>
+
+<ul>
+  <li>Interesting research problem and data set.</li>
+  <li>Great to have the code and data.</li>
+  <li>It’s worth reflecting on how to interpret coefficients from regression models fit to experimental data; and be careful how you present secondary effects next to the primary variable of interest.</li>
+  <li>Put your imputation inside the bootstrap to properly account for the uncertainty it introduces.</li>
+</ul>
+
+
+
+		
+	</div>
+</div>
+
+<div class="col-md-1"></div>
+<div class="col-md-4">
+	<div class="side-banner">
+	
+
+
+	<div>
+	   
+	    
+			
+			<p>&larr; Previous post</p>
+			<p><a rel="prev" href="/blog/2020/10/11/hamlet">Hamlet, data models, interaction graphs and other cool stuff</a></p>
+		
+		
+		
+		
+		
+		
+	</div>
+	
+	 
+
+   <div class = "side-footer">
+			
+			<hr></hr>
+			<p><gcse:search></gcse:search></p>
+			<hr></hr>
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.</p>
+			<hr></hr>
+			
+			<p>My day job is Chief Data Scientist at <a href='https://www.nousgroup.com/'>Nous Group</a>, an international management consultancy with over 400 people working across Australia, the UK and Canada. <a href='mailto:peter.ellis@nousgroup.com.au'>Contact me</a> if you are interested working with us on a grand challenge or broad agenda.</p>
+		
+		    <hr></hr>
+			
+       <div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="false" data-share="false"></div>
+			
+			<hr></hr>
+			<p>I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+			<hr></hr>
+
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title"><i>free range statistics</i></span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			<hr></hr>
+			
+
+
+    </div>
+
+
+
+  
+   
+
+
+
+
+		  
+		  
+
+
+
+	   
+	<div id="disqus_thread"></div>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function() {
+				var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+				dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+				(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+			})();
+		</script>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function () {
+				var s = document.createElement('script'); s.async = true;
+				s.type = 'text/javascript';
+				s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+				(document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+			}());
+		</script>
+
+	<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+	</div>	
+</div>    
+   
+   
+
+			
+			</div><!-- /.container -->
+         
+   <!-- Default Statcounter code for Free Range Statistics
+http://Http://freerangestats.info -->
+<script type="text/javascript">
+var sc_project=11673245; 
+var sc_invisible=1; 
+var sc_security="5b7111a4"; 
+</script>
+<script type="text/javascript"
+src="https://www.statcounter.com/counter/counter.js" async></script>
+<noscript><div class="statcounter"><a title="Web Analytics"
+href="http://statcounter.com/" target="_blank"><img class="statcounter"
+src="//c.statcounter.com/11673245/0/5b7111a4/1/" alt="Web
+Analytics"></a></div></noscript>
+<!-- End of Statcounter Code -->
+
+</body>   
+</html>
