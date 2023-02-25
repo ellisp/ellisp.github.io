@@ -18,7 +18,7 @@
             <meta property="og:image" content="http://ellisp.github.io/img/0106-sample-distributions.png" />
          
 		 
-			<meta property="og:url" content="http://freerangestats.info/blog/2017/08/05/weighted-gini.html" />
+			<meta property="og:url" content="http://localhost:4000/blog/2017/08/05/weighted-gini.html" />
 		 
          <meta property="og:author" content= "https://www.facebook.com/peterstats" />
          <meta property="og:type" content="article" />
@@ -113,7 +113,7 @@
                   <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
 				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
                   <li><a href="/blog/surveys.html">all posts on surveys</a></li> 
-				  <li><a href = /blog/2022/10/13/pacific-map>most recent post</a></li>
+				  <li><a href = /blog/2023/02/25/ilr>most recent post</a></li>
 				</ul>
             </li>
               <li><a href="/blog/showcase.html">showcase</a></li>
@@ -172,39 +172,39 @@
 
 <p>Duoba and MacGibbon do a brief review of algorithms and choose a preferred one, noting along the way that the existing Stats NZ method will underestimate inequality (very, very slightly - this isn’t something that should make the news please, it’s the fourth decimal place).  They helpfully provide a SAS program to implement the algorithm which is literally two pages long, and a much shorter R program that is half a page.</p>
 
-<h3 id="q1--is-acidweightedgini-using-the-best-method">Q1.  Is <code class="highlighter-rouge">acid::weighted.gini()</code> using the best method?</h3>
+<h3 id="q1--is-acidweightedgini-using-the-best-method">Q1.  Is <code class="language-plaintext highlighter-rouge">acid::weighted.gini()</code> using the best method?</h3>
 
 <p>Of course, shorter, more readable, and more mathematically-oriented (ie vectorized) code is one reason I prefer R to SAS.  But another reason is that nearly any functionality one can imagine for published techniques already has an implementation out there we can borrow.  In this respect, pitting R against SAS is simply no contest; it’s like <a href="https://en.wikipedia.org/wiki/Wikipedia:Size_comparisons">Wikipedia versus an encyclopedia written by a single organisation</a>. Wikipedia has 5.5 million articles in English, Britannica’s last hard copy had 40,000 (and the online edition has 120,000, but I think the hard copy is somehow more like SAS, if I’m not pushing the metaphor too far).  The R universe quite simply has vastly more functionality available to it than is ready off the shelf for SAS users.</p>
 
-<p>So while Duoba and MacGibbon’s 20 effective lines of R is preferable to 90 lines of SAS, even more convenient is to just use the one liner <code class="highlighter-rouge">acid::weighted.gini(x, w)</code>, using free user contributions to the R universe.</p>
+<p>So while Duoba and MacGibbon’s 20 effective lines of R is preferable to 90 lines of SAS, even more convenient is to just use the one liner <code class="language-plaintext highlighter-rouge">acid::weighted.gini(x, w)</code>, using free user contributions to the R universe.</p>
 
-<p>With choice comes uncertainty.  I did want to check that the method I’ve been using for calculating Gini coefficients from weighted data (like in <a href="/blog/2017/07/22/inter-country-inequality">this post on inter-country inequality</a>) matched the one recommended by Duoba and MacGibbon.  I used the <code class="highlighter-rouge">weighted.gini</code> function from <a href="https://CRAN.R-project.org/package=acid">Alexander Sohn (2016). acid: Analysing Conditional Income Distributions. R package version
+<p>With choice comes uncertainty.  I did want to check that the method I’ve been using for calculating Gini coefficients from weighted data (like in <a href="/blog/2017/07/22/inter-country-inequality">this post on inter-country inequality</a>) matched the one recommended by Duoba and MacGibbon.  I used the <code class="language-plaintext highlighter-rouge">weighted.gini</code> function from <a href="https://CRAN.R-project.org/package=acid">Alexander Sohn (2016). acid: Analysing Conditional Income Distributions. R package version
   1.1.</a>.</p>
 
-<p>First, here’s code setting up the session and creating Duoba and MacGibbon’s <code class="highlighter-rouge">StatsGini</code> R function:</p>
+<p>First, here’s code setting up the session and creating Duoba and MacGibbon’s <code class="language-plaintext highlighter-rouge">StatsGini</code> R function:</p>
 
 <figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">acid</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">microbenchmark</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">forcats</span><span class="p">)</span><span class="w">
-</span><span class="c1"># Peter's Stats Stuff miscellaneous stuff package, install with: 
+</span><span class="c1"># Peter's Stats Stuff miscellaneous stuff package, install with: </span><span class="w">
 </span><span class="n">devtools</span><span class="o">::</span><span class="n">install_github</span><span class="p">(</span><span class="s2">"ellisp/pssmisc-r-package/pkg"</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">pssmisc</span><span class="p">)</span><span class="w"> 
 
-</span><span class="c1"># Duoba and MacGibbon's function, reproduced as in the original paper:
+</span><span class="c1"># Duoba and MacGibbon's function, reproduced as in the original paper:</span><span class="w">
 </span><span class="n">StatsGini</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">w</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">x</span><span class="p">))){</span><span class="w">
-  </span><span class="c1"># x and w are vectors
-</span><span class="w">  </span><span class="c1"># w can be left blank when calling the fn (i.e. no weighting)
-</span><span class="w">  </span><span class="c1"># Examples:
-</span><span class="w">  </span><span class="c1"># x &lt;- c(3, 1, 7, 2, 5)
-</span><span class="w">  </span><span class="c1"># w &lt;- c(1, 2, 3, 4, 5)
-</span><span class="w">  </span><span class="c1"># StatsGini(x, w) should yield 0.2983050847
-</span><span class="w">  </span><span class="c1"># StatsGini(c(0.25, 0.75), c(1, 1)) should yield 0.25
-</span><span class="w">  </span><span class="n">n</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w">
+  </span><span class="c1"># x and w are vectors</span><span class="w">
+  </span><span class="c1"># w can be left blank when calling the fn (i.e. no weighting)</span><span class="w">
+  </span><span class="c1"># Examples:</span><span class="w">
+  </span><span class="c1"># x &lt;- c(3, 1, 7, 2, 5)</span><span class="w">
+  </span><span class="c1"># w &lt;- c(1, 2, 3, 4, 5)</span><span class="w">
+  </span><span class="c1"># StatsGini(x, w) should yield 0.2983050847</span><span class="w">
+  </span><span class="c1"># StatsGini(c(0.25, 0.75), c(1, 1)) should yield 0.25</span><span class="w">
+  </span><span class="n">n</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w">
   </span><span class="n">wxsum</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">w</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w">
   </span><span class="n">wsum</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">w</span><span class="p">)</span><span class="w">
-  </span><span class="n">sxw</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">order</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">w</span><span class="p">)</span><span class="w"> </span><span class="c1"># Ascending order sort
-</span><span class="w">  </span><span class="n">sx</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">w</span><span class="p">[</span><span class="n">sxw</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">x</span><span class="p">[</span><span class="n">sxw</span><span class="p">]</span><span class="w">
+  </span><span class="n">sxw</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">order</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">w</span><span class="p">)</span><span class="w"> </span><span class="c1"># Ascending order sort</span><span class="w">
+  </span><span class="n">sx</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">w</span><span class="p">[</span><span class="n">sxw</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">x</span><span class="p">[</span><span class="n">sxw</span><span class="p">]</span><span class="w">
   </span><span class="n">sw</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">w</span><span class="p">[</span><span class="n">sxw</span><span class="p">]</span><span class="w">
   </span><span class="n">pxi</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">vector</span><span class="p">(</span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"numeric"</span><span class="p">,</span><span class="w"> </span><span class="n">length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">)</span><span class="w">
   </span><span class="n">pci</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">vector</span><span class="p">(</span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"numeric"</span><span class="p">,</span><span class="w"> </span><span class="n">length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">)</span><span class="w">
@@ -219,7 +219,7 @@
 
 <p>And here’s some checks.  We see to 10 decimal places, using the toy examples provided by Stats NZ, we get identical results:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>&gt; options(digits = 10)
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; options(digits = 10)
 &gt; x &lt;- c(3, 1, 7, 2, 5)
 &gt; w &lt;- c(1, 2, 3, 4, 5)
 &gt; StatsGini(x, w) # should yield 0.2983050847
@@ -236,8 +236,7 @@ $Gini
      [,1]
 [1,] 0.25
 
-</code></pre>
-</div>
+</code></pre></div></div>
 <p>Tests with more complicated data showed identical results too but I won’t bore the reader with them.</p>
 
 <h3 id="a-realistic-individual-income-simulation">A realistic individual income simulation</h3>
@@ -246,22 +245,22 @@ $Gini
 
 <p>To simulate the data in the Lorenz curve graphic I started with, I used the function below.  It implements a mixture of log-t distributions (using t rather than Normal because of the longer tails) ie e to the power of a variable from a mix of t distributions.  The mean of those t distributions itself is a random variable, in this case a non-transformed t distribution.  Then each value is multiplied at random by -1, 0 or 1 to simulate the idiosyncratic negative, zero, positive nature of incomes.</p>
 
-<p>When I create the data frame with 100,000 incomes in it, I also create a column called <code class="highlighter-rouge">prob</code> with randomly generated numbers between 0 and 1 following a Beta(2, 2) distribution.  I’m going to use that later to simulate the experience of sampling individuals for a complex survey.</p>
+<p>When I create the data frame with 100,000 incomes in it, I also create a column called <code class="language-plaintext highlighter-rouge">prob</code> with randomly generated numbers between 0 and 1 following a Beta(2, 2) distribution.  I’m going to use that later to simulate the experience of sampling individuals for a complex survey.</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="cd">#' Generate a realistic mixed distribution of incomes
-#'
-#' alpha ~ t(d_alpha) scaled to mean, sd of (log(mu), sigma_alpha)
-#' beta ~ t(d_beta) scaled to mean, sd of (alpha, sigma_beta)
-#' x = exp(beta)
-#' y = x * I(-1, 0, 1)
-#'
-#' @param n sample size to generate
-#' @param mu median income
-#' @param sigma_alpha standard deviation of underlying latent means
-#' @param sigma_beta standard deviation of scaled t distribution underlying the population's log-t distribution
-#' @param d_alpha degrees of freedom in th
-#' @param d_beta degrees of freedom in the t distribution underlying the log-t
-#' @param pr vector of 2 elements, the probability of negative income and of zero income respectively
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="cd">#' Generate a realistic mixed distribution of incomes</span><span class="w">
+</span><span class="cd">#'</span><span class="w">
+</span><span class="cd">#' alpha ~ t(d_alpha) scaled to mean, sd of (log(mu), sigma_alpha)</span><span class="w">
+</span><span class="cd">#' beta ~ t(d_beta) scaled to mean, sd of (alpha, sigma_beta)</span><span class="w">
+</span><span class="cd">#' x = exp(beta)</span><span class="w">
+</span><span class="cd">#' y = x * I(-1, 0, 1)</span><span class="w">
+</span><span class="cd">#'</span><span class="w">
+</span><span class="cd">#' @param n sample size to generate</span><span class="w">
+</span><span class="cd">#' @param mu median income</span><span class="w">
+</span><span class="cd">#' @param sigma_alpha standard deviation of underlying latent means</span><span class="w">
+</span><span class="cd">#' @param sigma_beta standard deviation of scaled t distribution underlying the population's log-t distribution</span><span class="w">
+</span><span class="cd">#' @param d_alpha degrees of freedom in th</span><span class="w">
+</span><span class="cd">#' @param d_beta degrees of freedom in the t distribution underlying the log-t</span><span class="w">
+</span><span class="cd">#' @param pr vector of 2 elements, the probability of negative income and of zero income respectively</span><span class="w">
 </span><span class="n">gen_incomes</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">mu</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">30000</span><span class="p">,</span><span class="w"> 
                         </span><span class="n">sigma_alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">sigma_beta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> 
                         </span><span class="n">d_alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">15</span><span class="p">,</span><span class="w"> </span><span class="n">d_beta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">15</span><span class="p">,</span><span class="w">
@@ -278,7 +277,7 @@ $Gini
                          </span><span class="n">sigma_beta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w">
                          </span><span class="n">prob</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rbeta</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">))</span><span class="w">
 
-</span><span class="c1"># draw density plot with a slice of 1000 people:
+</span><span class="c1"># draw density plot with a slice of 1000 people:</span><span class="w">
 </span><span class="n">population</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">slice</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">1000</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">income</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w"> 
@@ -295,13 +294,13 @@ $Gini
 
 <p><img src="/img/0106-density.svg" width="100%" /></p>
 
-<p>I wrote about the modulus transform, used in the horizontal axis in that chart, in <a href="/blog/2015/09/05/creating-a-scale-transformation">earlier blog posts</a>.  It’s an idea put forward by John and Draper in 1980 that I’m surprised hasn’t taken off more.  It’s very similar to a Box-Cox power transform, but it works for values of 0 and negative values too.  It does something very similar to a Box-Cox transform to the absolute value of the data, then returns the sign to it.  It’s a much, much better answer than the commonly used alternatives to what to do with data that looks like it needs a log transformation but inconveniently has some zeros and negatives.  I’ve implemented methods to do this in my new <code class="highlighter-rouge">pssmisc</code> ad hoc R package, referenced earlier in the code.</p>
+<p>I wrote about the modulus transform, used in the horizontal axis in that chart, in <a href="/blog/2015/09/05/creating-a-scale-transformation">earlier blog posts</a>.  It’s an idea put forward by John and Draper in 1980 that I’m surprised hasn’t taken off more.  It’s very similar to a Box-Cox power transform, but it works for values of 0 and negative values too.  It does something very similar to a Box-Cox transform to the absolute value of the data, then returns the sign to it.  It’s a much, much better answer than the commonly used alternatives to what to do with data that looks like it needs a log transformation but inconveniently has some zeros and negatives.  I’ve implemented methods to do this in my new <code class="language-plaintext highlighter-rouge">pssmisc</code> ad hoc R package, referenced earlier in the code.</p>
 
 <p>For completeness, here’s the code that drew the Lorenz curve diagram at the top of the post:</p>
 
 <figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">population</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-  </span><span class="c1"># thin down to just a sample of 10,000 to save on vector graphic file size:
-</span><span class="w">  </span><span class="n">sample_n</span><span class="p">(</span><span class="m">10000</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="c1"># thin down to just a sample of 10,000 to save on vector graphic file size:</span><span class="w">
+  </span><span class="n">sample_n</span><span class="p">(</span><span class="m">10000</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">arrange</span><span class="p">(</span><span class="n">income</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">cum_prop_inc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">cumsum</span><span class="p">(</span><span class="n">income</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">income</span><span class="p">),</span><span class="w">
          </span><span class="n">seq</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">n</span><span class="p">()</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">n</span><span class="p">())</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -320,7 +319,7 @@ $Gini
 
 <h3 id="q2-is-acidweightedgini-more-or-less-efficient-than-the-statsnz-alternative">Q2. Is acid:weighted.gini more or less efficient than the StatsNZ alternative?</h3>
 
-<p>Next I wanted to try out the efficiency of the two functions.  To do this I gave them a tougher job - estimate the Gini coefficient for the whole population of 100,000, but using the inverse of the <code class="highlighter-rouge">prob</code> column as weights.  The <code class="highlighter-rouge">microbenchmark</code> package making it easy to do this 1,000 times for a reliable estimate, and even gives an automatic <code class="highlighter-rouge">ggplot2</code> method.</p>
+<p>Next I wanted to try out the efficiency of the two functions.  To do this I gave them a tougher job - estimate the Gini coefficient for the whole population of 100,000, but using the inverse of the <code class="language-plaintext highlighter-rouge">prob</code> column as weights.  The <code class="language-plaintext highlighter-rouge">microbenchmark</code> package making it easy to do this 1,000 times for a reliable estimate, and even gives an automatic <code class="language-plaintext highlighter-rouge">ggplot2</code> method.</p>
 
 <figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">y</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">population</span><span class="o">$</span><span class="n">income</span><span class="w">
 </span><span class="n">w</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">1</span><span class="o">/</span><span class="w"> </span><span class="n">population</span><span class="o">$</span><span class="n">prob</span><span class="w">
@@ -337,7 +336,7 @@ $Gini
 
 <p><img src="/img/0106-benchmark.svg" width="100%" /></p>
 
-<p>The method in <code class="highlighter-rouge">acid::weighted.gini</code> is slightly faster than is <code class="highlighter-rouge">StatsGini</code>.  <code class="highlighter-rouge">acid</code> uses matrix multiplication for a calculation that <code class="highlighter-rouge">StatsGini</code> does through a <code class="highlighter-rouge">for</code> loop, which explains the difference.  It’s not a big deal though, and both functions reliably taking less than 50 millionths of a second to do the calculation on a sample size of 100,000.</p>
+<p>The method in <code class="language-plaintext highlighter-rouge">acid::weighted.gini</code> is slightly faster than is <code class="language-plaintext highlighter-rouge">StatsGini</code>.  <code class="language-plaintext highlighter-rouge">acid</code> uses matrix multiplication for a calculation that <code class="language-plaintext highlighter-rouge">StatsGini</code> does through a <code class="language-plaintext highlighter-rouge">for</code> loop, which explains the difference.  It’s not a big deal though, and both functions reliably taking less than 50 millionths of a second to do the calculation on a sample size of 100,000.</p>
 
 <h3 id="q3-what-does-the-sampling-distribution-of-gini-from-a-weighted-complex-survey-sample-look-like">Q3. What does the sampling distribution of Gini from a weighted complex survey sample look like?</h3>
 
@@ -355,16 +354,16 @@ $Gini
 
 <p>Here’s the code for the simulation:</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># number of repeats at each sample size:
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># number of repeats at each sample size:</span><span class="w">
 </span><span class="n">reps</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">100</span><span class="w">
-</span><span class="c1"># sample sizes, chosen to resemble realistic survey sizes:
+</span><span class="c1"># sample sizes, chosen to resemble realistic survey sizes:</span><span class="w">
 </span><span class="n">ns</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">30</span><span class="p">,</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w"> </span><span class="m">500</span><span class="p">,</span><span class="w"> </span><span class="m">1000</span><span class="p">,</span><span class="w"> </span><span class="m">3000</span><span class="p">,</span><span class="w"> </span><span class="m">10000</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># matrix of zeros that we'll replace with the estimates of Gini
+</span><span class="c1"># matrix of zeros that we'll replace with the estimates of Gini</span><span class="w">
 </span><span class="n">res</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">matrix</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">nrow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reps</span><span class="p">,</span><span class="w"> </span><span class="n">ncol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">ns</span><span class="p">))</span><span class="w">
 
-</span><span class="c1"># obviously this next bit could be made much more efficient by parallel processing,
-# but it's only a few minutes of running 
+</span><span class="c1"># obviously this next bit could be made much more efficient by parallel processing,</span><span class="w">
+</span><span class="c1"># but it's only a few minutes of running </span><span class="w">
 </span><span class="n">set.seed</span><span class="p">(</span><span class="m">666</span><span class="p">)</span><span class="w">
 </span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="nf">length</span><span class="p">(</span><span class="n">ns</span><span class="p">)){</span><span class="w">
   </span><span class="n">n</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ns</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w">
@@ -384,8 +383,8 @@ $Gini
   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
   </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">sample_size</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
   </span><span class="n">geom_density</span><span class="p">(</span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.3</span><span class="p">,</span><span class="w"> </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
-  </span><span class="c1"># a few values of &gt; 1 make no sense and warp the graph:
-</span><span class="w">  </span><span class="n">coord_cartesian</span><span class="p">(</span><span class="n">xlim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">0.6</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="c1"># a few values of &gt; 1 make no sense and warp the graph:</span><span class="w">
+  </span><span class="n">coord_cartesian</span><span class="p">(</span><span class="n">xlim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">0.6</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
   </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Estimated weighted Gini"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
   </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Sampling distribution of weighted Gini point estimate from a complex survey"</span><span class="p">,</span><span class="w">
           </span><span class="n">paste0</span><span class="p">(</span><span class="s2">"Various sample sizes; true value is "</span><span class="p">,</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="n">weighted.gini</span><span class="p">(</span><span class="n">population</span><span class="o">$</span><span class="n">income</span><span class="p">)</span><span class="o">$</span><span class="n">Gini</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">)))</span></code></pre></figure>

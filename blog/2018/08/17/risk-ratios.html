@@ -18,7 +18,7 @@
             <meta property="og:image" content="http://freerangestats.info/img/0131-data.png" />
          
 		 
-			<meta property="og:url" content="http://freerangestats.info/blog/2018/08/17/risk-ratios.html" />
+			<meta property="og:url" content="http://localhost:4000/blog/2018/08/17/risk-ratios.html" />
 		 
          <meta property="og:author" content= "https://www.facebook.com/peterstats" />
          <meta property="og:type" content="article" />
@@ -113,7 +113,7 @@
                   <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
 				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
                   <li><a href="/blog/surveys.html">all posts on surveys</a></li> 
-				  <li><a href = /blog/2022/10/13/pacific-map>most recent post</a></li>
+				  <li><a href = /blog/2023/02/25/ilr>most recent post</a></li>
 				</ul>
             </li>
               <li><a href="/blog/showcase.html">showcase</a></li>
@@ -239,55 +239,55 @@
 
 <p>Here’s an example of extracting estimates of odds ratios from our data:</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># Odds ratio:
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># Odds ratio:</span><span class="w">
 </span><span class="n">model_2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">glm</span><span class="p">(</span><span class="n">diseased</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">animal_</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">quasibinomial</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">)</span><span class="w">
 </span><span class="nf">exp</span><span class="p">(</span><span class="n">coef</span><span class="p">(</span><span class="n">model_2</span><span class="p">))[</span><span class="m">-1</span><span class="p">]</span><span class="w">
 
-</span><span class="c1">#  animal_lion animal_tiger 
-#     9.286664     2.997837 
-</span><span class="err">#</span></code></pre></figure>
+</span><span class="c1">#  animal_lion animal_tiger </span><span class="w">
+</span><span class="c1">#     9.286664     2.997837 </span><span class="w">
+</span><span class="c1">#</span></code></pre></figure>
 
 <p>These odds ratios are of the given animal (Lion or Tiger) relative to the disease rate of the reference level, which in this case is Bear.  So these are estimates of the ratios depicted in the original diagram.</p>
 
-<p>You would get the same point estimate if you used <code class="highlighter-rouge">family = binomial</code>, or <code class="highlighter-rouge">family = quasi(link = 'logit', variance = "mu(1-mu)")</code>; it’s the logit link that’s important here.</p>
+<p>You would get the same point estimate if you used <code class="language-plaintext highlighter-rouge">family = binomial</code>, or <code class="language-plaintext highlighter-rouge">family = quasi(link = 'logit', variance = "mu(1-mu)")</code>; it’s the logit link that’s important here.</p>
 
-<p>Note that these estimates are biased; despite being based on large samples of 100,000 animals they haven’t converged on the true odds ratios of 9 and 3.  The estimates of the original coefficients are unbiased; but the non-linear transformation of <code class="highlighter-rouge">exp(coef(model))</code> inevitably introduces bias.  A statistic that is unbiased on one scale will be biased if you transform it to another scale; such is life.</p>
+<p>Note that these estimates are biased; despite being based on large samples of 100,000 animals they haven’t converged on the true odds ratios of 9 and 3.  The estimates of the original coefficients are unbiased; but the non-linear transformation of <code class="language-plaintext highlighter-rouge">exp(coef(model))</code> inevitably introduces bias.  A statistic that is unbiased on one scale will be biased if you transform it to another scale; such is life.</p>
 
-<p>Using <code class="highlighter-rouge">binomial</code> versus <code class="highlighter-rouge">quasibinomial</code> does make a difference to confidence intervals, but in our current case it’s not material.  The confidence intervals at least contain the correct values; although the point estimate is biased (and also not in the centre of the confidence interval, again due to the non-linear transformation), the confidence interval is still valid for the transformed scale:</p>
+<p>Using <code class="language-plaintext highlighter-rouge">binomial</code> versus <code class="language-plaintext highlighter-rouge">quasibinomial</code> does make a difference to confidence intervals, but in our current case it’s not material.  The confidence intervals at least contain the correct values; although the point estimate is biased (and also not in the centre of the confidence interval, again due to the non-linear transformation), the confidence interval is still valid for the transformed scale:</p>
 
 <figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="nf">exp</span><span class="p">(</span><span class="n">confint</span><span class="p">(</span><span class="n">model_2</span><span class="p">))[</span><span class="m">-1</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="w">
 
-</span><span class="c1">#                 2.5 %   97.5 %
-# animal_lion  8.920358 9.669207
-# animal_tiger 2.881889 3.118685
-</span><span class="err">#</span></code></pre></figure>
+</span><span class="c1">#                 2.5 %   97.5 %</span><span class="w">
+</span><span class="c1"># animal_lion  8.920358 9.669207</span><span class="w">
+</span><span class="c1"># animal_tiger 2.881889 3.118685</span><span class="w">
+</span><span class="c1">#</span></code></pre></figure>
 
 <h3 id="risk-ratios">Risk ratios</h3>
 
-<p>At a minimum, the <em>only</em> change that needs to be done to get risk ratios is to change the link function that relates the mean value of the response variable to the linear predictor.  For estimates of odds ratios, this is logit (ie the logarithm of the odds of the mean); for estimates of relative risk ratios, this becomes logarithm.  We can specify this manually, or just use a built-in family for our generalized linear model for which the logarithm is the canonical link fucntion, and hence the default.  The <code class="highlighter-rouge">quasipoisson</code> is a great choice here:</p>
+<p>At a minimum, the <em>only</em> change that needs to be done to get risk ratios is to change the link function that relates the mean value of the response variable to the linear predictor.  For estimates of odds ratios, this is logit (ie the logarithm of the odds of the mean); for estimates of relative risk ratios, this becomes logarithm.  We can specify this manually, or just use a built-in family for our generalized linear model for which the logarithm is the canonical link fucntion, and hence the default.  The <code class="language-plaintext highlighter-rouge">quasipoisson</code> is a great choice here:</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># Risk ratio:
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># Risk ratio:</span><span class="w">
 </span><span class="n">model_1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">glm</span><span class="p">(</span><span class="n">diseased</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">animal_</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">quasipoisson</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">)</span><span class="w">
 </span><span class="nf">exp</span><span class="p">(</span><span class="n">coef</span><span class="p">(</span><span class="n">model_1</span><span class="p">))[</span><span class="m">-1</span><span class="p">]</span><span class="w">
 
-</span><span class="c1">#  animal_lion animal_tiger 
-#     5.112507     2.504792 
-</span><span class="err">#</span></code></pre></figure>
+</span><span class="c1">#  animal_lion animal_tiger </span><span class="w">
+</span><span class="c1">#     5.112507     2.504792 </span><span class="w">
+</span><span class="c1">#</span></code></pre></figure>
 
-<p>Again, these point estimates are biased because of the non-linear <code class="highlighter-rouge">exp()</code> transformation of the unbiased original coefficients.  But the confidence intervals contain the correct values (which recall are 5.0 and 2.5):</p>
+<p>Again, these point estimates are biased because of the non-linear <code class="language-plaintext highlighter-rouge">exp()</code> transformation of the unbiased original coefficients.  But the confidence intervals contain the correct values (which recall are 5.0 and 2.5):</p>
 
 <figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="nf">exp</span><span class="p">(</span><span class="n">confint</span><span class="p">(</span><span class="n">model_1</span><span class="p">))[</span><span class="m">-1</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="w">
 
-</span><span class="c1">#                 2.5 %   97.5 %
-# animal_lion  4.961963 5.268162
-# animal_tiger 2.426520 2.585758
-</span><span class="err">#</span></code></pre></figure>
+</span><span class="c1">#                 2.5 %   97.5 %</span><span class="w">
+</span><span class="c1"># animal_lion  4.961963 5.268162</span><span class="w">
+</span><span class="c1"># animal_tiger 2.426520 2.585758</span><span class="w">
+</span><span class="c1">#</span></code></pre></figure>
 
-<p>If we’d used <code class="highlighter-rouge">poisson</code> as our family instead of <code class="highlighter-rouge">quasipoisson</code>, the dispersion parameter is forced to be 1.0, instead of 0.7 which it is estimated to be by the <code class="highlighter-rouge">quasipoisson</code> model.  The net effect of that “underdispersion” in the data in this case is that the confidence intervals with <code class="highlighter-rouge">family = poisson</code> are <em>larger</em> than in the <code class="highlighter-rouge">quasipoisson</code> instance.  This won’t always apply, but it often will when we are modelling data such as this which is, in fact under-dispersed compared to a pure poisson distribution (because none of the counts can exceed 1).</p>
+<p>If we’d used <code class="language-plaintext highlighter-rouge">poisson</code> as our family instead of <code class="language-plaintext highlighter-rouge">quasipoisson</code>, the dispersion parameter is forced to be 1.0, instead of 0.7 which it is estimated to be by the <code class="language-plaintext highlighter-rouge">quasipoisson</code> model.  The net effect of that “underdispersion” in the data in this case is that the confidence intervals with <code class="language-plaintext highlighter-rouge">family = poisson</code> are <em>larger</em> than in the <code class="language-plaintext highlighter-rouge">quasipoisson</code> instance.  This won’t always apply, but it often will when we are modelling data such as this which is, in fact under-dispersed compared to a pure poisson distribution (because none of the counts can exceed 1).</p>
 
 <p>These examples have avoided complications of other explanatory variables, but the point of using a generalized linear model for this (rather than observing proportions directly) is that we can add in other variables and report on relative risks (or odds, if we must) “while controlling for …” those other variables.</p>
 
-<p>The approach also <a href="http://grokbase.com/t/r/r-help/109dad6km5/r-relative-risk-regression-with-survey-data">nicely extends to complex surveys</a>; we can use <code class="highlighter-rouge">svyglm()</code> from Lumley’s <code class="highlighter-rouge">survey</code> package, with any of the <code class="highlighter-rouge">family</code> specifications above, according to our needs and get good results.</p>
+<p>The approach also <a href="http://grokbase.com/t/r/r-help/109dad6km5/r-relative-risk-regression-with-survey-data">nicely extends to complex surveys</a>; we can use <code class="language-plaintext highlighter-rouge">svyglm()</code> from Lumley’s <code class="language-plaintext highlighter-rouge">survey</code> package, with any of the <code class="language-plaintext highlighter-rouge">family</code> specifications above, according to our needs and get good results.</p>
 
 <h2 id="summary">Summary</h2>
 
@@ -296,8 +296,8 @@
 <ul>
   <li>carefully choose which (or both) of odds or risk ratios to use</li>
   <li>explicitly communicate what you are reporting, and try to counter in your communication the likely misunderstandings particularly with odds ratios</li>
-  <li><code class="highlighter-rouge">exp(coef(model))</code> for a glm fit with <code class="highlighter-rouge">family = quasibinomial</code> will give odds ratios</li>
-  <li><code class="highlighter-rouge">exp(coef(model))</code> for a glm fit with <code class="highlighter-rouge">family = quasipoisson</code> will give relative risk ratios</li>
+  <li><code class="language-plaintext highlighter-rouge">exp(coef(model))</code> for a glm fit with <code class="language-plaintext highlighter-rouge">family = quasibinomial</code> will give odds ratios</li>
+  <li><code class="language-plaintext highlighter-rouge">exp(coef(model))</code> for a glm fit with <code class="language-plaintext highlighter-rouge">family = quasipoisson</code> will give relative risk ratios</li>
   <li>remember that point estimates from this approach are biased, and like all point estimates give an undue impression of precision; always include a confidence interval or credibility interval as well.</li>
 </ul>
 

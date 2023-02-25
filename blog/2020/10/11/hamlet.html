@@ -18,7 +18,7 @@
             <meta property="og:image" content="http://freerangestats.info/img/0179-interactions.png" />
          
 		 
-			<meta property="og:url" content="http://freerangestats.info/blog/2020/10/11/hamlet.html" />
+			<meta property="og:url" content="http://localhost:4000/blog/2020/10/11/hamlet.html" />
 		 
          <meta property="og:author" content= "https://www.facebook.com/peterstats" />
          <meta property="og:type" content="article" />
@@ -113,7 +113,7 @@
                   <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
 				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
                   <li><a href="/blog/surveys.html">all posts on surveys</a></li> 
-				  <li><a href = /blog/2022/10/13/pacific-map>most recent post</a></li>
+				  <li><a href = /blog/2023/02/25/ilr>most recent post</a></li>
 				</ul>
             </li>
               <li><a href="/blog/showcase.html">showcase</a></li>
@@ -180,7 +180,7 @@
 
 <p>When I first download one of the five or more versions of Hamlet from the Gutenberg project, it looks like this:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>  [1] "HAMLET, PRINCE OF DENMARK"                                        
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  [1] "HAMLET, PRINCE OF DENMARK"                                        
   [2] ""                                                                 
   [3] "by William Shakespeare"                                           
   [4] ""                                                                 
@@ -280,17 +280,16 @@
  [98] ""                                                                 
  [99] "Mar."                                                             
 [100] "O, farewell, honest soldier;"  
-</code></pre>
-</div>
+</code></pre></div></div>
 
 <p>So this is interesting. Here are some things we need to take into account in putting this into a data model that loses no or minimal information from its structure and content:</p>
 
 <ul>
   <li>We have about 40 lines of preamble, then we are on to a combination of dialogue and stage directions.</li>
-  <li>The play is structured into Acts and Scenes. Scenes have numbers and descriptions (eg <code class="highlighter-rouge">Scene I. Elsinore. A platform before the Castle.</code>) but Acts just have numbers. Scenes are strictly hierarchically ordered under Acts (ie there is no Scene that continues over the boundary between two Acts).</li>
-  <li>The stage directions are in square brackets <code class="highlighter-rouge">[Enter Horatio and Marcellus]</code>. A stage direction can be seen as applying until it is countermanded (for example, once Francisco and Bernardo have entered, they should be considered as present on stage until we are told otherwise)</li>
+  <li>The play is structured into Acts and Scenes. Scenes have numbers and descriptions (eg <code class="language-plaintext highlighter-rouge">Scene I. Elsinore. A platform before the Castle.</code>) but Acts just have numbers. Scenes are strictly hierarchically ordered under Acts (ie there is no Scene that continues over the boundary between two Acts).</li>
+  <li>The stage directions are in square brackets <code class="language-plaintext highlighter-rouge">[Enter Horatio and Marcellus]</code>. A stage direction can be seen as applying until it is countermanded (for example, once Francisco and Bernardo have entered, they should be considered as present on stage until we are told otherwise)</li>
   <li>A continuous line of speech can go over several lines, such as Francisco in lines 71 and 72 of the above. The line breaks may be significant (and sometimes certainly are when the line is in verse), or not.</li>
-  <li>The character speaking is referred to be abbrevaition (eg <code class="highlighter-rouge">Fran.</code>), which needs decoding to be fully human-readable (an actor learning the play, or a reader familiar with it would know that <code class="highlighter-rouge">Hor.</code> is Horatio, but only by mental decoding - something that should be done in the data model)</li>
+  <li>The character speaking is referred to be abbrevaition (eg <code class="language-plaintext highlighter-rouge">Fran.</code>), which needs decoding to be fully human-readable (an actor learning the play, or a reader familiar with it would know that <code class="language-plaintext highlighter-rouge">Hor.</code> is Horatio, but only by mental decoding - something that should be done in the data model)</li>
 </ul>
 
 <p>Here is the R code that sets up my session, including preparation for things I haven’t talked about yet, downloads the play and gets us to this point of looking at the first 100 lines:</p>
@@ -308,16 +307,16 @@
 </span><span class="n">library</span><span class="p">(</span><span class="n">textplot</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">concaveman</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># TODO - a problem with lines 6380:6381 which has a stage direction across two lines.
-</span><span class="w">
-</span><span class="cd">#' Replace NA values in a vector with counting from the previous value
-#' 
-#' @param x a vector character
-#' @examples 
-#' replace_na_with_num(c(1,1,1,1, NA, NA, 1, 1, 1, NA))
+</span><span class="c1"># TODO - a problem with lines 6380:6381 which has a stage direction across two lines.</span><span class="w">
+
+</span><span class="cd">#' Replace NA values in a vector with counting from the previous value</span><span class="w">
+</span><span class="cd">#' </span><span class="w">
+</span><span class="cd">#' @param x a vector character</span><span class="w">
+</span><span class="cd">#' @examples </span><span class="w">
+</span><span class="cd">#' replace_na_with_num(c(1,1,1,1, NA, NA, 1, 1, 1, NA))</span><span class="w">
 </span><span class="n">replace_na_with_num</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">){</span><span class="w">
-  </span><span class="c1"># I can't think of a way to do this next operation without a loop because there is iteration
-</span><span class="w">  </span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">2</span><span class="o">:</span><span class="nf">length</span><span class="p">(</span><span class="n">x</span><span class="p">)){</span><span class="w">
+  </span><span class="c1"># I can't think of a way to do this next operation without a loop because there is iteration</span><span class="w">
+  </span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">2</span><span class="o">:</span><span class="nf">length</span><span class="p">(</span><span class="n">x</span><span class="p">)){</span><span class="w">
     </span><span class="k">if</span><span class="p">(</span><span class="nf">is.na</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">])){</span><span class="w">
       </span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="m">-1</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">1</span><span class="w">
     </span><span class="p">}</span><span class="w">
@@ -326,17 +325,17 @@
 </span><span class="p">}</span><span class="w">
 </span><span class="n">stopifnot</span><span class="p">(</span><span class="n">replace_na_with_num</span><span class="p">(</span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="kc">NA</span><span class="p">,</span><span class="w"> </span><span class="kc">NA</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="kc">NA</span><span class="p">))</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">3</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">2</span><span class="p">))</span><span class="w">
 
-</span><span class="c1"># There seem to be two Shakespeares, definitely duplicates:
+</span><span class="c1"># There seem to be two Shakespeares, definitely duplicates:</span><span class="w">
 </span><span class="n">filter</span><span class="p">(</span><span class="n">gutenberg_authors</span><span class="p">,</span><span class="w"> </span><span class="n">grepl</span><span class="p">(</span><span class="s2">"Shakespeare"</span><span class="p">,</span><span class="w"> </span><span class="n">author</span><span class="p">))</span><span class="w">
 
-</span><span class="c1"># At least five versions of Hamlet
+</span><span class="c1"># At least five versions of Hamlet</span><span class="w">
 </span><span class="n">filter</span><span class="p">(</span><span class="n">gutenberg_metadata</span><span class="p">,</span><span class="w"> </span><span class="n">grepl</span><span class="p">(</span><span class="s2">"Hamlet"</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> 
          </span><span class="n">author</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Shakespeare, William"</span><span class="w"> </span><span class="o">&amp;</span><span class="w">
          </span><span class="n">grepl</span><span class="p">(</span><span class="s2">"Public domain"</span><span class="p">,</span><span class="w"> </span><span class="n">rights</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w">
          </span><span class="n">language</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"en"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">select</span><span class="p">(</span><span class="n">gutenberg_id</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">gutenberg_bookshelf</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># I'll download the first mentioned. May not be the best.
+</span><span class="c1"># I'll download the first mentioned. May not be the best.</span><span class="w">
 </span><span class="n">hamlet</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">gutenberg_download</span><span class="p">(</span><span class="m">1524</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">original_line_number</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">n</span><span class="p">())</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">select</span><span class="p">(</span><span class="o">-</span><span class="n">gutenberg_id</span><span class="p">)</span><span class="w">
@@ -350,7 +349,7 @@
 
 <p>With one annoying exception, the stage directions are all single lines so we can pick them up easily with a regular expression that looks for lines that begin and finish in square brackets.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>&gt; # Number of times each stage direction used
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; # Number of times each stage direction used
 &gt; hamlet %&gt;%
 +   filter(grepl("^\\[.*\\]$", text)) %&gt;%
 +   count(text, name = "times_used", sort = TRUE) 
@@ -367,23 +366,22 @@
  8 [Dies.]                                         3
  9 [Enter Rosencrantz and Guildenstern.]           3
 10 [Exit Ghost.]                                   3
-</code></pre>
-</div>
+</code></pre></div></div>
 
 <p>Here is the exception - it comes from near the end, when a whole bunch of people (too many to list in a single line) come in with weapons to be used in the duel between Hamlet and Laertes:</p>
 
 <figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="o">&gt;</span><span class="w"> </span><span class="n">hamlet</span><span class="p">[</span><span class="m">6380</span><span class="o">:</span><span class="m">6381</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="w">
-</span><span class="c1"># A tibble: 2 x 2
-</span><span class="w">  </span><span class="n">text</span><span class="w">                                                           </span><span class="n">original_line_number</span><span class="w">
+</span><span class="c1"># A tibble: 2 x 2</span><span class="w">
+  </span><span class="n">text</span><span class="w">                                                           </span><span class="n">original_line_number</span><span class="w">
   </span><span class="o">&lt;</span><span class="n">chr</span><span class="o">&gt;</span><span class="w">                                                                         </span><span class="o">&lt;</span><span class="n">int</span><span class="o">&gt;</span><span class="w">
 </span><span class="m">1</span><span class="w"> </span><span class="p">[</span><span class="n">Enter</span><span class="w"> </span><span class="n">King</span><span class="p">,</span><span class="w"> </span><span class="n">Queen</span><span class="p">,</span><span class="w"> </span><span class="n">Laertes</span><span class="p">,</span><span class="w"> </span><span class="n">Lords</span><span class="p">,</span><span class="w"> </span><span class="n">Osric</span><span class="p">,</span><span class="w"> </span><span class="n">and</span><span class="w"> </span><span class="n">Attendants</span><span class="w"> </span><span class="n">with</span><span class="w">                 </span><span class="m">6380</span><span class="w">
 </span><span class="m">2</span><span class="w"> </span><span class="n">foils</span><span class="w"> </span><span class="o">&amp;</span><span class="n">c.</span><span class="p">]</span><span class="w">                                                                     </span><span class="m">6381</span></code></pre></figure>
 
 <h3 id="scenes-and-acts">Scenes and Acts</h3>
 
-<p>Similarly, we can use regular expression to find with nearly 100% accuracy the beginnings of Scenes and Acts. Note that the capitalisation of <code class="highlighter-rouge">Act</code> is inconsistent:</p>
+<p>Similarly, we can use regular expression to find with nearly 100% accuracy the beginnings of Scenes and Acts. Note that the capitalisation of <code class="language-plaintext highlighter-rouge">Act</code> is inconsistent:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>&gt; # Scenes and acts. Sometimes upper case sometimes not
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; # Scenes and acts. Sometimes upper case sometimes not
 &gt; hamlet %&gt;%
 +   filter(grepl("^Scene\\s", text, ignore.case = TRUE) | grepl("^Act\\s", text, ignore.case = TRUE))
 # A tibble: 26 x 2
@@ -400,14 +398,13 @@
  9 Scene II. A room in the Castle.                                    1779
 10 ACT III.                                                           2744
 # ... with 16 more rows
-</code></pre>
-</div>
+</code></pre></div></div>
 
 <h3 id="character-names">Character names</h3>
 
 <p>Generally, a line indicating a new speaker can be identified by the pattern of “capital letter - lower case letters - full stop - end of line”. So it is straightforward to pull out lines that meet this pattern with a regular expression and count them:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>&gt; hamlet %&gt;%
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; hamlet %&gt;%
 +   filter(grepl("^[A-Z][a-z]+\\.$", text)) %&gt;%
 +   count(text, name= "number_speeches", sort = TRUE) %&gt;%
 +   slice(1:20)
@@ -434,20 +431,19 @@
 18 All.                 3
 19 Danes.               3
 20 Gent.                3
-</code></pre>
-</div>
+</code></pre></div></div>
 
-<p>358 distinct speeches to learn if you want to play Hamlet, versus (for example) 29 for Guildenstern. Basically that simple search-and-count works, although there are annoyingly some context-specific uses of <code class="highlighter-rouge">Both.</code> and <code class="highlighter-rouge">All.</code>; and there are a few spoken lines (<code class="highlighter-rouge">Farewell.</code> and <code class="highlighter-rouge">Good.</code>) that get mixed up into this pattern. It’s very difficult to identify an algorithm that can tell these apart, particularly because (for example) <code class="highlighter-rouge">Good.</code> is a plausible abbreviation of a character name. I think only a human could be sure of the difference in a specific context, so we will need a bit of careful manual coding of some parts.</p>
+<p>358 distinct speeches to learn if you want to play Hamlet, versus (for example) 29 for Guildenstern. Basically that simple search-and-count works, although there are annoyingly some context-specific uses of <code class="language-plaintext highlighter-rouge">Both.</code> and <code class="language-plaintext highlighter-rouge">All.</code>; and there are a few spoken lines (<code class="language-plaintext highlighter-rouge">Farewell.</code> and <code class="language-plaintext highlighter-rouge">Good.</code>) that get mixed up into this pattern. It’s very difficult to identify an algorithm that can tell these apart, particularly because (for example) <code class="language-plaintext highlighter-rouge">Good.</code> is a plausible abbreviation of a character name. I think only a human could be sure of the difference in a specific context, so we will need a bit of careful manual coding of some parts.</p>
 
-<p>To decode abbreviations into character names and add some useful metadata for later, I created by hand a vector of the eight main characters (using my human interpretation to decide on what constituted “main”), and table that relates the abbreviations (<code class="highlighter-rouge">King.</code>, etc) to full names of the character (“Claudius, King of Denmark.”) and human-friendly abbreviations for plots and the like using the term more commonly used today (“Claudius”).</p>
+<p>To decode abbreviations into character names and add some useful metadata for later, I created by hand a vector of the eight main characters (using my human interpretation to decide on what constituted “main”), and table that relates the abbreviations (<code class="language-plaintext highlighter-rouge">King.</code>, etc) to full names of the character (“Claudius, King of Denmark.”) and human-friendly abbreviations for plots and the like using the term more commonly used today (“Claudius”).</p>
 
-<p>I also made a vector of words that looked like character names and feature as single word lines in the play but aren’t referring to characters: <code class="highlighter-rouge">No.</code>, <code class="highlighter-rouge">Dead.</code>, <code class="highlighter-rouge">He.</code>, etc.</p>
+<p>I also made a vector of words that looked like character names and feature as single word lines in the play but aren’t referring to characters: <code class="language-plaintext highlighter-rouge">No.</code>, <code class="language-plaintext highlighter-rouge">Dead.</code>, <code class="language-plaintext highlighter-rouge">He.</code>, etc.</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#==================Processing========================
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#==================Processing========================</span><span class="w">
 </span><span class="n">main_chars</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Hamlet"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Horatio"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Claudius"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Gertrude"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Ophelia"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Polonius"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Laertes"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Ghost"</span><span class="p">)</span><span class="w">
-</span><span class="c1"># These aren't the top 8 characters - First gravedigger and Rosencrantz both have more words than Ghost -
-# but seem the 8 most fully-rounded real people.
-</span><span class="w">
+</span><span class="c1"># These aren't the top 8 characters - First gravedigger and Rosencrantz both have more words than Ghost -</span><span class="w">
+</span><span class="c1"># but seem the 8 most fully-rounded real people.</span><span class="w">
+
 </span><span class="n">personae</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tribble</span><span class="p">(</span><span class="o">~</span><span class="n">speaker</span><span class="p">,</span><span class="w"> </span><span class="o">~</span><span class="n">speaker_abb</span><span class="p">,</span><span class="w"> </span><span class="o">~</span><span class="n">speaker_sh</span><span class="p">,</span><span class="w">
                      </span><span class="s2">"Claudius, King of Denmark."</span><span class="p">,</span><span class="w"> </span><span class="s2">"King."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Claudius"</span><span class="p">,</span><span class="w">
                      </span><span class="s2">"Hamlet, Son to the former, and Nephew to the present King."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Ham."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Hamlet"</span><span class="p">,</span><span class="w">
@@ -485,26 +481,26 @@
                     </span><span class="s2">"First priest"</span><span class="p">,</span><span class="w"> </span><span class="s2">"1 Priest."</span><span class="p">,</span><span class="w"> </span><span class="s2">"First Priest"</span><span class="p">,</span><span class="w">
                     </span><span class="s2">"Second priest"</span><span class="p">,</span><span class="w"> </span><span class="s2">"2 Priest."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Second Priest"</span><span class="p">,</span><span class="w">
                     </span><span class="s2">"Danish courtier lord"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Lord."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Lord"</span><span class="p">,</span><span class="w">
-                    </span><span class="c1"># There are 3 uses of 'All.', in each case mean different groups
-</span><span class="w">                    </span><span class="s2">"All present on stage"</span><span class="p">,</span><span class="w"> </span><span class="s2">"All."</span><span class="p">,</span><span class="w"> </span><span class="s2">"All"</span><span class="p">,</span><span class="w">
-                    </span><span class="c1"># only two uses of 'Both.', near the beginning:
-</span><span class="w">                    </span><span class="s2">"Marcellus and Bernardo together"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Both."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Marcellus and Bernardo"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+                    </span><span class="c1"># There are 3 uses of 'All.', in each case mean different groups</span><span class="w">
+                    </span><span class="s2">"All present on stage"</span><span class="p">,</span><span class="w"> </span><span class="s2">"All."</span><span class="p">,</span><span class="w"> </span><span class="s2">"All"</span><span class="p">,</span><span class="w">
+                    </span><span class="c1"># only two uses of 'Both.', near the beginning:</span><span class="w">
+                    </span><span class="s2">"Marcellus and Bernardo together"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Both."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Marcellus and Bernardo"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">main_character</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">speaker_sh</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="n">main_chars</span><span class="p">)</span><span class="w">
 
 </span><span class="n">not_people</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"He."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Say."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Farewell."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Perpend."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Nothing."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Good."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Swear."</span><span class="p">,</span><span class="w"> </span><span class="s2">"No."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Dead."</span><span class="p">,</span><span class="w"> </span><span class="s2">"One."</span><span class="p">)</span><span class="w">
 
 
-</span><span class="c1"># This chunk of code was how I identified the abbreviations that weren't in the original list of personae
-# (eg "1 Clown."), and also refined the list above of not_people.
+</span><span class="c1"># This chunk of code was how I identified the abbreviations that weren't in the original list of personae</span><span class="w">
+</span><span class="c1"># (eg "1 Clown."), and also refined the list above of not_people.</span><span class="w">
 </span><span class="n">hamlet</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">slice</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">38</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">speaker_abb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">case_when</span><span class="p">(</span><span class="w">
-    </span><span class="c1"># Most people picked up by this
-</span><span class="w">    </span><span class="n">grepl</span><span class="p">(</span><span class="s2">"^[A-Z][a-z]+\\.$"</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w">         </span><span class="o">~</span><span class="w"> </span><span class="n">text</span><span class="p">,</span><span class="w">
-    </span><span class="c1"># "1 Ambassador", "2 Clown" and similar are picked up by this:
-</span><span class="w">    </span><span class="n">grepl</span><span class="p">(</span><span class="s2">"^[1-9]\\s[A-Z][a-z]+\\.$"</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">text</span><span class="p">,</span><span class="w">
-    </span><span class="c1"># P. King. etc picked up by this:
-</span><span class="w">    </span><span class="n">grepl</span><span class="p">(</span><span class="s2">"^[A-Z]\\.\\s[A-Z][a-z]+\\.$"</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">text</span><span class="w">
+    </span><span class="c1"># Most people picked up by this</span><span class="w">
+    </span><span class="n">grepl</span><span class="p">(</span><span class="s2">"^[A-Z][a-z]+\\.$"</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w">         </span><span class="o">~</span><span class="w"> </span><span class="n">text</span><span class="p">,</span><span class="w">
+    </span><span class="c1"># "1 Ambassador", "2 Clown" and similar are picked up by this:</span><span class="w">
+    </span><span class="n">grepl</span><span class="p">(</span><span class="s2">"^[1-9]\\s[A-Z][a-z]+\\.$"</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">text</span><span class="p">,</span><span class="w">
+    </span><span class="c1"># P. King. etc picked up by this:</span><span class="w">
+    </span><span class="n">grepl</span><span class="p">(</span><span class="s2">"^[A-Z]\\.\\s[A-Z][a-z]+\\.$"</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">text</span><span class="w">
     </span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">filter</span><span class="p">(</span><span class="n">text</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">speaker_abb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">if_else</span><span class="p">(</span><span class="n">speaker_abb</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="n">not_people</span><span class="p">,</span><span class="w"> </span><span class="kc">NA_character_</span><span class="p">,</span><span class="w"> </span><span class="n">speaker_abb</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -514,11 +510,11 @@
 
 <h3 id="a-table-of-data-with-spoken-line-as-grain">A table of data with “spoken line” as grain</h3>
 
-<p>I use these lookup tables and vectors to create my first tidier version of the data, <code class="highlighter-rouge">hamlet_lines</code>. This object is shown below. In this version, each row of the table is a complete line of dialogue. Rows of the original data that are not dialogue but refer to the Act, Scene, stage direction or who is speaking have been pivoted wider to appear as columns such as <code class="highlighter-rouge">speaker</code>, <code class="highlighter-rouge">last_stage_direction</code>, <code class="highlighter-rouge">act</code> and <code class="highlighter-rouge">scene</code>.</p>
+<p>I use these lookup tables and vectors to create my first tidier version of the data, <code class="language-plaintext highlighter-rouge">hamlet_lines</code>. This object is shown below. In this version, each row of the table is a complete line of dialogue. Rows of the original data that are not dialogue but refer to the Act, Scene, stage direction or who is speaking have been pivoted wider to appear as columns such as <code class="language-plaintext highlighter-rouge">speaker</code>, <code class="language-plaintext highlighter-rouge">last_stage_direction</code>, <code class="language-plaintext highlighter-rouge">act</code> and <code class="language-plaintext highlighter-rouge">scene</code>.</p>
 
 <p>Here is how that object looks:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>&gt; hamlet_lines
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; hamlet_lines
 # A tibble: 3,945 x 11
    text        original_line_nu~ speaker_abb speaker   speaker_sh main_character last_stage_direction act    scene      new_speaker_thi~ line_number_thi~
    &lt;chr&gt;                   &lt;int&gt; &lt;chr&gt;       &lt;chr&gt;     &lt;chr&gt;      &lt;lgl&gt;          &lt;chr&gt;                &lt;chr&gt;  &lt;chr&gt;      &lt;lgl&gt;                       &lt;dbl&gt;
@@ -533,59 +529,58 @@
  9 And I am s~                72 Fran.       Francisc~ Francisco  FALSE          Francisco at his po~ ACT I. Scene I. ~ FALSE                           2
 10 Have you h~                75 Ber.        Bernardo~ Bernardo   FALSE          Francisco at his po~ ACT I. Scene I. ~ TRUE                            1
 # ... with 3,935 more rows
-</code></pre>
-</div>
+</code></pre></div></div>
 
-<p>Note that we have kept the successive lines of text by a single character as per the original - for instance rows 71 and 72 of the original data, spoken by Fancisco, are now rows 8 and 9 but are still two separate rows. A logical flag <code class="highlighter-rouge">new_speaker_this_line</code> helps us identify such cases for future.</p>
+<p>Note that we have kept the successive lines of text by a single character as per the original - for instance rows 71 and 72 of the original data, spoken by Fancisco, are now rows 8 and 9 but are still two separate rows. A logical flag <code class="language-plaintext highlighter-rouge">new_speaker_this_line</code> helps us identify such cases for future.</p>
 
-<p>Here’s the chunk of code that creates this table, with “line” as its granularity, from the original messy data. Most of this code is dealing with various quirks in the data, such as <code class="highlighter-rouge">2 Clown</code> (for “second clown”, or second gravedigger) having a different structure of character abbreviation from most of the roles.</p>
+<p>Here’s the chunk of code that creates this table, with “line” as its granularity, from the original messy data. Most of this code is dealing with various quirks in the data, such as <code class="language-plaintext highlighter-rouge">2 Clown</code> (for “second clown”, or second gravedigger) having a different structure of character abbreviation from most of the roles.</p>
 
 <figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">hamlet_lines</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">hamlet</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">slice</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">39</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-  </span><span class="c1"># Identify the speaker:
-</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">speaker_abb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">case_when</span><span class="p">(</span><span class="w">
-    </span><span class="c1"># Most people picked up by this
-</span><span class="w">    </span><span class="n">grepl</span><span class="p">(</span><span class="s2">"^[A-Z][a-z]+\\.$"</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w">         </span><span class="o">~</span><span class="w"> </span><span class="n">text</span><span class="p">,</span><span class="w">
-    </span><span class="c1"># "1 Ambassador", "2 Clown" and similar are picked up by this:
-</span><span class="w">    </span><span class="n">grepl</span><span class="p">(</span><span class="s2">"^[1-9]\\s[A-Z][a-z]+\\.$"</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">text</span><span class="p">,</span><span class="w">
-    </span><span class="c1"># P. King. etc picked up by this:
-</span><span class="w">    </span><span class="n">grepl</span><span class="p">(</span><span class="s2">"^[A-Z]\\.\\s[A-Z][a-z]+\\.$"</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">text</span><span class="w">
+  </span><span class="c1"># Identify the speaker:</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">speaker_abb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">case_when</span><span class="p">(</span><span class="w">
+    </span><span class="c1"># Most people picked up by this</span><span class="w">
+    </span><span class="n">grepl</span><span class="p">(</span><span class="s2">"^[A-Z][a-z]+\\.$"</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w">         </span><span class="o">~</span><span class="w"> </span><span class="n">text</span><span class="p">,</span><span class="w">
+    </span><span class="c1"># "1 Ambassador", "2 Clown" and similar are picked up by this:</span><span class="w">
+    </span><span class="n">grepl</span><span class="p">(</span><span class="s2">"^[1-9]\\s[A-Z][a-z]+\\.$"</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">text</span><span class="p">,</span><span class="w">
+    </span><span class="c1"># P. King. etc picked up by this:</span><span class="w">
+    </span><span class="n">grepl</span><span class="p">(</span><span class="s2">"^[A-Z]\\.\\s[A-Z][a-z]+\\.$"</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">text</span><span class="w">
   </span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">filter</span><span class="p">(</span><span class="n">text</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">speaker_abb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">if_else</span><span class="p">(</span><span class="n">speaker_abb</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="n">not_people</span><span class="p">,</span><span class="w"> </span><span class="kc">NA_character_</span><span class="p">,</span><span class="w"> </span><span class="n">speaker_abb</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">fill</span><span class="p">(</span><span class="n">speaker_abb</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">filter</span><span class="p">(</span><span class="nf">is.na</span><span class="p">(</span><span class="n">speaker_abb</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">text</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">speaker_abb</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">left_join</span><span class="p">(</span><span class="n">personae</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"speaker_abb"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-  </span><span class="c1"># Identify stage directions:
-</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">last_stage_direction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">case_when</span><span class="p">(</span><span class="w">
+  </span><span class="c1"># Identify stage directions:</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">last_stage_direction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">case_when</span><span class="p">(</span><span class="w">
          </span><span class="n">grepl</span><span class="p">(</span><span class="s2">"^\\[.*\\]$"</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">text</span><span class="w">
   </span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">fill</span><span class="p">(</span><span class="n">last_stage_direction</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">filter</span><span class="p">(</span><span class="nf">is.na</span><span class="p">(</span><span class="n">last_stage_direction</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">text</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">last_stage_direction</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">last_stage_direction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"["</span><span class="p">,</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">last_stage_direction</span><span class="p">,</span><span class="w"> </span><span class="n">fixed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">),</span><span class="w">
          </span><span class="n">last_stage_direction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"]"</span><span class="p">,</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">last_stage_direction</span><span class="p">,</span><span class="w"> </span><span class="n">fixed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-  </span><span class="c1"># Identify Act:
-</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">act</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">case_when</span><span class="p">(</span><span class="w">
+  </span><span class="c1"># Identify Act:</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">act</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">case_when</span><span class="p">(</span><span class="w">
     </span><span class="n">grepl</span><span class="p">(</span><span class="s2">"^A[Cc][Tt]\\s"</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">text</span><span class="w">
   </span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">fill</span><span class="p">(</span><span class="n">act</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">filter</span><span class="p">(</span><span class="nf">is.na</span><span class="p">(</span><span class="n">act</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">text</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">act</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-  </span><span class="c1"># Identify Scene
-</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">scene</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">case_when</span><span class="p">(</span><span class="w">
+  </span><span class="c1"># Identify Scene</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">scene</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">case_when</span><span class="p">(</span><span class="w">
     </span><span class="n">grepl</span><span class="p">(</span><span class="s2">"^S[Cc][Ee][Nn][Ee]\\s"</span><span class="p">,</span><span class="w"> </span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">text</span><span class="w">
   </span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">fill</span><span class="p">(</span><span class="n">scene</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">filter</span><span class="p">(</span><span class="nf">is.na</span><span class="p">(</span><span class="n">scene</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">text</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">scene</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-  </span><span class="c1"># regularise some spelling:
-</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">scene</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"Castle"</span><span class="p">,</span><span class="w"> </span><span class="s2">"castle"</span><span class="p">,</span><span class="w"> </span><span class="n">scene</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-  </span><span class="c1"># identify the actual speeches and count the lines in each speech by a continuing speaker
-</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">new_speaker_this_line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">is.na</span><span class="p">(</span><span class="n">lag</span><span class="p">(</span><span class="n">speaker</span><span class="p">))</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">speaker</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">lag</span><span class="p">(</span><span class="n">speaker</span><span class="p">),</span><span class="w">
+  </span><span class="c1"># regularise some spelling:</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">scene</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"Castle"</span><span class="p">,</span><span class="w"> </span><span class="s2">"castle"</span><span class="p">,</span><span class="w"> </span><span class="n">scene</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="c1"># identify the actual speeches and count the lines in each speech by a continuing speaker</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">new_speaker_this_line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">is.na</span><span class="p">(</span><span class="n">lag</span><span class="p">(</span><span class="n">speaker</span><span class="p">))</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">speaker</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">lag</span><span class="p">(</span><span class="n">speaker</span><span class="p">),</span><span class="w">
          </span><span class="n">line_number_this_speech</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">new_speaker_this_line</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="kc">NA</span><span class="p">),</span><span class="w">
          </span><span class="n">line_number_this_speech</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">replace_na_with_num</span><span class="p">(</span><span class="n">line_number_this_speech</span><span class="p">))</span></code></pre></figure>
 
 <p>This tidy table of data, at the granularity of line of dialogue, makes it easy to count lines per speaker, Act, Scene, etc. For example, we can see that Act II, Scene II has the most spoken lines (590):</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>&gt; count(hamlet_lines, act, scene)
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; count(hamlet_lines, act, scene)
 # A tibble: 20 x 3
    act      scene                                                  n
    &lt;chr&gt;    &lt;chr&gt;                                              &lt;int&gt;
@@ -609,8 +604,7 @@
 18 ACT IV.  Scene VII. Another room in the castle.               212
 19 ACT V.   Scene I. A churchyard.                               283
 20 ACT V.   Scene II. A hall in the castle.                      419
-</code></pre>
-</div>
+</code></pre></div></div>
 
 <h3 id="a-table-of-data-with-spoken-word-as-grain">A table of data with “spoken word” as grain</h3>
 
@@ -618,7 +612,7 @@
 
 <p>Here’s how that table is going to look, capturing all 30,000 or so words spoken in the uncut version of Hamlet”</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>&gt; hamlet_words %&gt;% select(contains("word"), everything())
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; hamlet_words %&gt;% select(contains("word"), everything())
 # A tibble: 30,022 x 20
    word  stopword word_stem new_speaker_thi~ word_number_thi~ word_number word_number_thi~ word_number_thi~ original_line_n~ speaker_abb
    &lt;chr&gt; &lt;lgl&gt;    &lt;chr&gt;     &lt;lgl&gt;                       &lt;dbl&gt;       &lt;int&gt;            &lt;int&gt;            &lt;int&gt;            &lt;int&gt; &lt;chr&gt;      
@@ -634,31 +628,30 @@
 10 long  FALSE    long      TRUE                            1          10               10               10               56 Ber.       
 # ... with 30,012 more rows, and 10 more variables: speaker &lt;chr&gt;, speaker_sh &lt;fct&gt;, main_character &lt;lgl&gt;, last_stage_direction &lt;chr&gt;,
 #   act &lt;chr&gt;, scene &lt;chr&gt;, new_speaker_this_line &lt;lgl&gt;, line_number_this_speech &lt;dbl&gt;, speech_number &lt;int&gt;, top_20_char &lt;lgl&gt;
-</code></pre>
-</div>
+</code></pre></div></div>
 
-<p>Note that the <code class="highlighter-rouge">hamlet_words</code> data frame has about 30,000 words - one for each word in Hamlet, excluding stage directions.</p>
+<p>Note that the <code class="language-plaintext highlighter-rouge">hamlet_words</code> data frame has about 30,000 words - one for each word in Hamlet, excluding stage directions.</p>
 
-<p>And here is how I made that table out of the <code class="highlighter-rouge">hamlet_lines</code></p>
+<p>And here is how I made that table out of the <code class="language-plaintext highlighter-rouge">hamlet_lines</code></p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># Make up a set of stopwords.
-# The concept of stopwords seems a bit arbitrary. Why aren't "shall", "go", "us" and "one" 
-# already stopwords in the snowball lexicon whereas "i", "our" are?
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># Make up a set of stopwords.</span><span class="w">
+</span><span class="c1"># The concept of stopwords seems a bit arbitrary. Why aren't "shall", "go", "us" and "one" </span><span class="w">
+</span><span class="c1"># already stopwords in the snowball lexicon whereas "i", "our" are?</span><span class="w">
 </span><span class="n">our_stopwords</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tibble</span><span class="p">(</span><span class="n">word</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="w">
   </span><span class="s2">"thou"</span><span class="p">,</span><span class="w"> </span><span class="s2">"thine"</span><span class="p">,</span><span class="w"> </span><span class="s2">"o"</span><span class="p">,</span><span class="w"> </span><span class="s2">"tis"</span><span class="p">,</span><span class="w"> </span><span class="s2">"thee"</span><span class="p">,</span><span class="w"> </span><span class="s2">"thy"</span><span class="p">,</span><span class="w"> </span><span class="s2">"sir"</span><span class="p">,</span><span class="w"> </span><span class="s2">"hath"</span><span class="p">,</span><span class="w"> </span><span class="s2">"lord"</span><span class="p">,</span><span class="w"> </span><span class="s2">"us"</span><span class="p">,</span><span class="w"> </span><span class="s2">"one"</span><span class="w">
 </span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">lexicon</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"made up"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">rbind</span><span class="p">(</span><span class="n">get_stopwords</span><span class="p">())</span><span class="w">
 
-</span><span class="c1"># First iteration of data frame with word as grain  
+</span><span class="c1"># First iteration of data frame with word as grain  </span><span class="w">
 </span><span class="n">hamlet_words</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">hamlet_lines</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">tidytext</span><span class="o">::</span><span class="n">unnest_tokens</span><span class="p">(</span><span class="n">output</span><span class="w"> </span><span class="o">=</span><span class="s2">"word"</span><span class="p">,</span><span class="w"> </span><span class="n">input</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"text"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">left_join</span><span class="p">(</span><span class="n">our_stopwords</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"word"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">stopword</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">!</span><span class="nf">is.na</span><span class="p">(</span><span class="n">lexicon</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">select</span><span class="p">(</span><span class="o">-</span><span class="n">lexicon</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">word_stem</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">wordStem</span><span class="p">(</span><span class="n">word</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-  </span><span class="c1"># identify the actual speeches and count the words in each speech by a continuing speaker
-</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">new_speaker_this_word</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">is.na</span><span class="p">(</span><span class="n">lag</span><span class="p">(</span><span class="n">speaker</span><span class="p">))</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">speaker</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">lag</span><span class="p">(</span><span class="n">speaker</span><span class="p">),</span><span class="w">
+  </span><span class="c1"># identify the actual speeches and count the words in each speech by a continuing speaker</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">new_speaker_this_word</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">is.na</span><span class="p">(</span><span class="n">lag</span><span class="p">(</span><span class="n">speaker</span><span class="p">))</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">speaker</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">lag</span><span class="p">(</span><span class="n">speaker</span><span class="p">),</span><span class="w">
          </span><span class="n">word_number_this_speech</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">new_speaker_this_word</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="kc">NA</span><span class="p">),</span><span class="w">
          </span><span class="n">word_number_this_speech</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">replace_na_with_num</span><span class="p">(</span><span class="n">word_number_this_speech</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">word_number</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">n</span><span class="p">())</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -668,18 +661,18 @@
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">word_number_this_scene</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">n</span><span class="p">())</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">ungroup</span><span class="p">()</span><span class="w">
 
-</span><span class="c1"># Identify if starting a speech or not...
+</span><span class="c1"># Identify if starting a speech or not...</span><span class="w">
 </span><span class="n">words_starting_speeches</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">hamlet_words</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">filter</span><span class="p">(</span><span class="n">new_speaker_this_word</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">select</span><span class="p">(</span><span class="n">word_number</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">speech_number</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">n</span><span class="p">())</span><span class="w">
 
-</span><span class="c1"># ... and rejoin to the original:
+</span><span class="c1"># ... and rejoin to the original:</span><span class="w">
 </span><span class="n">hamlet_words</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">hamlet_words</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">left_join</span><span class="p">(</span><span class="n">words_starting_speeches</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"word_number"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">fill</span><span class="p">(</span><span class="n">speech_number</span><span class="p">)</span><span class="w"> 
 
-</span><span class="c1"># words per speaker:
+</span><span class="c1"># words per speaker:</span><span class="w">
 </span><span class="n">char_summary</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">hamlet_words</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">group_by</span><span class="p">(</span><span class="n">speaker_sh</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">summarise</span><span class="p">(</span><span class="n">words</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">(),</span><span class="w">
@@ -690,11 +683,11 @@
             </span><span class="n">most_words_single_speech</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">max</span><span class="p">(</span><span class="n">word_number_this_speech</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">arrange</span><span class="p">(</span><span class="n">desc</span><span class="p">(</span><span class="n">words</span><span class="p">))</span><span class="w">
 
-</span><span class="c1"># are you one of the top 20 speakers?...
+</span><span class="c1"># are you one of the top 20 speakers?...</span><span class="w">
 </span><span class="n">top_20_chars</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">char_summary</span><span class="p">[</span><span class="m">1</span><span class="o">:</span><span class="m">20</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">speaker_sh</span><span class="w">
 
 
-</span><span class="c1"># ... and rejoin to the original:
+</span><span class="c1"># ... and rejoin to the original:</span><span class="w">
 </span><span class="n">hamlet_words</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">hamlet_words</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">top_20_char</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">speaker_sh</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="n">top_20_chars</span><span class="p">,</span><span class="w">
          </span><span class="n">speaker_sh</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">factor</span><span class="p">(</span><span class="n">speaker_sh</span><span class="p">,</span><span class="w"> </span><span class="n">levels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">char_summary</span><span class="o">$</span><span class="n">speaker_sh</span><span class="p">))</span></code></pre></figure>
@@ -705,7 +698,7 @@
 
 <p>OK, it’s time to do something fun now that we have tidied the data. Let’s start with just counting words. Out of the 30,000 words in Hamlet, who says how many?</p>
 
-<p>You might have noticed in the code that <code class="highlighter-rouge">char_summary</code> data frame I make along the way there. It has some summary information on each character such as the number of words and speeches, words per speech, stop words, proportion of words that aren’t stopwords, etc. Here’s what that looks like. We see that (of course), Hamlet himself has the most words to say; in fact, just over a third of all the words in Hamlet are spoken by the titular character:</p>
+<p>You might have noticed in the code that <code class="language-plaintext highlighter-rouge">char_summary</code> data frame I make along the way there. It has some summary information on each character such as the number of words and speeches, words per speech, stop words, proportion of words that aren’t stopwords, etc. Here’s what that looks like. We see that (of course), Hamlet himself has the most words to say; in fact, just over a third of all the words in Hamlet are spoken by the titular character:</p>
 
 <table class="table" style="margin-left: auto; margin-right: auto;">
  <thead>
@@ -1029,7 +1022,7 @@
 </tbody>
 </table>
 
-<p>Hang on, didn’t we see earlier that Hamlet had 358 speeches, and now we find only 346? That’s an anomaly related to how the data tidying worked. The 358 came from counting likes that appeared as <code class="highlighter-rouge">Ham.</code>; the 346 is more complex and looks for when Hamlet starts speaking after someone else had. My first guess at the cause of the anomaly is scene breaks where Hamlet was the last person speaking in the previous scene, and also first in the new one. But this would need checking. I don’t have the inclination to fix that now, so let’s just note this as an example of the sort of detail that needs fixing.</p>
+<p>Hang on, didn’t we see earlier that Hamlet had 358 speeches, and now we find only 346? That’s an anomaly related to how the data tidying worked. The 358 came from counting likes that appeared as <code class="language-plaintext highlighter-rouge">Ham.</code>; the 346 is more complex and looks for when Hamlet starts speaking after someone else had. My first guess at the cause of the anomaly is scene breaks where Hamlet was the last person speaking in the previous scene, and also first in the new one. But this would need checking. I don’t have the inclination to fix that now, so let’s just note this as an example of the sort of detail that needs fixing.</p>
 
 <h3 id="distinctive-words">Distinctive words</h3>
 
@@ -1037,11 +1030,11 @@
 
 <object type="image/svg+xml" data="/img/0179-distinctive-words.svg" width="100%"><img src="/img/0179-distinctive-words.png" width="100%" /></object>
 
-<p>Here’s the code to calculate those TFIDF values (I am using <code class="highlighter-rouge">dplyr</code> to do this explicitly so I can be sure of what is going on, rather than using specialist functions) and draw that chart of distinctive words:</p>
+<p>Here’s the code to calculate those TFIDF values (I am using <code class="language-plaintext highlighter-rouge">dplyr</code> to do this explicitly so I can be sure of what is going on, rather than using specialist functions) and draw that chart of distinctive words:</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#--------------------Distinctive words-------------------
-</span><span class="w">
-</span><span class="c1"># most distinctive word stem for each of the main cast
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#--------------------Distinctive words-------------------</span><span class="w">
+
+</span><span class="c1"># most distinctive word stem for each of the main cast</span><span class="w">
 </span><span class="n">dist_words</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">hamlet_words</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">filter</span><span class="p">(</span><span class="o">!</span><span class="n">stopword</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">count</span><span class="p">(</span><span class="n">word_stem</span><span class="p">,</span><span class="w"> </span><span class="n">speaker_sh</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -1055,9 +1048,9 @@
   </span><span class="n">arrange</span><span class="p">(</span><span class="n">desc</span><span class="p">(</span><span class="n">relative</span><span class="p">),</span><span class="w"> </span><span class="n">desc</span><span class="p">(</span><span class="n">n</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">slice</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">5</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">filter</span><span class="p">(</span><span class="n">speaker_sh</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="n">top_20_chars</span><span class="p">)</span><span class="w"> 
-</span><span class="c1"># note that "mai" is the word stem for "may", and "joi" for "joy"
-</span><span class="w">
-</span><span class="c1"># plot of disinctive word stems
+</span><span class="c1"># note that "mai" is the word stem for "may", and "joi" for "joy"</span><span class="w">
+
+</span><span class="c1"># plot of disinctive word stems</span><span class="w">
 </span><span class="n">dist_words</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">group_by</span><span class="p">(</span><span class="n">speaker_sh</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">rank</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">n</span><span class="p">())</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -1093,9 +1086,9 @@
 
 <p>Here’s the R code to plot the distribution of speech lengths, and extract in full an original speech that has been identified from our tidied row-grain data frame:</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#--------------------Distribution of length of speeches--------------------
-</span><span class="w">
-</span><span class="c1"># chart of distribution of length of speeches
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#--------------------Distribution of length of speeches--------------------</span><span class="w">
+
+</span><span class="c1"># chart of distribution of length of speeches</span><span class="w">
 </span><span class="n">hamlet_words</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">filter</span><span class="p">(</span><span class="n">main_character</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">speaker_sh</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"First gravedigger"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">group_by</span><span class="p">(</span><span class="n">speech_number</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -1110,13 +1103,13 @@
        </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Length of uninterrupted speeches in Shakespeare's Hamlet"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
   </span><span class="n">theme</span><span class="p">(</span><span class="n">panel.spacing</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">unit</span><span class="p">(</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="s2">"lines"</span><span class="p">))</span><span class="w">
 
-</span><span class="c1"># Find the longest speech:
+</span><span class="c1"># Find the longest speech:</span><span class="w">
 </span><span class="n">longest_speech</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">hamlet_words</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">arrange</span><span class="p">(</span><span class="n">desc</span><span class="p">(</span><span class="n">word_number_this_speech</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">slice</span><span class="p">(</span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">pull</span><span class="p">(</span><span class="n">speech_number</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># Full text of that speech:
+</span><span class="c1"># Full text of that speech:</span><span class="w">
 </span><span class="n">hamlet_words</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">filter</span><span class="p">(</span><span class="n">speech_number</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">longest_speech</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">distinct</span><span class="p">(</span><span class="n">original_line_number</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -1125,7 +1118,7 @@
   </span><span class="n">pull</span><span class="p">(</span><span class="n">text</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">cat</span><span class="p">()</span></code></pre></figure>
 
-<p>Incidentally, this exercise drew my attention to another problem - the final stage direction here <code class="highlighter-rouge">[Enter King, Queen, Polonius, Ophelia, Rosencrantz, and Guildenstern.]</code> had not been correctly identified as such in my tidying program. So another detail to fix (I count about four of these so far…).</p>
+<p>Incidentally, this exercise drew my attention to another problem - the final stage direction here <code class="language-plaintext highlighter-rouge">[Enter King, Queen, Polonius, Ophelia, Rosencrantz, and Guildenstern.]</code> had not been correctly identified as such in my tidying program. So another detail to fix (I count about four of these so far…).</p>
 
 <h3 id="who-interacts-with-whom">Who interacts with whom?</h3>
 
@@ -1135,10 +1128,10 @@
 
 <p>What I like about this graph is how it shows the relationship between Hamlet and his wingman Horatio as core to the play; while also making clear who are the other major speaking characters (Claudius, Polonius, Laertes, Gertrude, etc) and the relationhsips between them.</p>
 
-<p>Here’s the code for that network graph, made simple by the wonder of Thomas Pedersen’s <code class="highlighter-rouge">tidygraph</code> and <code class="highlighter-rouge">ggraph</code> R packages.</p>
+<p>Here’s the code for that network graph, made simple by the wonder of Thomas Pedersen’s <code class="language-plaintext highlighter-rouge">tidygraph</code> and <code class="language-plaintext highlighter-rouge">ggraph</code> R packages.</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#=========who interacts with whom==============
-</span><span class="w">
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#=========who interacts with whom==============</span><span class="w">
+
 </span><span class="n">hamlet_handovers</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">hamlet_words</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">filter</span><span class="p">(</span><span class="n">new_speaker_this_word</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">previous_speaker</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lag</span><span class="p">(</span><span class="n">speaker_sh</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -1152,9 +1145,9 @@
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.character</span><span class="p">(</span><span class="n">from</span><span class="p">),</span><span class="w">
          </span><span class="n">to</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.character</span><span class="p">(</span><span class="n">to</span><span class="p">))</span><span class="w">
 
-</span><span class="c1"># we are going to count from-to and to-from as though they are the same,
-# ie ignoring direction
-</span><span class="n">d</span><span class="m">1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+</span><span class="c1"># we are going to count from-to and to-from as though they are the same,</span><span class="w">
+</span><span class="c1"># ie ignoring direction</span><span class="w">
+</span><span class="n">d1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">rename</span><span class="p">(</span><span class="n">new_from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">to</span><span class="p">,</span><span class="w">
          </span><span class="n">to</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">from</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">rename</span><span class="p">(</span><span class="n">from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">new_from</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -1162,13 +1155,13 @@
   </span><span class="n">group_by</span><span class="p">(</span><span class="n">from</span><span class="p">,</span><span class="w"> </span><span class="n">to</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">summarise</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">n</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">filter</span><span class="p">(</span><span class="n">from</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">to</span><span class="p">)</span><span class="w">
-</span><span class="c1"># to do = tidy up Marcellus and Bernardo here
-</span><span class="w">
-</span><span class="n">d</span><span class="m">2</span><span class="w"> </span><span class="o">&lt;-</span><span class="n">as_tbl_graph</span><span class="p">(</span><span class="n">d</span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+</span><span class="c1"># to do = tidy up Marcellus and Bernardo here</span><span class="w">
+
+</span><span class="n">d2</span><span class="w"> </span><span class="o">&lt;-</span><span class="n">as_tbl_graph</span><span class="p">(</span><span class="n">d1</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">activate</span><span class="p">(</span><span class="n">nodes</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">left_join</span><span class="p">(</span><span class="n">char_summary</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"name"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"speaker_sh"</span><span class="p">))</span><span class="w">
 
-</span><span class="n">layout</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">create_layout</span><span class="p">(</span><span class="n">d</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">layout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'igraph'</span><span class="p">,</span><span class="w"> </span><span class="n">algorithm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'kk'</span><span class="p">)</span><span class="w"> 
+</span><span class="n">layout</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">create_layout</span><span class="p">(</span><span class="n">d2</span><span class="p">,</span><span class="w"> </span><span class="n">layout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'igraph'</span><span class="p">,</span><span class="w"> </span><span class="n">algorithm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'kk'</span><span class="p">)</span><span class="w"> 
 
 </span><span class="n">ggraph</span><span class="p">(</span><span class="n">layout</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
   </span><span class="n">geom_edge_arc</span><span class="p">(</span><span class="n">strength</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> 
@@ -1193,10 +1186,10 @@
 
 <p>Anyway, here is the absurdly short code to fit the bi-term topic model.</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#======================Topic modelling================
-# We could do this for each individual speech; or for all speeches.
-# Here we treat each speech as a document.
-</span><span class="w">
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#======================Topic modelling================</span><span class="w">
+</span><span class="c1"># We could do this for each individual speech; or for all speeches.</span><span class="w">
+</span><span class="c1"># Here we treat each speech as a document.</span><span class="w">
+
 </span><span class="n">hw_for_btm</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">hamlet_words</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">filter</span><span class="p">(</span><span class="o">!</span><span class="n">stopword</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">select</span><span class="p">(</span><span class="n">speech_number</span><span class="p">,</span><span class="w"> </span><span class="n">word_stem</span><span class="p">)</span><span class="w">

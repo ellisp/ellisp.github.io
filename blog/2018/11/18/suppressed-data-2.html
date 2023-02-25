@@ -18,7 +18,7 @@
             <meta property="og:image" content="http://freerangestats.info/img/0139-boxplot.png" />
          
 		 
-			<meta property="og:url" content="http://freerangestats.info/blog/2018/11/18/suppressed-data-2.html" />
+			<meta property="og:url" content="http://localhost:4000/blog/2018/11/18/suppressed-data-2.html" />
 		 
          <meta property="og:author" content= "https://www.facebook.com/peterstats" />
          <meta property="og:type" content="article" />
@@ -113,7 +113,7 @@
                   <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
 				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
                   <li><a href="/blog/surveys.html">all posts on surveys</a></li> 
-				  <li><a href = /blog/2022/10/13/pacific-map>most recent post</a></li>
+				  <li><a href = /blog/2023/02/25/ilr>most recent post</a></li>
 				</ul>
             </li>
               <li><a href="/blog/showcase.html">showcase</a></li>
@@ -175,7 +175,7 @@
 <ul>
   <li>The best of the nine methods was simply to replace all values below six with the number 5</li>
   <li>Four of the methods delivered better results on average in uncovering the true data generating process than did <em>fitting the model to the real, unsuppressed data</em></li>
-  <li>My multiple imputation that provides numbers from zero to five with probabilities based on a truncated Poisson distribution is the best of the fancy methods, but only very slightly better than the default imputation from the <code class="highlighter-rouge">mice</code> package, which allows imputed values to be greater than 5 even though we know the reality wasn’t that big</li>
+  <li>My multiple imputation that provides numbers from zero to five with probabilities based on a truncated Poisson distribution is the best of the fancy methods, but only very slightly better than the default imputation from the <code class="language-plaintext highlighter-rouge">mice</code> package, which allows imputed values to be greater than 5 even though we know the reality wasn’t that big</li>
   <li>left-censored Poisson regression with survival analysis methods still performs not particularly well.</li>
 </ul>
 
@@ -405,31 +405,31 @@
 </span><span class="n">library</span><span class="p">(</span><span class="n">parallel</span><span class="p">)</span><span class="w">
 
 
-</span><span class="c1">#------------------ imputation functions----------
-</span><span class="cd">#' Imputation function for suppressed data for use with mice - Poisson-based
-#'
-#' @param y vector to be imputed
-#' @param ry logical vector of observed (TRUE) and missing (FALSE) values of y
-#' @param x design matrix. Ignored but is probably needed for mice to use.
-#' @param wy vector that  is TRUE where imputations are created for y. Not sure when this is different
-#' to just !ry (which is the default).
+</span><span class="c1">#------------------ imputation functions----------</span><span class="w">
+</span><span class="cd">#' Imputation function for suppressed data for use with mice - Poisson-based</span><span class="w">
+</span><span class="cd">#'</span><span class="w">
+</span><span class="cd">#' @param y vector to be imputed</span><span class="w">
+</span><span class="cd">#' @param ry logical vector of observed (TRUE) and missing (FALSE) values of y</span><span class="w">
+</span><span class="cd">#' @param x design matrix. Ignored but is probably needed for mice to use.</span><span class="w">
+</span><span class="cd">#' @param wy vector that  is TRUE where imputations are created for y. Not sure when this is different</span><span class="w">
+</span><span class="cd">#' to just !ry (which is the default).</span><span class="w">
 </span><span class="n">mice.impute.desuppress</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">ry</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">wy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">NULL</span><span class="p">,</span><span class="w"> </span><span class="n">max_value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
-  </span><span class="c1"># during dev:
-</span><span class="w">  </span><span class="c1"># y &lt;- data$censored_count_num; ry &lt;- !is.na(y)
-</span><span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nf">is.null</span><span class="p">(</span><span class="n">wy</span><span class="p">)){</span><span class="w"> 
+  </span><span class="c1"># during dev:</span><span class="w">
+  </span><span class="c1"># y &lt;- data$censored_count_num; ry &lt;- !is.na(y)</span><span class="w">
+  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nf">is.null</span><span class="p">(</span><span class="n">wy</span><span class="p">)){</span><span class="w"> 
     </span><span class="n">wy</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="o">!</span><span class="n">ry</span><span class="w">
   </span><span class="p">}</span><span class="w">
   
-  </span><span class="c1"># What are the relative chances of getting values from 0 to the maximum allowed value,
-</span><span class="w">  </span><span class="c1"># if we have a Poisson distribution  which we have estimated the mean of via trimmed mean?
-</span><span class="w">  </span><span class="c1"># (this is very approximate but probably better than just giving equal chances to 0:5)
-</span><span class="w">  </span><span class="n">probs</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dpois</span><span class="p">(</span><span class="m">0</span><span class="o">:</span><span class="n">max_value</span><span class="p">,</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="n">ry</span><span class="p">],</span><span class="w"> </span><span class="n">tr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.2</span><span class="p">))</span><span class="w">
+  </span><span class="c1"># What are the relative chances of getting values from 0 to the maximum allowed value,</span><span class="w">
+  </span><span class="c1"># if we have a Poisson distribution  which we have estimated the mean of via trimmed mean?</span><span class="w">
+  </span><span class="c1"># (this is very approximate but probably better than just giving equal chances to 0:5)</span><span class="w">
+  </span><span class="n">probs</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dpois</span><span class="p">(</span><span class="m">0</span><span class="o">:</span><span class="n">max_value</span><span class="p">,</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="n">ry</span><span class="p">],</span><span class="w"> </span><span class="n">tr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.2</span><span class="p">))</span><span class="w">
   
   </span><span class="nf">return</span><span class="p">(</span><span class="n">sample</span><span class="p">(</span><span class="m">0</span><span class="o">:</span><span class="n">max_value</span><span class="p">,</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">wy</span><span class="p">),</span><span class="w"> </span><span class="n">prob</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">probs</span><span class="p">,</span><span class="w"> </span><span class="n">replace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">))</span><span class="w">
 </span><span class="p">}</span><span class="w">
 
-</span><span class="cd">#' Imputation function for suppressed data for use with mice - simple
-#'
+</span><span class="cd">#' Imputation function for suppressed data for use with mice - simple</span><span class="w">
+</span><span class="cd">#'</span><span class="w">
 </span><span class="n">mice.impute.uniform</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">ry</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">wy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">NULL</span><span class="p">,</span><span class="w"> </span><span class="n">max_value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
   </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nf">is.null</span><span class="p">(</span><span class="n">wy</span><span class="p">)){</span><span class="w"> 
     </span><span class="n">wy</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="o">!</span><span class="n">ry</span><span class="w">
@@ -438,8 +438,8 @@
   </span><span class="nf">return</span><span class="p">(</span><span class="n">sample</span><span class="p">(</span><span class="m">0</span><span class="o">:</span><span class="n">max_value</span><span class="p">,</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">wy</span><span class="p">),</span><span class="w"> </span><span class="n">replace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">))</span><span class="w">
 </span><span class="p">}</span><span class="w">
 
-</span><span class="c1">#--------------main function---------------
-# This function  generates data and compares coefficients
+</span><span class="c1">#--------------main function---------------</span><span class="w">
+</span><span class="c1"># This function  generates data and compares coefficients</span><span class="w">
 </span><span class="n">coefs_comp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">run</span><span class="p">,</span><span class="w"> </span><span class="n">output</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"summary"</span><span class="p">,</span><span class="w"> </span><span class="s2">"all"</span><span class="p">)){</span><span class="w">
   </span><span class="n">set.seed</span><span class="p">(</span><span class="n">run</span><span class="p">)</span><span class="w">
   </span><span class="n">output</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">match.arg</span><span class="p">(</span><span class="n">output</span><span class="p">)</span><span class="w">
@@ -472,27 +472,27 @@
     </span><span class="nf">return</span><span class="p">(</span><span class="kc">NULL</span><span class="p">)</span><span class="w">
   </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">
     
-    </span><span class="c1">#--------------straightforward methods-----------
-</span><span class="w">    </span><span class="c1"># with the full unsuppressed data, as though you were the ABS:
-</span><span class="w">    </span><span class="n">mod0</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">glm</span><span class="p">(</span><span class="n">count</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">animals</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"poisson"</span><span class="p">)</span><span class="w">
+    </span><span class="c1">#--------------straightforward methods-----------</span><span class="w">
+    </span><span class="c1"># with the full unsuppressed data, as though you were the ABS:</span><span class="w">
+    </span><span class="n">mod0</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">glm</span><span class="p">(</span><span class="n">count</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">animals</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"poisson"</span><span class="p">)</span><span class="w">
     
-    </span><span class="c1"># with replacing the suppressed data with 3 or 5:
-</span><span class="w">    </span><span class="n">mod1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">glm</span><span class="p">(</span><span class="n">count_replaced_3</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">animals</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"poisson"</span><span class="p">)</span><span class="w">
+    </span><span class="c1"># with replacing the suppressed data with 3 or 5:</span><span class="w">
+    </span><span class="n">mod1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">glm</span><span class="p">(</span><span class="n">count_replaced_3</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">animals</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"poisson"</span><span class="p">)</span><span class="w">
     </span><span class="n">mod2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">glm</span><span class="p">(</span><span class="n">count_replaced_5</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">animals</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"poisson"</span><span class="p">)</span><span class="w">
     </span><span class="n">mod2a</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">glm</span><span class="p">(</span><span class="n">count_replaced_1</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">animals</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"poisson"</span><span class="p">)</span><span class="w">
     </span><span class="n">mod2b</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">glm</span><span class="p">(</span><span class="n">count_replaced_0</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">animals</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"poisson"</span><span class="p">)</span><span class="w">
     
-    </span><span class="c1">#------------with censored poisson regression-------------------------
-</span><span class="w">    
+    </span><span class="c1">#------------with censored poisson regression-------------------------</span><span class="w">
+    
     </span><span class="n">mod3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">vglm</span><span class="p">(</span><span class="n">SurvS4</span><span class="p">(</span><span class="n">z</span><span class="p">,</span><span class="w"> </span><span class="n">which_complete</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"left"</span><span class="p">)</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">animals</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">region</span><span class="p">,</span><span class="w"> 
                  </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cens.poisson</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">)</span><span class="w">
     
-    </span><span class="c1">#------------with multiple imputation
-</span><span class="w">    </span><span class="c1"># number of sets of imputations to make
-</span><span class="w">    </span><span class="n">m</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">20</span><span class="w">
+    </span><span class="c1">#------------with multiple imputation</span><span class="w">
+    </span><span class="c1"># number of sets of imputations to make</span><span class="w">
+    </span><span class="n">m</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">20</span><span class="w">
     
-    </span><span class="c1"># See https://github.com/stefvanbuuren/mice/issues/150 for why remove.collinear = FALSE.
-</span><span class="w">    </span><span class="n">data_imp1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">mice</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"censored_count_num"</span><span class="p">,</span><span class="w"> </span><span class="s2">"animals"</span><span class="p">,</span><span class="w"> </span><span class="s2">"region"</span><span class="p">)],</span><span class="w"> 
+    </span><span class="c1"># See https://github.com/stefvanbuuren/mice/issues/150 for why remove.collinear = FALSE.</span><span class="w">
+    </span><span class="n">data_imp1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">mice</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"censored_count_num"</span><span class="p">,</span><span class="w"> </span><span class="s2">"animals"</span><span class="p">,</span><span class="w"> </span><span class="s2">"region"</span><span class="p">)],</span><span class="w"> 
                       </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"desuppress"</span><span class="p">,</span><span class="w"> </span><span class="n">print</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">m</span><span class="p">,</span><span class="w">
                       </span><span class="n">remove.collinear</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w">
     
@@ -500,8 +500,8 @@
                       </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"uniform"</span><span class="p">,</span><span class="w"> </span><span class="n">print</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">m</span><span class="p">,</span><span class="w">
                       </span><span class="n">remove.collinear</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w">
 
-    </span><span class="c1"># default mice method:
-</span><span class="w">    </span><span class="n">data_imp3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">mice</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"censored_count_num"</span><span class="p">,</span><span class="w"> </span><span class="s2">"animals"</span><span class="p">,</span><span class="w"> </span><span class="s2">"region"</span><span class="p">)],</span><span class="w"> 
+    </span><span class="c1"># default mice method:</span><span class="w">
+    </span><span class="n">data_imp3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">mice</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"censored_count_num"</span><span class="p">,</span><span class="w"> </span><span class="s2">"animals"</span><span class="p">,</span><span class="w"> </span><span class="s2">"region"</span><span class="p">)],</span><span class="w"> 
                       </span><span class="n">print</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">m</span><span class="p">,</span><span class="w">
                       </span><span class="n">remove.collinear</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w">
     
@@ -519,9 +519,9 @@
     
     
 
-    </span><span class="c1">#---------------results----------------------
-</span><span class="w">    </span><span class="c1"># comparison data
-</span><span class="w">    </span><span class="n">d</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data_frame</span><span class="p">(</span><span class="n">underlying</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">true_coefs</span><span class="p">,</span><span class="w"> 
+    </span><span class="c1">#---------------results----------------------</span><span class="w">
+    </span><span class="c1"># comparison data</span><span class="w">
+    </span><span class="n">d</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data_frame</span><span class="p">(</span><span class="n">underlying</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">true_coefs</span><span class="p">,</span><span class="w"> 
                     </span><span class="n">`Using full data including suppressed values (not usually possible!)`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coef</span><span class="p">(</span><span class="n">mod0</span><span class="p">),</span><span class="w">
                     </span><span class="n">`Replacing suppressed values with 0`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coef</span><span class="p">(</span><span class="n">mod2b</span><span class="p">),</span><span class="w">
                     </span><span class="n">`Replacing suppressed values with 1`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coef</span><span class="p">(</span><span class="n">mod2a</span><span class="p">),</span><span class="w">
@@ -537,10 +537,10 @@
       </span><span class="n">gather</span><span class="p">(</span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">underlying</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">labels</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
       </span><span class="n">mutate</span><span class="p">(</span><span class="n">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="nf">is.na</span><span class="p">(</span><span class="n">value</span><span class="p">),</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">))</span><span class="w"> 
     
-    </span><span class="c1"># summary data:  
-</span><span class="w">    </span><span class="n">d</span><span class="m">2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-      </span><span class="c1"># the intercept is on a different scale to all the other coefficients
-</span><span class="w">      </span><span class="n">filter</span><span class="p">(</span><span class="n">labels</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">"(Intercept)"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="c1"># summary data:  </span><span class="w">
+    </span><span class="n">d2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="c1"># the intercept is on a different scale to all the other coefficients</span><span class="w">
+      </span><span class="n">filter</span><span class="p">(</span><span class="n">labels</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">"(Intercept)"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
       </span><span class="n">mutate</span><span class="p">(</span><span class="n">square_error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">value</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">underlying</span><span class="p">)</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
       </span><span class="n">group_by</span><span class="p">(</span><span class="n">method</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
       </span><span class="n">summarise</span><span class="p">(</span><span class="n">mse</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">square_error</span><span class="p">),</span><span class="w">
@@ -553,28 +553,28 @@
              </span><span class="n">prop_suppressed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">prop_suppressed</span><span class="p">,</span><span class="w">
              </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">)</span><span class="w">
     </span><span class="k">if</span><span class="p">(</span><span class="n">output</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"summary"</span><span class="p">){</span><span class="w">
-      </span><span class="nf">return</span><span class="p">(</span><span class="n">d</span><span class="m">2</span><span class="p">)</span><span class="w">  
+      </span><span class="nf">return</span><span class="p">(</span><span class="n">d2</span><span class="p">)</span><span class="w">  
     </span><span class="p">}</span><span class="w"> 
     </span><span class="k">if</span><span class="p">(</span><span class="n">output</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"all"</span><span class="p">){</span><span class="w">
       </span><span class="nf">return</span><span class="p">(</span><span class="nf">list</span><span class="p">(</span><span class="w">
         </span><span class="n">all_coefficients</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">d</span><span class="p">,</span><span class="w">
-        </span><span class="n">performance_summary</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">d</span><span class="m">2</span><span class="p">,</span><span class="w">
+        </span><span class="n">performance_summary</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">d2</span><span class="p">,</span><span class="w">
         </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="w">
       </span><span class="p">))</span><span class="w">
     </span><span class="p">}</span><span class="w">
     
   </span><span class="p">}</span><span class="w">
 </span><span class="p">}</span><span class="w">
-</span><span class="c1">#--------------------do the runs----------------
-# It was useful to do this in a single-threaded way during dev to locate problems such
-# as with run 357, but when that was sorted it was better to dso the experiments with 
-# parallel processing.
-</span><span class="w">
-</span><span class="c1"># set up cluster with number of cores minus one
+</span><span class="c1">#--------------------do the runs----------------</span><span class="w">
+</span><span class="c1"># It was useful to do this in a single-threaded way during dev to locate problems such</span><span class="w">
+</span><span class="c1"># as with run 357, but when that was sorted it was better to dso the experiments with </span><span class="w">
+</span><span class="c1"># parallel processing.</span><span class="w">
+
+</span><span class="c1"># set up cluster with number of cores minus one</span><span class="w">
 </span><span class="n">cores</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">detectCores</span><span class="p">()</span><span class="w">
 </span><span class="n">cluster</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">makePSOCKcluster</span><span class="p">(</span><span class="nf">max</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">cores</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">1</span><span class="p">))</span><span class="w">
 
-</span><span class="c1"># set up the functionality on the cluster
+</span><span class="c1"># set up the functionality on the cluster</span><span class="w">
 </span><span class="n">clusterEvalQ</span><span class="p">(</span><span class="n">cluster</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w">
   </span><span class="n">library</span><span class="p">(</span><span class="n">dplyr</span><span class="p">)</span><span class="w">
   </span><span class="n">library</span><span class="p">(</span><span class="n">tidyr</span><span class="p">)</span><span class="w">
@@ -584,12 +584,12 @@
 </span><span class="p">})</span><span class="w">
 </span><span class="n">clusterExport</span><span class="p">(</span><span class="n">cluster</span><span class="p">,</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"coefs_comp"</span><span class="p">,</span><span class="w"> </span><span class="s2">"mice.impute.desuppress"</span><span class="p">,</span><span class="w"> </span><span class="s2">"mice.impute.uniform"</span><span class="p">))</span><span class="w">
 
-</span><span class="c1"># Generate data for a sequence of seeds and compare the coefficient from the various methods
+</span><span class="c1"># Generate data for a sequence of seeds and compare the coefficient from the various methods</span><span class="w">
 </span><span class="n">results</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">parLapply</span><span class="p">(</span><span class="n">cluster</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">1000</span><span class="p">,</span><span class="w"> </span><span class="n">coefs_comp</span><span class="p">)</span><span class="w">
 
 </span><span class="n">stopCluster</span><span class="p">(</span><span class="n">cluster</span><span class="p">)</span><span class="w">
 
-</span><span class="c1">#--------------------present results-------------------
+</span><span class="c1">#--------------------present results-------------------</span><span class="w">
 </span><span class="n">results_df</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">do.call</span><span class="p">(</span><span class="s2">"rbind"</span><span class="p">,</span><span class="w"> </span><span class="n">results</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_reorder</span><span class="p">(</span><span class="n">str_wrap</span><span class="p">(</span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="m">27</span><span class="p">),</span><span class="w"> </span><span class="n">mse</span><span class="p">))</span><span class="w">
 
@@ -628,7 +628,7 @@
   </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Fitting a Poisson GLM to a cross tab of counts"</span><span class="p">,</span><span class="w">
           </span><span class="s2">"Comparison of methods of dealing with suppressed counts under 6"</span><span class="p">)</span><span class="w">
 
-</span><span class="c1">#--------------further investigation----------
+</span><span class="c1">#--------------further investigation----------</span><span class="w">
 </span><span class="n">results_df</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mse</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
   </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">method</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
@@ -637,7 +637,7 @@
   </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Bimodal distribution of performance when using the real data"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
   </span><span class="n">theme</span><span class="p">(</span><span class="n">panel.grid.minor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_blank</span><span class="p">())</span><span class="w">
 
-</span><span class="c1"># which are the really poor performing methods when using the full data?
+</span><span class="c1"># which are the really poor performing methods when using the full data?</span><span class="w">
 </span><span class="n">full_data_method</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">results_df</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">filter</span><span class="p">(</span><span class="n">grepl</span><span class="p">(</span><span class="s2">"^Using full data"</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="w"> </span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">arrange</span><span class="p">(</span><span class="n">desc</span><span class="p">(</span><span class="n">mse</span><span class="p">))</span><span class="w">
@@ -653,8 +653,8 @@
           </span><span class="s2">"General success and occasional complete failure to pick the underlying data generating process"</span><span class="p">)</span><span class="w">
 
 </span><span class="n">full_data_method</span><span class="w">
-</span><span class="c1"># some really bad runs are 125, 721, 506, lets look at just one:
-</span><span class="w">  
+</span><span class="c1"># some really bad runs are 125, 721, 506, lets look at just one:</span><span class="w">
+  
 </span><span class="n">run125</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">coefs_comp</span><span class="p">(</span><span class="m">125</span><span class="p">,</span><span class="w"> </span><span class="n">output</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"all"</span><span class="p">)</span><span class="w">
 
 </span><span class="n">run125</span><span class="o">$</span><span class="n">data</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -672,7 +672,7 @@
   </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"True value of underlying coefficients"</span><span class="p">,</span><span class="w">
        </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Estimate from various types of model"</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># lots of 25s:  
+</span><span class="c1"># lots of 25s:  </span><span class="w">
 </span><span class="n">glm</span><span class="p">(</span><span class="n">count</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">animals</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">run125</span><span class="o">$</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"poisson"</span><span class="p">)</span></code></pre></figure>
 
 

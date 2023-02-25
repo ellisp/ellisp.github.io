@@ -18,7 +18,7 @@
             <meta property="og:image" content="http://ellisp.github.io/img/0118-main-scatter.svg" />
          
 		 
-			<meta property="og:url" content="http://freerangestats.info/blog/2018/02/24/following-followers.html" />
+			<meta property="og:url" content="http://localhost:4000/blog/2018/02/24/following-followers.html" />
 		 
          <meta property="og:author" content= "https://www.facebook.com/peterstats" />
          <meta property="og:type" content="article" />
@@ -113,7 +113,7 @@
                   <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
 				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
                   <li><a href="/blog/surveys.html">all posts on surveys</a></li> 
-				  <li><a href = /blog/2022/10/13/pacific-map>most recent post</a></li>
+				  <li><a href = /blog/2023/02/25/ilr>most recent post</a></li>
 				</ul>
             </li>
               <li><a href="/blog/showcase.html">showcase</a></li>
@@ -203,7 +203,7 @@
 
 <p>Method 1 is I think infeasible.  Method 2 will oversample users with lots of followers and who follow lots of people - basically, the more networked you are, the more likely you are to be sampled.  On the plus side for Method 2, quiet users who lurk but aren’t tweeting these days will have a chance of selection.  Method 3 on the other hand will give a very particular slice of users; but it has the advantage of less obvious dependence between the nodes we pick (all they have in common is tweeting in the last couple of minutes of when we harvest them).  I was unsure enough about sampling strategy to try them both.</p>
 
-<p>Here’s code to do the sampling, using Jeff Gentry’s <code class="highlighter-rouge">twitteR</code> R package.  Note that the code that follows isn’t very robust, and took days to run because of Twitter’s rules on maximum downloads via the public API.  There’s lots that can go wrong with grabbing data from the Twitter API, hence the extensive and undisciplined use of <code class="highlighter-rouge">try()</code> in the code below in an effort to keep the data harvesting going in the face of various quirks .</p>
+<p>Here’s code to do the sampling, using Jeff Gentry’s <code class="language-plaintext highlighter-rouge">twitteR</code> R package.  Note that the code that follows isn’t very robust, and took days to run because of Twitter’s rules on maximum downloads via the public API.  There’s lots that can go wrong with grabbing data from the Twitter API, hence the extensive and undisciplined use of <code class="language-plaintext highlighter-rouge">try()</code> in the code below in an effort to keep the data harvesting going in the face of various quirks .</p>
 
 <p>First, setup.  This requires four different pass phrases which associated with your Twitter account (for obvious reasons, blanked out in the below, which stops this script being fully reproducible as-is).</p>
 
@@ -223,7 +223,7 @@
 
 <figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">many_following_user</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">getUser</span><span class="p">(</span><span class="s2">"toddcarey"</span><span class="p">)</span><span class="w">
 </span><span class="n">many_ids</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">many_following_user</span><span class="o">$</span><span class="n">getFriendIDs</span><span class="p">()</span><span class="w">
-</span><span class="nf">length</span><span class="p">(</span><span class="n">many_ids</span><span class="p">)</span><span class="w">      </span><span class="err">#</span><span class="w"> </span><span class="n">returns</span><span class="w"> </span><span class="n">only</span><span class="w"> </span><span class="m">75000</span><span class="w"> </span><span class="n">ids</span><span class="p">;</span><span class="w"> </span><span class="n">I</span><span class="w"> </span><span class="n">think</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">most</span><span class="w"> </span><span class="n">recent</span><span class="w"> </span><span class="m">75</span><span class="p">,</span><span class="m">000</span><span class="w"> </span><span class="n">he</span><span class="err">'</span><span class="n">s</span><span class="w"> </span><span class="n">followed</span></code></pre></figure>
+</span><span class="nf">length</span><span class="p">(</span><span class="n">many_ids</span><span class="p">)</span><span class="w">      </span><span class="c1"># returns only 75000 ids; I think the most recent 75,000 he's followed</span></code></pre></figure>
 
 <p>The problem here is that as Carey follows so many people (1.28 million) it’s infeasible to get the details of them all.  In fact, it’s infeasible even just to get all their 1.28 million screen names and then sample from those (I’m very happy to estimate “average number of followers of people X follows” from a sample).  I’ll have to deal with getting 75,000 users he follows, then sampling from those 75,000.  The big problem here is that I think those are the most recent 75,000 people he’s followed.  All else being equal, these are likely to be newer Twitter users than the overall population of people he follows, and hence likely to bias downwards my estimate of the average number of followers <em>they</em> have (as newer users will almost certainly have fewer followers on average).</p>
 
@@ -233,8 +233,8 @@
 
 <p>Anywhere, here’s the code that does the snowball sampling.  I start with myself.  I take three types of average number of followers of the people X follows: mean (which is highly vulnerable to an arbitrarily large number getting in the sample), 20% trimmed mean and 50% trimmed mean (ie median); but I’m satisfied that 20% trimmed mean is robust and a good measure.</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#=======================snowball sampling method================
-</span><span class="w">
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#=======================snowball sampling method================</span><span class="w">
+
 </span><span class="n">follow_data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data_frame</span><span class="p">(</span><span class="w">
   </span><span class="n">number_followers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">integer</span><span class="p">(),</span><span class="w">
   </span><span class="n">number_following</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">integer</span><span class="p">(),</span><span class="w">
@@ -244,20 +244,20 @@
   </span><span class="n">screenName</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">character</span><span class="p">()</span><span class="w">
 </span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># Terminology
-# A "friend" is someone you follow
-# A "follower" is someone who follows you
-</span><span class="w">
+</span><span class="c1"># Terminology</span><span class="w">
+</span><span class="c1"># A "friend" is someone you follow</span><span class="w">
+</span><span class="c1"># A "follower" is someone who follows you</span><span class="w">
+
 </span><span class="n">current_sn</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"ellis2013nz"</span><span class="w">
 
 </span><span class="n">set.seed</span><span class="p">(</span><span class="m">124</span><span class="p">)</span><span class="w">
 
 </span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">1000</span><span class="p">){</span><span class="w">
-  </span><span class="c1"># save latest copy of results in case of crash
-</span><span class="w">  </span><span class="n">save</span><span class="p">(</span><span class="n">follow_data</span><span class="p">,</span><span class="w"> </span><span class="n">file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"follow_data.rda"</span><span class="p">)</span><span class="w">
+  </span><span class="c1"># save latest copy of results in case of crash</span><span class="w">
+  </span><span class="n">save</span><span class="p">(</span><span class="n">follow_data</span><span class="p">,</span><span class="w"> </span><span class="n">file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"follow_data.rda"</span><span class="p">)</span><span class="w">
   
-  </span><span class="c1"># number of calls left to make under Twitter's limits
-</span><span class="w">  </span><span class="n">lims</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">getCurRateLimitInfo</span><span class="p">()</span><span class="w">
+  </span><span class="c1"># number of calls left to make under Twitter's limits</span><span class="w">
+  </span><span class="n">lims</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">getCurRateLimitInfo</span><span class="p">()</span><span class="w">
   </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">filter</span><span class="p">(</span><span class="n">lims</span><span class="p">,</span><span class="w"> </span><span class="n">resource</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"/followers/ids"</span><span class="p">)</span><span class="o">$</span><span class="n">remaining</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w">
     </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">filter</span><span class="p">(</span><span class="n">lims</span><span class="p">,</span><span class="w"> </span><span class="n">resource</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"/friends/ids"</span><span class="p">)</span><span class="o">$</span><span class="n">remaining</span><span class="p">)</span><span class="w">
   </span><span class="k">while</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w">  </span><span class="p">{</span><span class="w">
@@ -265,8 +265,8 @@
     </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">filter</span><span class="p">(</span><span class="n">lims</span><span class="p">,</span><span class="w"> </span><span class="n">resource</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"/followers/ids"</span><span class="p">)</span><span class="o">$</span><span class="n">remaining</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w">
       </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">filter</span><span class="p">(</span><span class="n">lims</span><span class="p">,</span><span class="w"> </span><span class="n">resource</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"/friends/ids"</span><span class="p">)</span><span class="o">$</span><span class="n">remaining</span><span class="p">)</span><span class="w">
     </span><span class="n">message</span><span class="p">(</span><span class="s2">"Waiting"</span><span class="p">)</span><span class="w">
-    </span><span class="n">Sys.sleep</span><span class="p">(</span><span class="m">60</span><span class="p">)</span><span class="w"> </span><span class="c1"># wait 15 minutes (or 1 minute, 15 times)
-</span><span class="w">  </span><span class="p">}</span><span class="w">
+    </span><span class="n">Sys.sleep</span><span class="p">(</span><span class="m">60</span><span class="p">)</span><span class="w"> </span><span class="c1"># wait 15 minutes (or 1 minute, 15 times)</span><span class="w">
+  </span><span class="p">}</span><span class="w">
   
   
   </span><span class="n">cat</span><span class="p">(</span><span class="n">paste</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">current_sn</span><span class="p">,</span><span class="w"> </span><span class="s2">" | "</span><span class="p">))</span><span class="w">
@@ -274,62 +274,62 @@
   </span><span class="n">current_user</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">getUser</span><span class="p">(</span><span class="n">current_sn</span><span class="p">)</span><span class="w">
   </span><span class="n">follow_data</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">"screenName"</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">current_sn</span><span class="w">
   
-  </span><span class="c1"># who this user follows (what happens if this is eg 1million people? I think it gets truncated at 75,000,
-</span><span class="w">  </span><span class="c1"># which is not as bad as it sounds as we only need a sample; but the problem will be that this is their
-</span><span class="w">  </span><span class="c1"># 75,000 most recent people they have followed, who might be biased to be newcomers?):
-</span><span class="w">  
-  </span><span class="c1"># certain privacy settings stop you seeing someone's friends and followers, in which case
-</span><span class="w">  </span><span class="c1"># we try to sample another node from the last good person
-</span><span class="w">  </span><span class="n">all_my_friends</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">character</span><span class="p">()</span><span class="w">
-  </span><span class="n">try</span><span class="p">(</span><span class="n">all_my_friends</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">current_user</span><span class="o">$</span><span class="n">getFriendIDs</span><span class="p">())</span><span class="w">          </span><span class="c1"># about 1 second for c.1500 IDs, longer for more
-</span><span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="nf">length</span><span class="p">(</span><span class="n">all_my_friends</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0</span><span class="p">){</span><span class="w">
+  </span><span class="c1"># who this user follows (what happens if this is eg 1million people? I think it gets truncated at 75,000,</span><span class="w">
+  </span><span class="c1"># which is not as bad as it sounds as we only need a sample; but the problem will be that this is their</span><span class="w">
+  </span><span class="c1"># 75,000 most recent people they have followed, who might be biased to be newcomers?):</span><span class="w">
   
-    </span><span class="c1"># sample some of those friends
-</span><span class="w">    </span><span class="n">n</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">min</span><span class="p">(</span><span class="m">2000</span><span class="p">,</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">all_my_friends</span><span class="p">))</span><span class="w">
+  </span><span class="c1"># certain privacy settings stop you seeing someone's friends and followers, in which case</span><span class="w">
+  </span><span class="c1"># we try to sample another node from the last good person</span><span class="w">
+  </span><span class="n">all_my_friends</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">character</span><span class="p">()</span><span class="w">
+  </span><span class="n">try</span><span class="p">(</span><span class="n">all_my_friends</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">current_user</span><span class="o">$</span><span class="n">getFriendIDs</span><span class="p">())</span><span class="w">          </span><span class="c1"># about 1 second for c.1500 IDs, longer for more</span><span class="w">
+  </span><span class="k">if</span><span class="p">(</span><span class="nf">length</span><span class="p">(</span><span class="n">all_my_friends</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0</span><span class="p">){</span><span class="w">
+  
+    </span><span class="c1"># sample some of those friends</span><span class="w">
+    </span><span class="n">n</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">min</span><span class="p">(</span><span class="m">2000</span><span class="p">,</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">all_my_friends</span><span class="p">))</span><span class="w">
     </span><span class="n">sample_my_friends</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sample</span><span class="p">(</span><span class="n">all_my_friends</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">replace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w">
-    </span><span class="n">friend_details</span><span class="w">  </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lookupUsers</span><span class="p">(</span><span class="n">sample_my_friends</span><span class="p">)</span><span class="w">            </span><span class="c1"># about 15 seconds
-</span><span class="w">  
+    </span><span class="n">friend_details</span><span class="w">  </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lookupUsers</span><span class="p">(</span><span class="n">sample_my_friends</span><span class="p">)</span><span class="w">            </span><span class="c1"># about 15 seconds</span><span class="w">
+  
     </span><span class="n">friend_details_df</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">twListToDF</span><span class="p">(</span><span class="n">friend_details</span><span class="p">)</span><span class="w">
     
     </span><span class="n">follow_data</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">"number_followers"</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">current_user</span><span class="o">$</span><span class="n">followersCount</span><span class="w">
     </span><span class="n">follow_data</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">"number_following"</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">current_user</span><span class="o">$</span><span class="n">friendsCount</span><span class="w">
     
-    </span><span class="c1"># mean number of followers of the people this user follows
-</span><span class="w">    </span><span class="n">follow_data</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">"mean_ff"</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">friend_details_df</span><span class="o">$</span><span class="n">followersCount</span><span class="p">)</span><span class="w">
+    </span><span class="c1"># mean number of followers of the people this user follows</span><span class="w">
+    </span><span class="n">follow_data</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">"mean_ff"</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">friend_details_df</span><span class="o">$</span><span class="n">followersCount</span><span class="p">)</span><span class="w">
     </span><span class="n">follow_data</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">"trmean_ff"</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">friend_details_df</span><span class="o">$</span><span class="n">followersCount</span><span class="p">,</span><span class="w"> </span><span class="n">tr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.2</span><span class="p">)</span><span class="w">
     </span><span class="n">follow_data</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">"median_ff"</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">median</span><span class="p">(</span><span class="n">friend_details_df</span><span class="o">$</span><span class="n">followersCount</span><span class="p">)</span><span class="w">
     
   </span><span class="p">}</span><span class="w">
   
-  </span><span class="c1"># find the next user - flip a coin for it to be either a friend or a follower
-</span><span class="w">  </span><span class="n">current_sn</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"non_existent_user"</span><span class="w">
+  </span><span class="c1"># find the next user - flip a coin for it to be either a friend or a follower</span><span class="w">
+  </span><span class="n">current_sn</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"non_existent_user"</span><span class="w">
   </span><span class="k">while</span><span class="p">(</span><span class="n">current_sn</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"non_existent_user"</span><span class="p">){</span><span class="w">
       
     </span><span class="k">if</span><span class="p">(</span><span class="n">sample</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">1</span><span class="p">){</span><span class="w">
-      </span><span class="c1"># 50% chance
-</span><span class="w">      </span><span class="c1"># pick one of the user's friends (ie people they follow) at random as the new node to sample
-</span><span class="w">      </span><span class="c1"># note that as a sampling strategy this will bias us towards people who are followed.  People
-</span><span class="w">      </span><span class="c1"># who have few followers have little chance of being selected here.  Does this matter?
-</span><span class="w">      </span><span class="c1"># Probably not for our main research question, but it does stop us doing meaningful inference
-</span><span class="w">      </span><span class="c1"># on population totals of number of people followed and number of people following - unless
-</span><span class="w">      </span><span class="c1"># we could estimate *how much* more likely people are to be followed, then we could estimate
-</span><span class="w">      </span><span class="c1"># weights to make up for it.
-</span><span class="w">      </span><span class="n">cat</span><span class="p">(</span><span class="s2">"\nsampling a friend\n"</span><span class="p">)</span><span class="w">
+      </span><span class="c1"># 50% chance</span><span class="w">
+      </span><span class="c1"># pick one of the user's friends (ie people they follow) at random as the new node to sample</span><span class="w">
+      </span><span class="c1"># note that as a sampling strategy this will bias us towards people who are followed.  People</span><span class="w">
+      </span><span class="c1"># who have few followers have little chance of being selected here.  Does this matter?</span><span class="w">
+      </span><span class="c1"># Probably not for our main research question, but it does stop us doing meaningful inference</span><span class="w">
+      </span><span class="c1"># on population totals of number of people followed and number of people following - unless</span><span class="w">
+      </span><span class="c1"># we could estimate *how much* more likely people are to be followed, then we could estimate</span><span class="w">
+      </span><span class="c1"># weights to make up for it.</span><span class="w">
+      </span><span class="n">cat</span><span class="p">(</span><span class="s2">"\nsampling a friend\n"</span><span class="p">)</span><span class="w">
       </span><span class="n">try</span><span class="p">(</span><span class="n">current_sn</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sample_n</span><span class="p">(</span><span class="n">friend_details_df</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="o">$</span><span class="n">screenName</span><span class="p">)</span><span class="w">
     </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">
-      </span><span class="c1"># 50% chance
-</span><span class="w">    </span><span class="c1"># pick one of the user's followers as the new node.  This is to mitigate the problem
-</span><span class="w">    </span><span class="c1"># noted above.  We will still end up over-representing people with lots of followers
-</span><span class="w">    </span><span class="c1"># (who will be sampled by the previuos method), and people who follow lots of people
-</span><span class="w">    </span><span class="c1"># (more likely to be picked up in this alternative procedure in the next line), but
-</span><span class="w">    </span><span class="c1"># that is better than *only* over sampling people with lots of followers.  Probably.
-</span><span class="w">      </span><span class="n">cat</span><span class="p">(</span><span class="s2">"\nsampling a follower\n"</span><span class="p">)</span><span class="w">
+      </span><span class="c1"># 50% chance</span><span class="w">
+    </span><span class="c1"># pick one of the user's followers as the new node.  This is to mitigate the problem</span><span class="w">
+    </span><span class="c1"># noted above.  We will still end up over-representing people with lots of followers</span><span class="w">
+    </span><span class="c1"># (who will be sampled by the previuos method), and people who follow lots of people</span><span class="w">
+    </span><span class="c1"># (more likely to be picked up in this alternative procedure in the next line), but</span><span class="w">
+    </span><span class="c1"># that is better than *only* over sampling people with lots of followers.  Probably.</span><span class="w">
+      </span><span class="n">cat</span><span class="p">(</span><span class="s2">"\nsampling a follower\n"</span><span class="p">)</span><span class="w">
       
-      </span><span class="c1"># problem here when current_user has no followers:
-</span><span class="w">      </span><span class="c1"># a random sample from the last 1000 people to follow this person (ie biased to more 
-</span><span class="w">      </span><span class="c1"># recent, for people with lots of followers, but c'est la vie - important to speed things
-</span><span class="w">      </span><span class="c1"># up a bit)
-</span><span class="w">      </span><span class="n">try</span><span class="p">(</span><span class="n">follower_samp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sample</span><span class="p">(</span><span class="n">current_user</span><span class="o">$</span><span class="n">getFollowerIDs</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1000</span><span class="p">),</span><span class="w"> </span><span class="m">1</span><span class="p">))</span><span class="w">
+      </span><span class="c1"># problem here when current_user has no followers:</span><span class="w">
+      </span><span class="c1"># a random sample from the last 1000 people to follow this person (ie biased to more </span><span class="w">
+      </span><span class="c1"># recent, for people with lots of followers, but c'est la vie - important to speed things</span><span class="w">
+      </span><span class="c1"># up a bit)</span><span class="w">
+      </span><span class="n">try</span><span class="p">(</span><span class="n">follower_samp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sample</span><span class="p">(</span><span class="n">current_user</span><span class="o">$</span><span class="n">getFollowerIDs</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1000</span><span class="p">),</span><span class="w"> </span><span class="m">1</span><span class="p">))</span><span class="w">
       </span><span class="n">try</span><span class="p">(</span><span class="n">current_sn</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lookupUsers</span><span class="p">(</span><span class="n">follower_samp</span><span class="p">)[[</span><span class="m">1</span><span class="p">]]</span><span class="o">$</span><span class="n">screenName</span><span class="p">)</span><span class="w">
     </span><span class="p">}</span><span class="w">
   </span><span class="p">}</span><span class="w">
@@ -339,8 +339,8 @@
 
 <figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="o">&gt;</span><span class="w"> </span><span class="n">follow_data</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
 </span><span class="o">+</span><span class="w">   </span><span class="n">arrange</span><span class="p">(</span><span class="n">desc</span><span class="p">(</span><span class="n">number_followers</span><span class="p">))</span><span class="w">
-</span><span class="c1"># A tibble: 983 x 6
-</span><span class="w">   </span><span class="n">number_followers</span><span class="w"> </span><span class="n">number_following</span><span class="w"> </span><span class="n">mean_ff</span><span class="w"> </span><span class="n">trmean_ff</span><span class="w"> </span><span class="n">median_ff</span><span class="w"> </span><span class="n">screenName</span><span class="w">    
+</span><span class="c1"># A tibble: 983 x 6</span><span class="w">
+   </span><span class="n">number_followers</span><span class="w"> </span><span class="n">number_following</span><span class="w"> </span><span class="n">mean_ff</span><span class="w"> </span><span class="n">trmean_ff</span><span class="w"> </span><span class="n">median_ff</span><span class="w"> </span><span class="n">screenName</span><span class="w">    
               </span><span class="o">&lt;</span><span class="n">dbl</span><span class="o">&gt;</span><span class="w">            </span><span class="o">&lt;</span><span class="n">dbl</span><span class="o">&gt;</span><span class="w">   </span><span class="o">&lt;</span><span class="n">dbl</span><span class="o">&gt;</span><span class="w">     </span><span class="o">&lt;</span><span class="n">dbl</span><span class="o">&gt;</span><span class="w">     </span><span class="o">&lt;</span><span class="n">dbl</span><span class="o">&gt;</span><span class="w"> </span><span class="o">&lt;</span><span class="n">chr</span><span class="o">&gt;</span><span class="w">         
  </span><span class="m">1</span><span class="w">        </span><span class="m">108538969</span><span class="w">              </span><span class="m">203</span><span class="w"> </span><span class="m">6002702</span><span class="w">   </span><span class="m">1227629</span><span class="w">    </span><span class="m">450295</span><span class="w"> </span><span class="n">katyperry</span><span class="w">     
  </span><span class="m">2</span><span class="w">         </span><span class="m">71131344</span><span class="w">             </span><span class="m">1034</span><span class="w"> </span><span class="m">3113456</span><span class="w">    </span><span class="m">373193</span><span class="w">    </span><span class="m">140602</span><span class="w"> </span><span class="n">YouTube</span><span class="w">       
@@ -352,16 +352,16 @@
  </span><span class="m">8</span><span class="w">         </span><span class="m">35470473</span><span class="w">             </span><span class="m">1661</span><span class="w"> </span><span class="m">1559447</span><span class="w">    </span><span class="m">334577</span><span class="w">    </span><span class="m">219023</span><span class="w"> </span><span class="n">SportsCenter</span><span class="w">  
  </span><span class="m">9</span><span class="w">         </span><span class="m">24954373</span><span class="w">              </span><span class="m">424</span><span class="w"> </span><span class="m">1182455</span><span class="w">    </span><span class="m">232537</span><span class="w">     </span><span class="m">96970</span><span class="w"> </span><span class="n">PMOIndia</span><span class="w">      
 </span><span class="m">10</span><span class="w">         </span><span class="m">21680806</span><span class="w">              </span><span class="m">771</span><span class="w">  </span><span class="m">900960</span><span class="w">      </span><span class="m">6736</span><span class="w">      </span><span class="m">2814</span><span class="w"> </span><span class="n">HillaryClinton</span><span class="w">
-</span><span class="err">#</span><span class="w"> </span><span class="n">...</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="m">973</span><span class="w"> </span><span class="n">more</span><span class="w"> </span><span class="n">rows</span></code></pre></figure>
+</span><span class="c1"># ... with 973 more rows</span></code></pre></figure>
 
-<p>The snapshot sampling method is a bit simpler.  All I need is 1,000 random tweets, which I get by searching for tweets containing the letter “e” (as <code class="highlighter-rouge">twitteR</code> doesn’t facilitate a completely open search as far as I can see).  This isn’t great - I think it eliminates people using some character sets - but is good enough for a blog.</p>
+<p>The snapshot sampling method is a bit simpler.  All I need is 1,000 random tweets, which I get by searching for tweets containing the letter “e” (as <code class="language-plaintext highlighter-rouge">twitteR</code> doesn’t facilitate a completely open search as far as I can see).  This isn’t great - I think it eliminates people using some character sets - but is good enough for a blog.</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#==================snapshot sampling method===========
-# The first method of sampling will oversample people with lots of followers and people
-# with lots of friends.  As this is potentially linked to the response variable (indirectly)
-# it might be better to try an alternative sampling method, by grabbing a bunch of tweets.
-# This method will oversample people who are active tweeting today, which is a different
-# sort of coverage problem, so still need to be careful.
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#==================snapshot sampling method===========</span><span class="w">
+</span><span class="c1"># The first method of sampling will oversample people with lots of followers and people</span><span class="w">
+</span><span class="c1"># with lots of friends.  As this is potentially linked to the response variable (indirectly)</span><span class="w">
+</span><span class="c1"># it might be better to try an alternative sampling method, by grabbing a bunch of tweets.</span><span class="w">
+</span><span class="c1"># This method will oversample people who are active tweeting today, which is a different</span><span class="w">
+</span><span class="c1"># sort of coverage problem, so still need to be careful.</span><span class="w">
 </span><span class="n">follow_data_2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data_frame</span><span class="p">(</span><span class="w">
   </span><span class="n">number_followers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">integer</span><span class="p">(),</span><span class="w">
   </span><span class="n">number_following</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">integer</span><span class="p">(),</span><span class="w">
@@ -372,18 +372,18 @@
 </span><span class="p">)</span><span class="w">
 
 
-</span><span class="c1"># 1000 random tweets with the letter "e" in them:
+</span><span class="c1"># 1000 random tweets with the letter "e" in them:</span><span class="w">
 </span><span class="n">tweets</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">searchTwitter</span><span class="p">(</span><span class="s2">"e"</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1000</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># the users
+</span><span class="c1"># the users</span><span class="w">
 </span><span class="n">users</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">unique</span><span class="p">(</span><span class="n">sapply</span><span class="p">(</span><span class="n">tweets</span><span class="p">,</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">){</span><span class="n">x</span><span class="o">$</span><span class="n">screenName</span><span class="p">}))</span><span class="w">
 
 </span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="nf">length</span><span class="p">(</span><span class="n">users</span><span class="p">)){</span><span class="w">
-  </span><span class="c1"># save latest copy of results in case of crash
-</span><span class="w">  </span><span class="n">save</span><span class="p">(</span><span class="n">follow_data_2</span><span class="p">,</span><span class="w"> </span><span class="n">file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"follow_data_2.rda"</span><span class="p">)</span><span class="w">
+  </span><span class="c1"># save latest copy of results in case of crash</span><span class="w">
+  </span><span class="n">save</span><span class="p">(</span><span class="n">follow_data_2</span><span class="p">,</span><span class="w"> </span><span class="n">file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"follow_data_2.rda"</span><span class="p">)</span><span class="w">
   
-  </span><span class="c1"># number of calls left to make under Twitter's limits
-</span><span class="w">  </span><span class="n">lims</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">getCurRateLimitInfo</span><span class="p">()</span><span class="w">
+  </span><span class="c1"># number of calls left to make under Twitter's limits</span><span class="w">
+  </span><span class="n">lims</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">getCurRateLimitInfo</span><span class="p">()</span><span class="w">
   </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">filter</span><span class="p">(</span><span class="n">lims</span><span class="p">,</span><span class="w"> </span><span class="n">resource</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"/followers/ids"</span><span class="p">)</span><span class="o">$</span><span class="n">remaining</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w">
     </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">filter</span><span class="p">(</span><span class="n">lims</span><span class="p">,</span><span class="w"> </span><span class="n">resource</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"/friends/ids"</span><span class="p">)</span><span class="o">$</span><span class="n">remaining</span><span class="p">)</span><span class="w">
   </span><span class="k">while</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w">  </span><span class="p">{</span><span class="w">
@@ -391,38 +391,38 @@
     </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">filter</span><span class="p">(</span><span class="n">lims</span><span class="p">,</span><span class="w"> </span><span class="n">resource</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"/followers/ids"</span><span class="p">)</span><span class="o">$</span><span class="n">remaining</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w">
       </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">filter</span><span class="p">(</span><span class="n">lims</span><span class="p">,</span><span class="w"> </span><span class="n">resource</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"/friends/ids"</span><span class="p">)</span><span class="o">$</span><span class="n">remaining</span><span class="p">)</span><span class="w">
     </span><span class="n">message</span><span class="p">(</span><span class="s2">"Waiting"</span><span class="p">)</span><span class="w">
-    </span><span class="n">Sys.sleep</span><span class="p">(</span><span class="m">60</span><span class="p">)</span><span class="w"> </span><span class="c1"># wait 15 minutes (or 1 minute, 15 times)
-</span><span class="w">  </span><span class="p">}</span><span class="w">
+    </span><span class="n">Sys.sleep</span><span class="p">(</span><span class="m">60</span><span class="p">)</span><span class="w"> </span><span class="c1"># wait 15 minutes (or 1 minute, 15 times)</span><span class="w">
+  </span><span class="p">}</span><span class="w">
   </span><span class="n">current_sn</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">users</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w">
   
   </span><span class="n">cat</span><span class="p">(</span><span class="n">paste</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">current_sn</span><span class="p">,</span><span class="w"> </span><span class="s2">" | "</span><span class="p">))</span><span class="w">
   
   </span><span class="n">try</span><span class="p">({</span><span class="w">
-    </span><span class="n">current_user</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">getUser</span><span class="p">(</span><span class="n">current_sn</span><span class="p">)</span><span class="w"> </span><span class="c1"># this fails surprisingly often, not sure why
-</span><span class="w">    </span><span class="n">follow_data_2</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">"screenName"</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">current_sn</span><span class="w">
+    </span><span class="n">current_user</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">getUser</span><span class="p">(</span><span class="n">current_sn</span><span class="p">)</span><span class="w"> </span><span class="c1"># this fails surprisingly often, not sure why</span><span class="w">
+    </span><span class="n">follow_data_2</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">"screenName"</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">current_sn</span><span class="w">
     
-    </span><span class="c1"># who this user follows (what happens if this is eg 1million people? I think it gets truncated at 15,000,
-</span><span class="w">    </span><span class="c1"># which is not as bad as it sounds as we only need a sample; but the problem will be that this is their
-</span><span class="w">    </span><span class="c1"># 15,000 most recent people they have followed, who might be biased to be newcomers?):
-</span><span class="w">    
-    </span><span class="c1"># certain privacy settings stop you seeing someone's friends and followers, in which case
-</span><span class="w">    </span><span class="c1"># we try to sample another node from the last good person
-</span><span class="w">    </span><span class="n">all_my_friends</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">character</span><span class="p">()</span><span class="w">
-    </span><span class="n">try</span><span class="p">(</span><span class="n">all_my_friends</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">current_user</span><span class="o">$</span><span class="n">getFriendIDs</span><span class="p">())</span><span class="w">          </span><span class="c1"># about 1 second for c.1500 IDs, longer for more
-</span><span class="w">    </span><span class="k">if</span><span class="p">(</span><span class="nf">length</span><span class="p">(</span><span class="n">all_my_friends</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0</span><span class="p">){</span><span class="w">
+    </span><span class="c1"># who this user follows (what happens if this is eg 1million people? I think it gets truncated at 15,000,</span><span class="w">
+    </span><span class="c1"># which is not as bad as it sounds as we only need a sample; but the problem will be that this is their</span><span class="w">
+    </span><span class="c1"># 15,000 most recent people they have followed, who might be biased to be newcomers?):</span><span class="w">
+    
+    </span><span class="c1"># certain privacy settings stop you seeing someone's friends and followers, in which case</span><span class="w">
+    </span><span class="c1"># we try to sample another node from the last good person</span><span class="w">
+    </span><span class="n">all_my_friends</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">character</span><span class="p">()</span><span class="w">
+    </span><span class="n">try</span><span class="p">(</span><span class="n">all_my_friends</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">current_user</span><span class="o">$</span><span class="n">getFriendIDs</span><span class="p">())</span><span class="w">          </span><span class="c1"># about 1 second for c.1500 IDs, longer for more</span><span class="w">
+    </span><span class="k">if</span><span class="p">(</span><span class="nf">length</span><span class="p">(</span><span class="n">all_my_friends</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0</span><span class="p">){</span><span class="w">
       
-      </span><span class="c1"># sample some of those friends
-</span><span class="w">      </span><span class="n">n</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">min</span><span class="p">(</span><span class="m">2000</span><span class="p">,</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">all_my_friends</span><span class="p">))</span><span class="w">
+      </span><span class="c1"># sample some of those friends</span><span class="w">
+      </span><span class="n">n</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">min</span><span class="p">(</span><span class="m">2000</span><span class="p">,</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">all_my_friends</span><span class="p">))</span><span class="w">
       </span><span class="n">sample_my_friends</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sample</span><span class="p">(</span><span class="n">all_my_friends</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">replace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w">
-      </span><span class="n">friend_details</span><span class="w">  </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lookupUsers</span><span class="p">(</span><span class="n">sample_my_friends</span><span class="p">)</span><span class="w">            </span><span class="c1"># about 15 seconds
-</span><span class="w">      
+      </span><span class="n">friend_details</span><span class="w">  </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lookupUsers</span><span class="p">(</span><span class="n">sample_my_friends</span><span class="p">)</span><span class="w">            </span><span class="c1"># about 15 seconds</span><span class="w">
+      
       </span><span class="n">friend_details_df</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">twListToDF</span><span class="p">(</span><span class="n">friend_details</span><span class="p">)</span><span class="w">
       
       </span><span class="n">follow_data_2</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">"number_followers"</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">current_user</span><span class="o">$</span><span class="n">followersCount</span><span class="w">
       </span><span class="n">follow_data_2</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">"number_following"</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">current_user</span><span class="o">$</span><span class="n">friendsCount</span><span class="w">
       
-      </span><span class="c1"># mean number of followers of the people this user follows
-</span><span class="w">      </span><span class="n">follow_data_2</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">"mean_ff"</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">friend_details_df</span><span class="o">$</span><span class="n">followersCount</span><span class="p">)</span><span class="w">
+      </span><span class="c1"># mean number of followers of the people this user follows</span><span class="w">
+      </span><span class="n">follow_data_2</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">"mean_ff"</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">friend_details_df</span><span class="o">$</span><span class="n">followersCount</span><span class="p">)</span><span class="w">
       </span><span class="n">follow_data_2</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">"trmean_ff"</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">friend_details_df</span><span class="o">$</span><span class="n">followersCount</span><span class="p">,</span><span class="w"> </span><span class="n">tr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.2</span><span class="p">)</span><span class="w">
       </span><span class="n">follow_data_2</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">"median_ff"</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">median</span><span class="p">(</span><span class="n">friend_details_df</span><span class="o">$</span><span class="n">followersCount</span><span class="p">)</span><span class="w">
       
@@ -432,7 +432,7 @@
 
 <h2 id="results">Results</h2>
 
-<p>The resulting numbers are all very skewed distributions.  Visually, they look good when you take the logarithm of the original number plus 1 (needed to avoid turning people with 0 friends or 0 followers becoming <code class="highlighter-rouge">-Inf</code>).  I can justify “+ 1” by saying that, in a way, everyone follows themself and is followed by themselves.</p>
+<p>The resulting numbers are all very skewed distributions.  Visually, they look good when you take the logarithm of the original number plus 1 (needed to avoid turning people with 0 friends or 0 followers becoming <code class="language-plaintext highlighter-rouge">-Inf</code>).  I can justify “+ 1” by saying that, in a way, everyone follows themself and is followed by themselves.</p>
 
 <p>Here’s the distributions and relationships of the key variables, when transformed this way:</p>
 
@@ -450,8 +450,8 @@
 
 <p>Here’s the code that combines the two samples and produces the graphics above.</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#==================analysis========================
-</span><span class="w">
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#==================analysis========================</span><span class="w">
+
 </span><span class="n">follow_data_proc</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">follow_data</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">sampling_method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Snowball sampling\nalong network"</span><span class="p">)</span><span class="w">
 
@@ -525,14 +525,14 @@
 </span><span class="n">mod_simp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">gam</span><span class="p">(</span><span class="n">trmean_ff_l</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">s</span><span class="p">(</span><span class="n">number_followers_l</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">s</span><span class="p">(</span><span class="n">number_following_l</span><span class="p">),</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">follow_data_trans</span><span class="p">)</span><span class="w">
 </span><span class="n">anova</span><span class="p">(</span><span class="n">mod_full</span><span class="p">,</span><span class="w"> </span><span class="n">mod_simp</span><span class="p">,</span><span class="w"> </span><span class="n">test</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"F"</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># simple two variable model
+</span><span class="c1"># simple two variable model</span><span class="w">
 </span><span class="n">par</span><span class="p">(</span><span class="n">bty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"l"</span><span class="p">,</span><span class="w"> </span><span class="n">font.main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
 </span><span class="n">plot</span><span class="p">(</span><span class="n">mod_simp</span><span class="p">,</span><span class="w"> </span><span class="n">pages</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"No-interaction model"</span><span class="p">)</span><span class="w">  
 
-</span><span class="c1"># perspective plot
+</span><span class="c1"># perspective plot</span><span class="w">
 </span><span class="n">plot</span><span class="p">(</span><span class="n">mod_full</span><span class="p">,</span><span class="w"> </span><span class="n">pages</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">scheme</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="s2">"Impact on the trimmed mean number\nof followers of people that are followed"</span><span class="p">))</span><span class="w">
 
-</span><span class="c1"># heat map
+</span><span class="c1"># heat map</span><span class="w">
 </span><span class="n">plot</span><span class="p">(</span><span class="n">mod_full</span><span class="p">,</span><span class="w"> </span><span class="n">pages</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">scheme</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">hcolors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">topo.colors</span><span class="p">(</span><span class="m">50</span><span class="p">),</span><span class="w">
      </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="s2">"Impact on the trimmed mean number\nof followers of people that are followed"</span><span class="p">),</span><span class="w">
      </span><span class="n">xlab</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Logarithm of number of followers"</span><span class="p">,</span><span class="w">

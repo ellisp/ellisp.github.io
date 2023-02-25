@@ -18,7 +18,7 @@
             <meta property="og:image" content="http://freerangestats.info/img/0156-ts.png" />
          
 		 
-			<meta property="og:url" content="http://freerangestats.info/blog/2019/07/20/time-series-cv.html" />
+			<meta property="og:url" content="http://localhost:4000/blog/2019/07/20/time-series-cv.html" />
 		 
          <meta property="og:author" content= "https://www.facebook.com/peterstats" />
          <meta property="og:type" content="article" />
@@ -113,7 +113,7 @@
                   <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
 				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
                   <li><a href="/blog/surveys.html">all posts on surveys</a></li> 
-				  <li><a href = /blog/2022/10/13/pacific-map>most recent post</a></li>
+				  <li><a href = /blog/2023/02/25/ilr>most recent post</a></li>
 				</ul>
             </li>
               <li><a href="/blog/showcase.html">showcase</a></li>
@@ -160,7 +160,7 @@
 
 	<div class="post">
 		
-	  <p>Time series cross-validation is important part of the toolkit for good evaluation of forecasting models.  <code class="highlighter-rouge">forecast::tsCV</code> makes it straightforward to implement, even with different combinations of explanatory regressors in the different candidate models for evaluation.</p>
+	  <p>Time series cross-validation is important part of the toolkit for good evaluation of forecasting models.  <code class="language-plaintext highlighter-rouge">forecast::tsCV</code> makes it straightforward to implement, even with different combinations of explanatory regressors in the different candidate models for evaluation.</p>
 
 <p>Suprious correlation between time series is a well documented and mocked problem, with <a href="https://www.tylervigen.com/spurious-correlations">Tyler Vigen’s educational website on the topic</a> (“per capita cheese consumption correlated with number of people dying by becoming entangled in their bedsheets”) even spawning a whole book of humourous examples.</p>
 
@@ -171,12 +171,12 @@
 <p>So here’s my simulated data. I have made three time series which are causally related to eachother:</p>
 
 <ul>
-  <li><code class="highlighter-rouge">x</code> is an ARIMA(1, 1, 1) process, which means that if you took its first difference (the change from day to day rather than the original observation) it would be an ARMA(1, 1) process with an autoregression coefficient of 0.5 and a moving average coefficient of 0.5</li>
-  <li><code class="highlighter-rouge">y</code> has a random component which is generated in a similar way to x, and a structural component which is a simple multiplier of x</li>
-  <li><code class="highlighter-rouge">z</code> has a similar random component again and a structural component which is a simple multiplier of the lagged values of y.</li>
+  <li><code class="language-plaintext highlighter-rouge">x</code> is an ARIMA(1, 1, 1) process, which means that if you took its first difference (the change from day to day rather than the original observation) it would be an ARMA(1, 1) process with an autoregression coefficient of 0.5 and a moving average coefficient of 0.5</li>
+  <li><code class="language-plaintext highlighter-rouge">y</code> has a random component which is generated in a similar way to x, and a structural component which is a simple multiplier of x</li>
+  <li><code class="language-plaintext highlighter-rouge">z</code> has a similar random component again and a structural component which is a simple multiplier of the lagged values of y.</li>
 </ul>
 
-<p>In other words, <code class="highlighter-rouge">x</code> causes <code class="highlighter-rouge">y</code> and <code class="highlighter-rouge">y</code> causes <code class="highlighter-rouge">z</code> via a delay. Our job is to forecast <code class="highlighter-rouge">y</code>. We would expect the best model to do this to be one that uses <code class="highlighter-rouge">x</code> as an explanatory variable and which ignores <code class="highlighter-rouge">z</code>. We would expect <code class="highlighter-rouge">z</code> to be a tempting but ultimately unhelpful explanatory variable in a model of <code class="highlighter-rouge">y</code>.</p>
+<p>In other words, <code class="language-plaintext highlighter-rouge">x</code> causes <code class="language-plaintext highlighter-rouge">y</code> and <code class="language-plaintext highlighter-rouge">y</code> causes <code class="language-plaintext highlighter-rouge">z</code> via a delay. Our job is to forecast <code class="language-plaintext highlighter-rouge">y</code>. We would expect the best model to do this to be one that uses <code class="language-plaintext highlighter-rouge">x</code> as an explanatory variable and which ignores <code class="language-plaintext highlighter-rouge">z</code>. We would expect <code class="language-plaintext highlighter-rouge">z</code> to be a tempting but ultimately unhelpful explanatory variable in a model of <code class="language-plaintext highlighter-rouge">y</code>.</p>
 
 <p>Here’s what the data looks like:</p>
 
@@ -187,7 +187,7 @@
 <figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">forecast</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">ggplot2</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># Simulate data:
+</span><span class="c1"># Simulate data:</span><span class="w">
 </span><span class="n">set.seed</span><span class="p">(</span><span class="m">125</span><span class="p">)</span><span class="w">
 </span><span class="n">n</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">100</span><span class="w">
 </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ts</span><span class="p">(</span><span class="nf">cumsum</span><span class="p">(</span><span class="n">arima.sim</span><span class="p">(</span><span class="nf">list</span><span class="p">(</span><span class="n">ar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">,</span><span class="w"> </span><span class="n">ma</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">),</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">)))</span><span class="w">
@@ -197,7 +197,7 @@
   
 </span><span class="n">d</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">cbind</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">z</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># Exploratory plot:
+</span><span class="c1"># Exploratory plot:</span><span class="w">
 </span><span class="n">autoplot</span><span class="p">(</span><span class="n">d</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
   </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Three simulated, related, time-series"</span><span class="p">,</span><span class="w">
           </span><span class="s2">"x causes y and y causes z; our job is to forecast y."</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
@@ -215,7 +215,7 @@
 
 <p>The series are still heavily correlated with themselves - each with an autocorrelation of about 0.6 at lag 1 - but no longer so much so that they are obviously non-stationary. We can now see some of the secondary relationships, including correlations between the various variables at several lags that suggest there could be something going on between them (as in fact we know is the case).</p>
 
-<p>Those PACF plots use the handy <code class="highlighter-rouge">ggPacf</code> function that comes with Hyndman’s <code class="highlighter-rouge">forecast</code> R package.</p>
+<p>Those PACF plots use the handy <code class="language-plaintext highlighter-rouge">ggPacf</code> function that comes with Hyndman’s <code class="language-plaintext highlighter-rouge">forecast</code> R package.</p>
 
 <figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">ggPacf</span><span class="p">(</span><span class="n">d</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> 
   </span><span class="n">theme</span><span class="p">(</span><span class="n">panel.grid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_blank</span><span class="p">())</span><span class="w"> </span><span class="o">+</span><span class="w">
@@ -229,18 +229,18 @@
 
 <h2 id="modelling">Modelling</h2>
 
-<p>When I first learnt time series analysis in the 1990s we used to use PACF plots to try to infer the order of the auto-regressive and moving-average components of a worthwhile model to fit. These days we just use highly effective and tested automated algorithms such as that behind the <code class="highlighter-rouge">forecast::auto.arima</code> function. I’m going to fit four models for my hypothetical forecast job:</p>
+<p>When I first learnt time series analysis in the 1990s we used to use PACF plots to try to infer the order of the auto-regressive and moving-average components of a worthwhile model to fit. These days we just use highly effective and tested automated algorithms such as that behind the <code class="language-plaintext highlighter-rouge">forecast::auto.arima</code> function. I’m going to fit four models for my hypothetical forecast job:</p>
 
 <ol>
-  <li>univariate model just using <code class="highlighter-rouge">y</code></li>
-  <li><code class="highlighter-rouge">x</code> as an explanatory variable</li>
-  <li><code class="highlighter-rouge">z</code> as an explanatory variable</li>
-  <li>both <code class="highlighter-rouge">x</code> and <code class="highlighter-rouge">z</code> as explanatory variables</li>
+  <li>univariate model just using <code class="language-plaintext highlighter-rouge">y</code></li>
+  <li><code class="language-plaintext highlighter-rouge">x</code> as an explanatory variable</li>
+  <li><code class="language-plaintext highlighter-rouge">z</code> as an explanatory variable</li>
+  <li>both <code class="language-plaintext highlighter-rouge">x</code> and <code class="language-plaintext highlighter-rouge">z</code> as explanatory variables</li>
 </ol>
 
 <p>For each model I am going to manually specify the level of differencing as one lag only, so my resulting models can all be compared on the same basis.</p>
 
-<p>Because I made up the data, I happen to know that model 2 is the “correct” specification. I was pleased to see that fitting the four models and comparing their AIC agreed with this foreknown correct answer. The AIC of <code class="highlighter-rouge">mod2</code> is lowest, correctly implying that any reduction in deviance from including <code class="highlighter-rouge">z</code> in the model is not justified by the use of an additional degree of freedom, whether <code class="highlighter-rouge">z</code> is included by itself or in addition to <code class="highlighter-rouge">x</code>:</p>
+<p>Because I made up the data, I happen to know that model 2 is the “correct” specification. I was pleased to see that fitting the four models and comparing their AIC agreed with this foreknown correct answer. The AIC of <code class="language-plaintext highlighter-rouge">mod2</code> is lowest, correctly implying that any reduction in deviance from including <code class="language-plaintext highlighter-rouge">z</code> in the model is not justified by the use of an additional degree of freedom, whether <code class="language-plaintext highlighter-rouge">z</code> is included by itself or in addition to <code class="language-plaintext highlighter-rouge">x</code>:</p>
 
 <table>
   <thead>
@@ -291,12 +291,12 @@
 
 <p>Basically you use the data from the blue dots to forecast the red dots.</p>
 
-<p>The <code class="highlighter-rouge">forecasts::tsCV</code> function implements this approach. It takes as its main argument a function that returns an object of class <code class="highlighter-rouge">forecast</code>. The complication (such as it is) in my case comes from the need to write a function that combines fitting an <code class="highlighter-rouge">auto.arima</code> model and then converting it to a forecast object. Building on an example provided by (again) Hyndman, here’s my version of this which I think I will find myself re-using and hence will put in the <code class="highlighter-rouge">frs</code> package for future use:</p>
+<p>The <code class="language-plaintext highlighter-rouge">forecasts::tsCV</code> function implements this approach. It takes as its main argument a function that returns an object of class <code class="language-plaintext highlighter-rouge">forecast</code>. The complication (such as it is) in my case comes from the need to write a function that combines fitting an <code class="language-plaintext highlighter-rouge">auto.arima</code> model and then converting it to a forecast object. Building on an example provided by (again) Hyndman, here’s my version of this which I think I will find myself re-using and hence will put in the <code class="language-plaintext highlighter-rouge">frs</code> package for future use:</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#---------Cross validation---------------
-</span><span class="cd">#' auto.arima forecast function for time series cross validation
-#' 
-#' adapted from https://gist.github.com/robjhyndman/d9eb5568a78dbc79f7acc49e22553e96 
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#---------Cross validation---------------</span><span class="w">
+</span><span class="cd">#' auto.arima forecast function for time series cross validation</span><span class="w">
+</span><span class="cd">#' </span><span class="w">
+</span><span class="cd">#' adapted from https://gist.github.com/robjhyndman/d9eb5568a78dbc79f7acc49e22553e96 </span><span class="w">
 </span><span class="n">aafc</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="n">xreg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">NULL</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p">){</span><span class="w">
   </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nf">is.null</span><span class="p">(</span><span class="n">xreg</span><span class="p">)){</span><span class="w">
     
@@ -316,7 +316,7 @@
   </span><span class="p">}</span><span class="w">
 </span><span class="p">}</span><span class="w">
 
-</span><span class="c1"># this CV takes about 50 seconds
+</span><span class="c1"># this CV takes about 50 seconds</span><span class="w">
 </span><span class="n">system.time</span><span class="p">({</span><span class="w">
   </span><span class="n">aa1_cv</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tsCV</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">aafc</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
   </span><span class="n">aa2_cv</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tsCV</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">aafc</span><span class="p">,</span><span class="w"> </span><span class="n">xreg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
@@ -324,13 +324,13 @@
   </span><span class="n">aa4_cv</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tsCV</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">aafc</span><span class="p">,</span><span class="w"> </span><span class="n">xreg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cbind</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">z</span><span class="p">),</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
   </span><span class="p">})</span></code></pre></figure>
 
-<p>The <code class="highlighter-rouge">tsCV</code> function returns a numerical time series object containing the forecast errors as a vector (if forecasting is for only one period forward, as is the case in my example). Interpreting and presenting the results takes a bit of care. All my models return some NAs in the forecast errors after cross-validation, including the final observation in each case. The <code class="highlighter-rouge">tsCV</code> helpfile includes the helpful comment that in the output of <code class="highlighter-rouge">tsCV</code>:</p>
+<p>The <code class="language-plaintext highlighter-rouge">tsCV</code> function returns a numerical time series object containing the forecast errors as a vector (if forecasting is for only one period forward, as is the case in my example). Interpreting and presenting the results takes a bit of care. All my models return some NAs in the forecast errors after cross-validation, including the final observation in each case. The <code class="language-plaintext highlighter-rouge">tsCV</code> helpfile includes the helpful comment that in the output of <code class="language-plaintext highlighter-rouge">tsCV</code>:</p>
 
 <blockquote>
   <p>The time index corresponds to the last period of the training data</p>
 </blockquote>
 
-<p>So if we want to line up the forecast errors to the actual values they apply to, we need to be careful! In my case, I need to knock out the <em>first</em> value of the original time series, and the <em>last</em> value of the forecast errors, if I want to line them up (eg for use in the <code class="highlighter-rouge">accuracy</code> function). Here’s how I did that:</p>
+<p>So if we want to line up the forecast errors to the actual values they apply to, we need to be careful! In my case, I need to knock out the <em>first</em> value of the original time series, and the <em>last</em> value of the forecast errors, if I want to line them up (eg for use in the <code class="language-plaintext highlighter-rouge">accuracy</code> function). Here’s how I did that:</p>
 
 <figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">rbind</span><span class="p">(</span><span class="n">accuracy</span><span class="p">(</span><span class="n">ts</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="m">-1</span><span class="p">]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">aa1_cv</span><span class="p">[</span><span class="o">-</span><span class="n">n</span><span class="p">]),</span><span class="w"> </span><span class="n">ts</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="m">-1</span><span class="p">])),</span><span class="w">
       </span><span class="n">accuracy</span><span class="p">(</span><span class="n">ts</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="m">-1</span><span class="p">]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">aa2_cv</span><span class="p">[</span><span class="o">-</span><span class="n">n</span><span class="p">]),</span><span class="w"> </span><span class="n">ts</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="m">-1</span><span class="p">])),</span><span class="w">
@@ -344,7 +344,7 @@
   </span><span class="n">dplyr</span><span class="o">::</span><span class="n">select</span><span class="p">(</span><span class="n">model</span><span class="p">,</span><span class="w"> </span><span class="n">everything</span><span class="p">())</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">knitr</span><span class="o">::</span><span class="n">kable</span><span class="p">()</span></code></pre></figure>
 
-<p>I’m not sure this is the best way to evaluate those forecast errors (ie by using <code class="highlighter-rouge">forecast::accuracy</code>) but it’s a method that fits in with how I think about it and returns lots of performance metrics at once. Here are the results:</p>
+<p>I’m not sure this is the best way to evaluate those forecast errors (ie by using <code class="language-plaintext highlighter-rouge">forecast::accuracy</code>) but it’s a method that fits in with how I think about it and returns lots of performance metrics at once. Here are the results:</p>
 
 <table>
   <thead>
@@ -405,9 +405,9 @@
 
 <p>Model 2, with just the x regressor, has the lowest root mean square error, mean absolute error, mean percentage error, mean absolute percentage error and Theil’s U. The autocorrelation of its errors is relatively high, but I don’t think that matters. It has more biased forecasts (mean error) than the models that don’t include x but depending on context we might accept that in return for being closer on average. Overall, this method comes up with good support for the correct underlying model.</p>
 
-<p>Just to check I haven’t mangled anything, gotten the signs the wrong way around, etc I calculated a few of these stats by hand directly from the <code class="highlighter-rouge">tsCV</code> output:</p>
+<p>Just to check I haven’t mangled anything, gotten the signs the wrong way around, etc I calculated a few of these stats by hand directly from the <code class="language-plaintext highlighter-rouge">tsCV</code> output:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>&gt; # mean error of univariate model:
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; # mean error of univariate model:
 &gt; mean(aa1_cv, na.rm = TRUE)
 [1] -0.02386004
 &gt; 
@@ -418,12 +418,11 @@
 &gt; # mean absolute error of z regressor model
 &gt; mean(abs(aa3_cv), na.rm = TRUE)
 [1] 0.9824904
-</code></pre>
-</div>
+</code></pre></div></div>
 
 <p>Final word on this is that I tried running this program with various other settings (eg just changing the random seed from 125 to another number, or making the relationships between the variables a little weaker) and sometimes the AIC was slightly better at picking the correct model than was the cross-validation.  Neither method is fool-proof - remember, forecasting is hard, there is always a lot of noise around the signal!</p>
 
-<p>OK, c’est tout. Today’s key thought again: Time series cross-validation is important part of the toolkit, and <code class="highlighter-rouge">forecast::tsCV</code> makes it straightforward to implement.</p>
+<p>OK, c’est tout. Today’s key thought again: Time series cross-validation is important part of the toolkit, and <code class="language-plaintext highlighter-rouge">forecast::tsCV</code> makes it straightforward to implement.</p>
 
 
 

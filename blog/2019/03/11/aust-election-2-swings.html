@@ -18,7 +18,7 @@
             <meta property="og:image" content="http://freerangestats.info/img/0146-2pp-swing-2016.png" />
          
 		 
-			<meta property="og:url" content="http://freerangestats.info/blog/2019/03/11/aust-election-2-swings.html" />
+			<meta property="og:url" content="http://localhost:4000/blog/2019/03/11/aust-election-2-swings.html" />
 		 
          <meta property="og:author" content= "https://www.facebook.com/peterstats" />
          <meta property="og:type" content="article" />
@@ -113,7 +113,7 @@
                   <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
 				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
                   <li><a href="/blog/surveys.html">all posts on surveys</a></li> 
-				  <li><a href = /blog/2022/10/13/pacific-map>most recent post</a></li>
+				  <li><a href = /blog/2023/02/25/ilr>most recent post</a></li>
 				</ul>
             </li>
               <li><a href="/blog/showcase.html">showcase</a></li>
@@ -180,31 +180,31 @@
 
 <p>After controlling for the average swing, the standard deviation of swings is still 3.2 percentage points. This adds a big chunk of uncertainty to how an average swing will translate into seats. A sitting member could reasonably expect their own swing (for or against) to be within plus or minus six percentage points of the overall swing, but in any given election we’d expect several division-level swings to be even more divergent than that.</p>
 
-<p>Here’s the R code that produces that chart and that conclusion of 3.2 percentage points. It uses my new <code class="highlighter-rouge">ozfedelect</code> R package which is the workhorse I intend to use for re-usable functionality and data for Australian federal election analysis. So far it includes tidied polling data from 2007 to present (updated 11 March 2019), division-level two-party-preferred election results back to 1993, and “simple features” versions of electoral boundaries back to 2010 (simplified to 10% of their original size). Thanks to Wikipedia (and the polling firms of course), the Australian Electoral Commission, and the Australian Bureau of Statistics respectively for making the original data available.</p>
+<p>Here’s the R code that produces that chart and that conclusion of 3.2 percentage points. It uses my new <code class="language-plaintext highlighter-rouge">ozfedelect</code> R package which is the workhorse I intend to use for re-usable functionality and data for Australian federal election analysis. So far it includes tidied polling data from 2007 to present (updated 11 March 2019), division-level two-party-preferred election results back to 1993, and “simple features” versions of electoral boundaries back to 2010 (simplified to 10% of their original size). Thanks to Wikipedia (and the polling firms of course), the Australian Electoral Commission, and the Australian Bureau of Statistics respectively for making the original data available.</p>
 
 <p><em>Post continues after code extract</em></p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># Install the ozfedelect R package
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># Install the ozfedelect R package</span><span class="w">
 </span><span class="n">devtools</span><span class="o">::</span><span class="n">install_github</span><span class="p">(</span><span class="s2">"ellisp/ozfedelect/pkg"</span><span class="p">)</span><span class="w">
 
-</span><span class="n">library</span><span class="p">(</span><span class="n">ozfedelect</span><span class="p">)</span><span class="w"> </span><span class="c1"># with data
+</span><span class="n">library</span><span class="p">(</span><span class="n">ozfedelect</span><span class="p">)</span><span class="w"> </span><span class="c1"># with data</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">grid</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">Cairo</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">sf</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># Some checks.
-# -7.5 for Aston in 2013 meant a swing against the Labor govt
-# - 10.1 for Bass in 2016 meant a swing against the Lib/Nat govt
+</span><span class="c1"># Some checks.</span><span class="w">
+</span><span class="c1"># -7.5 for Aston in 2013 meant a swing against the Labor govt</span><span class="w">
+</span><span class="c1"># - 10.1 for Bass in 2016 meant a swing against the Lib/Nat govt</span><span class="w">
 </span><span class="n">results_2pp_div</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">select</span><span class="p">(</span><span class="n">division_nm</span><span class="p">,</span><span class="w"> </span><span class="n">swing_to_govt</span><span class="p">,</span><span class="w"> </span><span class="n">election_year</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">spread</span><span class="p">(</span><span class="n">election_year</span><span class="p">,</span><span class="w"> </span><span class="n">swing_to_govt</span><span class="p">)</span><span class="w">
 
 
-</span><span class="c1">#---------------------------explore distribution of swings---------
-</span><span class="w">
-</span><span class="c1"># Let's try to understand those historical swings
+</span><span class="c1">#---------------------------explore distribution of swings---------</span><span class="w">
+
+</span><span class="c1"># Let's try to understand those historical swings</span><span class="w">
 </span><span class="n">d</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">results_2pp_div</span><span class="w">  </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">group_by</span><span class="p">(</span><span class="n">election_year</span><span class="p">,</span><span class="w"> </span><span class="n">incumbent</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">avg_swing</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">swing_to_govt</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">total_votes</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">total_votes</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -212,15 +212,15 @@
   </span><span class="n">filter</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">swing_to_govt</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">20</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">year</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_reorder</span><span class="p">(</span><span class="n">as.ordered</span><span class="p">(</span><span class="n">election_year</span><span class="p">),</span><span class="w"> </span><span class="n">avg_swing</span><span class="p">))</span><span class="w">
 
-</span><span class="c1"># We are interested for future forecasting models in the variance of division-level swings
-# that are not explained by the nation-wide swing
+</span><span class="c1"># We are interested for future forecasting models in the variance of division-level swings</span><span class="w">
+</span><span class="c1"># that are not explained by the nation-wide swing</span><span class="w">
 </span><span class="n">model</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lm</span><span class="p">(</span><span class="n">swing_to_govt</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">avg_swing</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">d</span><span class="p">)</span><span class="w">
 </span><span class="n">confint</span><span class="p">(</span><span class="n">model</span><span class="p">)</span><span class="w">
-</span><span class="n">coef</span><span class="p">(</span><span class="n">model</span><span class="p">)</span><span class="w"> </span><span class="c1"># of course the slope is 1 and the intercept is 0, basically - by design
-# the interesting thing is actually the residual standard error:
+</span><span class="n">coef</span><span class="p">(</span><span class="n">model</span><span class="p">)</span><span class="w"> </span><span class="c1"># of course the slope is 1 and the intercept is 0, basically - by design</span><span class="w">
+</span><span class="c1"># the interesting thing is actually the residual standard error:</span><span class="w">
 </span><span class="n">summary</span><span class="p">(</span><span class="n">model</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># what's the residual standard deviation of division-level swings?
+</span><span class="c1"># what's the residual standard deviation of division-level swings?</span><span class="w">
 </span><span class="n">residual_sd</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">summary</span><span class="p">(</span><span class="n">model</span><span class="p">)</span><span class="o">$</span><span class="n">sigma</span><span class="w">
 
 
@@ -229,7 +229,7 @@
 </span><span class="n">annotation_col</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"grey50"</span><span class="w">
 </span><span class="n">update_geom_defaults</span><span class="p">(</span><span class="s2">"label"</span><span class="p">,</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">main_font</span><span class="p">,</span><span class="w"> </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"white"</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">annotation_col</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.8</span><span class="p">))</span><span class="w">
 
-</span><span class="c1"># Main chart:
+</span><span class="c1"># Main chart:</span><span class="w">
 </span><span class="n">d</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">avg_swing</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">swing_to_govt</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">100</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
   </span><span class="n">geom_smooth</span><span class="p">(</span><span class="n">se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"lm"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
@@ -252,7 +252,7 @@
 
 <p>Election analysts love our choropleth maps, but they pose a challenge because of the uneven distribution of people over land. This is a particularly acute problem for Australia.</p>
 
-<p>In trying to draw a meaningful electorate choropleth map for Australia I first tried a cartogram (to distort borders so each electorate is represented as visually equal while retaining some of its basic shape) but this was too big a job for the algorithm in the <code class="highlighter-rouge">cartogram</code> R package. Fair enough. Some of those divisions are pretty large, including Durack in northern Western Australia, at 1.6 million square kilometres for its 100,000 electors the <a href="https://en.wikipedia.org/wiki/Division_of_Durack">second largest (by area) single-seat electoral division in the world</a>.</p>
+<p>In trying to draw a meaningful electorate choropleth map for Australia I first tried a cartogram (to distort borders so each electorate is represented as visually equal while retaining some of its basic shape) but this was too big a job for the algorithm in the <code class="language-plaintext highlighter-rouge">cartogram</code> R package. Fair enough. Some of those divisions are pretty large, including Durack in northern Western Australia, at 1.6 million square kilometres for its 100,000 electors the <a href="https://en.wikipedia.org/wiki/Division_of_Durack">second largest (by area) single-seat electoral division in the world</a>.</p>
 
 <p>So instead of a cartogram, I’ve opted instead for a bunch of call-outs of the five largest cities. Here we can see the two-party-preferred <em>votes</em> in the 2016 election:</p>
 
@@ -278,7 +278,7 @@
 
 <p><a href="/img/0146-2pp-swing-2016.svg" target="_blank"><img src="/img/0146-2pp-swing-2016.png" width="100%" /></a></p>
 
-<p>The <code class="highlighter-rouge">ozfedelect</code> package includes a function that does all the grunt work of these maps, so the end-user code that produces them is extremely simple:</p>
+<p>The <code class="language-plaintext highlighter-rouge">ozfedelect</code> package includes a function that does all the grunt work of these maps, so the end-user code that produces them is extremely simple:</p>
 
 <p><em>Post continues after code extract</em></p>
 
@@ -292,7 +292,7 @@
 
 <h2 id="swing-and-vote-each-have-a-relationship-with-division-level-census-variables">Swing and vote each have a relationship with division-level census variables</h2>
 
-<p>A common thing to do with either swing or vote variables is to compare them to division-level indicators of social, economic and demographic variables, typically available from the Census. Hugh Parsonage’s invaluable <code class="highlighter-rouge">Census2016.DataPack</code> contains tidied versions of the ABS’ Census Data Packs, and I’ve further summarised a small subset of the variables available into a one-row-per-division collation in <code class="highlighter-rouge">ozfedelect</code>.  Here’s what we see when we compare those variables to the most recent swing in 2016:</p>
+<p>A common thing to do with either swing or vote variables is to compare them to division-level indicators of social, economic and demographic variables, typically available from the Census. Hugh Parsonage’s invaluable <code class="language-plaintext highlighter-rouge">Census2016.DataPack</code> contains tidied versions of the ABS’ Census Data Packs, and I’ve further summarised a small subset of the variables available into a one-row-per-division collation in <code class="language-plaintext highlighter-rouge">ozfedelect</code>.  Here’s what we see when we compare those variables to the most recent swing in 2016:</p>
 
 <p><img src="/img/0146-census-swing.svg" width="100%" /></p>
 
@@ -319,25 +319,25 @@
 
 <p>Again, don’t mistake these area-based findings for individual-level conclusions. That may come later if I have time (this is just a hobby project after all; but I note the AES data is freely downloadable and will be hard to keep my hands off!).</p>
 
-<p>Code for all these comparisons to Census data. Again, the hard yards have been done by Parsonage’s <code class="highlighter-rouge">Census2016.DataPack</code> and my <code class="highlighter-rouge">ozfedelect</code>.</p>
+<p>Code for all these comparisons to Census data. Again, the hard yards have been done by Parsonage’s <code class="language-plaintext highlighter-rouge">Census2016.DataPack</code> and my <code class="language-plaintext highlighter-rouge">ozfedelect</code>.</p>
 
 <p><em>Post continues after code extract</em></p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#----------------------- explore relationship to census variables------------
-# a tiny bit of munging data together, into wide form for modelling:
-</span><span class="n">d</span><span class="m">1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">results_2pp_div</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#----------------------- explore relationship to census variables------------</span><span class="w">
+</span><span class="c1"># a tiny bit of munging data together, into wide form for modelling:</span><span class="w">
+</span><span class="n">d1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">results_2pp_div</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">filter</span><span class="p">(</span><span class="n">election_year</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">2016</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">left_join</span><span class="p">(</span><span class="n">div_census_2016</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"division_nm"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">select</span><span class="p">(</span><span class="n">division_nm</span><span class="p">,</span><span class="w"> </span><span class="n">state_ab</span><span class="p">,</span><span class="w"> </span><span class="n">lib_nat_percentage</span><span class="p">,</span><span class="w"> </span><span class="n">swing_to_govt</span><span class="p">,</span><span class="w"> </span><span class="n">young_persons</span><span class="o">:</span><span class="n">only_english_spoken_home</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">state_ab</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_relevel</span><span class="p">(</span><span class="n">state_ab</span><span class="p">,</span><span class="w"> </span><span class="s2">"NSW"</span><span class="p">))</span><span class="w">
 
-</span><span class="c1"># and narrow form for plotting:  
-</span><span class="n">d</span><span class="m">2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">d</span><span class="m">1</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+</span><span class="c1"># and narrow form for plotting:  </span><span class="w">
+</span><span class="n">d2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">d1</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">gather</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">division_nm</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">lib_nat_percentage</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">swing_to_govt</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">state_ab</span><span class="p">)</span><span class="w">
 
-</span><span class="c1">#------------charts--------------  
-# chart of vote:
-</span><span class="n">d</span><span class="m">2</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+</span><span class="c1">#------------charts--------------  </span><span class="w">
+</span><span class="c1"># chart of vote:</span><span class="w">
+</span><span class="n">d2</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lib_nat_percentage</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">100</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
   </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">scale</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"free_x"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
   </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="s2">"Two-party-preferred vote for Liberal/National Coalition"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
@@ -347,8 +347,8 @@
           </span><span class="s2">"2016 federal election"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
   </span><span class="n">labs</span><span class="p">(</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># chart of swing:  
-</span><span class="n">d</span><span class="m">2</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+</span><span class="c1"># chart of swing:  </span><span class="w">
+</span><span class="n">d2</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">swing_to_govt</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">100</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
   </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">scale</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"free_x"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
   </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="s2">"Two-party-preferred swing towards Liberal/National Coalition\n(incumbent government)"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
@@ -359,14 +359,14 @@
   </span><span class="n">labs</span><span class="p">(</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span><span class="w">
 
   
-</span><span class="c1">#----------Modelling  -----------
-</span><span class="n">d</span><span class="m">3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">d</span><span class="m">1</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+</span><span class="c1">#----------Modelling  -----------</span><span class="w">
+</span><span class="n">d3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">d1</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">select</span><span class="p">(</span><span class="w"> </span><span class="o">-</span><span class="n">division_nm</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">lib_nat_percentage</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate_at</span><span class="p">(</span><span class="n">vars</span><span class="p">(</span><span class="n">young_persons</span><span class="o">:</span><span class="n">only_english_spoken_home</span><span class="p">),</span><span class="w"> </span><span class="n">scale</span><span class="p">)</span><span class="w">
 
-</span><span class="n">mod1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lm</span><span class="p">(</span><span class="n">I</span><span class="p">(</span><span class="n">swing_to_govt</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">100</span><span class="p">)</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">.</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">d</span><span class="m">3</span><span class="p">)</span><span class="w">
+</span><span class="n">mod1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lm</span><span class="p">(</span><span class="n">I</span><span class="p">(</span><span class="n">swing_to_govt</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">100</span><span class="p">)</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">.</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">d3</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># chart of results:
+</span><span class="c1"># chart of results:</span><span class="w">
 </span><span class="n">confint</span><span class="p">(</span><span class="n">mod1</span><span class="p">)[</span><span class="m">-1</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">as.data.frame</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">var</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rownames</span><span class="p">(</span><span class="n">.</span><span class="p">),</span><span class="w">
@@ -409,24 +409,24 @@
 
 <p><em>Post continues after code extract</em></p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#==============crude simulation===============
-# so plausible to 
-# a) model the overall swing to the govt
-# b) simulate for individual seats a randomness of N(0, 3.2) on top of that overall swing
-# c) add those swings to the 2016 results
-</span><span class="w">
-</span><span class="c1"># Important - this misses out on two things that are needed:
-# a) 2 new electorates this time around
-# b) seats held by other parties
-</span><span class="w">
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#==============crude simulation===============</span><span class="w">
+</span><span class="c1"># so plausible to </span><span class="w">
+</span><span class="c1"># a) model the overall swing to the govt</span><span class="w">
+</span><span class="c1"># b) simulate for individual seats a randomness of N(0, 3.2) on top of that overall swing</span><span class="w">
+</span><span class="c1"># c) add those swings to the 2016 results</span><span class="w">
+
+</span><span class="c1"># Important - this misses out on two things that are needed:</span><span class="w">
+</span><span class="c1"># a) 2 new electorates this time around</span><span class="w">
+</span><span class="c1"># b) seats held by other parties</span><span class="w">
+
 </span><span class="n">last_result</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">results_2pp_div</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">filter</span><span class="p">(</span><span class="n">election_year</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">2016</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">summarise</span><span class="p">(</span><span class="n">alp_2pp_2016</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">alp_votes</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">total_votes</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">pull</span><span class="p">(</span><span class="n">alp_2pp_2016</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># last election the ALP got 49.6% of the 2pp. Currently on track to about 52.48 with sd of about 2.08.
-# So an average swing against the govt of N(2.88, 2.08), and division-level randomness on top of that.
-</span><span class="w">
+</span><span class="c1"># last election the ALP got 49.6% of the 2pp. Currently on track to about 52.48 with sd of about 2.08.</span><span class="w">
+</span><span class="c1"># So an average swing against the govt of N(2.88, 2.08), and division-level randomness on top of that.</span><span class="w">
+
 </span><span class="n">baseline</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">results_2pp_div</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">filter</span><span class="p">(</span><span class="n">election_year</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">2016</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">select</span><span class="p">(</span><span class="n">division_nm</span><span class="p">,</span><span class="w"> </span><span class="n">alp_percentage</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -440,8 +440,8 @@
   </span><span class="n">select</span><span class="p">(</span><span class="o">-</span><span class="n">link</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">extra_swing</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rnorm</span><span class="p">(</span><span class="n">n</span><span class="p">(),</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">residual_sd</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">group_by</span><span class="p">(</span><span class="n">sim</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-  </span><span class="c1"># we scale the extra_swing to be mean zero so we aren't accidentally changing the average swing:
-</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">extra_swing</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">extra_swing</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">extra_swing</span><span class="p">),</span><span class="w">
+  </span><span class="c1"># we scale the extra_swing to be mean zero so we aren't accidentally changing the average swing:</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">extra_swing</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">extra_swing</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">extra_swing</span><span class="p">),</span><span class="w">
          </span><span class="n">total_swing</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">avg_swing</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">extra_swing</span><span class="p">,</span><span class="w">
          </span><span class="n">alp_percentage_2019</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">alp_percentage</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">total_swing</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">ungroup</span><span class="p">()</span><span class="w">
@@ -458,7 +458,7 @@
   </span><span class="n">summarise</span><span class="p">(</span><span class="n">m</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="n">mean</span><span class="p">(</span><span class="n">prop_seats_alp</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0.5</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">pull</span><span class="p">(</span><span class="n">m</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># draw histogram of results  
+</span><span class="c1"># draw histogram of results  </span><span class="w">
 </span><span class="n">sims_by_div</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">number_seats_alp</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
   </span><span class="n">geom_histogram</span><span class="p">(</span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">,</span><span class="w"> </span><span class="n">binwidth</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">

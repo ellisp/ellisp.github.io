@@ -18,7 +18,7 @@
             <meta property="og:image" content="http://ellisp.github.io/img/0091-squared-error.png" />
          
 		 
-			<meta property="og:url" content="http://freerangestats.info/blog/2017/04/15/propensity-simulations.html" />
+			<meta property="og:url" content="http://localhost:4000/blog/2017/04/15/propensity-simulations.html" />
 		 
          <meta property="og:author" content= "https://www.facebook.com/peterstats" />
          <meta property="og:type" content="article" />
@@ -113,7 +113,7 @@
                   <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
 				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
                   <li><a href="/blog/surveys.html">all posts on surveys</a></li> 
-				  <li><a href = /blog/2022/10/13/pacific-map>most recent post</a></li>
+				  <li><a href = /blog/2023/02/25/ilr>most recent post</a></li>
 				</ul>
             </li>
               <li><a href="/blog/showcase.html">showcase</a></li>
@@ -193,8 +193,8 @@
 <p>To explore this I created a bunch of datasets with the following characterstics:</p>
 
 <ul>
-  <li>response variable <code class="highlighter-rouge">y</code> is independently and identically distributed in a normal distribution with the expected value a linear combination of 100 continuous explanatory variables and one binary <code class="highlighter-rouge">treatment</code> variable</li>
-  <li>the true treatment effect - the coefficient for <code class="highlighter-rouge">treatment</code> when <code class="highlighter-rouge">y</code> is the response in a regression - is exactly 1.</li>
+  <li>response variable <code class="language-plaintext highlighter-rouge">y</code> is independently and identically distributed in a normal distribution with the expected value a linear combination of 100 continuous explanatory variables and one binary <code class="language-plaintext highlighter-rouge">treatment</code> variable</li>
+  <li>the true treatment effect - the coefficient for <code class="language-plaintext highlighter-rouge">treatment</code> when <code class="language-plaintext highlighter-rouge">y</code> is the response in a regression - is exactly 1.</li>
   <li>the true coefficients for the 100 other explanatory variables are standard normal variables (ie centered on zero with variance of one)</li>
   <li>the actual values of the explanatory variables are a multivariate normal distribution with non-trivial covariance, and individual means of zero and variances of one</li>
   <li>the propensity to get the treatment is related to the 100 explanatory variables, and in total 10% of cases get the treatment.</li>
@@ -206,28 +206,28 @@
 </span><span class="n">library</span><span class="p">(</span><span class="n">magrittr</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">forcats</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
-</span><span class="n">library</span><span class="p">(</span><span class="n">MatchIt</span><span class="p">)</span><span class="w">           </span><span class="c1"># for propensity score matching
-</span><span class="n">library</span><span class="p">(</span><span class="n">MASS</span><span class="p">)</span><span class="w">              </span><span class="c1"># for mvrnorm
-</span><span class="n">library</span><span class="p">(</span><span class="n">clusterGeneration</span><span class="p">)</span><span class="w"> </span><span class="c1"># for genPositiveDefMat
-</span><span class="n">library</span><span class="p">(</span><span class="n">boot</span><span class="p">)</span><span class="w">              </span><span class="c1"># for inv.logit
-</span><span class="n">library</span><span class="p">(</span><span class="n">testthat</span><span class="p">)</span><span class="w">          </span><span class="c1"># for expect_equal
-</span><span class="n">library</span><span class="p">(</span><span class="n">doParallel</span><span class="p">)</span><span class="w">        </span><span class="c1"># for parallel processing
+</span><span class="n">library</span><span class="p">(</span><span class="n">MatchIt</span><span class="p">)</span><span class="w">           </span><span class="c1"># for propensity score matching</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">MASS</span><span class="p">)</span><span class="w">              </span><span class="c1"># for mvrnorm</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">clusterGeneration</span><span class="p">)</span><span class="w"> </span><span class="c1"># for genPositiveDefMat</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">boot</span><span class="p">)</span><span class="w">              </span><span class="c1"># for inv.logit</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">testthat</span><span class="p">)</span><span class="w">          </span><span class="c1"># for expect_equal</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">doParallel</span><span class="p">)</span><span class="w">        </span><span class="c1"># for parallel processing</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">foreach</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">stringr</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">RColorBrewer</span><span class="p">)</span><span class="w">
 
 
-</span><span class="c1">#==========explore omitted variable bias==================
-</span><span class="cd">#' generate data suitable for modelling with propensity score matching
-#' @param n number of observations to make
-#' @param k number of "x" variables that influence both the probability of getting the treatment,
-#' and the response variable
-#' @param p overall probability of getting the treatment
-#' @param x_coefs_y the coefficients for each of the x variables impacting on y
-#' @param x_coefs_propensity the coefficients for each of the x variables impacting on the probability 
-#' of getting the treatment (prior to scaling proportions)
-#' @param treatment_coef the effect of the treatment on y
-#' @return a data frame
+</span><span class="c1">#==========explore omitted variable bias==================</span><span class="w">
+</span><span class="cd">#' generate data suitable for modelling with propensity score matching</span><span class="w">
+</span><span class="cd">#' @param n number of observations to make</span><span class="w">
+</span><span class="cd">#' @param k number of "x" variables that influence both the probability of getting the treatment,</span><span class="w">
+</span><span class="cd">#' and the response variable</span><span class="w">
+</span><span class="cd">#' @param p overall probability of getting the treatment</span><span class="w">
+</span><span class="cd">#' @param x_coefs_y the coefficients for each of the x variables impacting on y</span><span class="w">
+</span><span class="cd">#' @param x_coefs_propensity the coefficients for each of the x variables impacting on the probability </span><span class="w">
+</span><span class="cd">#' of getting the treatment (prior to scaling proportions)</span><span class="w">
+</span><span class="cd">#' @param treatment_coef the effect of the treatment on y</span><span class="w">
+</span><span class="cd">#' @return a data frame</span><span class="w">
 </span><span class="n">generate_data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5000</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.1</span><span class="p">,</span><span class="w"> 
                           </span><span class="n">x_coefs_y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rnorm</span><span class="p">(</span><span class="n">k</span><span class="p">),</span><span class="w"> 
                           </span><span class="n">x_coefs_propensity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rnorm</span><span class="p">(</span><span class="n">k</span><span class="p">),</span><span class="w">
@@ -240,8 +240,8 @@
    </span><span class="n">sigma</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">cov2cor</span><span class="p">(</span><span class="n">clusterGeneration</span><span class="o">::</span><span class="n">genPositiveDefMat</span><span class="p">(</span><span class="n">k</span><span class="p">)</span><span class="o">$</span><span class="n">Sigma</span><span class="p">)</span><span class="w">
    </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">MASS</span><span class="o">::</span><span class="n">mvrnorm</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">mu</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">),</span><span class="w"> </span><span class="n">Sigma</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sigma</span><span class="p">)</span><span class="w">
    </span><span class="n">true_prob</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">boot</span><span class="o">::</span><span class="n">inv.logit</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">%*%</span><span class="w"> </span><span class="n">x_coefs_propensity</span><span class="p">)</span><span class="w">
-   </span><span class="c1"># scale so only p proportion will get the treatment
-</span><span class="w">   </span><span class="n">true_prob</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">true_prob</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="nf">sum</span><span class="p">(</span><span class="n">true_prob</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">n</span><span class="p">))</span><span class="w">
+   </span><span class="c1"># scale so only p proportion will get the treatment</span><span class="w">
+   </span><span class="n">true_prob</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">true_prob</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="nf">sum</span><span class="p">(</span><span class="n">true_prob</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">n</span><span class="p">))</span><span class="w">
    </span><span class="n">treatment</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">rbinom</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">prob</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">true_prob</span><span class="p">)</span><span class="w">
    </span><span class="n">y</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">%*%</span><span class="w"> </span><span class="n">x_coefs_y</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">treatment</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">treatment_coef</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">rnorm</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">sigma_y</span><span class="p">)</span><span class="w">
    </span><span class="n">the_data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.data.frame</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w">
@@ -308,11 +308,11 @@
 
 <p>Here’s the R code that does the actual simulations, analysis and prepares those charts; it takes up where the chunk of code earlier in this post finishes.</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#=====================loop=================
-# sequence takes about 8 hours
-</span><span class="w">
-</span><span class="c1"># Set up a cluster for parallel computing
-</span><span class="n">cluster</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">makeCluster</span><span class="p">(</span><span class="m">7</span><span class="p">)</span><span class="w"> </span><span class="c1"># only any good if you have at least 7 processors :)
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#=====================loop=================</span><span class="w">
+</span><span class="c1"># sequence takes about 8 hours</span><span class="w">
+
+</span><span class="c1"># Set up a cluster for parallel computing</span><span class="w">
+</span><span class="n">cluster</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">makeCluster</span><span class="p">(</span><span class="m">7</span><span class="p">)</span><span class="w"> </span><span class="c1"># only any good if you have at least 7 processors :)</span><span class="w">
 </span><span class="n">registerDoParallel</span><span class="p">(</span><span class="n">cluster</span><span class="p">)</span><span class="w">
 
 </span><span class="n">clusterEvalQ</span><span class="p">(</span><span class="n">cluster</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w">
@@ -322,64 +322,64 @@
    </span><span class="n">library</span><span class="p">(</span><span class="n">magrittr</span><span class="p">)</span><span class="w">
 </span><span class="p">})</span><span class="w">
 
-</span><span class="c1"># Different sample sizes to try:
+</span><span class="c1"># Different sample sizes to try:</span><span class="w">
 </span><span class="n">n_options</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">500</span><span class="p">,</span><span class="w"> </span><span class="m">1000</span><span class="p">,</span><span class="w"> </span><span class="m">2000</span><span class="p">,</span><span class="w"> </span><span class="m">5000</span><span class="p">,</span><span class="w"> </span><span class="m">10000</span><span class="p">,</span><span class="w"> </span><span class="m">20000</span><span class="p">,</span><span class="w"> </span><span class="m">10</span><span class="o">^</span><span class="m">5</span><span class="p">)</span><span class="w">
-</span><span class="c1"># n_options &lt;- c(500, 1000, 2000) # used during dev
-# Different number of variables to include:
+</span><span class="c1"># n_options &lt;- c(500, 1000, 2000) # used during dev</span><span class="w">
+</span><span class="c1"># Different number of variables to include:</span><span class="w">
 </span><span class="n">var_options</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">10</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">10</span><span class="w">
-</span><span class="c1"># Number of reps to do of each combination of sample size and variables in:
+</span><span class="c1"># Number of reps to do of each combination of sample size and variables in:</span><span class="w">
 </span><span class="n">reps</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">30</span><span class="w">
 
-</span><span class="c1"># loop through all the options for sample size.  Note this loop is serial, not parallel:
+</span><span class="c1"># loop through all the options for sample size.  Note this loop is serial, not parallel:</span><span class="w">
 </span><span class="n">results</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">foreach</span><span class="p">(</span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="nf">length</span><span class="p">(</span><span class="n">n_options</span><span class="p">),</span><span class="w"> </span><span class="n">.combine</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rbind</span><span class="p">)</span><span class="w"> </span><span class="o">%do%</span><span class="w"> </span><span class="p">{</span><span class="w">
    
-   </span><span class="c1"># parallelising this next loop, but not the others.  So each rep of the given
-</span><span class="w">   </span><span class="c1"># sample size will be given its own processor:
-</span><span class="w">   </span><span class="n">tmp1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">foreach</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">reps</span><span class="p">,</span><span class="w"> </span><span class="n">.combine</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rbind</span><span class="p">)</span><span class="w"> </span><span class="o">%dopar%</span><span class="w"> </span><span class="p">{</span><span class="w">
+   </span><span class="c1"># parallelising this next loop, but not the others.  So each rep of the given</span><span class="w">
+   </span><span class="c1"># sample size will be given its own processor:</span><span class="w">
+   </span><span class="n">tmp1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">foreach</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">reps</span><span class="p">,</span><span class="w"> </span><span class="n">.combine</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rbind</span><span class="p">)</span><span class="w"> </span><span class="o">%dopar%</span><span class="w"> </span><span class="p">{</span><span class="w">
       </span><span class="n">the_data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">generate_data</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n_options</span><span class="p">[</span><span class="n">j</span><span class="p">],</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w"> </span><span class="n">seed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">j</span><span class="p">)</span><span class="w">
       
-      </span><span class="c1"># treatments &lt;- dplyr::filter(the_data, treatment == 1)
-</span><span class="w">      </span><span class="c1"># controls &lt;- dplyr::filter(the_data, treatment == 0)
-</span><span class="w">      </span><span class="c1"># n_treatment &lt;- nrow(treatments)
-</span><span class="w">      
-      </span><span class="c1"># Loop through all the different numbers of observed explanatory variables.
-</span><span class="w">      </span><span class="c1"># Note this is done in serial too, so a single processor, given its own
-</span><span class="w">      </span><span class="c1"># rep dataset of a particular sample size will perform all the different
-</span><span class="w">      </span><span class="c1"># matchings and regressions for different selections of variables.  This
-</span><span class="w">      </span><span class="c1"># is hoped to be a good compromise between overall CPU utilisation and
-</span><span class="w">      </span><span class="c1"># not swapping data and stuff in and out of processors too frequently:
-</span><span class="w">      </span><span class="n">tmp2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">foreach</span><span class="p">(</span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="nf">length</span><span class="p">(</span><span class="n">var_options</span><span class="p">),</span><span class="w"> </span><span class="n">.combine</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rbind</span><span class="p">)</span><span class="w"> </span><span class="o">%do%</span><span class="w"> </span><span class="p">{</span><span class="w">
+      </span><span class="c1"># treatments &lt;- dplyr::filter(the_data, treatment == 1)</span><span class="w">
+      </span><span class="c1"># controls &lt;- dplyr::filter(the_data, treatment == 0)</span><span class="w">
+      </span><span class="c1"># n_treatment &lt;- nrow(treatments)</span><span class="w">
+      
+      </span><span class="c1"># Loop through all the different numbers of observed explanatory variables.</span><span class="w">
+      </span><span class="c1"># Note this is done in serial too, so a single processor, given its own</span><span class="w">
+      </span><span class="c1"># rep dataset of a particular sample size will perform all the different</span><span class="w">
+      </span><span class="c1"># matchings and regressions for different selections of variables.  This</span><span class="w">
+      </span><span class="c1"># is hoped to be a good compromise between overall CPU utilisation and</span><span class="w">
+      </span><span class="c1"># not swapping data and stuff in and out of processors too frequently:</span><span class="w">
+      </span><span class="n">tmp2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">foreach</span><span class="p">(</span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="nf">length</span><span class="p">(</span><span class="n">var_options</span><span class="p">),</span><span class="w"> </span><span class="n">.combine</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rbind</span><span class="p">)</span><span class="w"> </span><span class="o">%do%</span><span class="w"> </span><span class="p">{</span><span class="w">
          </span><span class="n">vars_in</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">var_options</span><span class="p">[</span><span class="n">v</span><span class="p">]</span><span class="w">
          </span><span class="n">incomplete_data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dplyr</span><span class="o">::</span><span class="n">select</span><span class="p">(</span><span class="n">the_data</span><span class="p">,</span><span class="w"> </span><span class="n">vars_in</span><span class="p">,</span><span class="w"> </span><span class="n">treatment</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">)</span><span class="w">
          
-         </span><span class="c1">#-----------------Simple regression-----------
-</span><span class="w">         </span><span class="n">mod1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lm</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">.</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">incomplete_data</span><span class="p">)</span><span class="w">
+         </span><span class="c1">#-----------------Simple regression-----------</span><span class="w">
+         </span><span class="n">mod1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lm</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">.</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">incomplete_data</span><span class="p">)</span><span class="w">
          </span><span class="n">result_lm</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">coef</span><span class="p">(</span><span class="n">mod1</span><span class="p">)[</span><span class="s2">"treatment"</span><span class="p">]</span><span class="w">
          
-         </span><span class="c1">#----------propensity score calculation----------
-</span><span class="w">         </span><span class="n">the_form</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.formula</span><span class="p">(</span><span class="w">
+         </span><span class="c1">#----------propensity score calculation----------</span><span class="w">
+         </span><span class="n">the_form</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.formula</span><span class="p">(</span><span class="w">
             </span><span class="n">paste</span><span class="p">(</span><span class="s2">"treatment ~ "</span><span class="p">,</span><span class="w"> </span><span class="n">paste</span><span class="p">(</span><span class="n">paste0</span><span class="p">(</span><span class="s2">"V"</span><span class="p">,</span><span class="w"> </span><span class="n">vars_in</span><span class="p">),</span><span class="w"> </span><span class="n">collapse</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">" + "</span><span class="p">))</span><span class="w">
          </span><span class="p">)</span><span class="w">
          
-         </span><span class="c1"># I considered comparing genetic matching but it is slower and not really the point
-</span><span class="w">         </span><span class="c1"># of today's piece, so just using the default nearest neighbour matching method
-</span><span class="w">         </span><span class="n">match_model</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">matchit</span><span class="p">(</span><span class="n">the_form</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">incomplete_data</span><span class="p">)</span><span class="w">
+         </span><span class="c1"># I considered comparing genetic matching but it is slower and not really the point</span><span class="w">
+         </span><span class="c1"># of today's piece, so just using the default nearest neighbour matching method</span><span class="w">
+         </span><span class="n">match_model</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">matchit</span><span class="p">(</span><span class="n">the_form</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">incomplete_data</span><span class="p">)</span><span class="w">
          </span><span class="n">match_data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">match.data</span><span class="p">(</span><span class="n">match_model</span><span class="p">)</span><span class="w">
          
-         </span><span class="c1">#---------------compare means of matched groups----------------
-</span><span class="w">         </span><span class="n">result_psm</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">with</span><span class="p">(</span><span class="n">match_data</span><span class="p">,</span><span class="w">
+         </span><span class="c1">#---------------compare means of matched groups----------------</span><span class="w">
+         </span><span class="n">result_psm</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">with</span><span class="p">(</span><span class="n">match_data</span><span class="p">,</span><span class="w">
               </span><span class="n">mean</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="n">treatment</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">1</span><span class="p">])</span><span class="w"> </span><span class="o">-</span><span class="w">
                  </span><span class="n">mean</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="n">treatment</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">0</span><span class="p">]))</span><span class="w">
          
-         </span><span class="c1">#--------------regression with matched groups-----------------
-</span><span class="w">         </span><span class="n">mod2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lm</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">.</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">match_data</span><span class="p">)</span><span class="w">
+         </span><span class="c1">#--------------regression with matched groups-----------------</span><span class="w">
+         </span><span class="n">mod2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lm</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">.</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">match_data</span><span class="p">)</span><span class="w">
          </span><span class="n">result_psm_lm</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">coef</span><span class="p">(</span><span class="n">mod2</span><span class="p">)[</span><span class="s2">"treatment"</span><span class="p">]</span><span class="w">
 
-         </span><span class="c1">#--------------------regression with full data and IPTW weights----------
-</span><span class="w">         </span><span class="c1"># IPTW - Inverse Probability of Treatment Weights
-</span><span class="w">         </span><span class="c1"># keep all the data but use propensity to generate weights.
-</span><span class="w">         </span><span class="c1"># has the advantage of keeping all the data rather than just a "matched" control sample.
-</span><span class="w">         </span><span class="n">wgts</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">incomplete_data</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+         </span><span class="c1">#--------------------regression with full data and IPTW weights----------</span><span class="w">
+         </span><span class="c1"># IPTW - Inverse Probability of Treatment Weights</span><span class="w">
+         </span><span class="c1"># keep all the data but use propensity to generate weights.</span><span class="w">
+         </span><span class="c1"># has the advantage of keeping all the data rather than just a "matched" control sample.</span><span class="w">
+         </span><span class="n">wgts</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">incomplete_data</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
             </span><span class="n">mutate</span><span class="p">(</span><span class="n">props</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">predict</span><span class="p">(</span><span class="n">match_model</span><span class="o">$</span><span class="n">model</span><span class="p">,</span><span class="w"> </span><span class="n">newdata</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">incomplete_data</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"response"</span><span class="p">),</span><span class="w">
                    </span><span class="n">wgts</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">/</span><span class="w"> </span><span class="n">props</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">treatment</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="m">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">props</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">treatment</span><span class="p">))</span><span class="w"> </span><span class="o">%$%</span><span class="w">
             </span><span class="n">wgts</span><span class="w">
@@ -387,25 +387,25 @@
          </span><span class="n">mod3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lm</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">.</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">incomplete_data</span><span class="p">,</span><span class="w"> </span><span class="n">weights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">wgts</span><span class="p">)</span><span class="w">
          </span><span class="n">result_iptw_lm</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">coef</span><span class="p">(</span><span class="n">mod3</span><span class="p">)[</span><span class="s2">"treatment"</span><span class="p">]</span><span class="w">
          
-         </span><span class="c1">#--------------return results-------------
-</span><span class="w">         </span><span class="nf">c</span><span class="p">(</span><span class="n">result_lm</span><span class="p">,</span><span class="w"> </span><span class="n">result_psm</span><span class="p">,</span><span class="w"> </span><span class="n">result_psm_lm</span><span class="p">,</span><span class="w"> </span><span class="n">result_iptw_lm</span><span class="p">)</span><span class="w">
-      </span><span class="p">}</span><span class="w">  </span><span class="c1"># end and repeat for each value of the number of explanatory variables to include in `var_options`
-</span><span class="w">      
+         </span><span class="c1">#--------------return results-------------</span><span class="w">
+         </span><span class="nf">c</span><span class="p">(</span><span class="n">result_lm</span><span class="p">,</span><span class="w"> </span><span class="n">result_psm</span><span class="p">,</span><span class="w"> </span><span class="n">result_psm_lm</span><span class="p">,</span><span class="w"> </span><span class="n">result_iptw_lm</span><span class="p">)</span><span class="w">
+      </span><span class="p">}</span><span class="w">  </span><span class="c1"># end and repeat for each value of the number of explanatory variables to include in `var_options`</span><span class="w">
+      
       </span><span class="n">tmp2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.data.frame</span><span class="p">(</span><span class="n">tmp2</span><span class="p">)</span><span class="w">
       </span><span class="n">tmp2</span><span class="o">$</span><span class="n">n</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">n_options</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="w">
       </span><span class="n">tmp2</span><span class="o">$</span><span class="n">vars_in</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">var_options</span><span class="w">
       </span><span class="n">tmp2</span><span class="o">$</span><span class="n">dataset</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">i</span><span class="w">
       </span><span class="n">row.names</span><span class="p">(</span><span class="n">tmp2</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="kc">NULL</span><span class="w">
       </span><span class="n">tmp2</span><span class="w">
-   </span><span class="p">}</span><span class="w">     </span><span class="c1"># end and repeat for each of `reps` repetitions of new datasets of same sample size
-</span><span class="w">   
+   </span><span class="p">}</span><span class="w">     </span><span class="c1"># end and repeat for each of `reps` repetitions of new datasets of same sample size</span><span class="w">
+   
    </span><span class="n">tmp1</span><span class="w">
-</span><span class="p">}</span><span class="w">        </span><span class="c1"># end and repeat for each of sample size options in `n_options``
-</span><span class="w">
+</span><span class="p">}</span><span class="w">        </span><span class="c1"># end and repeat for each of sample size options in `n_options``</span><span class="w">
+
 </span><span class="nf">names</span><span class="p">(</span><span class="n">results</span><span class="p">)[</span><span class="m">1</span><span class="o">:</span><span class="m">4</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Straight regression"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Propensity matching"</span><span class="p">,</span><span class="w">
                          </span><span class="s2">"Propensity matching and regression"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Inverse weighting and regression"</span><span class="p">)</span><span class="w">
 
-</span><span class="c1">#=============================presentation====================
+</span><span class="c1">#=============================presentation====================</span><span class="w">
 </span><span class="n">palette</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">brewer.pal</span><span class="p">(</span><span class="m">4</span><span class="p">,</span><span class="w"> </span><span class="s2">"Set1"</span><span class="p">)</span><span class="w">
 </span><span class="nf">names</span><span class="p">(</span><span class="n">palette</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">names</span><span class="p">(</span><span class="n">results</span><span class="p">)[</span><span class="m">1</span><span class="o">:</span><span class="m">4</span><span class="p">]</span><span class="w">
 
@@ -435,8 +435,8 @@
 
 </span><span class="n">results</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
    </span><span class="n">filter</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1000</span><span class="p">,</span><span class="w"> </span><span class="m">5000</span><span class="p">,</span><span class="w"> </span><span class="m">10000</span><span class="p">,</span><span class="w"> </span><span class="m">100000</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-   </span><span class="c1"># filter(dataset %in% 1:10) %&gt;%
-</span><span class="w">   </span><span class="n">gather</span><span class="p">(</span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">vars_in</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">dataset</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="c1"># filter(dataset %in% 1:10) %&gt;%</span><span class="w">
+   </span><span class="n">gather</span><span class="p">(</span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">vars_in</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">dataset</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
    </span><span class="n">mutate</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">paste0</span><span class="p">(</span><span class="s2">"n ="</span><span class="p">,</span><span class="w"> </span><span class="n">format</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">big.mark</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">","</span><span class="p">,</span><span class="w"> </span><span class="n">scientific</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)),</span><span class="w">
           </span><span class="n">dataset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">paste0</span><span class="p">(</span><span class="s2">"Data "</span><span class="p">,</span><span class="w"> </span><span class="n">dataset</span><span class="p">),</span><span class="w">
           </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">str_wrap</span><span class="p">(</span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">width</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">20</span><span class="p">),</span><span class="w">

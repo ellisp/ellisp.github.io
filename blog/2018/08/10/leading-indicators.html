@@ -18,7 +18,7 @@
             <meta property="og:image" content="http://freerangestats.info/img/0128-ridge-boot-results.png" />
          
 		 
-			<meta property="og:url" content="http://freerangestats.info/blog/2018/08/10/leading-indicators.html" />
+			<meta property="og:url" content="http://localhost:4000/blog/2018/08/10/leading-indicators.html" />
 		 
          <meta property="og:author" content= "https://www.facebook.com/peterstats" />
          <meta property="og:type" content="article" />
@@ -113,7 +113,7 @@
                   <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
 				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
                   <li><a href="/blog/surveys.html">all posts on surveys</a></li> 
-				  <li><a href = /blog/2022/10/13/pacific-map>most recent post</a></li>
+				  <li><a href = /blog/2023/02/25/ilr>most recent post</a></li>
 				</ul>
             </li>
               <li><a href="/blog/showcase.html">showcase</a></li>
@@ -193,7 +193,7 @@
   <li>OECD business confidence series (I used this rather than the ANZ or NZIER original series as the OECD version is available freely for reproducibility purposes)</li>
 </ul>
 
-<p>Some of these datasets are available programmatically, and some required manual steps to download from Infoshare.  Slightly more detail on this is <a href="https://github.com/ellisp/nz-lead-indicators/blob/master/data/data-provenance.md">documented in the GitHub repo</a> I set up for the project, as are all the scripts that import and combine the data.  If you’re interested in that, fork the entire repository, as its a combined whole and needs to be run as such, via the <code class="highlighter-rouge">integrate.R</code> script in the root directory of the project.</p>
+<p>Some of these datasets are available programmatically, and some required manual steps to download from Infoshare.  Slightly more detail on this is <a href="https://github.com/ellisp/nz-lead-indicators/blob/master/data/data-provenance.md">documented in the GitHub repo</a> I set up for the project, as are all the scripts that import and combine the data.  If you’re interested in that, fork the entire repository, as its a combined whole and needs to be run as such, via the <code class="language-plaintext highlighter-rouge">integrate.R</code> script in the root directory of the project.</p>
 
 <p>Here’s the original time series, plus seasonally adjusted versions of all of them except for the trade weighted index (currencies are so random I thought it made little sense to do a seasonally adjusted version of this; possible subject of future investigation):</p>
 
@@ -213,18 +213,18 @@
 
 <p>I’ve sequenced the variables in order of strength of relationship with GDP growth in the quarter (<a href="https://github.com/ellisp/nz-lead-indicators/blob/master/grooming/80-combine.R">code</a>). We can see that lagged GDP growth, electronic card transactions growth, and OECD business confidence have the three strongest positive correlations with GDP growth. Food price growth has a strong negative correlation (ie high growth in food prices is a predictor of low growth in GDP).</p>
 
-<p>The lower diagonal in that pairs plot shows connected scatter plots with a single-predictor linear model.  This turned out to be pleasantly easy to do with <code class="highlighter-rouge">GGally::ggpairs</code> and a simple user-defined function.  Here’s the <a href="https://github.com/ellisp/nz-lead-indicators/blob/master/analysis/exploratory.R">code for all three of the exploratory charts</a>.</p>
+<p>The lower diagonal in that pairs plot shows connected scatter plots with a single-predictor linear model.  This turned out to be pleasantly easy to do with <code class="language-plaintext highlighter-rouge">GGally::ggpairs</code> and a simple user-defined function.  Here’s the <a href="https://github.com/ellisp/nz-lead-indicators/blob/master/analysis/exploratory.R">code for all three of the exploratory charts</a>.</p>
 
 <h2 id="minimalist-regression-poor">Minimalist regression (poor)</h2>
 
-<p>My starting point was a fairly naive out-of-the-box linear regression, just chucking all the data into <code class="highlighter-rouge">lm()</code>.</p>
+<p>My starting point was a fairly naive out-of-the-box linear regression, just chucking all the data into <code class="language-plaintext highlighter-rouge">lm()</code>.</p>
 
 <figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">load</span><span class="p">(</span><span class="s2">"data/ind_data.rda"</span><span class="p">)</span><span class="w">
 
-</span><span class="n">summary</span><span class="p">(</span><span class="n">ind_data_wide</span><span class="p">)</span><span class="w"> </span><span class="c1"># 109 cases where even gdp_growth is missing.  No point in using them
+</span><span class="n">summary</span><span class="p">(</span><span class="n">ind_data_wide</span><span class="p">)</span><span class="w"> </span><span class="c1"># 109 cases where even gdp_growth is missing.  No point in using them</span><span class="w">
 </span><span class="n">ind_data_wide2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">subset</span><span class="p">(</span><span class="n">ind_data_wide</span><span class="p">,</span><span class="w"> </span><span class="o">!</span><span class="nf">is.na</span><span class="p">(</span><span class="n">gdp_growth_lag</span><span class="p">))</span><span class="w">
 
-</span><span class="c1"># naive approach *will* fit a plausible model, but the NA is down to the lowest common denominator, when data available on all variables
+</span><span class="c1"># naive approach *will* fit a plausible model, but the NA is down to the lowest common denominator, when data available on all variables</span><span class="w">
 </span><span class="n">mod</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lm</span><span class="p">(</span><span class="n">gdp_growth</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">.</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ind_data_wide2</span><span class="p">)</span><span class="w">
 
 </span><span class="n">stargazer</span><span class="p">(</span><span class="n">mod</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="s2">"html"</span><span class="p">)</span></code></pre></figure>
@@ -294,7 +294,7 @@
 
 <p>We could address the problem of the short electronic card transactions series either by eliminating that series from the data altogether (which would be a shame as it’s obviously useful), or by imputing it’s previous values.  Conceptually this is a little dubious - what exactly are we saying growth in electronic card transactions in 1988 would mean? - but statistically it’s fine.  The imputed values will capture the relationships between the various variables from 2003 onwards and avoid creating new artefacts, so in effect we will find the relationship between electronic cards and the others for the years we have the data, while still using the full 1987+ data for all other variables.</p>
 
-<p>The appropriate way to do this is to create multiple complete data sets with different imputed values, fit our model to each, and pool the results.  The <code class="highlighter-rouge">mice</code> package makes this spectacularly easy:</p>
+<p>The appropriate way to do this is to create multiple complete data sets with different imputed values, fit our model to each, and pool the results.  The <code class="language-plaintext highlighter-rouge">mice</code> package makes this spectacularly easy:</p>
 
 <figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">ind_mi</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">mice</span><span class="p">(</span><span class="n">ind_data_wide2</span><span class="p">,</span><span class="w"> </span><span class="n">print</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w">
 
@@ -423,7 +423,7 @@
   </tbody>
 </table>
 
-<p>Compared to the naive model on the cut-down dataset, we now have a much more plausible strong relationship with lagged GDP growth (which didn’t show up at all as significant in the first model). Food prices and car/stationwagon registrations the other two variables with “significant” evidence at this stage.  The electronic card transactions (<code class="highlighter-rouge">ect_growth</code>) effect is much smaller now, an unsurprising result from the “blurring” of the data introduced by the imputation approach and the fact that the other variables have long series of actual values to assert their relationships with the response of GDP growth.</p>
+<p>Compared to the naive model on the cut-down dataset, we now have a much more plausible strong relationship with lagged GDP growth (which didn’t show up at all as significant in the first model). Food prices and car/stationwagon registrations the other two variables with “significant” evidence at this stage.  The electronic card transactions (<code class="language-plaintext highlighter-rouge">ect_growth</code>) effect is much smaller now, an unsurprising result from the “blurring” of the data introduced by the imputation approach and the fact that the other variables have long series of actual values to assert their relationships with the response of GDP growth.</p>
 
 <p>So, we’ve dealt with the missing data, but not yet the multi-collinearity.</p>
 
@@ -437,10 +437,10 @@
 
 <p>I was able to cannibalise code from my previous posts with minimal amendments.</p>
 
-<p>My first step is to estimate good values for the <code class="highlighter-rouge">alpha</code> hyper-parameter in generalised linear regression.  This is the value between 0 and 1 that lets you choose a combination of the <em>type</em> of penalty used to determine the amount that coefficients are shrunk towards zero, to counter the way collinearity adds random noise to their estimates.  I do this by fitting models with a range of different values of <code class="highlighter-rouge">alpha</code>, while using cross-validation (built into the <code class="highlighter-rouge">glmnet</code> package) to get good values of <code class="highlighter-rouge">lambda</code>.  <code class="highlighter-rouge">lambda</code> is the hyper-parameter that indicates how <em>much</em> shrinkage there is.</p>
+<p>My first step is to estimate good values for the <code class="language-plaintext highlighter-rouge">alpha</code> hyper-parameter in generalised linear regression.  This is the value between 0 and 1 that lets you choose a combination of the <em>type</em> of penalty used to determine the amount that coefficients are shrunk towards zero, to counter the way collinearity adds random noise to their estimates.  I do this by fitting models with a range of different values of <code class="language-plaintext highlighter-rouge">alpha</code>, while using cross-validation (built into the <code class="language-plaintext highlighter-rouge">glmnet</code> package) to get good values of <code class="language-plaintext highlighter-rouge">lambda</code>.  <code class="language-plaintext highlighter-rouge">lambda</code> is the hyper-parameter that indicates how <em>much</em> shrinkage there is.</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># I like Michael's answer at https://stats.stackexchange.com/questions/46719/multiple-imputation-and-model-selection:
-# use in combination with bootstrap.
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># I like Michael's answer at https://stats.stackexchange.com/questions/46719/multiple-imputation-and-model-selection:</span><span class="w">
+</span><span class="c1"># use in combination with bootstrap.</span><span class="w">
 </span><span class="n">cv_results</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data_frame</span><span class="p">(</span><span class="n">lambda</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">numeric</span><span class="p">(),</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">numeric</span><span class="p">(),</span><span class="w"> </span><span class="n">mcve</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">numeric</span><span class="p">(),</span><span class="w"> </span><span class="n">imputation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">numeric</span><span class="p">())</span><span class="w">
 
 </span><span class="n">set.seed</span><span class="p">(</span><span class="m">765</span><span class="p">)</span><span class="w">
@@ -482,48 +482,48 @@
 
 <p><img src="/img/0128-hyper-params-glmnet.svg" width="100%" /></p>
 
-<p>We can see that we can get low values of mean error with many combinations of <code class="highlighter-rouge">alpha</code> and <code class="highlighter-rouge">lambda</code>, which is reassuring in suggesting that the choices aren’t critical.  But I store the best value of alpha for use in the actual bootstrapped model fitting to follow.</p>
+<p>We can see that we can get low values of mean error with many combinations of <code class="language-plaintext highlighter-rouge">alpha</code> and <code class="language-plaintext highlighter-rouge">lambda</code>, which is reassuring in suggesting that the choices aren’t critical.  But I store the best value of alpha for use in the actual bootstrapped model fitting to follow.</p>
 
 <p>Here’s the code that does the actual bootstrapped, mulitply-imputed, elastic net regularized fitting of my model.  It has four steps:</p>
 
 <ul>
-  <li>define a function <code class="highlighter-rouge">elastic()</code> that takes a resampled set of data, performs a single imputation on it, determines a good value of lambda, fits the model and returns the values of the coefficients</li>
-  <li>use the <code class="highlighter-rouge">boot::boot</code> function to run that function on 999 different samples with replacement of the original data</li>
+  <li>define a function <code class="language-plaintext highlighter-rouge">elastic()</code> that takes a resampled set of data, performs a single imputation on it, determines a good value of lambda, fits the model and returns the values of the coefficients</li>
+  <li>use the <code class="language-plaintext highlighter-rouge">boot::boot</code> function to run that function on 999 different samples with replacement of the original data</li>
   <li>tidy up the resulting percentile confidence intervals into a neat data frame</li>
   <li>draw a nice graphic showing the confidence intervals</li>
 </ul>
 
 <p>Most of the code below is actually in the third and fourth of those steps:</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># Define a function that creates a single imputed set of data from a bootstrapped resample, then fits ridge regression to it
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># Define a function that creates a single imputed set of data from a bootstrapped resample, then fits ridge regression to it</span><span class="w">
 </span><span class="n">elastic</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">){</span><span class="w">
-  </span><span class="c1"># create a single complete imputed set of data:
-</span><span class="w">  </span><span class="n">the_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mice</span><span class="o">::</span><span class="n">complete</span><span class="p">(</span><span class="n">mice</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">],</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">print</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">),</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+  </span><span class="c1"># create a single complete imputed set of data:</span><span class="w">
+  </span><span class="n">the_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mice</span><span class="o">::</span><span class="n">complete</span><span class="p">(</span><span class="n">mice</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">],</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">print</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">),</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
   </span><span class="n">X</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.matrix</span><span class="p">(</span><span class="n">dplyr</span><span class="o">::</span><span class="n">select</span><span class="p">(</span><span class="n">the_data</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">gdp_growth</span><span class="p">))</span><span class="w">
   </span><span class="n">Y</span><span class="w"> </span><span class="o">&lt;-</span><span class="w">  </span><span class="n">the_data</span><span class="o">$</span><span class="n">gdp_growth</span><span class="w">
   
-  </span><span class="c1"># we're going to scale the data so the results are in terms of standard deviations of the 
-</span><span class="w">  </span><span class="c1"># variable in question, to make coefficients more comparable.  Note that this scaling takes
-</span><span class="w">  </span><span class="c1"># place *within* the bootstrap as it is part of the analytical process we are simulating
-</span><span class="w">  </span><span class="c1"># by resampling.  
-</span><span class="w">  </span><span class="n">X</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">scale</span><span class="p">(</span><span class="n">X</span><span class="p">)</span><span class="w">
+  </span><span class="c1"># we're going to scale the data so the results are in terms of standard deviations of the </span><span class="w">
+  </span><span class="c1"># variable in question, to make coefficients more comparable.  Note that this scaling takes</span><span class="w">
+  </span><span class="c1"># place *within* the bootstrap as it is part of the analytical process we are simulating</span><span class="w">
+  </span><span class="c1"># by resampling.  </span><span class="w">
+  </span><span class="n">X</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">scale</span><span class="p">(</span><span class="n">X</span><span class="p">)</span><span class="w">
 
-  </span><span class="c1"># work out the best lambda for this dataset using cross validation"
-</span><span class="w">  </span><span class="n">lambda</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">cv.glmnet</span><span class="p">(</span><span class="n">as.matrix</span><span class="p">(</span><span class="n">X</span><span class="p">),</span><span class="w"> </span><span class="n">Y</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">chosen_alpha</span><span class="p">)</span><span class="o">$</span><span class="n">lambda.min</span><span class="w">
+  </span><span class="c1"># work out the best lambda for this dataset using cross validation"</span><span class="w">
+  </span><span class="n">lambda</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">cv.glmnet</span><span class="p">(</span><span class="n">as.matrix</span><span class="p">(</span><span class="n">X</span><span class="p">),</span><span class="w"> </span><span class="n">Y</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">chosen_alpha</span><span class="p">)</span><span class="o">$</span><span class="n">lambda.min</span><span class="w">
   
-  </span><span class="c1"># fit the model:
-</span><span class="w">  </span><span class="n">mod_glmnet</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">glmnet</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="n">Y</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">chosen_alpha</span><span class="p">,</span><span class="w"> </span><span class="n">lambda</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lambda</span><span class="p">)</span><span class="w">
+  </span><span class="c1"># fit the model:</span><span class="w">
+  </span><span class="n">mod_glmnet</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">glmnet</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="n">Y</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">chosen_alpha</span><span class="p">,</span><span class="w"> </span><span class="n">lambda</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lambda</span><span class="p">)</span><span class="w">
   
-  </span><span class="c1"># return the results:
-</span><span class="w">  </span><span class="n">as.vector</span><span class="p">(</span><span class="n">coef</span><span class="p">(</span><span class="n">mod_glmnet</span><span class="p">))</span><span class="w">
+  </span><span class="c1"># return the results:</span><span class="w">
+  </span><span class="n">as.vector</span><span class="p">(</span><span class="n">coef</span><span class="p">(</span><span class="n">mod_glmnet</span><span class="p">))</span><span class="w">
 </span><span class="p">}</span><span class="w">
 
-</span><span class="c1"># Now we run the bootstrap, using the function above.
+</span><span class="c1"># Now we run the bootstrap, using the function above.</span><span class="w">
 </span><span class="n">set.seed</span><span class="p">(</span><span class="m">321</span><span class="p">)</span><span class="w">
 </span><span class="n">elastic_bt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">boot</span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ind_data_wide2</span><span class="p">,</span><span class="w"> </span><span class="n">statistic</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">elastic</span><span class="p">,</span><span class="w"> </span><span class="n">R</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">999</span><span class="p">)</span><span class="w">
 
 
-</span><span class="c1"># process results into a tidy data frame
+</span><span class="c1"># process results into a tidy data frame</span><span class="w">
 </span><span class="n">boot_coefs</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data_frame</span><span class="p">(</span><span class="w">
   </span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">character</span><span class="p">(),</span><span class="w">
   </span><span class="n">lower</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">numeric</span><span class="p">(),</span><span class="w">
@@ -537,15 +537,15 @@
                       </span><span class="n">data_frame</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">var_names</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="w">
                                  </span><span class="n">lower</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="o">$</span><span class="n">percent</span><span class="p">[</span><span class="m">4</span><span class="p">],</span><span class="w">
                                  </span><span class="n">upper</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="o">$</span><span class="n">percent</span><span class="p">[</span><span class="m">5</span><span class="p">],</span><span class="w">
-                                 </span><span class="n">point</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="o">$</span><span class="n">t</span><span class="m">0</span><span class="p">))</span><span class="w">
+                                 </span><span class="n">point</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="o">$</span><span class="n">t0</span><span class="p">))</span><span class="w">
 </span><span class="p">}</span><span class="w">
 
-</span><span class="c1"># draw graphic
+</span><span class="c1"># draw graphic</span><span class="w">
 </span><span class="n">boot_coefs</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">filter</span><span class="p">(</span><span class="o">!</span><span class="n">variable</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"yr_num"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Intercept"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-  </span><span class="c1"># next line is in there in case we do still want the time trend in the graphic.  But it's never significant,
-</span><span class="w">  </span><span class="c1"># and it's hard to explian.
-</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"yr_num"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Linear\ntime trend"</span><span class="p">,</span><span class="w"> </span><span class="n">variable</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="c1"># next line is in there in case we do still want the time trend in the graphic.  But it's never significant,</span><span class="w">
+  </span><span class="c1"># and it's hard to explian.</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"yr_num"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Linear\ntime trend"</span><span class="p">,</span><span class="w"> </span><span class="n">variable</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_reorder</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">lower</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">variable</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
   </span><span class="n">geom_vline</span><span class="p">(</span><span class="n">xintercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"black"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
@@ -574,8 +574,8 @@ most useful as leading indicators of this quarter's New Zealand economic growth"
 </span><span class="n">mod_glmnet</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">glmnet</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="n">Y</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">chosen_alpha</span><span class="p">,</span><span class="w"> </span><span class="n">lambda</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lambda</span><span class="p">)</span><span class="w">
 </span><span class="n">residuals</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ts</span><span class="p">(</span><span class="n">Y</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">predict</span><span class="p">(</span><span class="n">mod_glmnet</span><span class="p">,</span><span class="w"> </span><span class="n">newx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">X</span><span class="p">),</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1987</span><span class="p">,</span><span class="w"> </span><span class="m">4</span><span class="p">),</span><span class="w"> </span><span class="n">frequency</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># Fail to reject null hypothesis of no autocorrelation (which means that it is probably ok to have used the
-# above method, pretending it is cross-sectional other than by including the lagged GDP)
+</span><span class="c1"># Fail to reject null hypothesis of no autocorrelation (which means that it is probably ok to have used the</span><span class="w">
+</span><span class="c1"># above method, pretending it is cross-sectional other than by including the lagged GDP)</span><span class="w">
 </span><span class="n">Box.test</span><span class="p">(</span><span class="n">residuals</span><span class="p">,</span><span class="w"> </span><span class="n">lag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Ljung-Box"</span><span class="p">)</span><span class="w">
 
 </span><span class="n">par</span><span class="p">(</span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"myfont"</span><span class="p">,</span><span class="w"> </span><span class="n">font.main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">bty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"l"</span><span class="p">)</span><span class="w">
@@ -583,7 +583,7 @@ most useful as leading indicators of this quarter's New Zealand economic growth"
 
 <p><img src="/img/0128-residuals.ts.svg" width="100%" /></p>
 
-<p>As an alternative approach, I used the <code class="highlighter-rouge">forecast::auto.arima()</code> approach to model an imputed set of the data explicitly as a timeseries.  This gets me some results that differ slightly from the above, but perhaps are broadly compatible:</p>
+<p>As an alternative approach, I used the <code class="language-plaintext highlighter-rouge">forecast::auto.arima()</code> approach to model an imputed set of the data explicitly as a timeseries.  This gets me some results that differ slightly from the above, but perhaps are broadly compatible:</p>
 
 <table>
   <thead>
@@ -677,7 +677,7 @@ most useful as leading indicators of this quarter's New Zealand economic growth"
   </tbody>
 </table>
 
-<p>The key difference is that business confidence (<code class="highlighter-rouge">bc_sa</code>) and, to a lesser extent, electronic card transactions (<code class="highlighter-rouge">ect_growth</code>) are more strongly significant in this version.  Food price (<code class="highlighter-rouge">fpi_growth</code>) is still strongly negative, and other confidence intervals all encompass zero.  Note that lagged GDP growth doesn’t appear in this model explicitly - it comes in automatically as the <code class="highlighter-rouge">ar1</code> (auto-regression at lag 1) term of the algorithmically-chosen ARIMA model.</p>
+<p>The key difference is that business confidence (<code class="language-plaintext highlighter-rouge">bc_sa</code>) and, to a lesser extent, electronic card transactions (<code class="language-plaintext highlighter-rouge">ect_growth</code>) are more strongly significant in this version.  Food price (<code class="language-plaintext highlighter-rouge">fpi_growth</code>) is still strongly negative, and other confidence intervals all encompass zero.  Note that lagged GDP growth doesn’t appear in this model explicitly - it comes in automatically as the <code class="language-plaintext highlighter-rouge">ar1</code> (auto-regression at lag 1) term of the algorithmically-chosen ARIMA model.</p>
 
 <p>The results are similar enough that I decide I’m ok with the approach I’ve taken, so I don’t invest in what would be quite an effort (but eminently possible with time) to introduce multiple imputation and regularization into the time series model.</p>
 

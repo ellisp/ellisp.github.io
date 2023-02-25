@@ -18,7 +18,7 @@
             <meta property="og:image" content="http://ellisp.github.io/img/0115-r-and-sql.png" />
          
 		 
-			<meta property="og:url" content="http://freerangestats.info/blog/2017/12/09/sql-and-r.html" />
+			<meta property="og:url" content="http://localhost:4000/blog/2017/12/09/sql-and-r.html" />
 		 
          <meta property="og:author" content= "https://www.facebook.com/peterstats" />
          <meta property="og:type" content="article" />
@@ -113,7 +113,7 @@
                   <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
 				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
                   <li><a href="/blog/surveys.html">all posts on surveys</a></li> 
-				  <li><a href = /blog/2022/10/13/pacific-map>most recent post</a></li>
+				  <li><a href = /blog/2023/02/25/ilr>most recent post</a></li>
 				</ul>
             </li>
               <li><a href="/blog/showcase.html">showcase</a></li>
@@ -174,31 +174,31 @@
 
 <p><em>Quote by me - something I just thought of.</em></p>
 
-<p>It’s good practice to keep any non-trivial SQL queries in their own files with a .sql suffix, and develop them in a database-aware environment.  With SQL Server, this will often mean SQL Server Management Studio.  But when you come to doing the final stage of reproducible analysis, you don’t want to be flicking between two applications; certainly not in terms of actually <em>running</em> anything.  Although SQL Server since 2016 can include R code in a stored procedure, if it’s basically a statistical project it’s still going to have the workflow of “database first, R second”, with the statistical and presentation stage probably developed in RStudio or similar.  So it’s very useful to be able to run bunch of .sql scripts from R.  This is commonly done by reading in the script with <code class="highlighter-rouge">readLines()</code> and executing it on the database via RODBC or other database connection software.</p>
+<p>It’s good practice to keep any non-trivial SQL queries in their own files with a .sql suffix, and develop them in a database-aware environment.  With SQL Server, this will often mean SQL Server Management Studio.  But when you come to doing the final stage of reproducible analysis, you don’t want to be flicking between two applications; certainly not in terms of actually <em>running</em> anything.  Although SQL Server since 2016 can include R code in a stored procedure, if it’s basically a statistical project it’s still going to have the workflow of “database first, R second”, with the statistical and presentation stage probably developed in RStudio or similar.  So it’s very useful to be able to run bunch of .sql scripts from R.  This is commonly done by reading in the script with <code class="language-plaintext highlighter-rouge">readLines()</code> and executing it on the database via RODBC or other database connection software.</p>
 
-<p>I developed an R function <code class="highlighter-rouge">sql_execute()</code> to make this process efficient.  The version below is available in my <a href="https://github.com/ellisp/pssmisc-r-package"><code class="highlighter-rouge">pssmisc</code> R package</a> (only on GitHub at this point) which is a grab-bag of multi-use functionality associated with this blog.  The <a href="https://github.com/StatisticsNZ/population-explorer/blob/master/build-db/00-src/sql_execute.R">original version</a> had a few project-specific features as well as a few cut corners.  It also had an accompanying simple function that uses <code class="highlighter-rouge">sql_execute()</code> to run all the SQL scripts in a given folder in order.</p>
+<p>I developed an R function <code class="language-plaintext highlighter-rouge">sql_execute()</code> to make this process efficient.  The version below is available in my <a href="https://github.com/ellisp/pssmisc-r-package"><code class="language-plaintext highlighter-rouge">pssmisc</code> R package</a> (only on GitHub at this point) which is a grab-bag of multi-use functionality associated with this blog.  The <a href="https://github.com/StatisticsNZ/population-explorer/blob/master/build-db/00-src/sql_execute.R">original version</a> had a few project-specific features as well as a few cut corners.  It also had an accompanying simple function that uses <code class="language-plaintext highlighter-rouge">sql_execute()</code> to run all the SQL scripts in a given folder in order.</p>
 
-<p>The <code class="highlighter-rouge">sql_execute()</code> function provides the following benefits:</p>
+<p>The <code class="language-plaintext highlighter-rouge">sql_execute()</code> function provides the following benefits:</p>
 
 <ul>
   <li>combines the multiple steps of reading in SQL scripts and executing them in a single command</li>
   <li>handles a common problem where files developed in Management Studio often aren’t saved in an encoding automatically recognised by R</li>
-  <li>allows the use of the <code class="highlighter-rouge">GO</code> batch separator, a Microsoft-specific addition to SQL that will cause problems if included in a ODBC query</li>
+  <li>allows the use of the <code class="language-plaintext highlighter-rouge">GO</code> batch separator, a Microsoft-specific addition to SQL that will cause problems if included in a ODBC query</li>
   <li>lets you specify a search-and-replace for a string - very useful sometimes if you’re running lots of SQL scripts to be able to say something like “oh by the way, can you change all references to database X to database Y while you’re at it”</li>
   <li>lets you specify if an error in one batch should be fatal, or whether to proceed with the rest of the batches from that script</li>
   <li>logs execution and results in a table in the databse.</li>
 </ul>
 
-<p>Dealing with <code class="highlighter-rouge">GO</code> was particularly important, because it’s common (and often essential) in T-SQL development.  <code class="highlighter-rouge">GO</code> divides a single script into batches.  The <code class="highlighter-rouge">sql_execute()</code> function below embraces this, by splitting the original file into separate queries based on the location of <code class="highlighter-rouge">GO</code>, and sending the individual batches one at a time to the server.</p>
+<p>Dealing with <code class="language-plaintext highlighter-rouge">GO</code> was particularly important, because it’s common (and often essential) in T-SQL development.  <code class="language-plaintext highlighter-rouge">GO</code> divides a single script into batches.  The <code class="language-plaintext highlighter-rouge">sql_execute()</code> function below embraces this, by splitting the original file into separate queries based on the location of <code class="language-plaintext highlighter-rouge">GO</code>, and sending the individual batches one at a time to the server.</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># Helper function to convert the output of Sys.time() into a character string
-# without the time zone on it
-# 
-# @details Not exported.
-# @keywords internal
-# @param dt an object of class \code{POSIXCT}
-# @examples
-# datetime_ch(Sys.time())
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># Helper function to convert the output of Sys.time() into a character string</span><span class="w">
+</span><span class="c1"># without the time zone on it</span><span class="w">
+</span><span class="c1"># </span><span class="w">
+</span><span class="c1"># @details Not exported.</span><span class="w">
+</span><span class="c1"># @keywords internal</span><span class="w">
+</span><span class="c1"># @param dt an object of class \code{POSIXCT}</span><span class="w">
+</span><span class="c1"># @examples</span><span class="w">
+</span><span class="c1"># datetime_ch(Sys.time())</span><span class="w">
 </span><span class="n">datetime_ch</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">dt</span><span class="p">){</span><span class="w">
   </span><span class="n">dt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">" [A-Z]*$"</span><span class="p">,</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="nf">as.character</span><span class="p">(</span><span class="n">dt</span><span class="p">))</span><span class="w">
   </span><span class="n">dt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">paste0</span><span class="p">(</span><span class="s2">"CAST ('"</span><span class="p">,</span><span class="w"> </span><span class="n">dt</span><span class="p">,</span><span class="w"> </span><span class="s2">"' AS DATETIME)"</span><span class="p">)</span><span class="w">
@@ -207,81 +207,81 @@
 
 
 
-</span><span class="cd">#' Execute SQL
-#'
-#' Execute T-SQL in a script, split into batches
-#' 
-#' @export
-#' @importFrom RODBC sqlQuery
-#' @importFrom stringr str_split str_length 
-#' @details Reads a script of SQL, splits it into separate queries on the basis of any occurrences of \code{GO}
-#' in the script, and passes it to the database server for execution.  While the initial use case was for SQL Server, there's no
-#' reason why it wouldn't work with other ODBC connections.
-#' 
-#' The case of \code{GO} is ignored but it has to be the first non-space word on its line of code.
-#' 
-#' If any batch at any point returns rows of data (eg via a \code{SELECT} statement that does not \code{INSERT} the
-#' results into another table or variable on the database), the rest of that batch is not executed.  
-#' If that batch was the last batch of SQL
-#' in the original file, the results are returned as a data.frame, otherwise it is discarded.
-#' 
-#' Example SQL code for creating a log suitable for this function:
-#' \preformatted{
-#' CREATE TABLE some_database.dbo.sql_executed_by_r_log
-#' (
-#'   log_event_code INT NOT NULL IDENTITY PRIMARY KEY, 
-#'   start_time     DATETIME, 
-#'   end_time       DATETIME,
-#'   sub_text       NVARCHAR(200),
-#'   script_name    NVARCHAR(1000),
-#'   batch_number   INT,
-#'   result         NCHAR(30),
-#'   err_mess       VARCHAR(8000),
-#'   duration       NUMERIC(18, 2)
-#' );
-#' }
-#' 
-#' @param channel connection handle as returned by RODBC::odbcConnect() of class RODBC
-#' @param filename file name of an SQL script
-#' @param sub_in character string that you want to be replaced with \code{sub_out}.  Useful if you want to do a bulk search
-#' and replace.  This is useful if you have a bunch of scripts that you maybe want
-#' to run on one schema sometimes, and on another schema other times - just automate the search and replace.  Use with caution.
-#' @param sub_out character string that you want to replace \code{sub_in} with.
-#' @param fixed logical.  If TRUE, \code{sub_in} is a string to be matched as is.  Otherwise it is treated as a regular expression 
-#' (eg if fixed = FALSE, then . is a wild card)
-#' @param error_action should you stop with an error if a batch gets an error message back from the database?  Any alternative
-#' to "stop" means we just keep ploughing on, which may or may not be a bad idea.  Use "stop" unless you know that failure
-#' in one part of a script isn't fatal.
-#' @param log_table table in the database to record a log of what happened.  Set to NULL if no log table available.  The log_table
-#' needs to have (at least) the following columns: event_time, sub_out, script_name, batch_number, result, err_mess and duration. 
-#' See Details for example SQL to create such a log table.
-#' @param verbose Logical, gives some control over messages
-#' @param ... other arguments to be passed to \code{sqlQuery()}, such as \code{stringsAsFactors = FALSE}.
-#' @examples
-#' \dontrun{
-#' ch &lt;- odbcConnect("some_dsn")
-#' sql_execute(ch, "some_file.sql", log_table = "some_database.dbo.sql_executed_by_r_log")
-#' }
-#' @author Peter Ellis
+</span><span class="cd">#' Execute SQL</span><span class="w">
+</span><span class="cd">#'</span><span class="w">
+</span><span class="cd">#' Execute T-SQL in a script, split into batches</span><span class="w">
+</span><span class="cd">#' </span><span class="w">
+</span><span class="cd">#' @export</span><span class="w">
+</span><span class="cd">#' @importFrom RODBC sqlQuery</span><span class="w">
+</span><span class="cd">#' @importFrom stringr str_split str_length </span><span class="w">
+</span><span class="cd">#' @details Reads a script of SQL, splits it into separate queries on the basis of any occurrences of \code{GO}</span><span class="w">
+</span><span class="cd">#' in the script, and passes it to the database server for execution.  While the initial use case was for SQL Server, there's no</span><span class="w">
+</span><span class="cd">#' reason why it wouldn't work with other ODBC connections.</span><span class="w">
+</span><span class="cd">#' </span><span class="w">
+</span><span class="cd">#' The case of \code{GO} is ignored but it has to be the first non-space word on its line of code.</span><span class="w">
+</span><span class="cd">#' </span><span class="w">
+</span><span class="cd">#' If any batch at any point returns rows of data (eg via a \code{SELECT} statement that does not \code{INSERT} the</span><span class="w">
+</span><span class="cd">#' results into another table or variable on the database), the rest of that batch is not executed.  </span><span class="w">
+</span><span class="cd">#' If that batch was the last batch of SQL</span><span class="w">
+</span><span class="cd">#' in the original file, the results are returned as a data.frame, otherwise it is discarded.</span><span class="w">
+</span><span class="cd">#' </span><span class="w">
+</span><span class="cd">#' Example SQL code for creating a log suitable for this function:</span><span class="w">
+</span><span class="cd">#' \preformatted{</span><span class="w">
+</span><span class="cd">#' CREATE TABLE some_database.dbo.sql_executed_by_r_log</span><span class="w">
+</span><span class="cd">#' (</span><span class="w">
+</span><span class="cd">#'   log_event_code INT NOT NULL IDENTITY PRIMARY KEY, </span><span class="w">
+</span><span class="cd">#'   start_time     DATETIME, </span><span class="w">
+</span><span class="cd">#'   end_time       DATETIME,</span><span class="w">
+</span><span class="cd">#'   sub_text       NVARCHAR(200),</span><span class="w">
+</span><span class="cd">#'   script_name    NVARCHAR(1000),</span><span class="w">
+</span><span class="cd">#'   batch_number   INT,</span><span class="w">
+</span><span class="cd">#'   result         NCHAR(30),</span><span class="w">
+</span><span class="cd">#'   err_mess       VARCHAR(8000),</span><span class="w">
+</span><span class="cd">#'   duration       NUMERIC(18, 2)</span><span class="w">
+</span><span class="cd">#' );</span><span class="w">
+</span><span class="cd">#' }</span><span class="w">
+</span><span class="cd">#' </span><span class="w">
+</span><span class="cd">#' @param channel connection handle as returned by RODBC::odbcConnect() of class RODBC</span><span class="w">
+</span><span class="cd">#' @param filename file name of an SQL script</span><span class="w">
+</span><span class="cd">#' @param sub_in character string that you want to be replaced with \code{sub_out}.  Useful if you want to do a bulk search</span><span class="w">
+</span><span class="cd">#' and replace.  This is useful if you have a bunch of scripts that you maybe want</span><span class="w">
+</span><span class="cd">#' to run on one schema sometimes, and on another schema other times - just automate the search and replace.  Use with caution.</span><span class="w">
+</span><span class="cd">#' @param sub_out character string that you want to replace \code{sub_in} with.</span><span class="w">
+</span><span class="cd">#' @param fixed logical.  If TRUE, \code{sub_in} is a string to be matched as is.  Otherwise it is treated as a regular expression </span><span class="w">
+</span><span class="cd">#' (eg if fixed = FALSE, then . is a wild card)</span><span class="w">
+</span><span class="cd">#' @param error_action should you stop with an error if a batch gets an error message back from the database?  Any alternative</span><span class="w">
+</span><span class="cd">#' to "stop" means we just keep ploughing on, which may or may not be a bad idea.  Use "stop" unless you know that failure</span><span class="w">
+</span><span class="cd">#' in one part of a script isn't fatal.</span><span class="w">
+</span><span class="cd">#' @param log_table table in the database to record a log of what happened.  Set to NULL if no log table available.  The log_table</span><span class="w">
+</span><span class="cd">#' needs to have (at least) the following columns: event_time, sub_out, script_name, batch_number, result, err_mess and duration. </span><span class="w">
+</span><span class="cd">#' See Details for example SQL to create such a log table.</span><span class="w">
+</span><span class="cd">#' @param verbose Logical, gives some control over messages</span><span class="w">
+</span><span class="cd">#' @param ... other arguments to be passed to \code{sqlQuery()}, such as \code{stringsAsFactors = FALSE}.</span><span class="w">
+</span><span class="cd">#' @examples</span><span class="w">
+</span><span class="cd">#' \dontrun{</span><span class="w">
+</span><span class="cd">#' ch &lt;- odbcConnect("some_dsn")</span><span class="w">
+</span><span class="cd">#' sql_execute(ch, "some_file.sql", log_table = "some_database.dbo.sql_executed_by_r_log")</span><span class="w">
+</span><span class="cd">#' }</span><span class="w">
+</span><span class="cd">#' @author Peter Ellis</span><span class="w">
 </span><span class="n">sql_execute</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span><span class="w"> </span><span class="n">filename</span><span class="p">,</span><span class="w"> </span><span class="n">sub_in</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">NULL</span><span class="p">,</span><span class="w"> </span><span class="n">sub_out</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">NULL</span><span class="p">,</span><span class="w"> </span><span class="n">fixed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> 
                         </span><span class="n">error_action</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"stop"</span><span class="p">,</span><span class="w"> </span><span class="n">log_table</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">NULL</span><span class="p">,</span><span class="w"> 
                         </span><span class="n">verbose</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p">){</span><span class="w">
   
-  </span><span class="c1"># we can't tell in advance what encoding the .sql files are in, so we read it in
-</span><span class="w">  </span><span class="c1"># in two ways (one of which is certain to return gibberish) and choose the version that is recognised as a proper string:
-</span><span class="w">  
-  </span><span class="c1"># encoding method 1 (weird Windows encoding):
-</span><span class="w">  </span><span class="n">file_con</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">file</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="w"> </span><span class="n">encoding</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"UCS-2LE"</span><span class="p">)</span><span class="w">
+  </span><span class="c1"># we can't tell in advance what encoding the .sql files are in, so we read it in</span><span class="w">
+  </span><span class="c1"># in two ways (one of which is certain to return gibberish) and choose the version that is recognised as a proper string:</span><span class="w">
+  
+  </span><span class="c1"># encoding method 1 (weird Windows encoding):</span><span class="w">
+  </span><span class="n">file_con</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">file</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="w"> </span><span class="n">encoding</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"UCS-2LE"</span><span class="p">)</span><span class="w">
   </span><span class="n">sql1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">paste</span><span class="p">(</span><span class="n">readLines</span><span class="p">(</span><span class="n">file_con</span><span class="p">,</span><span class="w"> </span><span class="n">warn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">),</span><span class="w"> </span><span class="n">collapse</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"\n"</span><span class="p">)</span><span class="w">
   </span><span class="n">close</span><span class="p">(</span><span class="n">file_con</span><span class="p">)</span><span class="w">
   
-  </span><span class="c1"># encoding method 2 (let R work it out - works in most cases):
-</span><span class="w">  </span><span class="n">file_con</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">file</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span><span class="w">
+  </span><span class="c1"># encoding method 2 (let R work it out - works in most cases):</span><span class="w">
+  </span><span class="n">file_con</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">file</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span><span class="w">
   </span><span class="n">sql2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">paste</span><span class="p">(</span><span class="n">readLines</span><span class="p">(</span><span class="n">file_con</span><span class="p">,</span><span class="w"> </span><span class="n">warn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">),</span><span class="w"> </span><span class="n">collapse</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"\n"</span><span class="p">)</span><span class="w">
   </span><span class="n">close</span><span class="p">(</span><span class="n">file_con</span><span class="p">)</span><span class="w">
   
-  </span><span class="c1"># choose between the two encodings, based on which one has a legitimate string length:
-</span><span class="w">  </span><span class="n">suppressWarnings</span><span class="p">({</span><span class="w">
+  </span><span class="c1"># choose between the two encodings, based on which one has a legitimate string length:</span><span class="w">
+  </span><span class="n">suppressWarnings</span><span class="p">({</span><span class="w">
     </span><span class="k">if</span><span class="p">(</span><span class="nf">is.na</span><span class="p">(</span><span class="n">stringr</span><span class="o">::</span><span class="n">str_length</span><span class="p">(</span><span class="n">sql2</span><span class="p">))){</span><span class="w">
       </span><span class="n">sql</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sql1</span><span class="w">
     </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">
@@ -289,14 +289,14 @@
     </span><span class="p">}</span><span class="w">
   </span><span class="p">})</span><span class="w">
   
-  </span><span class="c1"># do the find and replace that are needed
-</span><span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nf">is.null</span><span class="p">(</span><span class="n">sub_in</span><span class="p">)){</span><span class="w">
+  </span><span class="c1"># do the find and replace that are needed</span><span class="w">
+  </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nf">is.null</span><span class="p">(</span><span class="n">sub_in</span><span class="p">)){</span><span class="w">
     </span><span class="n">sql</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="n">sub_in</span><span class="p">,</span><span class="w"> </span><span class="n">sub_out</span><span class="p">,</span><span class="w"> </span><span class="n">sql</span><span class="p">,</span><span class="w"> </span><span class="n">fixed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fixed</span><span class="p">)</span><span class="w">
   </span><span class="p">}</span><span class="w">
   
-  </span><span class="c1"># split the SQL into separate commands wherever there is a "GO" at the beginning of a line
-</span><span class="w">  </span><span class="c1"># ("GO" is not ANSI SQL, only works for SQL Server - it indicates the lines above are a batch)
-</span><span class="w">  </span><span class="n">sql_split</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">stringr</span><span class="o">::</span><span class="n">str_split</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span><span class="w"> </span><span class="s2">"\\n *[Gg][Oo]"</span><span class="p">,</span><span class="w"> </span><span class="n">simplify</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w">
+  </span><span class="c1"># split the SQL into separate commands wherever there is a "GO" at the beginning of a line</span><span class="w">
+  </span><span class="c1"># ("GO" is not ANSI SQL, only works for SQL Server - it indicates the lines above are a batch)</span><span class="w">
+  </span><span class="n">sql_split</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">stringr</span><span class="o">::</span><span class="n">str_split</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span><span class="w"> </span><span class="s2">"\\n *[Gg][Oo]"</span><span class="p">,</span><span class="w"> </span><span class="n">simplify</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w">
   
   </span><span class="n">base_log_entry</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data.frame</span><span class="p">(</span><span class="w">
     </span><span class="n">sub_out</span><span class="w">         </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="nf">is.null</span><span class="p">(</span><span class="n">sub_out</span><span class="p">),</span><span class="w"> </span><span class="s2">"none"</span><span class="p">,</span><span class="w"> </span><span class="n">sub_out</span><span class="p">),</span><span class="w">
@@ -306,8 +306,8 @@
   
   </span><span class="n">n_batches</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">sql_split</span><span class="p">)</span><span class="w">
   
-  </span><span class="c1"># execute the various separate commands
-</span><span class="w">  </span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">n_batches</span><span class="p">){</span><span class="w">
+  </span><span class="c1"># execute the various separate commands</span><span class="w">
+  </span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">n_batches</span><span class="p">){</span><span class="w">
     </span><span class="n">log_entry</span><span class="w">              </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">base_log_entry</span><span class="w">
     </span><span class="n">log_entry</span><span class="o">$</span><span class="n">batch_number</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">i</span><span class="w">
     </span><span class="n">log_entry</span><span class="o">$</span><span class="n">result</span><span class="w">       </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"no error"</span><span class="w">
@@ -337,12 +337,12 @@
     
     </span><span class="n">log_entry</span><span class="o">$</span><span class="n">end_time</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">datetime_ch</span><span class="p">(</span><span class="n">Sys.time</span><span class="p">())</span><span class="w">
     
-    </span><span class="c1"># Update the log in the database, if we have been given one:
-</span><span class="w">    </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nf">is.null</span><span class="p">(</span><span class="n">log_table</span><span class="p">)){</span><span class="w">
-      </span><span class="c1"># couldn't get sqlSave to append to a table even when append = TRUE... 
-</span><span class="w">      </span><span class="c1"># see https://stackoverflow.com/questions/36913664/rodbc-error-sqlsave-unable-to-append-to-table
-</span><span class="w">      </span><span class="c1"># so am writing the SQL to update the log by hand:
-</span><span class="w">      </span><span class="n">sql</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">with</span><span class="p">(</span><span class="n">log_entry</span><span class="p">,</span><span class="w"> </span><span class="n">paste0</span><span class="p">(</span><span class="s2">"INSERT INTO "</span><span class="p">,</span><span class="w"> 
+    </span><span class="c1"># Update the log in the database, if we have been given one:</span><span class="w">
+    </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nf">is.null</span><span class="p">(</span><span class="n">log_table</span><span class="p">)){</span><span class="w">
+      </span><span class="c1"># couldn't get sqlSave to append to a table even when append = TRUE... </span><span class="w">
+      </span><span class="c1"># see https://stackoverflow.com/questions/36913664/rodbc-error-sqlsave-unable-to-append-to-table</span><span class="w">
+      </span><span class="c1"># so am writing the SQL to update the log by hand:</span><span class="w">
+      </span><span class="n">sql</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">with</span><span class="p">(</span><span class="n">log_entry</span><span class="p">,</span><span class="w"> </span><span class="n">paste0</span><span class="p">(</span><span class="s2">"INSERT INTO "</span><span class="p">,</span><span class="w"> 
                                     </span><span class="n">log_table</span><span class="p">,</span><span class="w"> 
                                     </span><span class="s2">"(start_time, end_time, sub_out, script_name, batch_number, 
                                     result, err_mess, duration)"</span><span class="p">,</span><span class="w">
@@ -368,7 +368,7 @@
   </span><span class="p">}</span><span class="w">
 </span><span class="p">}</span></code></pre></figure>
 
-<p>One of the things to watch out for in this situation is how running a script via ODBC can get different results from hitting F5 in Management Studio.  One key thing to trip up on is what happens if the SQL includes a <code class="highlighter-rouge">SELECT</code> statement that doesn’t <code class="highlighter-rouge">INSERT</code> the results into another table or variable, but returns them as a table.  In this case, ODBC considers its work done and will not continue to execute anything else in the batch beyond that <code class="highlighter-rouge">SELECT</code> statement.</p>
+<p>One of the things to watch out for in this situation is how running a script via ODBC can get different results from hitting F5 in Management Studio.  One key thing to trip up on is what happens if the SQL includes a <code class="language-plaintext highlighter-rouge">SELECT</code> statement that doesn’t <code class="language-plaintext highlighter-rouge">INSERT</code> the results into another table or variable, but returns them as a table.  In this case, ODBC considers its work done and will not continue to execute anything else in the batch beyond that <code class="language-plaintext highlighter-rouge">SELECT</code> statement.</p>
 
 <p>To clarify how this works, here is a potentially problematic SQL file:</p>
 
@@ -392,26 +392,26 @@ for testing the sql_execute R function
 <span class="k">SELECT</span> <span class="n">TOP</span> <span class="mi">10</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">some_table</span>
 <span class="k">GO</span></code></pre></figure>
 
-<p>If I run that file via <code class="highlighter-rouge">sql_execute(ch, "examples/eg-sql.sql")</code>, it does the following:</p>
+<p>If I run that file via <code class="language-plaintext highlighter-rouge">sql_execute(ch, "examples/eg-sql.sql")</code>, it does the following:</p>
 
 <ul>
-  <li>executes the <code class="highlighter-rouge">SELECT TOP 5</code> statement and returns the results as a data frame, which is discarded as it is not the result of the last batch of the script</li>
-  <li>tries to execute the <code class="highlighter-rouge">some non-legitimate SQL</code>, gets an error and stops.</li>
+  <li>executes the <code class="language-plaintext highlighter-rouge">SELECT TOP 5</code> statement and returns the results as a data frame, which is discarded as it is not the result of the last batch of the script</li>
+  <li>tries to execute the <code class="language-plaintext highlighter-rouge">some non-legitimate SQL</code>, gets an error and stops.</li>
 </ul>
 
-<p>Alternatively, if I run it via <code class="highlighter-rouge">sql_execute(ch, "examples/eg-sql.sql", error_action = "continue")</code> it does the following</p>
+<p>Alternatively, if I run it via <code class="language-plaintext highlighter-rouge">sql_execute(ch, "examples/eg-sql.sql", error_action = "continue")</code> it does the following</p>
 
 <ul>
-  <li>executes the <code class="highlighter-rouge">SELECT TOP 5</code> statement and returns the results as a data frame, which is discarded as it is not the result of the last batch of the script</li>
-  <li>tries to execute the <code class="highlighter-rouge">some non-legitimate SQL</code>, gets an error and prints it to the screen.</li>
-  <li>executes the <code class="highlighter-rouge">SELECT TOP 7</code> statement, returns the results as a data frame, and stops.  The <code class="highlighter-rouge">SELECT TOP 10</code> statement isn’t returned.</li>
+  <li>executes the <code class="language-plaintext highlighter-rouge">SELECT TOP 5</code> statement and returns the results as a data frame, which is discarded as it is not the result of the last batch of the script</li>
+  <li>tries to execute the <code class="language-plaintext highlighter-rouge">some non-legitimate SQL</code>, gets an error and prints it to the screen.</li>
+  <li>executes the <code class="language-plaintext highlighter-rouge">SELECT TOP 7</code> statement, returns the results as a data frame, and stops.  The <code class="language-plaintext highlighter-rouge">SELECT TOP 10</code> statement isn’t returned.</li>
 </ul>
 
 <h2 id="an-odd-quirk-with-sql-loops-cutting-short-with-odbc">An odd quirk with SQL loops cutting short with ODBC</h2>
 
-<p>A second quirk that had me puzzled for a while (and indeed I am still puzzled and can’t get a fully reproducible example) seems to relate to the use of SQL <code class="highlighter-rouge">WHILE</code> loops in a script executed on the database from R via ODBC.  I found many such SQL programs would silently stop after about 20 iterations of the loop under ODBC, even if they worked perfectly in Management Studio.  The examples all look like this:</p>
+<p>A second quirk that had me puzzled for a while (and indeed I am still puzzled and can’t get a fully reproducible example) seems to relate to the use of SQL <code class="language-plaintext highlighter-rouge">WHILE</code> loops in a script executed on the database from R via ODBC.  I found many such SQL programs would silently stop after about 20 iterations of the loop under ODBC, even if they worked perfectly in Management Studio.  The examples all look like this:</p>
 
-<figure class="highlight"><pre><code class="language-sql" data-lang="sql"><span class="k">DECLARE</span> <span class="o">@</span><span class="n">i</span> <span class="n">INT</span> <span class="o">=</span> <span class="mi">1</span>
+<figure class="highlight"><pre><code class="language-sql" data-lang="sql"><span class="k">DECLARE</span> <span class="o">@</span><span class="n">i</span> <span class="nb">INT</span> <span class="o">=</span> <span class="mi">1</span>
 <span class="n">WHILE</span> <span class="o">@</span><span class="n">i</span> <span class="o">&lt;=</span> <span class="mi">50</span>
 <span class="k">BEGIN</span>
 	<span class="c1">-- do something that needs looping</span>
@@ -428,7 +428,7 @@ for testing the sql_execute R function
 <figure class="highlight"><pre><code class="language-sql" data-lang="sql"><span class="k">CREATE</span> <span class="k">PROCEDURE</span> <span class="n">do_stuff</span>
 <span class="k">AS</span> 
 <span class="k">BEGIN</span>
-	<span class="k">DECLARE</span> <span class="o">@</span><span class="n">i</span> <span class="n">INT</span> <span class="o">=</span> <span class="mi">1</span>
+	<span class="k">DECLARE</span> <span class="o">@</span><span class="n">i</span> <span class="nb">INT</span> <span class="o">=</span> <span class="mi">1</span>
 	<span class="n">WHILE</span> <span class="o">@</span><span class="n">i</span> <span class="o">&lt;=</span> <span class="mi">50</span>
 	<span class="k">BEGIN</span>
 		<span class="c1">-- do something that needs looping</span>

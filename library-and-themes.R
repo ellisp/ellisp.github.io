@@ -9,6 +9,10 @@ library(Cairo)
 library(ggrepel)
 library(svglite)
 library(frs)
+library(conflicted)
+
+conflict_prefer("filter", "dplyr")
+conflict_prefer("select", "dplyr")
 
 myfont <- "Roboto"
 main_font <- "Roboto"

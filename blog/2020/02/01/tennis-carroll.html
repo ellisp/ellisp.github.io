@@ -18,7 +18,7 @@
             <meta property="og:image" content="http://freerangestats.info/img/0163-tea-party.png" />
          
 		 
-			<meta property="og:url" content="http://freerangestats.info/blog/2020/02/01/tennis-carroll.html" />
+			<meta property="og:url" content="http://localhost:4000/blog/2020/02/01/tennis-carroll.html" />
 		 
          <meta property="og:author" content= "https://www.facebook.com/peterstats" />
          <meta property="og:type" content="article" />
@@ -113,7 +113,7 @@
                   <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
 				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
                   <li><a href="/blog/surveys.html">all posts on surveys</a></li> 
-				  <li><a href = /blog/2022/10/13/pacific-map>most recent post</a></li>
+				  <li><a href = /blog/2023/02/25/ilr>most recent post</a></li>
 				</ul>
             </li>
               <li><a href="/blog/showcase.html">showcase</a></li>
@@ -255,7 +255,7 @@
 
 <h3 id="code">Code</h3>
 
-<p>Here’s all the R code for these simulations in a single chunk. A <code class="highlighter-rouge">carroll_tournament()</code> function is the work horse, with a couple of helpers for very specific tasks such as <code class="highlighter-rouge">one_match()</code> which plays out a single match using either a deterministic or probabilistic method of allocating a winner.</p>
+<p>Here’s all the R code for these simulations in a single chunk. A <code class="language-plaintext highlighter-rouge">carroll_tournament()</code> function is the work horse, with a couple of helpers for very specific tasks such as <code class="language-plaintext highlighter-rouge">one_match()</code> which plays out a single match using either a deterministic or probabilistic method of allocating a winner.</p>
 
 <figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">foreach</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">doParallel</span><span class="p">)</span><span class="w">
@@ -267,35 +267,35 @@
 
 
 
-</span><span class="cd">#' Play out a single match between two players
-#' 
-#' @param p1_elo Elo rating of player 1
-#' @param p2_elo Elo rating of player 2
-#' @param method whether the winner is chosen at random (but with higher Elo rating meaning a higher
-#' chance of winning) or deterministically (in which case the player with the higher Elo rating always wins)
-#' @details draws are not supported. If method is deterministic and the Elo ratings are equal, player 1 wins.
-#' @return a 2 if player 2 wins, and 1 if player 1 wins
-</span><span class="n">one_match</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">p</span><span class="m">1</span><span class="err">_</span><span class="n">elo</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="m">2</span><span class="err">_</span><span class="n">elo</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"probabilistic"</span><span class="p">,</span><span class="w"> </span><span class="s2">"deterministic"</span><span class="p">)){</span><span class="w">
+</span><span class="cd">#' Play out a single match between two players</span><span class="w">
+</span><span class="cd">#' </span><span class="w">
+</span><span class="cd">#' @param p1_elo Elo rating of player 1</span><span class="w">
+</span><span class="cd">#' @param p2_elo Elo rating of player 2</span><span class="w">
+</span><span class="cd">#' @param method whether the winner is chosen at random (but with higher Elo rating meaning a higher</span><span class="w">
+</span><span class="cd">#' chance of winning) or deterministically (in which case the player with the higher Elo rating always wins)</span><span class="w">
+</span><span class="cd">#' @details draws are not supported. If method is deterministic and the Elo ratings are equal, player 1 wins.</span><span class="w">
+</span><span class="cd">#' @return a 2 if player 2 wins, and 1 if player 1 wins</span><span class="w">
+</span><span class="n">one_match</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">p1_elo</span><span class="p">,</span><span class="w"> </span><span class="n">p2_elo</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"probabilistic"</span><span class="p">,</span><span class="w"> </span><span class="s2">"deterministic"</span><span class="p">)){</span><span class="w">
   </span><span class="n">method</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">match.arg</span><span class="p">(</span><span class="n">method</span><span class="p">)</span><span class="w">
   
   </span><span class="k">if</span><span class="p">(</span><span class="n">method</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"probabilistic"</span><span class="p">){</span><span class="w">
-    </span><span class="n">res</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">rbinom</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">prob</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">deuce</span><span class="o">::</span><span class="n">elo_prediction</span><span class="p">(</span><span class="n">p</span><span class="m">2</span><span class="err">_</span><span class="n">elo</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="m">1</span><span class="err">_</span><span class="n">elo</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">1</span><span class="w">
+    </span><span class="n">res</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">rbinom</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">prob</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">deuce</span><span class="o">::</span><span class="n">elo_prediction</span><span class="p">(</span><span class="n">p2_elo</span><span class="p">,</span><span class="w"> </span><span class="n">p1_elo</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">1</span><span class="w">
   </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">
-    </span><span class="n">res</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">p</span><span class="m">2</span><span class="err">_</span><span class="n">elo</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">p</span><span class="m">1</span><span class="err">_</span><span class="n">elo</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+    </span><span class="n">res</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">p2_elo</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">p1_elo</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
   </span><span class="p">}</span><span class="w">
   </span><span class="nf">return</span><span class="p">(</span><span class="n">res</span><span class="p">)</span><span class="w">
   
 </span><span class="p">}</span><span class="w">
 
 
-</span><span class="cd">#' Play out a tournament along the lines of Lewis Carroll's preferred methold
-#' 
-#' @param players a data frame or tibble with columns for player_id and Elo
-#' @param verbose Whether to print out the number of remaining players in each round
-#' @param method Whether individual match results are probabilistic (realistic) or deterministic (player 
-#' with higher rating always wins)
-#' @details complete works of Lewis Carroll available at http://www.gasl.org/refbib/Carroll__Works.pdf
-#' Description of a better lawn tennis tournament begins on page 1,082
+</span><span class="cd">#' Play out a tournament along the lines of Lewis Carroll's preferred methold</span><span class="w">
+</span><span class="cd">#' </span><span class="w">
+</span><span class="cd">#' @param players a data frame or tibble with columns for player_id and Elo</span><span class="w">
+</span><span class="cd">#' @param verbose Whether to print out the number of remaining players in each round</span><span class="w">
+</span><span class="cd">#' @param method Whether individual match results are probabilistic (realistic) or deterministic (player </span><span class="w">
+</span><span class="cd">#' with higher rating always wins)</span><span class="w">
+</span><span class="cd">#' @details complete works of Lewis Carroll available at http://www.gasl.org/refbib/Carroll__Works.pdf</span><span class="w">
+</span><span class="cd">#' Description of a better lawn tennis tournament begins on page 1,082</span><span class="w">
 </span><span class="n">carroll_tournament</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">players</span><span class="p">,</span><span class="w"> </span><span class="n">verbose</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> 
                                </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"probabilistic"</span><span class="p">,</span><span class="w"> </span><span class="s2">"deterministic"</span><span class="p">)){</span><span class="w">
   </span><span class="n">method</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">match.arg</span><span class="p">(</span><span class="n">method</span><span class="p">)</span><span class="w">
@@ -326,12 +326,12 @@
       </span><span class="n">select</span><span class="p">(</span><span class="o">-</span><span class="n">combo</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
       </span><span class="n">inner_join</span><span class="p">(</span><span class="n">match_wins</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"first_round_winner"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"loser_id"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
       </span><span class="n">rename</span><span class="p">(</span><span class="n">indirect_superior</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">winner_id</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-      </span><span class="c1"># remove people who are direct superiors so they don't get counted twice:
-</span><span class="w">      </span><span class="n">anti_join</span><span class="p">(</span><span class="n">match_wins</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"player_id"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"loser_id"</span><span class="p">,</span><span class="w"> </span><span class="s2">"indirect_superior"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"winner_id"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-      </span><span class="c1"># you can't be an indirect superior to yourself (this happens if you beat someone who beat you before):
-</span><span class="w">      </span><span class="n">filter</span><span class="p">(</span><span class="n">indirect_superior</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">player_id</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-      </span><span class="c1"># you can't have someone you have beaten directly as an indirect superior:
-</span><span class="w">      </span><span class="n">anti_join</span><span class="p">(</span><span class="n">match_wins</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"player_id"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"winner_id"</span><span class="p">,</span><span class="w"> </span><span class="s2">"indirect_superior"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"loser_id"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="c1"># remove people who are direct superiors so they don't get counted twice:</span><span class="w">
+      </span><span class="n">anti_join</span><span class="p">(</span><span class="n">match_wins</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"player_id"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"loser_id"</span><span class="p">,</span><span class="w"> </span><span class="s2">"indirect_superior"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"winner_id"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="c1"># you can't be an indirect superior to yourself (this happens if you beat someone who beat you before):</span><span class="w">
+      </span><span class="n">filter</span><span class="p">(</span><span class="n">indirect_superior</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">player_id</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="c1"># you can't have someone you have beaten directly as an indirect superior:</span><span class="w">
+      </span><span class="n">anti_join</span><span class="p">(</span><span class="n">match_wins</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"player_id"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"winner_id"</span><span class="p">,</span><span class="w"> </span><span class="s2">"indirect_superior"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"loser_id"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
       </span><span class="n">group_by</span><span class="p">(</span><span class="n">player_id</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
       </span><span class="n">summarise</span><span class="p">(</span><span class="n">indirect_superiors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">unique</span><span class="p">(</span><span class="n">indirect_superior</span><span class="p">)))</span><span class="w">
     
@@ -354,8 +354,8 @@
     </span><span class="n">left</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">remaining_players</span><span class="p">)</span><span class="w">
     
     </span><span class="k">if</span><span class="p">(</span><span class="n">left</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">3</span><span class="p">){</span><span class="w">
-      </span><span class="c1"># It's possible to get stuck with only two superiors at this point
-</span><span class="w">      </span><span class="n">remaining_players</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">all_players</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="c1"># It's possible to get stuck with only two superiors at this point</span><span class="w">
+      </span><span class="n">remaining_players</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">all_players</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
         </span><span class="n">filter</span><span class="p">(</span><span class="n">superiors</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
         </span><span class="n">select</span><span class="p">(</span><span class="n">player_id</span><span class="p">,</span><span class="w"> </span><span class="n">matches</span><span class="p">,</span><span class="w"> </span><span class="n">elo</span><span class="p">)</span><span class="w"> 
       
@@ -380,28 +380,28 @@
         </span><span class="n">low_match_player</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="kc">NULL</span><span class="w">
       </span><span class="p">}</span><span class="w">
       
-      </span><span class="c1"># player ids of remaining players who have played minimum matches and are a candidate for the next match:
-</span><span class="w">      </span><span class="n">rpi</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">candidate_players</span><span class="o">$</span><span class="n">player_id</span><span class="w">
+      </span><span class="c1"># player ids of remaining players who have played minimum matches and are a candidate for the next match:</span><span class="w">
+      </span><span class="n">rpi</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">candidate_players</span><span class="o">$</span><span class="n">player_id</span><span class="w">
       
-      </span><span class="c1"># possible matches (ie excluding rematches) of the candidate players:
-</span><span class="w">      </span><span class="n">possible_matches</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">expand_grid</span><span class="p">(</span><span class="n">p</span><span class="m">1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rpi</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="m">2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rpi</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-        </span><span class="c1"># limit to those with id 1 less than id 2 - just for sorting purposes
-</span><span class="w">        </span><span class="n">filter</span><span class="p">(</span><span class="n">p</span><span class="m">1</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">p</span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-        </span><span class="n">mutate</span><span class="p">(</span><span class="n">combo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">paste</span><span class="p">(</span><span class="n">p</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="m">2</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-        </span><span class="c1"># restrict to those who have lost the same number of games as eachother
-</span><span class="w">        </span><span class="n">left_join</span><span class="p">(</span><span class="n">all_players</span><span class="p">[</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"player_id"</span><span class="p">,</span><span class="w"> </span><span class="s2">"losses"</span><span class="p">)],</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"p1"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"player_id"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-        </span><span class="n">rename</span><span class="p">(</span><span class="n">p</span><span class="m">1</span><span class="err">_</span><span class="n">losses</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">losses</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="c1"># possible matches (ie excluding rematches) of the candidate players:</span><span class="w">
+      </span><span class="n">possible_matches</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">expand_grid</span><span class="p">(</span><span class="n">p1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rpi</span><span class="p">,</span><span class="w"> </span><span class="n">p2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rpi</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+        </span><span class="c1"># limit to those with id 1 less than id 2 - just for sorting purposes</span><span class="w">
+        </span><span class="n">filter</span><span class="p">(</span><span class="n">p1</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">p2</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+        </span><span class="n">mutate</span><span class="p">(</span><span class="n">combo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">paste</span><span class="p">(</span><span class="n">p1</span><span class="p">,</span><span class="w"> </span><span class="n">p2</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+        </span><span class="c1"># restrict to those who have lost the same number of games as eachother</span><span class="w">
+        </span><span class="n">left_join</span><span class="p">(</span><span class="n">all_players</span><span class="p">[</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"player_id"</span><span class="p">,</span><span class="w"> </span><span class="s2">"losses"</span><span class="p">)],</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"p1"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"player_id"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+        </span><span class="n">rename</span><span class="p">(</span><span class="n">p1_losses</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">losses</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
         </span><span class="n">left_join</span><span class="p">(</span><span class="n">all_players</span><span class="p">[</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"player_id"</span><span class="p">,</span><span class="w"> </span><span class="s2">"losses"</span><span class="p">)],</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"p2"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"player_id"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-        </span><span class="n">rename</span><span class="p">(</span><span class="n">p</span><span class="m">2</span><span class="err">_</span><span class="n">losses</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">losses</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-        </span><span class="n">filter</span><span class="p">(</span><span class="n">p</span><span class="m">1</span><span class="err">_</span><span class="n">losses</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">p</span><span class="m">2</span><span class="err">_</span><span class="n">losses</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-        </span><span class="c1"># restrict to people who haven't played eachother:
-</span><span class="w">        </span><span class="n">anti_join</span><span class="p">(</span><span class="n">match_wins</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"combo"</span><span class="p">)</span><span class="w"> 
+        </span><span class="n">rename</span><span class="p">(</span><span class="n">p2_losses</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">losses</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+        </span><span class="n">filter</span><span class="p">(</span><span class="n">p1_losses</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">p2_losses</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+        </span><span class="c1"># restrict to people who haven't played eachother:</span><span class="w">
+        </span><span class="n">anti_join</span><span class="p">(</span><span class="n">match_wins</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"combo"</span><span class="p">)</span><span class="w"> 
       
       </span><span class="n">get_awkward_player</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">possible_matches</span><span class="p">,</span><span class="w"> </span><span class="n">low_match_player</span><span class="p">){</span><span class="w">
         
         </span><span class="k">if</span><span class="p">(</span><span class="nf">is.null</span><span class="p">(</span><span class="n">low_match_player</span><span class="p">)){</span><span class="w">
-          </span><span class="c1"># find the player who has the least options for playing others
-</span><span class="w">          </span><span class="n">awkward_player</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">possible_matches</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+          </span><span class="c1"># find the player who has the least options for playing others</span><span class="w">
+          </span><span class="n">awkward_player</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">possible_matches</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
             </span><span class="n">gather</span><span class="p">(</span><span class="n">order</span><span class="p">,</span><span class="w"> </span><span class="n">player</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">combo</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
             </span><span class="n">group_by</span><span class="p">(</span><span class="n">player</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
             </span><span class="n">summarise</span><span class="p">(</span><span class="n">count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">())</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -416,39 +416,39 @@
       
       </span><span class="n">awkward_player</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">get_awkward_player</span><span class="p">(</span><span class="n">possible_matches</span><span class="p">,</span><span class="w"> </span><span class="n">low_match_player</span><span class="p">)</span><span class="w">
       
-      </span><span class="c1"># find a match with that player
-</span><span class="w">      </span><span class="n">the_match</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">possible_matches</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-        </span><span class="n">filter</span><span class="p">(</span><span class="n">p</span><span class="m">1</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">awkward_player</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">p</span><span class="m">2</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">awkward_player</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+      </span><span class="c1"># find a match with that player</span><span class="w">
+      </span><span class="n">the_match</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">possible_matches</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+        </span><span class="n">filter</span><span class="p">(</span><span class="n">p1</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">awkward_player</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">p2</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">awkward_player</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
         </span><span class="n">sample_n</span><span class="p">(</span><span class="m">1</span><span class="p">)</span><span class="w"> 
       
       
       </span><span class="k">if</span><span class="p">(</span><span class="n">nrow</span><span class="p">(</span><span class="n">the_match</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">0</span><span class="p">){</span><span class="w">
-        </span><span class="c1"># need to let a rematch, or a matchhappen if there is no alternative:
-</span><span class="w">        </span><span class="n">warning</span><span class="p">(</span><span class="s2">"Rematch or match of players with unequal number of losses"</span><span class="p">)</span><span class="w">
-        </span><span class="n">possible_matches</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">expand_grid</span><span class="p">(</span><span class="n">p</span><span class="m">1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rpi</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="m">2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rpi</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-          </span><span class="c1"># limit to those with id 1 less than id 2 - just for sorting purposes
-</span><span class="w">          </span><span class="n">filter</span><span class="p">(</span><span class="n">p</span><span class="m">1</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">p</span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-          </span><span class="n">mutate</span><span class="p">(</span><span class="n">combo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">paste</span><span class="p">(</span><span class="n">p</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="m">2</span><span class="p">))</span><span class="w">
+        </span><span class="c1"># need to let a rematch, or a matchhappen if there is no alternative:</span><span class="w">
+        </span><span class="n">warning</span><span class="p">(</span><span class="s2">"Rematch or match of players with unequal number of losses"</span><span class="p">)</span><span class="w">
+        </span><span class="n">possible_matches</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">expand_grid</span><span class="p">(</span><span class="n">p1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rpi</span><span class="p">,</span><span class="w"> </span><span class="n">p2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rpi</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+          </span><span class="c1"># limit to those with id 1 less than id 2 - just for sorting purposes</span><span class="w">
+          </span><span class="n">filter</span><span class="p">(</span><span class="n">p1</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">p2</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+          </span><span class="n">mutate</span><span class="p">(</span><span class="n">combo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">paste</span><span class="p">(</span><span class="n">p1</span><span class="p">,</span><span class="w"> </span><span class="n">p2</span><span class="p">))</span><span class="w">
         
         </span><span class="n">awkward_player</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">get_awkward_player</span><span class="p">(</span><span class="n">possible_matches</span><span class="p">,</span><span class="w"> </span><span class="n">low_match_player</span><span class="p">)</span><span class="w">
         
         </span><span class="n">the_match</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">possible_matches</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-          </span><span class="n">filter</span><span class="p">(</span><span class="n">p</span><span class="m">1</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">awkward_player</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">p</span><span class="m">2</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">awkward_player</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+          </span><span class="n">filter</span><span class="p">(</span><span class="n">p1</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">awkward_player</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">p2</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">awkward_player</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
           </span><span class="n">sample_n</span><span class="p">(</span><span class="m">1</span><span class="p">)</span><span class="w"> 
       </span><span class="p">}</span><span class="w">
       
       </span><span class="n">the_match</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">the_match</span><span class="w">  </span><span class="o">%&gt;%</span><span class="w">
         </span><span class="n">left_join</span><span class="p">(</span><span class="n">players</span><span class="p">[</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"player_id"</span><span class="p">,</span><span class="w"> </span><span class="s2">"elo"</span><span class="p">)],</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"p1"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"player_id"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-        </span><span class="n">rename</span><span class="p">(</span><span class="n">p</span><span class="m">1</span><span class="err">_</span><span class="n">elo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">elo</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+        </span><span class="n">rename</span><span class="p">(</span><span class="n">p1_elo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">elo</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
         </span><span class="n">left_join</span><span class="p">(</span><span class="n">players</span><span class="p">[</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"player_id"</span><span class="p">,</span><span class="w"> </span><span class="s2">"elo"</span><span class="p">)],</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"p2"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"player_id"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-        </span><span class="n">rename</span><span class="p">(</span><span class="n">p</span><span class="m">2</span><span class="err">_</span><span class="n">elo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">elo</span><span class="p">)</span><span class="w">
+        </span><span class="n">rename</span><span class="p">(</span><span class="n">p2_elo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">elo</span><span class="p">)</span><span class="w">
       
-      </span><span class="n">winner</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">one_match</span><span class="p">(</span><span class="n">p</span><span class="m">1</span><span class="err">_</span><span class="n">elo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_match</span><span class="o">$</span><span class="n">p</span><span class="m">1</span><span class="err">_</span><span class="n">elo</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="m">2</span><span class="err">_</span><span class="n">elo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_match</span><span class="o">$</span><span class="n">p</span><span class="m">2</span><span class="err">_</span><span class="n">elo</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">method</span><span class="p">)</span><span class="w">
+      </span><span class="n">winner</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">one_match</span><span class="p">(</span><span class="n">p1_elo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_match</span><span class="o">$</span><span class="n">p1_elo</span><span class="p">,</span><span class="w"> </span><span class="n">p2_elo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_match</span><span class="o">$</span><span class="n">p2_elo</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">method</span><span class="p">)</span><span class="w">
       
       </span><span class="k">if</span><span class="p">(</span><span class="n">winner</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">1</span><span class="p">){</span><span class="w">
-        </span><span class="n">new_result</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">select</span><span class="p">(</span><span class="n">the_match</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">combo</span><span class="p">)</span><span class="w">
+        </span><span class="n">new_result</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">select</span><span class="p">(</span><span class="n">the_match</span><span class="p">,</span><span class="w"> </span><span class="n">p1</span><span class="p">,</span><span class="w"> </span><span class="n">p2</span><span class="p">,</span><span class="w"> </span><span class="n">combo</span><span class="p">)</span><span class="w">
       </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">
-        </span><span class="n">new_result</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">select</span><span class="p">(</span><span class="n">the_match</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">combo</span><span class="p">)</span><span class="w">
+        </span><span class="n">new_result</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">select</span><span class="p">(</span><span class="n">the_match</span><span class="p">,</span><span class="w"> </span><span class="n">p2</span><span class="p">,</span><span class="w"> </span><span class="n">p1</span><span class="p">,</span><span class="w"> </span><span class="n">combo</span><span class="p">)</span><span class="w">
       </span><span class="p">}</span><span class="w">
       </span><span class="nf">names</span><span class="p">(</span><span class="n">new_result</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"winner_id"</span><span class="p">,</span><span class="w"> </span><span class="s2">"loser_id"</span><span class="p">,</span><span class="w"> </span><span class="s2">"combo"</span><span class="p">)</span><span class="w">
       
@@ -457,8 +457,8 @@
   </span><span class="p">}</span><span class="w">
   
   </span><span class="k">if</span><span class="p">(</span><span class="n">left</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">2</span><span class="p">){</span><span class="w">
-    </span><span class="n">grand_final</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">one_match</span><span class="p">(</span><span class="n">p</span><span class="m">1</span><span class="err">_</span><span class="n">elo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">remaining_players</span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">elo</span><span class="p">,</span><span class="w">
-                             </span><span class="n">p</span><span class="m">2</span><span class="err">_</span><span class="n">elo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">remaining_players</span><span class="p">[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">elo</span><span class="p">,</span><span class="w">
+    </span><span class="n">grand_final</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">one_match</span><span class="p">(</span><span class="n">p1_elo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">remaining_players</span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">elo</span><span class="p">,</span><span class="w">
+                             </span><span class="n">p2_elo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">remaining_players</span><span class="p">[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">elo</span><span class="p">,</span><span class="w">
                              </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">method</span><span class="p">)</span><span class="w">
     
     </span><span class="n">first_place</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">remaining_players</span><span class="p">[</span><span class="n">grand_final</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">player_id</span><span class="w">
@@ -474,8 +474,8 @@
     
     </span><span class="p">}</span><span class="w"> 
   </span><span class="k">if</span><span class="p">(</span><span class="n">left</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">0</span><span class="p">){</span><span class="w">
-    </span><span class="c1"># it's possible for the last 4 players to be knocked out simultaneously. left == 0 in this case
-</span><span class="w">    </span><span class="n">warning</span><span class="p">(</span><span class="s2">"There was no grand final, the last four players were knocked out at once"</span><span class="p">)</span><span class="w">
+    </span><span class="c1"># it's possible for the last 4 players to be knocked out simultaneously. left == 0 in this case</span><span class="w">
+    </span><span class="n">warning</span><span class="p">(</span><span class="s2">"There was no grand final, the last four players were knocked out at once"</span><span class="p">)</span><span class="w">
     </span><span class="n">first_place</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">superiors</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
       </span><span class="n">filter</span><span class="p">(</span><span class="n">superiors</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nf">min</span><span class="p">(</span><span class="n">superiors</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
       </span><span class="n">filter</span><span class="p">(</span><span class="n">losses</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nf">min</span><span class="p">(</span><span class="n">losses</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -489,17 +489,17 @@
   
   
   </span><span class="k">if</span><span class="p">(</span><span class="n">left</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">1</span><span class="p">){</span><span class="w">
-      </span><span class="c1"># it's possible for players 2 and 3 to be knocked out simultaneously, in which case
-</span><span class="w">      </span><span class="c1"># there is one remaining player and no grand final. left == 1 in this case
-</span><span class="w">      </span><span class="n">warning</span><span class="p">(</span><span class="s2">"There was no grand final, a player won by default"</span><span class="p">)</span><span class="w">
+      </span><span class="c1"># it's possible for players 2 and 3 to be knocked out simultaneously, in which case</span><span class="w">
+      </span><span class="c1"># there is one remaining player and no grand final. left == 1 in this case</span><span class="w">
+      </span><span class="n">warning</span><span class="p">(</span><span class="s2">"There was no grand final, a player won by default"</span><span class="p">)</span><span class="w">
       </span><span class="n">first_place</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">remaining_players</span><span class="o">$</span><span class="n">player_id</span><span class="w">
       
       </span><span class="n">second_place_possibles</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">superiors</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
         </span><span class="n">filter</span><span class="p">(</span><span class="o">!</span><span class="n">player_id</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="n">first_place</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
         </span><span class="n">filter</span><span class="p">(</span><span class="n">superiors</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nf">min</span><span class="p">(</span><span class="n">superiors</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-        </span><span class="c1"># if there are people with the same number of superiors at this point, the place
-</span><span class="w">        </span><span class="c1"># goes to the person with the less direct losses 
-</span><span class="w">        </span><span class="n">filter</span><span class="p">(</span><span class="n">losses</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nf">min</span><span class="p">(</span><span class="n">losses</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+        </span><span class="c1"># if there are people with the same number of superiors at this point, the place</span><span class="w">
+        </span><span class="c1"># goes to the person with the less direct losses </span><span class="w">
+        </span><span class="n">filter</span><span class="p">(</span><span class="n">losses</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nf">min</span><span class="p">(</span><span class="n">losses</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
         </span><span class="n">pull</span><span class="p">(</span><span class="n">player_id</span><span class="p">)</span><span class="w"> 
       
       </span><span class="k">if</span><span class="p">(</span><span class="nf">length</span><span class="p">(</span><span class="n">second_place_possibles</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">2</span><span class="p">){</span><span class="w">
@@ -507,8 +507,8 @@
         </span><span class="n">semi_players</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tibble</span><span class="p">(</span><span class="n">player_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">second_place_possibles</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
           </span><span class="n">inner_join</span><span class="p">(</span><span class="n">players</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="s2">"player_id"</span><span class="p">)</span><span class="w">
         
-        </span><span class="n">semi_final</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">one_match</span><span class="p">(</span><span class="n">p</span><span class="m">1</span><span class="err">_</span><span class="n">elo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">semi_players</span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">elo</span><span class="p">,</span><span class="w">
-                                </span><span class="n">p</span><span class="m">2</span><span class="err">_</span><span class="n">elo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">semi_players</span><span class="p">[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">elo</span><span class="p">,</span><span class="w">
+        </span><span class="n">semi_final</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">one_match</span><span class="p">(</span><span class="n">p1_elo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">semi_players</span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">elo</span><span class="p">,</span><span class="w">
+                                </span><span class="n">p2_elo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">semi_players</span><span class="p">[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">elo</span><span class="p">,</span><span class="w">
                                 </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">method</span><span class="p">)</span><span class="w">
         </span><span class="n">second_place</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">semi_players</span><span class="p">[</span><span class="n">semi_final</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">player_id</span><span class="w">
         </span><span class="n">third_place</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">semi_players</span><span class="p">[</span><span class="m">3</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">semi_final</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">player_id</span><span class="w">
@@ -517,8 +517,8 @@
       </span><span class="p">}</span><span class="w">
       
       </span><span class="k">if</span><span class="p">(</span><span class="n">grepl</span><span class="p">(</span><span class="s2">" | "</span><span class="p">,</span><span class="w"> </span><span class="n">second_place</span><span class="p">,</span><span class="w"> </span><span class="n">fixed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)){</span><span class="w">
-        </span><span class="c1"># if there were 3 second place possibles we give up at this point..
-</span><span class="w">        </span><span class="n">third_place</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"Not awarded"</span><span class="w">
+        </span><span class="c1"># if there were 3 second place possibles we give up at this point..</span><span class="w">
+        </span><span class="n">third_place</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"Not awarded"</span><span class="w">
       </span><span class="p">}</span><span class="w">
       
     </span><span class="p">}</span><span class="w">
@@ -544,15 +544,15 @@
   </span><span class="p">)</span><span class="w">
 </span><span class="p">}</span><span class="w">
 
-</span><span class="c1">#-------------Data prep---------------
-</span><span class="w">
-</span><span class="c1"># Identify the top 128 women playing in 1990 and their last Elo rating that year
+</span><span class="c1">#-------------Data prep---------------</span><span class="w">
+
+</span><span class="c1"># Identify the top 128 women playing in 1990 and their last Elo rating that year</span><span class="w">
 </span><span class="n">data</span><span class="p">(</span><span class="n">wta_elo</span><span class="p">)</span><span class="w">
 
 </span><span class="n">women</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">wta_elo</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">filter</span><span class="p">(</span><span class="n">year</span><span class="p">(</span><span class="n">tourney_start_date</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">1990</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-  </span><span class="c1"># pick just the latest Elo rating
-</span><span class="w">  </span><span class="n">group_by</span><span class="p">(</span><span class="n">player_name</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="c1"># pick just the latest Elo rating</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">player_name</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">arrange</span><span class="p">(</span><span class="n">desc</span><span class="p">(</span><span class="n">tourney_start_date</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">slice</span><span class="p">(</span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">ungroup</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -560,18 +560,18 @@
   </span><span class="n">dplyr</span><span class="o">::</span><span class="n">select</span><span class="p">(</span><span class="n">player_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">player_name</span><span class="p">,</span><span class="w"> </span><span class="n">elo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">overall_elo</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">slice</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">128</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># example usage:
+</span><span class="c1"># example usage:</span><span class="w">
 </span><span class="n">set.seed</span><span class="p">(</span><span class="m">142</span><span class="p">)</span><span class="w">
 </span><span class="n">carroll_tournament</span><span class="p">(</span><span class="n">women</span><span class="p">)</span><span class="w">
 </span><span class="n">carroll_tournament</span><span class="p">(</span><span class="n">women</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"deterministic"</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># note that as currently written, rematches don't do anything unless they come out with the other result
-# this would not be popular! 
-</span><span class="w">
+</span><span class="c1"># note that as currently written, rematches don't do anything unless they come out with the other result</span><span class="w">
+</span><span class="c1"># this would not be popular! </span><span class="w">
 
-</span><span class="c1">#-----------set up parallel processing-----------
-</span><span class="w">
-</span><span class="n">cluster</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">makeCluster</span><span class="p">(</span><span class="m">7</span><span class="p">)</span><span class="w"> </span><span class="c1"># only any good if you have at least 7 processors :)
+
+</span><span class="c1">#-----------set up parallel processing-----------</span><span class="w">
+
+</span><span class="n">cluster</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">makeCluster</span><span class="p">(</span><span class="m">7</span><span class="p">)</span><span class="w"> </span><span class="c1"># only any good if you have at least 7 processors :)</span><span class="w">
 </span><span class="n">registerDoParallel</span><span class="p">(</span><span class="n">cluster</span><span class="p">)</span><span class="w">
 
 </span><span class="n">clusterEvalQ</span><span class="p">(</span><span class="n">cluster</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w">
@@ -583,22 +583,22 @@
 </span><span class="n">clusterExport</span><span class="p">(</span><span class="n">cluster</span><span class="p">,</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"women"</span><span class="p">,</span><span class="w"> </span><span class="s2">"carroll_tournament"</span><span class="p">))</span><span class="w">
 
 
-</span><span class="c1">#-------------------simulation of tournament-------------------
+</span><span class="c1">#-------------------simulation of tournament-------------------</span><span class="w">
 </span><span class="n">n_sims</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">1000</span><span class="w">
 
-</span><span class="n">r</span><span class="m">1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">foreach</span><span class="p">(</span><span class="n">this_sim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">n_sims</span><span class="p">,</span><span class="w"> </span><span class="n">.combine</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rbind</span><span class="p">)</span><span class="w"> </span><span class="o">%dopar%</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="n">r1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">foreach</span><span class="p">(</span><span class="n">this_sim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">n_sims</span><span class="p">,</span><span class="w"> </span><span class="n">.combine</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rbind</span><span class="p">)</span><span class="w"> </span><span class="o">%dopar%</span><span class="w"> </span><span class="p">{</span><span class="w">
   </span><span class="n">set.seed</span><span class="p">(</span><span class="n">this_sim</span><span class="p">)</span><span class="w">
   </span><span class="n">results</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">carroll_tournament</span><span class="p">(</span><span class="n">women</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"prob"</span><span class="p">)</span><span class="w">
   </span><span class="n">tmp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.data.frame</span><span class="p">(</span><span class="n">t</span><span class="p">(</span><span class="n">results</span><span class="o">$</span><span class="n">top3</span><span class="p">))</span><span class="w">
   
   </span><span class="k">if</span><span class="p">(</span><span class="n">ncol</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">1</span><span class="p">){</span><span class="w">
-    </span><span class="c1"># very rarely, there's only one person emerging
-</span><span class="w">    </span><span class="n">tmp</span><span class="o">$</span><span class="n">second</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="kc">NA</span><span class="w">
+    </span><span class="c1"># very rarely, there's only one person emerging</span><span class="w">
+    </span><span class="n">tmp</span><span class="o">$</span><span class="n">second</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="kc">NA</span><span class="w">
   </span><span class="p">}</span><span class="w">
   
   </span><span class="k">if</span><span class="p">(</span><span class="n">ncol</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">2</span><span class="p">){</span><span class="w">
-    </span><span class="c1"># sometimes there's no third person due to complications with reversing results
-</span><span class="w">    </span><span class="n">tmp</span><span class="o">$</span><span class="n">third</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="kc">NA</span><span class="w">
+    </span><span class="c1"># sometimes there's no third person due to complications with reversing results</span><span class="w">
+    </span><span class="n">tmp</span><span class="o">$</span><span class="n">third</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="kc">NA</span><span class="w">
   </span><span class="p">}</span><span class="w">
   
   </span><span class="nf">names</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"first"</span><span class="p">,</span><span class="w"> </span><span class="s2">"second"</span><span class="p">,</span><span class="w"> </span><span class="s2">"third"</span><span class="p">)</span><span class="w">
@@ -606,13 +606,13 @@
   </span><span class="nf">return</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span><span class="w">
 </span><span class="p">}</span><span class="w">
 
-</span><span class="c1"># what order *should* have been returned?
+</span><span class="c1"># what order *should* have been returned?</span><span class="w">
 </span><span class="n">correct</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">women</span><span class="p">[</span><span class="m">1</span><span class="o">:</span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">select</span><span class="p">(</span><span class="n">correct_player</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">player_id</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">place</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"first"</span><span class="p">,</span><span class="w"> </span><span class="s2">"second"</span><span class="p">,</span><span class="w"> </span><span class="s2">"third"</span><span class="p">))</span><span class="w">
 
-</span><span class="c1"># Can it get the top three right as promised:
-</span><span class="n">top3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">r</span><span class="m">1</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+</span><span class="c1"># Can it get the top three right as promised:</span><span class="w">
+</span><span class="n">top3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">r1</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">gather</span><span class="p">(</span><span class="n">place</span><span class="p">,</span><span class="w"> </span><span class="n">player</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">sim</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">left_join</span><span class="p">(</span><span class="n">correct</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"place"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">group_by</span><span class="p">(</span><span class="n">sim</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -624,8 +624,8 @@
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">looking_at</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">3</span><span class="p">)</span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">ungroup</span><span class="p">()</span><span class="w">
 
-</span><span class="c1"># Can it at least get the top two right:
-</span><span class="n">top2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">r</span><span class="m">1</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+</span><span class="c1"># Can it at least get the top two right:</span><span class="w">
+</span><span class="n">top2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">r1</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">gather</span><span class="p">(</span><span class="n">place</span><span class="p">,</span><span class="w"> </span><span class="n">player</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">sim</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">filter</span><span class="p">(</span><span class="n">place</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"first"</span><span class="p">,</span><span class="w"> </span><span class="s2">"second"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">left_join</span><span class="p">(</span><span class="n">correct</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"place"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -638,8 +638,8 @@
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">looking_at</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">ungroup</span><span class="p">()</span><span class="w">
 
-</span><span class="c1"># overall winner
-</span><span class="n">top1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">r</span><span class="m">1</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+</span><span class="c1"># overall winner</span><span class="w">
+</span><span class="n">top1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">r1</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">gather</span><span class="p">(</span><span class="n">place</span><span class="p">,</span><span class="w"> </span><span class="n">player</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">sim</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">filter</span><span class="p">(</span><span class="n">place</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"first"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">left_join</span><span class="p">(</span><span class="n">correct</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"place"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -657,7 +657,7 @@
   </span><span class="n">group_by</span><span class="p">(</span><span class="n">looking_at</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">summarise</span><span class="p">(</span><span class="n">prop_correct</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">freq</span><span class="p">[</span><span class="n">correct_approx</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">looking_at</span><span class="p">])</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">freq</span><span class="p">))</span><span class="w">
 
-</span><span class="c1"># chart of results
+</span><span class="c1"># chart of results</span><span class="w">
 </span><span class="n">top1</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">correct_sequence</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">correct_approx</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">rbind</span><span class="p">(</span><span class="n">top3</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -683,23 +683,23 @@
        </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Analysis by http://freerangestats.info of simulated tournaments of the top 128 women players in 1990, with probabilistic match outcomes"</span><span class="p">)</span><span class="w">
 
 
-</span><span class="c1">#-------------check that deterministic approach always works for top 3------------
-</span><span class="w">
+</span><span class="c1">#-------------check that deterministic approach always works for top 3------------</span><span class="w">
+
 </span><span class="n">n_sims</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">100</span><span class="w">
 
-</span><span class="n">r</span><span class="m">2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">foreach</span><span class="p">(</span><span class="n">this_sim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">n_sims</span><span class="p">,</span><span class="w"> </span><span class="n">.combine</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rbind</span><span class="p">)</span><span class="w"> </span><span class="o">%dopar%</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="n">r2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">foreach</span><span class="p">(</span><span class="n">this_sim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">n_sims</span><span class="p">,</span><span class="w"> </span><span class="n">.combine</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rbind</span><span class="p">)</span><span class="w"> </span><span class="o">%dopar%</span><span class="w"> </span><span class="p">{</span><span class="w">
   </span><span class="n">set.seed</span><span class="p">(</span><span class="n">this_sim</span><span class="p">)</span><span class="w">
   </span><span class="n">results</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">carroll_tournament</span><span class="p">(</span><span class="n">women</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"det"</span><span class="p">)</span><span class="w">
   </span><span class="n">tmp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.data.frame</span><span class="p">(</span><span class="n">t</span><span class="p">(</span><span class="n">results</span><span class="o">$</span><span class="n">top3</span><span class="p">))</span><span class="w">
   
   </span><span class="k">if</span><span class="p">(</span><span class="n">ncol</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">1</span><span class="p">){</span><span class="w">
-    </span><span class="c1"># very rarely, there's only one person emerging
-</span><span class="w">    </span><span class="n">tmp</span><span class="o">$</span><span class="n">second</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="kc">NA</span><span class="w">
+    </span><span class="c1"># very rarely, there's only one person emerging</span><span class="w">
+    </span><span class="n">tmp</span><span class="o">$</span><span class="n">second</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="kc">NA</span><span class="w">
   </span><span class="p">}</span><span class="w">
   
   </span><span class="k">if</span><span class="p">(</span><span class="n">ncol</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">2</span><span class="p">){</span><span class="w">
-    </span><span class="c1"># sometimes there's no third person due to complications with reversing results
-</span><span class="w">    </span><span class="n">tmp</span><span class="o">$</span><span class="n">third</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="kc">NA</span><span class="w">
+    </span><span class="c1"># sometimes there's no third person due to complications with reversing results</span><span class="w">
+    </span><span class="n">tmp</span><span class="o">$</span><span class="n">third</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="kc">NA</span><span class="w">
   </span><span class="p">}</span><span class="w">
   
   </span><span class="nf">names</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"first"</span><span class="p">,</span><span class="w"> </span><span class="s2">"second"</span><span class="p">,</span><span class="w"> </span><span class="s2">"third"</span><span class="p">)</span><span class="w">
@@ -709,7 +709,7 @@
 
 </span><span class="n">stopCluster</span><span class="p">(</span><span class="n">cluster</span><span class="p">)</span><span class="w">
 
-</span><span class="n">r</span><span class="m">2</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+</span><span class="n">r2</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">gather</span><span class="p">(</span><span class="n">place</span><span class="p">,</span><span class="w"> </span><span class="n">player</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">sim</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">left_join</span><span class="p">(</span><span class="n">correct</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"place"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">group_by</span><span class="p">(</span><span class="n">sim</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">

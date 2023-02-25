@@ -18,7 +18,7 @@
             <meta property="og:image" content="http://freerangestats.info/img/0162-nyc-taxi-schema.png" />
          
 		 
-			<meta property="og:url" content="http://freerangestats.info/blog/2019/12/22/nyc-taxis-sql.html" />
+			<meta property="og:url" content="http://localhost:4000/blog/2019/12/22/nyc-taxis-sql.html" />
 		 
          <meta property="og:author" content= "https://www.facebook.com/peterstats" />
          <meta property="og:type" content="article" />
@@ -113,7 +113,7 @@
                   <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
 				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
                   <li><a href="/blog/surveys.html">all posts on surveys</a></li> 
-				  <li><a href = /blog/2022/10/13/pacific-map>most recent post</a></li>
+				  <li><a href = /blog/2023/02/25/ilr>most recent post</a></li>
 				</ul>
             </li>
               <li><a href="/blog/showcase.html">showcase</a></li>
@@ -218,7 +218,7 @@ If you’re interested you can see the full load process in my <a href="https://
 
 <ul>
   <li>irrespective of software choices, the data are large for the hardware I’m using them for, which leads to sub-optimal workarounds. For example, my hard drive isn’t large enough to store at the same time all the original CSVs, a staging copy of the data in the database, and the final analysis-ready copy of the data. This meant I had to delete the CSVs as my transformation process was going; and if I found a problem (as happened several times) I had to repeat some or all of the original downloads (which takes 6+ hours even on my fast-by-Australian-standards 100+ MBPS interent connection).</li>
-  <li>the data model changes several times. For example, there are half a dozen different sets of column names, sometimes varying by just capitalisation, sometimes by name changes such as <code class="highlighter-rouge">trip_pickup_datetime</code> becoming <code class="highlighter-rouge">tpep_pickup_datetime</code>. There is quite a <a href="https://www1.nyc.gov/assets/tlc/downloads/pdf/trip_record_user_guide.pdf">good user guide available</a> but I foolishly didn’t look for it early enough. The <a href="https://www1.nyc.gov/assets/tlc/downloads/pdf/data_dictionary_trip_records_yellow.pdf">data dictionary</a> is for the latest data model; there might be historical versions but I didn’t look hard enough to find them.</li>
+  <li>the data model changes several times. For example, there are half a dozen different sets of column names, sometimes varying by just capitalisation, sometimes by name changes such as <code class="language-plaintext highlighter-rouge">trip_pickup_datetime</code> becoming <code class="language-plaintext highlighter-rouge">tpep_pickup_datetime</code>. There is quite a <a href="https://www1.nyc.gov/assets/tlc/downloads/pdf/trip_record_user_guide.pdf">good user guide available</a> but I foolishly didn’t look for it early enough. The <a href="https://www1.nyc.gov/assets/tlc/downloads/pdf/data_dictionary_trip_records_yellow.pdf">data dictionary</a> is for the latest data model; there might be historical versions but I didn’t look hard enough to find them.</li>
   <li>some of the data is corrupt (eg some of the monthly CSVs in 2010 have several thousand rows with more columns in them than the other rows) - a relatively small amount, but enough to cause problems in combination with the other factors.</li>
 </ul>
 
@@ -230,7 +230,7 @@ If you’re interested you can see the full load process in my <a href="https://
 
 <p><img src="/img/0162-nyc-taxi-schema.png" width="100%" /></p>
 
-<p>I’m satisfied its more analysis-ready than some of the alternative loads of this data I’ve seen out there. For example, I have all the codes built in to the database; no need to look up elsewhere that payment type 1 is cash, 2 is credit, etc. Plus my loading process standardises the different versions of vendor coding that are used - sometimes “1” and “2”, sometimes “CMT”, “VTS” and “DDS” (which seemed to disappear early in the series and isn’t listed in the data dictionary). To give an idea of what this means in terms of code development, here is one step in the overall process. This chunk of SQL code takes data from a staging table - <code class="highlighter-rouge">dbo.tripdata_0914</code>, with the raw data from the first six years when the column sequencing (but not names or coding) was consistent - and loads it into the evental target table <code class="highlighter-rouge">tripdata</code> in the <code class="highlighter-rouge">yellow</code> schema:</p>
+<p>I’m satisfied its more analysis-ready than some of the alternative loads of this data I’ve seen out there. For example, I have all the codes built in to the database; no need to look up elsewhere that payment type 1 is cash, 2 is credit, etc. Plus my loading process standardises the different versions of vendor coding that are used - sometimes “1” and “2”, sometimes “CMT”, “VTS” and “DDS” (which seemed to disappear early in the series and isn’t listed in the data dictionary). To give an idea of what this means in terms of code development, here is one step in the overall process. This chunk of SQL code takes data from a staging table - <code class="language-plaintext highlighter-rouge">dbo.tripdata_0914</code>, with the raw data from the first six years when the column sequencing (but not names or coding) was consistent - and loads it into the evental target table <code class="language-plaintext highlighter-rouge">tripdata</code> in the <code class="language-plaintext highlighter-rouge">yellow</code> schema:</p>
 
 <figure class="highlight"><pre><code class="language-sql" data-lang="sql"><span class="c1">-- First six years, with no surcharge data:</span>
 <span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">yellow</span><span class="p">.</span><span class="n">tripdata</span><span class="p">(</span>
@@ -262,9 +262,9 @@ If you’re interested you can see the full load process in my <a href="https://
 	<span class="n">trip_pickup_datetime</span><span class="p">,</span>
 	<span class="n">trip_dropoff_datetime</span><span class="p">,</span>
 	<span class="n">passenger_count</span><span class="p">,</span>
-	<span class="n">TRY_CAST</span><span class="p">(</span><span class="n">trip_distance</span> <span class="k">AS</span> <span class="n">DECIMAL</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">4</span><span class="p">)),</span>
-	<span class="n">TRY_CAST</span><span class="p">(</span><span class="n">start_lon</span> <span class="k">AS</span> <span class="n">DECIMAL</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">6</span><span class="p">)),</span>
-	<span class="n">TRY_CAST</span><span class="p">(</span><span class="n">start_lat</span> <span class="k">AS</span> <span class="n">DECIMAL</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">6</span><span class="p">)),</span>
+	<span class="n">TRY_CAST</span><span class="p">(</span><span class="n">trip_distance</span> <span class="k">AS</span> <span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">4</span><span class="p">)),</span>
+	<span class="n">TRY_CAST</span><span class="p">(</span><span class="n">start_lon</span> <span class="k">AS</span> <span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">6</span><span class="p">)),</span>
+	<span class="n">TRY_CAST</span><span class="p">(</span><span class="n">start_lat</span> <span class="k">AS</span> <span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">6</span><span class="p">)),</span>
 	<span class="k">CASE</span> 
 		<span class="k">WHEN</span> <span class="n">rate_code</span> <span class="k">IN</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">)</span> <span class="k">THEN</span> <span class="n">rate_code</span>
 		<span class="k">ELSE</span> <span class="k">NULL</span>
@@ -273,8 +273,8 @@ If you’re interested you can see the full load process in my <a href="https://
 		<span class="k">WHEN</span> <span class="n">store_and_forward</span> <span class="k">IN</span> <span class="p">(</span><span class="s1">'0'</span><span class="p">,</span> <span class="s1">'FALSE'</span><span class="p">,</span> <span class="s1">'N'</span><span class="p">)</span> <span class="k">THEN</span> <span class="s1">'N'</span>
 		<span class="k">WHEN</span> <span class="n">store_and_forward</span> <span class="k">IN</span> <span class="p">(</span><span class="s1">'1'</span><span class="p">,</span> <span class="s1">'TRUE'</span><span class="p">,</span> <span class="s1">'Y'</span><span class="p">)</span> <span class="k">THEN</span> <span class="s1">'Y'</span>
 	<span class="k">END</span><span class="p">,</span>
-	<span class="n">TRY_CAST</span><span class="p">(</span><span class="n">end_lon</span> <span class="k">AS</span> <span class="n">DECIMAL</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">6</span><span class="p">)),</span>
-	<span class="n">TRY_CAST</span><span class="p">(</span><span class="n">end_lat</span> <span class="k">AS</span> <span class="n">DECIMAL</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">6</span><span class="p">)),</span>
+	<span class="n">TRY_CAST</span><span class="p">(</span><span class="n">end_lon</span> <span class="k">AS</span> <span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">6</span><span class="p">)),</span>
+	<span class="n">TRY_CAST</span><span class="p">(</span><span class="n">end_lat</span> <span class="k">AS</span> <span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">6</span><span class="p">)),</span>
 	<span class="k">CASE</span>
 		<span class="k">WHEN</span> <span class="n">payment_type</span> <span class="k">IN</span> <span class="p">(</span><span class="s1">'credit'</span><span class="p">,</span> <span class="s1">'cre'</span><span class="p">,</span> <span class="s1">'1'</span><span class="p">)</span> <span class="k">THEN</span> <span class="mi">1</span>
 		<span class="k">WHEN</span> <span class="n">payment_type</span> <span class="k">IN</span> <span class="p">(</span><span class="s1">'cash'</span><span class="p">,</span> <span class="s1">'csh'</span><span class="p">,</span> <span class="s1">'cas'</span><span class="p">,</span> <span class="s1">'2'</span><span class="p">)</span> <span class="k">THEN</span> <span class="mi">2</span>
@@ -284,15 +284,15 @@ If you’re interested you can see the full load process in my <a href="https://
 		<span class="k">WHEN</span> <span class="n">payment_type</span> <span class="k">In</span> <span class="p">(</span><span class="s1">'voided trip'</span><span class="p">,</span> <span class="s1">'voi'</span><span class="p">,</span> <span class="s1">'voided'</span><span class="p">,</span> <span class="s1">'6'</span><span class="p">)</span> <span class="k">THEN</span> <span class="mi">6</span>
 		<span class="k">ELSE</span> <span class="k">NULL</span>
 	<span class="k">END</span><span class="p">,</span>
-	<span class="n">TRY_CAST</span><span class="p">(</span><span class="n">fare_amt</span> <span class="k">AS</span> <span class="n">DECIMAL</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span>
-	<span class="n">TRY_CAST</span><span class="p">(</span><span class="n">surcharge</span> <span class="k">AS</span> <span class="n">DECIMAL</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span>
-	<span class="n">TRY_CAST</span><span class="p">(</span><span class="n">mta_tax</span> <span class="k">AS</span> <span class="n">DECIMAL</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span>
-	<span class="n">TRY_CAST</span><span class="p">(</span><span class="n">tip_amt</span> <span class="k">AS</span> <span class="n">DECIMAL</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span>
-	<span class="n">TRY_CAST</span><span class="p">(</span><span class="n">tolls_amt</span> <span class="k">AS</span> <span class="n">DECIMAL</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span>
-	<span class="n">TRY_CAST</span><span class="p">(</span><span class="n">total_amt</span> <span class="k">AS</span> <span class="n">DECIMAL</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+	<span class="n">TRY_CAST</span><span class="p">(</span><span class="n">fare_amt</span> <span class="k">AS</span> <span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span>
+	<span class="n">TRY_CAST</span><span class="p">(</span><span class="n">surcharge</span> <span class="k">AS</span> <span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span>
+	<span class="n">TRY_CAST</span><span class="p">(</span><span class="n">mta_tax</span> <span class="k">AS</span> <span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span>
+	<span class="n">TRY_CAST</span><span class="p">(</span><span class="n">tip_amt</span> <span class="k">AS</span> <span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span>
+	<span class="n">TRY_CAST</span><span class="p">(</span><span class="n">tolls_amt</span> <span class="k">AS</span> <span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span>
+	<span class="n">TRY_CAST</span><span class="p">(</span><span class="n">total_amt</span> <span class="k">AS</span> <span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
 <span class="k">FROM</span> <span class="n">dbo</span><span class="p">.</span><span class="n">tripdata_0914</span></code></pre></figure>
 
-<p>You can see that I also handle issues such as the inconsistent coding of “payment type”, and cut down the storage size of various numeric variables. For example, trip_distance was loaded into my staging table as 15 digit precision floating point data which takes up 8 bytes of space per observation; reducing this to <code class="highlighter-rouge">DECIMAL(9, 4)</code> saves three bytes per row of the data while still allowing plenty of range and precision - numbers of the format 99999.1234. Three bytes per row adds up materially over 1+ billion rows. The <code class="highlighter-rouge">TRY_CAST()</code> functions are needed because many of these numeric variables have physically impossible values (eg longitudes with four or more digits left of the decimal point) which cause numeric overflow errors otherwise.</p>
+<p>You can see that I also handle issues such as the inconsistent coding of “payment type”, and cut down the storage size of various numeric variables. For example, trip_distance was loaded into my staging table as 15 digit precision floating point data which takes up 8 bytes of space per observation; reducing this to <code class="language-plaintext highlighter-rouge">DECIMAL(9, 4)</code> saves three bytes per row of the data while still allowing plenty of range and precision - numbers of the format 99999.1234. Three bytes per row adds up materially over 1+ billion rows. The <code class="language-plaintext highlighter-rouge">TRY_CAST()</code> functions are needed because many of these numeric variables have physically impossible values (eg longitudes with four or more digits left of the decimal point) which cause numeric overflow errors otherwise.</p>
 
 <p>It’s easy to see where that eight hours went… In contrast, I would say I have spent about four hours on analysis of any sort (mostly descriptive) and four hours on writing up this post. So the “80%” of time spent on data cleaning isn’t quite right here - more like 50%. Noting that in this case, the data is <em>exceptionally</em> clean and tidy already - other than having direct access to a well-maintained warehouse, one will rarely get data as nicely released by the NYC Taxi &amp; Limousine Commission.</p>
 
@@ -316,12 +316,12 @@ If you’re interested you can see the full load process in my <a href="https://
 </span><span class="n">library</span><span class="p">(</span><span class="n">ggmap</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">Cairo</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># assumes you have an ODBC data source named "nyc_taxi" to the database created by https://github.com/ellisp/nyc-taxis:
+</span><span class="c1"># assumes you have an ODBC data source named "nyc_taxi" to the database created by https://github.com/ellisp/nyc-taxis:</span><span class="w">
 </span><span class="n">nyc_taxi</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dbConnect</span><span class="p">(</span><span class="n">odbc</span><span class="p">(),</span><span class="w"> </span><span class="s2">"localhost"</span><span class="p">,</span><span class="w"> </span><span class="n">database</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"nyc_taxi"</span><span class="p">)</span><span class="w">
 
-</span><span class="cd">#' Theme for dark background maps to be used later
-#'
-#' @author minimally  adapted from a Todd Schneider original
+</span><span class="cd">#' Theme for dark background maps to be used later</span><span class="w">
+</span><span class="cd">#'</span><span class="w">
+</span><span class="cd">#' @author minimally  adapted from a Todd Schneider original</span><span class="w">
 </span><span class="n">theme_dark_map</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">base_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">12</span><span class="p">,</span><span class="w"> </span><span class="n">font_family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Sans"</span><span class="p">){</span><span class="w">
   </span><span class="n">theme_bw</span><span class="p">(</span><span class="n">base_size</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
     </span><span class="n">theme</span><span class="p">(</span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_text</span><span class="p">(</span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">font_family</span><span class="p">,</span><span class="w"> </span><span class="n">color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"#ffffff"</span><span class="p">),</span><span class="w">
@@ -355,7 +355,7 @@ If you’re interested you can see the full load process in my <a href="https://
 
 </span><span class="n">the_caption</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"Analysis by http://freerangestats.info with data from NYC Taxi &amp; Limousine Commission"</span><span class="w">
 
-</span><span class="c1">#-----------------------passenger count frequencies------
+</span><span class="c1">#-----------------------passenger count frequencies------</span><span class="w">
 </span><span class="n">sql</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"
 SELECT 
   COUNT(1) AS freq,
@@ -363,7 +363,7 @@ SELECT
 FROM yellow.tripdata
 GROUP BY passenger_count
 "</span><span class="w">
-</span><span class="c1"># takes a couple of seconds:
+</span><span class="c1"># takes a couple of seconds:</span><span class="w">
 </span><span class="n">pc_freq</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dbGetQuery</span><span class="p">(</span><span class="n">nyc_taxi</span><span class="p">,</span><span class="w"> </span><span class="n">sql</span><span class="p">)</span><span class="w">
 
 </span><span class="n">pc_freq</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -385,14 +385,14 @@ GROUP BY passenger_count
 
 <h3 id="trip-distance-distribution">Trip distance distribution</h3>
 
-<p>A very similar bit of SQL and R code gives us a similar plot for distribution of trip distance in miles, truncated at just those less than 250 miles. Because the trip distances are continuous variables, to show their distribution I’m going to need to do some kind of summary. With smaller data I would put all the observations into R and use <code class="highlighter-rouge">geom_density()</code> to do the work, but as this would mean transferring a billion observations from the database to R’s environment for little gain, I opt to round the distances to the nearest tenth of a mile and aggregate them. In effect, I’m building my own fixed-bin-width histogram. Here’s my first go at that:</p>
+<p>A very similar bit of SQL and R code gives us a similar plot for distribution of trip distance in miles, truncated at just those less than 250 miles. Because the trip distances are continuous variables, to show their distribution I’m going to need to do some kind of summary. With smaller data I would put all the observations into R and use <code class="language-plaintext highlighter-rouge">geom_density()</code> to do the work, but as this would mean transferring a billion observations from the database to R’s environment for little gain, I opt to round the distances to the nearest tenth of a mile and aggregate them. In effect, I’m building my own fixed-bin-width histogram. Here’s my first go at that:</p>
 
 <object type="image/svg+xml" data="/img/0162-trip-dist1.svg" width="100%"><img src="/img/0162-trip-dist1.png" width="100%" /></object>
 
 <p>…produced with:</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#-----------------------distance in miles--------------
-</span><span class="w">
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#-----------------------distance in miles--------------</span><span class="w">
+
 </span><span class="n">sql</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"
 SELECT 
   COUNT(1) AS freq,
@@ -401,7 +401,7 @@ FROM yellow.tripdata
 GROUP BY ROUND(trip_distance, 1)
 "</span><span class="w">
 
-</span><span class="c1"># takes about 20 seconds
+</span><span class="c1"># takes about 20 seconds</span><span class="w">
 </span><span class="n">td_freq</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dbGetQuery</span><span class="p">(</span><span class="n">nyc_taxi</span><span class="p">,</span><span class="w"> </span><span class="n">sql</span><span class="p">)</span><span class="w">
 
 </span><span class="n">td_freq</span><span class="w">  </span><span class="o">%&gt;%</span><span class="w">
@@ -469,9 +469,9 @@ GROUP BY ROUND(trip_distance, 1)
 
 <p>This analysis was easy to write with my database, but the performance was slower than Veljanoski’s (while still being totally acceptable). Whether this is due to my slow disk drive or software differences I’m not sure. Here’s the code for that data extract and analysis:</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#--------------hour, week, year------------
-</span><span class="w">
-</span><span class="c1"># aggregate some summary data at hourly level
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#--------------hour, week, year------------</span><span class="w">
+
+</span><span class="c1"># aggregate some summary data at hourly level</span><span class="w">
 </span><span class="n">sql</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"
 WITH a AS
    (SELECT
@@ -494,10 +494,10 @@ ORDER BY yy, dy, hd"</span><span class="w">
 
 </span><span class="n">pickup_ts</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dbGetQuery</span><span class="p">(</span><span class="n">nyc_taxi</span><span class="p">,</span><span class="w"> </span><span class="n">sql</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="n">as_tibble</span><span class="p">()</span><span class="w">
 
-</span><span class="c1"># Note that weekday = 1 means sunday
-</span><span class="w">
+</span><span class="c1"># Note that weekday = 1 means sunday</span><span class="w">
 
-</span><span class="c1"># Hourly time series
+
+</span><span class="c1"># Hourly time series</span><span class="w">
 </span><span class="n">pickup_ts</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">meta_hour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">n</span><span class="p">())</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">meta_hour</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">freq</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">as.ordered</span><span class="p">(</span><span class="n">my</span><span class="p">)))</span><span class="w"> </span><span class="o">+</span><span class="w">
@@ -515,7 +515,7 @@ ORDER BY yy, dy, hd"</span><span class="w">
   </span><span class="n">theme</span><span class="p">(</span><span class="n">legend.position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">0.85</span><span class="p">,</span><span class="w"> </span><span class="m">0.15</span><span class="p">))</span><span class="w">
 
 
-</span><span class="c1"># Monthly time series
+</span><span class="c1"># Monthly time series</span><span class="w">
 </span><span class="n">pickup_ts</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">group_by</span><span class="p">(</span><span class="n">yy</span><span class="p">,</span><span class="w"> </span><span class="n">my</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">summarise</span><span class="p">(</span><span class="n">freq</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">freq</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -532,8 +532,8 @@ ORDER BY yy, dy, hd"</span><span class="w">
   </span><span class="n">theme</span><span class="p">(</span><span class="n">axis.text.x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_text</span><span class="p">(</span><span class="n">angle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">45</span><span class="p">,</span><span class="w"> </span><span class="n">hjust</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">),</span><span class="w">
         </span><span class="n">panel.grid.minor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_blank</span><span class="p">())</span><span class="w">
 
-</span><span class="c1"># Heatmap of frequency of trips
-# add a labelled day of the week variable, still keeping the ordering
+</span><span class="c1"># Heatmap of frequency of trips</span><span class="w">
+</span><span class="c1"># add a labelled day of the week variable, still keeping the ordering</span><span class="w">
 </span><span class="n">pickup_ts2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">pickup_ts</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">dwl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">factor</span><span class="p">(</span><span class="n">dw</span><span class="p">,</span><span class="w"> </span><span class="n">labels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Sun"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Mon"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Tue"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Wed"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Thur"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Fri"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Sat"</span><span class="p">)))</span><span class="w">
 
@@ -551,7 +551,7 @@ ORDER BY yy, dy, hd"</span><span class="w">
        </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Pickups\nper hour"</span><span class="p">)</span><span class="o">+</span><span class="w">
   </span><span class="n">theme</span><span class="p">(</span><span class="n">legend.position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"right"</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># Heatmap of average fare per distance
+</span><span class="c1"># Heatmap of average fare per distance</span><span class="w">
 </span><span class="n">pickup_ts2</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">group_by</span><span class="p">(</span><span class="n">dwl</span><span class="p">,</span><span class="w"> </span><span class="n">hd</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">summarise</span><span class="p">(</span><span class="n">fare_per_mile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">fare_per_mile</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">freq</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">freq</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -572,13 +572,13 @@ ORDER BY yy, dy, hd"</span><span class="w">
 
 <object type="image/svg+xml" data="/img/0162-fare-map.svg" width="100%"><img src="/img/0162-fare-map.png" width="100%" /></object>
 
-<p>It’s a nice illustration of how, even in primarily exploratory analysis, a statistical model can be powerful for helping shape thinking. In this case, the model is a generalized additive model, fit to the data by the <code class="highlighter-rouge">mgcv::bam</code> function which is optimised for working with larger data. I commonly use a generalized additive model with a smoother over latitude and longitude (think a rubbery sheet in three dimensional space) as a way of dealing with spatially correlated data.</p>
+<p>It’s a nice illustration of how, even in primarily exploratory analysis, a statistical model can be powerful for helping shape thinking. In this case, the model is a generalized additive model, fit to the data by the <code class="language-plaintext highlighter-rouge">mgcv::bam</code> function which is optimised for working with larger data. I commonly use a generalized additive model with a smoother over latitude and longitude (think a rubbery sheet in three dimensional space) as a way of dealing with spatially correlated data.</p>
 
 <p>In this case, rather than fit the model to the original individual trip data I’ve taken average fares over a grid of about 100,000 observations and used that data, weighted by the number of observations at each point, to train my simple model. Here’s this final bit of code for this analysis:</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#-------------Modelling average fare by space-------------------
-</span><span class="w">
-</span><span class="c1"># extract data
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#-------------Modelling average fare by space-------------------</span><span class="w">
+
+</span><span class="c1"># extract data</span><span class="w">
 </span><span class="n">sql</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"
 SELECT 
   AVG(fare_amt) AS fare_amt,
@@ -597,13 +597,13 @@ GROUP BY
   ROUND(start_lon, 3),
   ROUND(start_lat, 3)"</span><span class="w">
 
-</span><span class="n">fare_rounded</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dbGetQuery</span><span class="p">(</span><span class="n">nyc_taxi</span><span class="p">,</span><span class="w"> </span><span class="n">sql</span><span class="p">)</span><span class="w">  </span><span class="c1"># takes a while - 10 minutes or so
-# about 95,000 observations
-</span><span class="w">
-</span><span class="c1"># Fit model
+</span><span class="n">fare_rounded</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dbGetQuery</span><span class="p">(</span><span class="n">nyc_taxi</span><span class="p">,</span><span class="w"> </span><span class="n">sql</span><span class="p">)</span><span class="w">  </span><span class="c1"># takes a while - 10 minutes or so</span><span class="w">
+</span><span class="c1"># about 95,000 observations</span><span class="w">
+
+</span><span class="c1"># Fit model</span><span class="w">
 </span><span class="n">model</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">bam</span><span class="p">(</span><span class="n">fare_amt</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">s</span><span class="p">(</span><span class="n">start_lon</span><span class="p">,</span><span class="w"> </span><span class="n">start_lat</span><span class="p">),</span><span class="w"> </span><span class="n">weights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">freq</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fare_rounded</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># predict values over a regular grid
+</span><span class="c1"># predict values over a regular grid</span><span class="w">
 </span><span class="n">all_lons</span><span class="w"> </span><span class="o">&lt;-</span><span class="n">seq</span><span class="p">(</span><span class="n">from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">-74.05</span><span class="p">,</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">-73.75</span><span class="p">,</span><span class="w"> </span><span class="n">length.out</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">200</span><span class="p">)</span><span class="w">
 </span><span class="n">all_lats</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">seq</span><span class="p">(</span><span class="n">from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">40.58</span><span class="p">,</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">40.90</span><span class="p">,</span><span class="w"> </span><span class="n">length.out</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">200</span><span class="p">)</span><span class="w">
 
@@ -620,13 +620,13 @@ GROUP BY
   </span><span class="n">filter</span><span class="p">(</span><span class="n">start_lat</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">40.8</span><span class="p">)</span><span class="w"> 
 
 
-</span><span class="c1"># get a background map
+</span><span class="c1"># get a background map</span><span class="w">
 </span><span class="n">nyc_map</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ggmap</span><span class="o">::</span><span class="n">get_stamenmap</span><span class="p">(</span><span class="n">bbox</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">-74.05</span><span class="p">,</span><span class="w"> </span><span class="m">40.58</span><span class="p">,</span><span class="w"> 
                                          </span><span class="m">-73.75</span><span class="p">,</span><span class="w"> </span><span class="m">40.80</span><span class="p">),</span><span class="w"> 
                                 </span><span class="n">maptype</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"toner-background"</span><span class="p">)</span><span class="w">
 
 
-</span><span class="c1"># draw a contour map over that background:
+</span><span class="c1"># draw a contour map over that background:</span><span class="w">
 </span><span class="n">ggmap</span><span class="p">(</span><span class="n">nyc_map</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
   </span><span class="n">geom_raster</span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">d</span><span class="p">,</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">start_lon</span><span class="p">,</span><span class="w">
                            </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">start_lat</span><span class="p">,</span><span class="w">
@@ -640,8 +640,8 @@ GROUP BY
                     </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"white"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
   </span><span class="n">theme_white_map</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
   </span><span class="n">scale_fill_viridis_c</span><span class="p">(</span><span class="n">option</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"A"</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dollar</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
-  </span><span class="c1"># we need cartesian coordinates because of raster. Probably better ways to fix this:
-</span><span class="w">  </span><span class="n">coord_cartesian</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="c1"># we need cartesian coordinates because of raster. Probably better ways to fix this:</span><span class="w">
+  </span><span class="n">coord_cartesian</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
   </span><span class="n">labs</span><span class="p">(</span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Expected taxi fare by pick-up point in New York"</span><span class="p">,</span><span class="w">
        </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"New York City yellow cabs January 2009 to mid 2016"</span><span class="p">,</span><span class="w">
        </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">paste</span><span class="p">(</span><span class="n">the_caption</span><span class="p">,</span><span class="w"> 

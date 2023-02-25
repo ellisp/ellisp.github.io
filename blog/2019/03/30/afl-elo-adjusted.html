@@ -18,7 +18,7 @@
             <meta property="og:image" content="http://freerangestats.info/img/0148-best-preds.png" />
          
 		 
-			<meta property="og:url" content="http://freerangestats.info/blog/2019/03/30/afl-elo-adjusted.html" />
+			<meta property="og:url" content="http://localhost:4000/blog/2019/03/30/afl-elo-adjusted.html" />
 		 
          <meta property="og:author" content= "https://www.facebook.com/peterstats" />
          <meta property="og:type" content="article" />
@@ -113,7 +113,7 @@
                   <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
 				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
                   <li><a href="/blog/surveys.html">all posts on surveys</a></li> 
-				  <li><a href = /blog/2022/10/13/pacific-map>most recent post</a></li>
+				  <li><a href = /blog/2023/02/25/ilr>most recent post</a></li>
 				</ul>
             </li>
               <li><a href="/blog/showcase.html">showcase</a></li>
@@ -196,20 +196,20 @@
 
 <ul>
   <li>load in functionality for the analysis</li>
-  <li>download the AFL results from 1897 onwards from afltables using the <code class="highlighter-rouge">fitzRoy</code> package and store in the object <code class="highlighter-rouge">r</code> (for “results”)</li>
+  <li>download the AFL results from 1897 onwards from afltables using the <code class="language-plaintext highlighter-rouge">fitzRoy</code> package and store in the object <code class="language-plaintext highlighter-rouge">r</code> (for “results”)</li>
   <li>draw the chart of home win rates per season</li>
   <li>estimate and plot teams’ recent-decades home advantage</li>
-  <li>create a new <code class="highlighter-rouge">r2</code> object with home and away advantage and disadvantage adjustments for probabilities</li>
+  <li>create a new <code class="language-plaintext highlighter-rouge">r2</code> object with home and away advantage and disadvantage adjustments for probabilities</li>
 </ul>
 
 <p><em>Post continues after code extract</em></p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#================Setup and get data============
-</span><span class="w">
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#================Setup and get data============</span><span class="w">
+
 </span><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
-</span><span class="n">library</span><span class="p">(</span><span class="n">fitzRoy</span><span class="p">)</span><span class="w">   </span><span class="c1"># for reading AFL scores
-</span><span class="n">library</span><span class="p">(</span><span class="n">frs</span><span class="p">)</span><span class="w">       </span><span class="c1"># for Elo functions
+</span><span class="n">library</span><span class="p">(</span><span class="n">fitzRoy</span><span class="p">)</span><span class="w">   </span><span class="c1"># for reading AFL scores</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">frs</span><span class="p">)</span><span class="w">       </span><span class="c1"># for Elo functions</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">Cairo</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">ggrepel</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">lubridate</span><span class="p">)</span><span class="w">
@@ -223,7 +223,7 @@
 
 </span><span class="n">results</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">get_match_results</span><span class="p">()</span><span class="w">
 
-</span><span class="c1"># reshape and organise the data:
+</span><span class="c1"># reshape and organise the data:</span><span class="w">
 </span><span class="n">r</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">results</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">rename_all</span><span class="p">(</span><span class="n">tolower</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">rename_all</span><span class="p">(</span><span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">){</span><span class="n">gsub</span><span class="p">(</span><span class="s2">"\\."</span><span class="p">,</span><span class="w"> </span><span class="s2">"_"</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">)})</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -236,17 +236,17 @@
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">starting_elo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1500</span><span class="p">,</span><span class="w">
          </span><span class="n">new_elo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1500</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">group_by</span><span class="p">(</span><span class="n">game</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-  </span><span class="c1"># sequence so the winner is the first listed each time for each game:
-</span><span class="w">  </span><span class="n">arrange</span><span class="p">(</span><span class="n">game</span><span class="p">,</span><span class="w"> </span><span class="n">desc</span><span class="p">(</span><span class="n">winner</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="c1"># sequence so the winner is the first listed each time for each game:</span><span class="w">
+  </span><span class="n">arrange</span><span class="p">(</span><span class="n">game</span><span class="p">,</span><span class="w"> </span><span class="n">desc</span><span class="p">(</span><span class="n">winner</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">ungroup</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">season</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">year</span><span class="p">(</span><span class="n">date</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">group_by</span><span class="p">(</span><span class="n">season</span><span class="p">,</span><span class="w"> </span><span class="n">team</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">round</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">n</span><span class="p">())</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">ungroup</span><span class="p">()</span><span class="w">
 
-</span><span class="c1">#==================analysis of the home team advantage===================
-</span><span class="w">
-</span><span class="c1"># Proportion of home winners over full range of history:
+</span><span class="c1">#==================analysis of the home team advantage===================</span><span class="w">
+
+</span><span class="c1"># Proportion of home winners over full range of history:</span><span class="w">
 </span><span class="n">r</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">filter</span><span class="p">(</span><span class="n">location</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"home"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">group_by</span><span class="p">(</span><span class="n">season</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -258,7 +258,7 @@
        </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
   </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Home teams win around 59 percent of the time in the AFL"</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># Home team advantage from 1997 onwards - the modern era:
+</span><span class="c1"># Home team advantage from 1997 onwards - the modern era:</span><span class="w">
 </span><span class="n">d</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">group_by</span><span class="p">(</span><span class="n">team</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">summarise</span><span class="p">(</span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">min</span><span class="p">(</span><span class="n">date</span><span class="p">),</span><span class="w">
@@ -295,7 +295,7 @@
   </span><span class="n">select</span><span class="p">(</span><span class="n">team</span><span class="p">,</span><span class="w"> </span><span class="n">home</span><span class="p">,</span><span class="w"> </span><span class="n">away</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">gather</span><span class="p">(</span><span class="n">location</span><span class="p">,</span><span class="w"> </span><span class="n">location_adjustment</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">team</span><span class="p">)</span><span class="w">
 
-</span><span class="n">r</span><span class="m">2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+</span><span class="n">r2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">left_join</span><span class="p">(</span><span class="n">adjustments</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"team"</span><span class="p">,</span><span class="w"> </span><span class="s2">"location"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">location_adjustment</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">replace_na</span><span class="p">(</span><span class="n">location_adjustment</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">),</span><span class="w">
          </span><span class="n">predicted_winner</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">NA</span><span class="p">)</span><span class="w"> </span></code></pre></figure>
@@ -309,26 +309,26 @@
   <li>Elo ratings are by the nature sticky and based on a player/team’s whole career. I had noted that I got better performance in predicting the 2018 season by restarting all teams’ ratings at 1500 at the beginning of the 2017 season. But this is fairly crude. The FIBS Elo rating method has a parameter for teams’ past experience which in effect lets you control how responsive the rating is to new information (the idea being to help new players in a competition quickly move from 1500 up or down to their natural level). I have now added to this with a “new round factor” which shrinks ratings for the first game of the season towards 1500, effectively discounting past experience</li>
 </ul>
 
-<p>Here’s the code that describes and defines those parameters a bit better, in an enhanced version of my <code class="highlighter-rouge">afl_elos()</code> function I introduced last week.</p>
+<p>Here’s the code that describes and defines those parameters a bit better, in an enhanced version of my <code class="language-plaintext highlighter-rouge">afl_elos()</code> function I introduced last week.</p>
 
 <p><em>Post continues after code extract</em></p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#---------------Function to determine ratings for one particular set of parameters-----------------
-</span><span class="w">
-</span><span class="cd">#' Calculate Elo ratings for a historical set of AFL results
-#' 
-#' @param r a data frame with columns including date, team, game, starting_elo, new_elo
-#' @param sc scaling factor for dividing the winning margin by to convert it to "match length" 
-#' for Elo calculation purposes (FIBS method requires a match length)
-#' @param pred_margin the prediction margin in points to use as match length for prediction purposes.
-#' Note that this gets divided by sc so it is on the same scale as the historical margins.
-#' @param margin_power parameter that scaled prediction margin is put to the power of in the match length
-#' calculation. 0 will mean all match lengths are 1 (so sc and pred_margin make no difference)
-#' @param experience how much experience (sum of previous match length) teams are presumed to have, for the
-#' FIBS-style Elo rating. Numbers below 400 make the rating adjustments more responsive to recent results.
-#' @param new_round_factor how much to shrink Elo ratings towards 1500 in the first match of each season.
-#' 1 means no shrinkage, 0 means every team starts the season fresh with a rating of 1500 regardless of 
-#' past performance.
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#---------------Function to determine ratings for one particular set of parameters-----------------</span><span class="w">
+
+</span><span class="cd">#' Calculate Elo ratings for a historical set of AFL results</span><span class="w">
+</span><span class="cd">#' </span><span class="w">
+</span><span class="cd">#' @param r a data frame with columns including date, team, game, starting_elo, new_elo</span><span class="w">
+</span><span class="cd">#' @param sc scaling factor for dividing the winning margin by to convert it to "match length" </span><span class="w">
+</span><span class="cd">#' for Elo calculation purposes (FIBS method requires a match length)</span><span class="w">
+</span><span class="cd">#' @param pred_margin the prediction margin in points to use as match length for prediction purposes.</span><span class="w">
+</span><span class="cd">#' Note that this gets divided by sc so it is on the same scale as the historical margins.</span><span class="w">
+</span><span class="cd">#' @param margin_power parameter that scaled prediction margin is put to the power of in the match length</span><span class="w">
+</span><span class="cd">#' calculation. 0 will mean all match lengths are 1 (so sc and pred_margin make no difference)</span><span class="w">
+</span><span class="cd">#' @param experience how much experience (sum of previous match length) teams are presumed to have, for the</span><span class="w">
+</span><span class="cd">#' FIBS-style Elo rating. Numbers below 400 make the rating adjustments more responsive to recent results.</span><span class="w">
+</span><span class="cd">#' @param new_round_factor how much to shrink Elo ratings towards 1500 in the first match of each season.</span><span class="w">
+</span><span class="cd">#' 1 means no shrinkage, 0 means every team starts the season fresh with a rating of 1500 regardless of </span><span class="w">
+</span><span class="cd">#' past performance.</span><span class="w">
 </span><span class="n">afl_elos</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="n">sc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">pred_margin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">30</span><span class="p">,</span><span class="w"> </span><span class="n">margin_power</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">experience</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w"> </span><span class="n">new_round_factor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">){</span><span class="w">
   </span><span class="n">r</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
     </span><span class="n">group_by</span><span class="p">(</span><span class="n">game</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -336,16 +336,16 @@
   
   </span><span class="n">all_games</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">unique</span><span class="p">(</span><span class="n">r</span><span class="o">$</span><span class="n">game</span><span class="p">)</span><span class="w">
   
-  </span><span class="c1"># This seems inherently iterative so perhaps a loop is the logical way to do it:
-</span><span class="w">  </span><span class="k">for</span><span class="p">(</span><span class="n">g</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">all_games</span><span class="p">){</span><span class="w">
+  </span><span class="c1"># This seems inherently iterative so perhaps a loop is the logical way to do it:</span><span class="w">
+  </span><span class="k">for</span><span class="p">(</span><span class="n">g</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">all_games</span><span class="p">){</span><span class="w">
     
     </span><span class="n">this_game</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">r</span><span class="p">[</span><span class="n">r</span><span class="o">$</span><span class="n">game</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">g</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
       </span><span class="n">mutate</span><span class="p">(</span><span class="n">starting_elo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">round</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> 
                                    </span><span class="p">(</span><span class="n">starting_elo</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">1500</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">new_round_factor</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">1500</span><span class="p">,</span><span class="w">
                                    </span><span class="n">starting_elo</span><span class="p">))</span><span class="w">
     
-    </span><span class="c1"># er: calculate elo rating arising from this game to use for changes in ratings
-</span><span class="w">    </span><span class="n">er</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">elo_rating</span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this_game</span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="s2">"starting_elo"</span><span class="p">],</span><span class="w"> 
+    </span><span class="c1"># er: calculate elo rating arising from this game to use for changes in ratings</span><span class="w">
+    </span><span class="n">er</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">elo_rating</span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this_game</span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="s2">"starting_elo"</span><span class="p">],</span><span class="w"> 
                      </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this_game</span><span class="p">[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="s2">"starting_elo"</span><span class="p">],</span><span class="w">
                      </span><span class="n">winner</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"a"</span><span class="p">,</span><span class="w">
                      </span><span class="n">ml</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="nf">round</span><span class="p">(</span><span class="n">this_game</span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="s2">"margin"</span><span class="p">]</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">sc</span><span class="p">)</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="n">margin_power</span><span class="p">),</span><span class="w">
@@ -354,9 +354,9 @@
                      </span><span class="n">a_adv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this_game</span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="s2">"location_adjustment"</span><span class="p">],</span><span class="w">
                      </span><span class="n">b_adv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this_game</span><span class="p">[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="s2">"location_adjustment"</span><span class="p">])</span><span class="w">
     
-    </span><span class="c1"># er: calculate elo rating arising from this game to use for the prediction, for use in
-</span><span class="w">    </span><span class="c1"># measureing prediction success
-</span><span class="w">    </span><span class="n">er2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">elo_rating</span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this_game</span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="s2">"starting_elo"</span><span class="p">],</span><span class="w"> 
+    </span><span class="c1"># er: calculate elo rating arising from this game to use for the prediction, for use in</span><span class="w">
+    </span><span class="c1"># measureing prediction success</span><span class="w">
+    </span><span class="n">er2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">elo_rating</span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this_game</span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="s2">"starting_elo"</span><span class="p">],</span><span class="w"> 
                      </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this_game</span><span class="p">[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="s2">"starting_elo"</span><span class="p">],</span><span class="w">
                      </span><span class="n">winner</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"a"</span><span class="p">,</span><span class="w">
                      </span><span class="n">ml</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="nf">round</span><span class="p">(</span><span class="n">pred_margin</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">sc</span><span class="p">)</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="n">margin_power</span><span class="p">),</span><span class="w">
@@ -382,11 +382,11 @@
   </span><span class="nf">return</span><span class="p">(</span><span class="n">r</span><span class="p">)</span><span class="w">
 </span><span class="p">}</span></code></pre></figure>
 
-<p>This function is now pretty slow when run on the whole AFL history form 1897. Unlike last week, it calls the underlying <code class="highlighter-rouge">frs::elo_rating()</code> function for each game twice - once (the object <code class="highlighter-rouge">er</code> above) to determine the ratings after the match outcome is known, and once to determine the prediction of the match’s result, for benchmarking purposes (the object <code class="highlighter-rouge">er2</code>). Last week I didn’t need to use <code class="highlighter-rouge">elo_rating()</code> twice, because the prediction of the winner was as simple as choosing the team with the highest Elo rating going in to the match. Now, we have to calculate the actual probability of winning, adjusted for home and away advantage and disadvantage. This calculation depends on the parameter choices that impact on converting margin to “match length” and what winning margin we base our predictions on, so the calculation is an additional one to the change in rating that came about from the actual result of the game.</p>
+<p>This function is now pretty slow when run on the whole AFL history form 1897. Unlike last week, it calls the underlying <code class="language-plaintext highlighter-rouge">frs::elo_rating()</code> function for each game twice - once (the object <code class="language-plaintext highlighter-rouge">er</code> above) to determine the ratings after the match outcome is known, and once to determine the prediction of the match’s result, for benchmarking purposes (the object <code class="language-plaintext highlighter-rouge">er2</code>). Last week I didn’t need to use <code class="language-plaintext highlighter-rouge">elo_rating()</code> twice, because the prediction of the winner was as simple as choosing the team with the highest Elo rating going in to the match. Now, we have to calculate the actual probability of winning, adjusted for home and away advantage and disadvantage. This calculation depends on the parameter choices that impact on converting margin to “match length” and what winning margin we base our predictions on, so the calculation is an additional one to the change in rating that came about from the actual result of the game.</p>
 
 <p>There are doubtless efficiencies that could be made, but I’m not enthused to spend too much time refactoring at this point…</p>
 
-<p>I have no theories and hardly any hunches on what parameter combinations will give the best performance, so the only way to choose a set is to try many and pick the one that would have worked best in predicting AFL games to date. I defined about 2,500 combinations of parameters, removed some that were effective duplicates (because if <code class="highlighter-rouge">margin_power</code> is 0, then the value of <code class="highlighter-rouge">sc</code> and <code class="highlighter-rouge">pred_margin</code> are immaterial) and for the purposes of this blog ran just 100 random prediction competitions, based on the games from 1950 onwards. With each individual run taking five minutes or more, I used parallel processing to do 7 runs simultaneously and get the total time for those 100 runs down to about 90 minutes, all I was prepared to do today for the purposes of this blog. I might run it for a longer period of time overnight later.</p>
+<p>I have no theories and hardly any hunches on what parameter combinations will give the best performance, so the only way to choose a set is to try many and pick the one that would have worked best in predicting AFL games to date. I defined about 2,500 combinations of parameters, removed some that were effective duplicates (because if <code class="language-plaintext highlighter-rouge">margin_power</code> is 0, then the value of <code class="language-plaintext highlighter-rouge">sc</code> and <code class="language-plaintext highlighter-rouge">pred_margin</code> are immaterial) and for the purposes of this blog ran just 100 random prediction competitions, based on the games from 1950 onwards. With each individual run taking five minutes or more, I used parallel processing to do 7 runs simultaneously and get the total time for those 100 runs down to about 90 minutes, all I was prepared to do today for the purposes of this blog. I might run it for a longer period of time overnight later.</p>
 
 <p>The top twenty parameter sets from this competition are in the table below. The best combination of factors led to an overall prediction success of about 69%, which is better than last week’s 65%, the crude “always pick the home team” success of 59% and a coin flip of 50%; but not as much better as I hoped. Clearly picking these winners is hard - AFL is more like backgammon or poker in terms of predicting outcomes than it is like chess.</p>
 
@@ -565,7 +565,7 @@
   </tbody>
 </table>
 
-<p>The best models had a modest shrinkage of ratings towards 1500 (<code class="highlighter-rouge">new_round_factor</code> of 0.4 to 0.8, compared to 0 which would mean everyone starting at 1500 in each round 1); and modest if any non-linearity in the conversion of winning margin to a notional “match length”. They had relatively low levels of “experience”, effectively increasing the importance of recent results and downplaying long term momentum; while treating match results in points (<code class="highlighter-rouge">sc = 1</code>) and predicting based on a relatively large margin.</p>
+<p>The best models had a modest shrinkage of ratings towards 1500 (<code class="language-plaintext highlighter-rouge">new_round_factor</code> of 0.4 to 0.8, compared to 0 which would mean everyone starting at 1500 in each round 1); and modest if any non-linearity in the conversion of winning margin to a notional “match length”. They had relatively low levels of “experience”, effectively increasing the importance of recent results and downplaying long term momentum; while treating match results in points (<code class="language-plaintext highlighter-rouge">sc = 1</code>) and predicting based on a relatively large margin.</p>
 
 <p>I only had time to try a random sample of parameter combinations, and would be very lucky indeed if I have ended up with the best set. How confident can I be that I’ve got something close enough? Here’s the distribution of success rates for that post 1950 series:</p>
 
@@ -577,12 +577,12 @@
 
 <p><img src="/img/0148-best-preds.svg" width="100%" /></p>
 
-<p>… and the code that did the above “parameter competition”, using the <code class="highlighter-rouge">foreach</code> and <code class="highlighter-rouge">doParallel</code> R packages for parallel processing to bring the elapsed time down to reasonable levels:</p>
+<p>… and the code that did the above “parameter competition”, using the <code class="language-plaintext highlighter-rouge">foreach</code> and <code class="language-plaintext highlighter-rouge">doParallel</code> R packages for parallel processing to bring the elapsed time down to reasonable levels:</p>
 
 <p><em>Post continues after code extract</em></p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#---------------Define all possible combinations of parameters---------------------
-</span><span class="w">
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#---------------Define all possible combinations of parameters---------------------</span><span class="w">
+
 </span><span class="n">set.seed</span><span class="p">(</span><span class="m">123</span><span class="p">)</span><span class="w">
 </span><span class="n">params</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">expand.grid</span><span class="p">(</span><span class="w">
   </span><span class="n">sc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="m">6</span><span class="p">),</span><span class="w">
@@ -591,20 +591,20 @@
   </span><span class="n">experience</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="o">:</span><span class="m">4</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w">
   </span><span class="n">new_round_factor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="o">:</span><span class="m">5</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">5</span><span class="w">
 </span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-  </span><span class="c1"># if margin_power is 0 then sc and pred_margin make no difference, so we can drop a few
-</span><span class="w">  </span><span class="c1"># paramter combinations:
-</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">sc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">margin_power</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">sc</span><span class="p">),</span><span class="w">
+  </span><span class="c1"># if margin_power is 0 then sc and pred_margin make no difference, so we can drop a few</span><span class="w">
+  </span><span class="c1"># paramter combinations:</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">sc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">margin_power</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">sc</span><span class="p">),</span><span class="w">
          </span><span class="n">pred_margin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">margin_power</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">margin_power</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">distinct</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-  </span><span class="c1"># sort in random order, as we're not going to have time to run all combinations
-</span><span class="w">  </span><span class="n">mutate</span><span class="p">(</span><span class="n">rnd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">runif</span><span class="p">(</span><span class="n">n</span><span class="p">()))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="c1"># sort in random order, as we're not going to have time to run all combinations</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">rnd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">runif</span><span class="p">(</span><span class="n">n</span><span class="p">()))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">arrange</span><span class="p">(</span><span class="n">rnd</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">row_num</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">n</span><span class="p">())</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">select</span><span class="p">(</span><span class="o">-</span><span class="n">rnd</span><span class="p">)</span><span class="w">
 
 
-</span><span class="c1">#-------------------------Run the model with a subset of the combinations of parameters------------------
-</span><span class="n">cluster</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">makeCluster</span><span class="p">(</span><span class="m">7</span><span class="p">)</span><span class="w"> </span><span class="c1"># only any good if you have at least 7 processors :)
+</span><span class="c1">#-------------------------Run the model with a subset of the combinations of parameters------------------</span><span class="w">
+</span><span class="n">cluster</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">makeCluster</span><span class="p">(</span><span class="m">7</span><span class="p">)</span><span class="w"> </span><span class="c1"># only any good if you have at least 7 processors :)</span><span class="w">
 </span><span class="n">registerDoParallel</span><span class="p">(</span><span class="n">cluster</span><span class="p">)</span><span class="w">
 
 </span><span class="n">clusterEvalQ</span><span class="p">(</span><span class="n">cluster</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w">
@@ -615,13 +615,13 @@
 
 </span><span class="n">clusterExport</span><span class="p">(</span><span class="n">cluster</span><span class="p">,</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"r2"</span><span class="p">,</span><span class="w"> </span><span class="s2">"afl_elos"</span><span class="p">,</span><span class="w"> </span><span class="s2">"params"</span><span class="p">))</span><span class="w">
 
-</span><span class="c1"># 519 seconds for 10 sets of parameters. So can do about 1.1 per minute (with 7 processors); 180 will take 3 hours.
+</span><span class="c1"># 519 seconds for 10 sets of parameters. So can do about 1.1 per minute (with 7 processors); 180 will take 3 hours.</span><span class="w">
 </span><span class="n">system.time</span><span class="p">({</span><span class="w">
   </span><span class="n">suppressWarnings</span><span class="p">(</span><span class="n">rm</span><span class="p">(</span><span class="n">res</span><span class="p">))</span><span class="w">
   </span><span class="n">res60</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">foreach</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">100</span><span class="p">,</span><span class="w"> </span><span class="n">.combine</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rbind</span><span class="p">)</span><span class="w"> </span><span class="o">%dopar%</span><span class="w"> </span><span class="p">{</span><span class="w">
     </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">params</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="w">
     
-    </span><span class="n">success_rate</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">r</span><span class="m">2</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">success_rate</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">r2</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
             </span><span class="n">filter</span><span class="p">(</span><span class="n">season</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="m">1950</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
 			</span><span class="n">afl_elos</span><span class="p">(</span><span class="n">sc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="o">$</span><span class="n">sc</span><span class="p">,</span><span class="w">
                </span><span class="n">pred_margin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="o">$</span><span class="n">pred_margin</span><span class="p">,</span><span class="w">
@@ -638,8 +638,8 @@
 
 </span><span class="n">stopCluster</span><span class="p">(</span><span class="n">cluster</span><span class="p">)</span><span class="w">
 
-</span><span class="c1">#------------------Examine results------------------------------
-</span><span class="w">
+</span><span class="c1">#------------------Examine results------------------------------</span><span class="w">
+
 </span><span class="n">params_with_res</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">params</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">left_join</span><span class="p">(</span><span class="n">res</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"row_num"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">filter</span><span class="p">(</span><span class="o">!</span><span class="nf">is.na</span><span class="p">(</span><span class="n">success_rate</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -658,7 +658,7 @@
 
 </span><span class="n">best_params</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">params_with_res</span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="w">
 
-</span><span class="n">elos_best</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">r</span><span class="m">2</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+</span><span class="n">elos_best</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">r2</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">afl_elos</span><span class="p">(</span><span class="n">sc</span><span class="w">               </span><span class="o">=</span><span class="w"> </span><span class="n">best_params</span><span class="o">$</span><span class="n">sc</span><span class="p">,</span><span class="w">
            </span><span class="n">pred_margin</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="n">best_params</span><span class="o">$</span><span class="n">pred_margin</span><span class="p">,</span><span class="w">
            </span><span class="n">margin_power</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="n">best_params</span><span class="o">$</span><span class="n">margin_power</span><span class="p">,</span><span class="w">
@@ -808,7 +808,7 @@ Prediction success of 70% is difficult to achieve in the modern era."</span><spa
   </tbody>
 </table>
 
-<p>That <code class="highlighter-rouge">final_prob</code> column is the estimated probability of the home team winning.</p>
+<p>That <code class="language-plaintext highlighter-rouge">final_prob</code> column is the estimated probability of the home team winning.</p>
 
 <p>As you can see, I translate my probabilities into a “fair return”, which I’m using to scan for opportunities with poorly chosen odds from the bookies. These opportunities don’t arrive very often as the bookies are professionals, but when they are paying 50% more than the model predicts to be “fair” I’m going to punt $5 and we’ll see how we go at the end of the season. So far I’m $26 up from this strategy but it’s early days and I’m far from assured the luck will continue.</p>
 
@@ -820,7 +820,7 @@ Prediction success of 70% is difficult to achieve in the modern era."</span><spa
 
 <p>Final chunk of R code for today - converting the model into predictions for this round:</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#==================Predictions for this round!=====================
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#==================Predictions for this round!=====================</span><span class="w">
 </span><span class="n">elos_latest</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">elos_best</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">group_by</span><span class="p">(</span><span class="n">team</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">arrange</span><span class="p">(</span><span class="n">desc</span><span class="p">(</span><span class="n">date</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">

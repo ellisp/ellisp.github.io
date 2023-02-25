@@ -18,7 +18,7 @@
             <meta property="og:image" content="http://freerangestats.info/img/0123-melbourne-growth-scatter.png" />
          
 		 
-			<meta property="og:url" content="http://freerangestats.info/blog/2018/08/31/melbourne-rents.html" />
+			<meta property="og:url" content="http://localhost:4000/blog/2018/08/31/melbourne-rents.html" />
 		 
          <meta property="og:author" content= "https://www.facebook.com/peterstats" />
          <meta property="og:type" content="article" />
@@ -113,7 +113,7 @@
                   <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
 				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
                   <li><a href="/blog/surveys.html">all posts on surveys</a></li> 
-				  <li><a href = /blog/2022/10/13/pacific-map>most recent post</a></li>
+				  <li><a href = /blog/2023/02/25/ilr>most recent post</a></li>
 				</ul>
             </li>
               <li><a href="/blog/showcase.html">showcase</a></li>
@@ -186,45 +186,45 @@
 <figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">openxlsx</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">foreach</span><span class="p">)</span><span class="w">
-</span><span class="n">library</span><span class="p">(</span><span class="n">ggpmisc</span><span class="p">)</span><span class="w"> </span><span class="c1"># for selecting objects to label based on 2d density
+</span><span class="n">library</span><span class="p">(</span><span class="n">ggpmisc</span><span class="p">)</span><span class="w"> </span><span class="c1"># for selecting objects to label based on 2d density</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">ggrepel</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">viridis</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">MASS</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># Caution - this URL: "https://dhhs.vic.gov.au/moving-annual-rents-suburb" - 
-# looks like a permanent location but it's not, it's for a particular year 
-# (not the latest).
-</span><span class="w">
+</span><span class="c1"># Caution - this URL: "https://dhhs.vic.gov.au/moving-annual-rents-suburb" - </span><span class="w">
+</span><span class="c1"># looks like a permanent location but it's not, it's for a particular year </span><span class="w">
+</span><span class="c1"># (not the latest).</span><span class="w">
 
-</span><span class="c1"># Instead, see https://dhhs.vic.gov.au/publications/rental-report
+
+</span><span class="c1"># Instead, see https://dhhs.vic.gov.au/publications/rental-report</span><span class="w">
 </span><span class="n">url</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"https://www.dhhs.vic.gov.au/sites/default/files/documents/201805/Moving%20Annual%20rents%20by%20suburb%20-%20March%20quarter%202018.xlsx"</span><span class="w">
 </span><span class="n">download.file</span><span class="p">(</span><span class="n">url</span><span class="p">,</span><span class="w"> </span><span class="n">destfile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"melb-rents.xlsx"</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"wb"</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># what are all the worksheet names in that workbook?
+</span><span class="c1"># what are all the worksheet names in that workbook?</span><span class="w">
 </span><span class="n">sns</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">getSheetNames</span><span class="p">(</span><span class="s2">"melb-rents.xlsx"</span><span class="p">)</span><span class="w">
 </span><span class="n">sns</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sns</span><span class="p">[</span><span class="o">!</span><span class="n">sns</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="s2">"Suburb groupings"</span><span class="p">]</span><span class="w">
 
-</span><span class="c1"># read the data in one worksheet at a time and combine with rbind():
+</span><span class="c1"># read the data in one worksheet at a time and combine with rbind():</span><span class="w">
 </span><span class="n">rents</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">foreach</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="nf">length</span><span class="p">(</span><span class="n">sns</span><span class="p">),</span><span class="w"> </span><span class="n">.combine</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rbind</span><span class="p">)</span><span class="w"> </span><span class="o">%do%</span><span class="w"> </span><span class="p">{</span><span class="w">
   </span><span class="n">sheet_name</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sns</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w">
   </span><span class="n">rawdata</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">read.xlsx</span><span class="p">(</span><span class="s2">"melb-rents.xlsx"</span><span class="p">,</span><span class="w"> </span><span class="n">sheet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sheet_name</span><span class="p">)</span><span class="w">
   
-  </span><span class="c1"># Correct an annoying bug where column Z, which should be Dec 2002, is actually Dec 2003:
-</span><span class="w">  </span><span class="n">the_dates</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">as.character</span><span class="p">(</span><span class="n">unique</span><span class="p">(</span><span class="n">rawdata</span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="p">]))</span><span class="w">
+  </span><span class="c1"># Correct an annoying bug where column Z, which should be Dec 2002, is actually Dec 2003:</span><span class="w">
+  </span><span class="n">the_dates</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">as.character</span><span class="p">(</span><span class="n">unique</span><span class="p">(</span><span class="n">rawdata</span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="p">]))</span><span class="w">
   </span><span class="n">the_dates</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">the_dates</span><span class="p">[</span><span class="o">!</span><span class="nf">is.na</span><span class="p">(</span><span class="n">the_dates</span><span class="p">)]</span><span class="w">
   </span><span class="n">sep02</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">which</span><span class="p">(</span><span class="n">the_dates</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Sep 2002"</span><span class="p">)</span><span class="w">
   </span><span class="n">the_dates</span><span class="p">[</span><span class="n">sep02</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">1</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"Dec 2002"</span><span class="w">
   
-  </span><span class="c1"># read in data:
-</span><span class="w">  </span><span class="n">data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">rawdata</span><span class="p">[</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="m">-3</span><span class="p">]</span><span class="w">
+  </span><span class="c1"># read in data:</span><span class="w">
+  </span><span class="n">data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">rawdata</span><span class="p">[</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="m">-3</span><span class="p">]</span><span class="w">
   </span><span class="n">data</span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="n">the_dates</span><span class="p">,</span><span class="w"> </span><span class="n">each</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">))</span><span class="w">
   </span><span class="nf">names</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">paste</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="p">],</span><span class="w"> </span><span class="n">data</span><span class="p">[</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="p">])</span><span class="w">
   </span><span class="nf">names</span><span class="p">(</span><span class="n">data</span><span class="p">)[</span><span class="m">1</span><span class="o">:</span><span class="m">2</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"district"</span><span class="p">,</span><span class="w"> </span><span class="s2">"area"</span><span class="p">)</span><span class="w">
   </span><span class="n">data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="p">[</span><span class="o">-</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">2</span><span class="p">),</span><span class="w"> </span><span class="p">]</span><span class="w">
   
-  </span><span class="c1"># tidy up:
-</span><span class="w">  </span><span class="n">data</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="c1"># tidy up:</span><span class="w">
+  </span><span class="n">data</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
     </span><span class="n">gather</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">district</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">area</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> 
     </span><span class="n">as_tibble</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
     </span><span class="n">separate</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"mon"</span><span class="p">,</span><span class="w"> </span><span class="s2">"yr"</span><span class="p">,</span><span class="w"> </span><span class="s2">"variable"</span><span class="p">),</span><span class="w"> </span><span class="n">sep</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"\\s"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -244,13 +244,12 @@
 
 <p>The lowest number of counts for any suburb - quarter - dwelling combination is 10:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>&gt; rents %&gt;% filter(variable == "Count") %&gt;% summarise(min(value, na.rm = TRUE))
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; rents %&gt;% filter(variable == "Count") %&gt;% summarise(min(value, na.rm = TRUE))
 # A tibble: 1 x 1
   `min(value, na.rm = TRUE)`
                        &lt;dbl&gt;
 1                         10
-</code></pre>
-</div>
+</code></pre></div></div>
 
 <p>I’m presuming that combinations with less than 10 changes of tenant have been suppressed.</p>
 
@@ -264,7 +263,7 @@
 
 <p>Here’s the code for that graphic:</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># Rentals with 2 to 3 bedrooms
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># Rentals with 2 to 3 bedrooms</span><span class="w">
 </span><span class="n">rents_melb_23</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">rents</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">filter</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">"Count"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">filter</span><span class="p">(</span><span class="n">grepl</span><span class="p">(</span><span class="s2">"Melbourne"</span><span class="p">,</span><span class="w"> </span><span class="n">district</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">grepl</span><span class="p">(</span><span class="s2">"[2-3]"</span><span class="p">,</span><span class="w"> </span><span class="n">property</span><span class="p">))</span><span class="w">
@@ -330,7 +329,7 @@
   </span><span class="n">spread</span><span class="p">(</span><span class="n">ye_mar</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">growth</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">`2018`</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">`2001`</span><span class="p">)</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="p">(</span><span class="m">1</span><span class="o">/</span><span class="m">17</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># Scatterplot 1
+</span><span class="c1"># Scatterplot 1</span><span class="w">
 </span><span class="n">growth_melb</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">`2001`</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">`2018`</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">area</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
   </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">property</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
@@ -344,7 +343,7 @@
   </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"Rental costs in Melbourne, comparing 2001 and 2018"</span><span class="p">,</span><span class="w">
           </span><span class="s2">"Each point represents a single area."</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># Scatterplot 2
+</span><span class="c1"># Scatterplot 2</span><span class="w">
 </span><span class="n">growth_melb</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">`2001`</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">growth</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">area</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
   </span><span class="n">geom_point</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
@@ -360,7 +359,7 @@
 Higher cost flats have seen materially faster growth in rental prices, but this is not evident for houses."</span><span class="p">)</span><span class="w">
 
 
-</span><span class="c1"># modelling - completely unnecessary as the effect is so strong, but for the sake of it
+</span><span class="c1"># modelling - completely unnecessary as the effect is so strong, but for the sake of it</span><span class="w">
 </span><span class="n">growth_melb</span><span class="o">$</span><span class="n">start_price</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">growth_melb</span><span class="o">$</span><span class="s2">"2001"</span><span class="w">
 </span><span class="n">model</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lm</span><span class="p">(</span><span class="n">growth</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">start_price</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">property</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">growth_melb</span><span class="p">)</span><span class="w">
 </span><span class="n">summary</span><span class="p">(</span><span class="n">model</span><span class="p">)</span><span class="w">
@@ -378,9 +377,9 @@ Higher cost flats have seen materially faster growth in rental prices, but this 
 
 <p><img src="/img/0123-growth-volume.svg" width="100%" /></p>
 
-<p>That graphic feels a bit squashed compared to the others, because I’ve forced both axes to use the same scale (with <code class="highlighter-rouge">+ coord_equal()</code>), which is usually good practice in this situation.  It highlights that each facet is wider than it is tall, because of the greater variation in growth of volume of moves than in pricing.</p>
+<p>That graphic feels a bit squashed compared to the others, because I’ve forced both axes to use the same scale (with <code class="language-plaintext highlighter-rouge">+ coord_equal()</code>), which is usually good practice in this situation.  It highlights that each facet is wider than it is tall, because of the greater variation in growth of volume of moves than in pricing.</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#----------compare price and volume------
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#----------compare price and volume------</span><span class="w">
 </span><span class="n">growth_melb_counts</span><span class="w"> </span><span class="o">&lt;-</span><span class="w">  </span><span class="n">rents</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">filter</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Count"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">filter</span><span class="p">(</span><span class="n">grepl</span><span class="p">(</span><span class="s2">"Melbourne"</span><span class="p">,</span><span class="w"> </span><span class="n">district</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">grepl</span><span class="p">(</span><span class="s2">"[2-3]"</span><span class="p">,</span><span class="w"> </span><span class="n">property</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">

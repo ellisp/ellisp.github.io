@@ -18,7 +18,7 @@
             <meta property="og:image" content="http://ellisp.github.io/img/0105-scatter.png" />
          
 		 
-			<meta property="og:url" content="http://freerangestats.info/blog/2017/07/22/inter-country-inequality.html" />
+			<meta property="og:url" content="http://localhost:4000/blog/2017/07/22/inter-country-inequality.html" />
 		 
          <meta property="og:author" content= "https://www.facebook.com/peterstats" />
          <meta property="og:type" content="article" />
@@ -113,7 +113,7 @@
                   <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
 				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
                   <li><a href="/blog/surveys.html">all posts on surveys</a></li> 
-				  <li><a href = /blog/2022/10/13/pacific-map>most recent post</a></li>
+				  <li><a href = /blog/2023/02/25/ilr>most recent post</a></li>
 				</ul>
             </li>
               <li><a href="/blog/showcase.html">showcase</a></li>
@@ -160,7 +160,7 @@
 
 	<div class="post">
 		
-	  <p>I recently read the high quality book <a href="http://www.hup.harvard.edu/catalog.php?isbn=9780674737136"><em>Global Inequality</em></a> by Branko Milanovic.  When reading this sort of thing, I often find I can increase my engagement with a topic by playing around with the data myself.  In this day and age, this is much more likely to be possible than a couple of decades back!  I remember when I first studied development economics, typing into Lotus 123 the data from tables in the back of a <em>World Development Report</em>.  These days to get the same data we just fire up R and get the data from the <code class="highlighter-rouge">WDI</code> package, which speaks directly to the World Bank’s World Development Indicators API.</p>
+	  <p>I recently read the high quality book <a href="http://www.hup.harvard.edu/catalog.php?isbn=9780674737136"><em>Global Inequality</em></a> by Branko Milanovic.  When reading this sort of thing, I often find I can increase my engagement with a topic by playing around with the data myself.  In this day and age, this is much more likely to be possible than a couple of decades back!  I remember when I first studied development economics, typing into Lotus 123 the data from tables in the back of a <em>World Development Report</em>.  These days to get the same data we just fire up R and get the data from the <code class="language-plaintext highlighter-rouge">WDI</code> package, which speaks directly to the World Bank’s World Development Indicators API.</p>
 
 <h2 id="re-creating-three-charts">Re-creating three charts</h2>
 
@@ -207,42 +207,42 @@ the WDI were restricted to data about currently existing countries (eg excluding
 
 <h2 id="delving">Delving</h2>
 
-<p>Here’s how I did this.  First, here’s the code to load up R functionality for the whole session, set a colour palette I’m going to use a couple of times, explore the names of the various data collections available in the <code class="highlighter-rouge">WDI</code> interface, and download the datasets I need for GDP per capita (constant US dollars), GDP per capita (constant PPP US dollars) and population:</p>
+<p>Here’s how I did this.  First, here’s the code to load up R functionality for the whole session, set a colour palette I’m going to use a couple of times, explore the names of the various data collections available in the <code class="language-plaintext highlighter-rouge">WDI</code> interface, and download the datasets I need for GDP per capita (constant US dollars), GDP per capita (constant PPP US dollars) and population:</p>
 
 <figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">WDI</span><span class="p">)</span><span class="w">
-</span><span class="n">library</span><span class="p">(</span><span class="n">ineq</span><span class="p">)</span><span class="w"> </span><span class="c1"># for Gini
-</span><span class="n">library</span><span class="p">(</span><span class="n">acid</span><span class="p">)</span><span class="w"> </span><span class="c1"># for weighted.gini
+</span><span class="n">library</span><span class="p">(</span><span class="n">ineq</span><span class="p">)</span><span class="w"> </span><span class="c1"># for Gini</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">acid</span><span class="p">)</span><span class="w"> </span><span class="c1"># for weighted.gini</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">forcats</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">RColorBrewer</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">directlabels</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">ggrepel</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">testthat</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">forecastHybrid</span><span class="p">)</span><span class="w">
-</span><span class="n">library</span><span class="p">(</span><span class="n">stringr</span><span class="p">)</span><span class="w"> </span><span class="c1"># for str_wrap
-</span><span class="w">
-</span><span class="c1"># Colour palette for making sure charts use the same colours:
+</span><span class="n">library</span><span class="p">(</span><span class="n">stringr</span><span class="p">)</span><span class="w"> </span><span class="c1"># for str_wrap</span><span class="w">
+
+</span><span class="c1"># Colour palette for making sure charts use the same colours:</span><span class="w">
 </span><span class="n">gini_palette</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">brewer.pal</span><span class="p">(</span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="s2">"Set2"</span><span class="p">)</span><span class="w">
 </span><span class="nf">names</span><span class="p">(</span><span class="n">gini_palette</span><span class="p">)[</span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="m">2</span><span class="p">)]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Unweighted"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Weighted"</span><span class="p">)</span><span class="w">
 
 
-</span><span class="c1">#==============download data===========
+</span><span class="c1">#==============download data===========</span><span class="w">
 </span><span class="n">tmp1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">WDIsearch</span><span class="p">(</span><span class="s2">"GDP per capita"</span><span class="p">)</span><span class="w">
 </span><span class="n">tmp2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">WDIsearch</span><span class="p">(</span><span class="s2">"population"</span><span class="p">)</span><span class="w">
-</span><span class="c1"># "NY.GDP.PCAP.PP.KD"    "GDP per capita, PPP (constant 2005 international $)"  
-# - this one sounds and looks like what Milanovic used but now it only goes to 1990
-# In http://databank.worldbank.org/data/download/WDIrevisions.xls,
-# it is stated that from May 2014 PPP data are onlyu provided back to 1990 due
-# to concerns about the risk of inaccuracy the further back from the benchmark year
-</span><span class="w">
-</span><span class="c1"># alternatives:
-# "NY.GDP.PCAP.KD"       "GDP per capita (constant 2000 US$)" ie not adjusted for inter-country price differences
-# "GDP.PC.KD"              "GDP per Capita, constant US$, millions" - doesn't seem to exist
-# "NY.GDP.PCAP.CD"       "GDP per capita (current US$)"    ie not corrected for inflation at all
-#  "NY.GDP.PCAP.KN"       "GDP per capita (constant LCU)"  ie local currency
-# SPPOPTOTL Population, millions at least this is straightforward...
-</span><span class="w">
+</span><span class="c1"># "NY.GDP.PCAP.PP.KD"    "GDP per capita, PPP (constant 2005 international $)"  </span><span class="w">
+</span><span class="c1"># - this one sounds and looks like what Milanovic used but now it only goes to 1990</span><span class="w">
+</span><span class="c1"># In http://databank.worldbank.org/data/download/WDIrevisions.xls,</span><span class="w">
+</span><span class="c1"># it is stated that from May 2014 PPP data are onlyu provided back to 1990 due</span><span class="w">
+</span><span class="c1"># to concerns about the risk of inaccuracy the further back from the benchmark year</span><span class="w">
+
+</span><span class="c1"># alternatives:</span><span class="w">
+</span><span class="c1"># "NY.GDP.PCAP.KD"       "GDP per capita (constant 2000 US$)" ie not adjusted for inter-country price differences</span><span class="w">
+</span><span class="c1"># "GDP.PC.KD"              "GDP per Capita, constant US$, millions" - doesn't seem to exist</span><span class="w">
+</span><span class="c1"># "NY.GDP.PCAP.CD"       "GDP per capita (current US$)"    ie not corrected for inflation at all</span><span class="w">
+</span><span class="c1">#  "NY.GDP.PCAP.KN"       "GDP per capita (constant LCU)"  ie local currency</span><span class="w">
+</span><span class="c1"># SPPOPTOTL Population, millions at least this is straightforward...</span><span class="w">
+
 </span><span class="n">gdp_ppp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">WDI</span><span class="p">(</span><span class="n">indicator</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"NY.GDP.PCAP.PP.KD"</span><span class="p">,</span><span class="w"> </span><span class="s2">"SP.POP.TOTL"</span><span class="p">),</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1960</span><span class="p">,</span><span class="w"> </span><span class="n">end</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2016</span><span class="p">,</span><span class="w"> </span><span class="n">extra</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w">
 </span><span class="n">gdp_constant</span><span class="w"> </span><span class="o">&lt;-</span><span class="w">  </span><span class="n">WDI</span><span class="p">(</span><span class="n">indicator</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"NY.GDP.PCAP.KD"</span><span class="p">,</span><span class="w"> </span><span class="s2">"SP.POP.TOTL"</span><span class="p">),</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1960</span><span class="p">,</span><span class="w"> </span><span class="n">end</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2016</span><span class="p">,</span><span class="w"> </span><span class="n">extra</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span></code></pre></figure>
 
@@ -250,8 +250,8 @@ the WDI were restricted to data about currently existing countries (eg excluding
 
 <p><img src="/img/0105-line-charts.svg" width="100%" /></p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#============time series chart=================
-</span><span class="n">p</span><span class="m">1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">gdp_constant</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#============time series chart=================</span><span class="w">
+</span><span class="n">p1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">gdp_constant</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">rename</span><span class="p">(</span><span class="n">gdp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NY.GDP.PCAP.KD</span><span class="p">)</span><span class="w">  </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">filter</span><span class="p">(</span><span class="n">country</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"United States"</span><span class="p">,</span><span class="w"> </span><span class="s2">"United Kingdom"</span><span class="p">,</span><span class="w"> </span><span class="s2">"France"</span><span class="p">,</span><span class="w"> </span><span class="s2">"China"</span><span class="p">,</span><span class="w"> </span><span class="s2">"India"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Thailand"</span><span class="p">,</span><span class="w"> </span><span class="s2">"South Africa"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">year</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gdp</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">country</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
@@ -260,7 +260,7 @@ the WDI were restricted to data about currently existing countries (eg excluding
   </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Source: World Development Indicators"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
   </span><span class="n">ggtitle</span><span class="p">(</span><span class="s2">"GDP per capita over time, selected countries"</span><span class="p">)</span><span class="w">
 
-</span><span class="n">direct.label</span><span class="p">(</span><span class="n">p</span><span class="m">1</span><span class="p">)</span></code></pre></figure>
+</span><span class="n">direct.label</span><span class="p">(</span><span class="n">p1</span><span class="p">)</span></code></pre></figure>
 
 <p>Next I had to sort a problem of which “countries” to include.  The WDI data includes a number of regional aggregations, and also countries that are missing quite a bit of data.</p>
 
@@ -274,25 +274,25 @@ the WDI were restricted to data about currently existing countries (eg excluding
 
 <p>Here’s the code for sorting through the country and regional issues:</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#============country coverage==========
-# first we need to work out which "countries" are actually regional aggregations
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#============country coverage==========</span><span class="w">
+</span><span class="c1"># first we need to work out which "countries" are actually regional aggregations</span><span class="w">
 </span><span class="n">country_codes</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">gdp_ppp</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">dplyr</span><span class="o">::</span><span class="n">select</span><span class="p">(</span><span class="n">iso2c</span><span class="p">,</span><span class="w"> </span><span class="n">country</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">distinct</span><span class="p">()</span><span class="w">
-</span><span class="c1"># everything begining with X except XK (Kosovo) is a grouping eg "Euro area"
-# everything with a number in it is a a group eg T5 is South Asia (IDA and IBRD)
-# ZF, ZG, ZQ, ZT, ZJ are regions
-# OE is the OECD
-# EU is the European Union
-</span><span class="w">
+</span><span class="c1"># everything begining with X except XK (Kosovo) is a grouping eg "Euro area"</span><span class="w">
+</span><span class="c1"># everything with a number in it is a a group eg T5 is South Asia (IDA and IBRD)</span><span class="w">
+</span><span class="c1"># ZF, ZG, ZQ, ZT, ZJ are regions</span><span class="w">
+</span><span class="c1"># OE is the OECD</span><span class="w">
+</span><span class="c1"># EU is the European Union</span><span class="w">
+
 </span><span class="n">codes</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">country_codes</span><span class="o">$</span><span class="n">iso2c</span><span class="w">
 </span><span class="n">exes</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">codes</span><span class="p">[</span><span class="n">grepl</span><span class="p">(</span><span class="s2">"^X"</span><span class="p">,</span><span class="w"> </span><span class="n">codes</span><span class="p">)]</span><span class="w">
 </span><span class="n">exes</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">exes</span><span class="p">[</span><span class="n">exes</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">"XK"</span><span class="p">]</span><span class="w">
 
-</span><span class="c1"># regs has the iso2c codes for regional aggregfations:
+</span><span class="c1"># regs has the iso2c codes for regional aggregfations:</span><span class="w">
 </span><span class="n">regs</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">exes</span><span class="p">,</span><span class="w"> </span><span class="n">codes</span><span class="p">[</span><span class="n">grepl</span><span class="p">(</span><span class="s2">"[0-9]"</span><span class="p">,</span><span class="w"> </span><span class="n">codes</span><span class="p">)],</span><span class="w"> </span><span class="s2">"ZF"</span><span class="p">,</span><span class="w"> </span><span class="s2">"ZG"</span><span class="p">,</span><span class="w"> </span><span class="s2">"ZQ"</span><span class="p">,</span><span class="w"> </span><span class="s2">"ZT"</span><span class="p">,</span><span class="w"> </span><span class="s2">"ZJ"</span><span class="p">,</span><span class="w"> </span><span class="s2">"OE"</span><span class="p">,</span><span class="w"> </span><span class="s2">"EU"</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># how many countries have data each year?
+</span><span class="c1"># how many countries have data each year?</span><span class="w">
 </span><span class="n">gdp_constant</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">filter</span><span class="p">(</span><span class="o">!</span><span class="n">iso2c</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="n">regs</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">group_by</span><span class="p">(</span><span class="n">year</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -309,7 +309,7 @@ the WDI were restricted to data about currently existing countries (eg excluding
   </span><span class="n">summarise</span><span class="p">(</span><span class="n">prop_complete</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="o">!</span><span class="nf">is.na</span><span class="p">(</span><span class="n">NY.GDP.PCAP.KD</span><span class="p">))</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">n</span><span class="p">())</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">arrange</span><span class="p">(</span><span class="n">desc</span><span class="p">(</span><span class="n">prop_complete</span><span class="p">))</span><span class="w">
 
-</span><span class="c1"># some surprises here.  For example New Zealand only has data from 1977 onwards
+</span><span class="c1"># some surprises here.  For example New Zealand only has data from 1977 onwards</span><span class="w">
 </span><span class="n">country_coverage</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">filter</span><span class="p">(</span><span class="n">prop_complete</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">prop_complete</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">country</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_reorder</span><span class="p">(</span><span class="n">country</span><span class="p">,</span><span class="w"> </span><span class="n">prop_complete</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -320,10 +320,10 @@ the WDI were restricted to data about currently existing countries (eg excluding
                      </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
   </span><span class="n">labs</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Source: World Development Indicators"</span><span class="p">)</span></code></pre></figure>
 
-<p>Here’s the code that draws the three main charts.  The <code class="highlighter-rouge">tidyverse</code> makes it pretty easy to do this calculation of summary statistics like Gini or weighted Gini for arbitrary groupings and turn them into nice charts.</p>
+<p>Here’s the code that draws the three main charts.  The <code class="language-plaintext highlighter-rouge">tidyverse</code> makes it pretty easy to do this calculation of summary statistics like Gini or weighted Gini for arbitrary groupings and turn them into nice charts.</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#================Variant of figure 4.1 on Gini over time===========
-# constant prices version, which we will then rbind onto the PPP version:
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#================Variant of figure 4.1 on Gini over time===========</span><span class="w">
+</span><span class="c1"># constant prices version, which we will then rbind onto the PPP version:</span><span class="w">
 </span><span class="n">tmp</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">gdp_constant</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">rename</span><span class="p">(</span><span class="n">gdp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NY.GDP.PCAP.KD</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">var</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"USD exchange rates"</span><span class="p">)</span><span class="w">
@@ -333,8 +333,8 @@ the WDI were restricted to data about currently existing countries (eg excluding
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">var</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Purchasing Power Parity"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">rbind</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">filter</span><span class="p">(</span><span class="n">country</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="n">filter</span><span class="p">(</span><span class="n">country_coverage</span><span class="p">,</span><span class="w"> </span><span class="n">prop_complete</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="o">$</span><span class="n">country</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-  </span><span class="c1"># need to knock out the NA values in the PPP data:
-</span><span class="w">  </span><span class="n">filter</span><span class="p">(</span><span class="o">!</span><span class="nf">is.na</span><span class="p">(</span><span class="n">gdp</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="c1"># need to knock out the NA values in the PPP data:</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="o">!</span><span class="nf">is.na</span><span class="p">(</span><span class="n">gdp</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">group_by</span><span class="p">(</span><span class="n">year</span><span class="p">,</span><span class="w"> </span><span class="n">var</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">summarise</span><span class="p">(</span><span class="n">Unweighted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Gini</span><span class="p">(</span><span class="n">gdp</span><span class="p">),</span><span class="w">
             </span><span class="n">Weighted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">weighted.gini</span><span class="p">(</span><span class="n">gdp</span><span class="p">,</span><span class="w"> </span><span class="n">SP.POP.TOTL</span><span class="p">)</span><span class="o">$</span><span class="n">bcwGini</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -354,10 +354,10 @@ Inspired by Figure 4.1 from Milanovic, Global Inequality"</span><span class="p">
   </span><span class="n">scale_x_continuous</span><span class="p">(</span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">limits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1960</span><span class="p">,</span><span class="w"> </span><span class="m">2020</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
   </span><span class="n">scale_colour_manual</span><span class="p">(</span><span class="n">values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gini_palette</span><span class="p">)</span><span class="w"> 
 
-</span><span class="c1">#================Figure 4.2====================
-</span><span class="w">
-</span><span class="c1"># excluding Vietnam because they don't have any data now in WDI until the 1980s
-# adding in some other countries by population - not clear why excluded from the original
+</span><span class="c1">#================Figure 4.2====================</span><span class="w">
+
+</span><span class="c1"># excluding Vietnam because they don't have any data now in WDI until the 1980s</span><span class="w">
+</span><span class="c1"># adding in some other countries by population - not clear why excluded from the original</span><span class="w">
 </span><span class="n">emerging</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"India"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Brazil"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Indonesia"</span><span class="p">,</span><span class="w"> </span><span class="s2">"South Africa"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Pakistan"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Bangladesh"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Nigeria"</span><span class="p">,</span><span class="w">
               </span><span class="s2">"Mexico"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Thailand"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Philippines"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Egypt, Arab Rep."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Turkey"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Korea, Rep."</span><span class="p">,</span><span class="w">
               </span><span class="s2">"Iran, Islamic Rep."</span><span class="p">,</span><span class="w"> </span><span class="s2">"Myanmar"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Colombia"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Congo, Dem. Rep."</span><span class="p">)</span><span class="w">
@@ -370,8 +370,8 @@ Inspired by Figure 4.1 from Milanovic, Global Inequality"</span><span class="p">
   </span><span class="n">filter</span><span class="p">(</span><span class="n">country</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"European Union"</span><span class="p">,</span><span class="w"> </span><span class="s2">"United States"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Japan"</span><span class="p">,</span><span class="w"> </span><span class="n">emerging</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">country</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="n">emerging</span><span class="p">,</span><span class="w"> </span><span class="s2">"emerging"</span><span class="p">,</span><span class="w"> </span><span class="s2">"advanced"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">group_by</span><span class="p">(</span><span class="n">year</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-  </span><span class="c1"># needs to be false so bars don't draw when not present
-</span><span class="w">  </span><span class="n">summarise</span><span class="p">(</span><span class="n">gdp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">gdp</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">pop</span><span class="p">,</span><span class="w"> </span><span class="n">na.rm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="c1"># needs to be false so bars don't draw when not present</span><span class="w">
+  </span><span class="n">summarise</span><span class="p">(</span><span class="n">gdp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">gdp</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">pop</span><span class="p">,</span><span class="w"> </span><span class="n">na.rm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">group_by</span><span class="p">(</span><span class="n">type</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">diffgdp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="kc">NA</span><span class="p">,</span><span class="w"> </span><span class="n">diff</span><span class="p">(</span><span class="n">gdp</span><span class="p">)),</span><span class="w">
          </span><span class="n">growth</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">diffgdp</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="n">gdp</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">diffgdp</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -392,12 +392,12 @@ emerging and advanced economies, in percentage points"</span><span class="p">,</
              </span><span class="s2">"\n\nAdvanced countries defined as EU, USA and Japan"</span><span class="p">),</span><span class="w"> 
          </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Source: World Development Indicators"</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># This is much more positive in the late 1960s and 1970s than in the original,
-# and perhaps this is all because he had Vietnam (during the war...) and I don't
-# have data.
-</span><span class="w">
+</span><span class="c1"># This is much more positive in the late 1960s and 1970s than in the original,</span><span class="w">
+</span><span class="c1"># and perhaps this is all because he had Vietnam (during the war...) and I don't</span><span class="w">
+</span><span class="c1"># have data.</span><span class="w">
 
-</span><span class="c1">#====================Figure 4.3 scatter plots========
+
+</span><span class="c1">#====================Figure 4.3 scatter plots========</span><span class="w">
 </span><span class="n">end_year</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">2016</span><span class="w">
 </span><span class="n">gdp_summary</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">gdp_constant</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">filter</span><span class="p">(</span><span class="o">!</span><span class="n">iso2c</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="n">regs</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">year</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="m">1970</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -427,9 +427,9 @@ emerging and advanced economies, in percentage points"</span><span class="p">,</
   </span><span class="n">geom_smooth</span><span class="p">(</span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"lm"</span><span class="p">,</span><span class="w"> </span><span class="n">se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey40"</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">weight</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pop1970</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
   </span><span class="n">geom_point</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">country_type</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pop1970</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">10</span><span class="o">^</span><span class="m">6</span><span class="p">),</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
   </span><span class="n">geom_point</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pop1970</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">10</span><span class="o">^</span><span class="m">6</span><span class="p">),</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"black"</span><span class="p">,</span><span class="w"> </span><span class="n">shape</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
-  </span><span class="c1"># next line would give labels for points but horribly cluttered plot
-</span><span class="w">  </span><span class="c1"># geom_text_repel(aes(label = iso2c)) +
-</span><span class="w">  </span><span class="n">scale_x_log10</span><span class="p">(</span><span class="s2">"\nGDP per capita in 1970\n\nDotted line is unweighted regression; solid line is population-weighted regression.\n"</span><span class="p">,</span><span class="w"> 
+  </span><span class="c1"># next line would give labels for points but horribly cluttered plot</span><span class="w">
+  </span><span class="c1"># geom_text_repel(aes(label = iso2c)) +</span><span class="w">
+  </span><span class="n">scale_x_log10</span><span class="p">(</span><span class="s2">"\nGDP per capita in 1970\n\nDotted line is unweighted regression; solid line is population-weighted regression.\n"</span><span class="p">,</span><span class="w"> 
                 </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dollar</span><span class="p">,</span><span class="w"> </span><span class="n">breaks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1000</span><span class="p">,</span><span class="w"> </span><span class="m">5000</span><span class="p">,</span><span class="w"> </span><span class="m">20000</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
   </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="n">paste</span><span class="p">(</span><span class="s2">"Average growth between 1970 and"</span><span class="p">,</span><span class="w"> </span><span class="n">end_year</span><span class="p">),</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
   </span><span class="n">scale_size_area</span><span class="p">(</span><span class="s2">"Population\nin 1970 (m)"</span><span class="p">,</span><span class="w"> </span><span class="n">max_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
@@ -439,35 +439,35 @@ emerging and advanced economies, in percentage points"</span><span class="p">,</
           </span><span class="s2">"Constant prices, US dollars\nInspired by Figure 4.3 from Milanovic, Global Inequality"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
   </span><span class="n">theme</span><span class="p">(</span><span class="n">legend.position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"right"</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># Note the pattern is the same as in Milanovich's graphic, even though 
-</span><span class="err">#</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">growth</span><span class="w"> </span><span class="n">rates</span><span class="w"> </span><span class="n">seem</span><span class="w"> </span><span class="n">different</span></code></pre></figure>
+</span><span class="c1"># Note the pattern is the same as in Milanovich's graphic, even though </span><span class="w">
+</span><span class="c1"># the growth rates seem different</span></code></pre></figure>
 
 <h2 id="bonus---forecasting-inter-country-inequality">Bonus - forecasting inter-country inequality</h2>
 
-<p>An excursus in Milanovic’s book refers to some work  by others forecasting trends in global inequality if current trends continue.  I’m only working with inter-country data today, nothing that features the two individual-level global inequality, buit I was sufficiently interested in the idea to knock together my own very crude forecasts. I basically projected current country-level trends in GDP per capita and population growth with straightforward time series methods (a hybrid of Hyndman’s <code class="highlighter-rouge">auto.arima</code> and <code class="highlighter-rouge">ets</code> methods, as conveniently pulled together in the <code class="highlighter-rouge">forecastHybrid</code> package by David Shaub with minor help from myself).  The result shows the expected continued decline in weighted inequality as China and India continue to “catch up”:</p>
+<p>An excursus in Milanovic’s book refers to some work  by others forecasting trends in global inequality if current trends continue.  I’m only working with inter-country data today, nothing that features the two individual-level global inequality, buit I was sufficiently interested in the idea to knock together my own very crude forecasts. I basically projected current country-level trends in GDP per capita and population growth with straightforward time series methods (a hybrid of Hyndman’s <code class="language-plaintext highlighter-rouge">auto.arima</code> and <code class="language-plaintext highlighter-rouge">ets</code> methods, as conveniently pulled together in the <code class="language-plaintext highlighter-rouge">forecastHybrid</code> package by David Shaub with minor help from myself).  The result shows the expected continued decline in weighted inequality as China and India continue to “catch up”:</p>
 
 <p><img src="/img/0105-gini-forecasts.svg" width="100%" /></p>
 
 <p>Here’s the code for that forecasting exercise:</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#================forecasts of global gini=============
-# this is only a taster for what is described in Excursus 4.1 in Milanovic's book
-# because I only deal with inter-national inequality, and use very crude forecasts!
-# but it comes up with a modestly similar result.  I see a drop in inter-national inequaltiy
-# of about 0.07 whereas they find a drop in global inequality of 0.04.  These feel quite
-# potentially consistent (because most forecasts for intranational inequaltiy are increases).
-</span><span class="w">
-</span><span class="c1"># could do the forecasts of Gini by forecasting GDP per capita, and using the population 
-# forecasts from https://esa.un.org/unpd/wpp/Download/Standard/Population/
-# but.... effort!...
-# so let's just do our own forecasts
-</span><span class="w">
-</span><span class="cd">#' Forecast gdp and pop for one country gdp_constant
-#' and combines it with the historical data
-#' context-specific function, only works in this session
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#================forecasts of global gini=============</span><span class="w">
+</span><span class="c1"># this is only a taster for what is described in Excursus 4.1 in Milanovic's book</span><span class="w">
+</span><span class="c1"># because I only deal with inter-national inequality, and use very crude forecasts!</span><span class="w">
+</span><span class="c1"># but it comes up with a modestly similar result.  I see a drop in inter-national inequaltiy</span><span class="w">
+</span><span class="c1"># of about 0.07 whereas they find a drop in global inequality of 0.04.  These feel quite</span><span class="w">
+</span><span class="c1"># potentially consistent (because most forecasts for intranational inequaltiy are increases).</span><span class="w">
+
+</span><span class="c1"># could do the forecasts of Gini by forecasting GDP per capita, and using the population </span><span class="w">
+</span><span class="c1"># forecasts from https://esa.un.org/unpd/wpp/Download/Standard/Population/</span><span class="w">
+</span><span class="c1"># but.... effort!...</span><span class="w">
+</span><span class="c1"># so let's just do our own forecasts</span><span class="w">
+
+</span><span class="cd">#' Forecast gdp and pop for one country gdp_constant</span><span class="w">
+</span><span class="cd">#' and combines it with the historical data</span><span class="w">
+</span><span class="cd">#' context-specific function, only works in this session</span><span class="w">
 </span><span class="n">forecast_gdp_pop</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">the_country</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">20</span><span class="p">){</span><span class="w">
-  </span><span class="c1"># assumes presence in environment of a data.frame called gdp_constant
-</span><span class="w">  </span><span class="n">country_vars</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">gdp_constant</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="c1"># assumes presence in environment of a data.frame called gdp_constant</span><span class="w">
+  </span><span class="n">country_vars</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">gdp_constant</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
     </span><span class="n">rename</span><span class="p">(</span><span class="n">gdp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NY.GDP.PCAP.KD</span><span class="p">,</span><span class="w">
            </span><span class="n">pop</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SP.POP.TOTL</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
     </span><span class="n">arrange</span><span class="p">(</span><span class="n">year</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -475,13 +475,13 @@ emerging and advanced economies, in percentage points"</span><span class="p">,</
     </span><span class="n">dplyr</span><span class="o">::</span><span class="n">select</span><span class="p">(</span><span class="n">gdp</span><span class="p">,</span><span class="w"> </span><span class="n">pop</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
     </span><span class="n">ts</span><span class="p">(</span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1960</span><span class="p">)</span><span class="w"> 
 
-  </span><span class="c1"># a bit of fiddliness is needed because some countries are missing early GDP per person data.
-</span><span class="w">  </span><span class="c1"># maybe they should be knocked out altogether of course... but let's decide that
-</span><span class="w">  </span><span class="c1"># later and explicitly, this function shoudl be able to handle it either way
-</span><span class="w">  </span><span class="n">years_orig</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">time</span><span class="p">(</span><span class="n">country_vars</span><span class="p">)</span><span class="w">
+  </span><span class="c1"># a bit of fiddliness is needed because some countries are missing early GDP per person data.</span><span class="w">
+  </span><span class="c1"># maybe they should be knocked out altogether of course... but let's decide that</span><span class="w">
+  </span><span class="c1"># later and explicitly, this function shoudl be able to handle it either way</span><span class="w">
+  </span><span class="n">years_orig</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">time</span><span class="p">(</span><span class="n">country_vars</span><span class="p">)</span><span class="w">
   </span><span class="n">rows_include</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">which</span><span class="p">(</span><span class="o">!</span><span class="nf">is.na</span><span class="p">(</span><span class="n">country_vars</span><span class="p">[</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="s2">"gdp"</span><span class="p">]))</span><span class="w">
-  </span><span class="c1"># some "countries" have virtually no observations, so don't even try to forecast them...
-</span><span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="nf">length</span><span class="p">(</span><span class="n">rows_include</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">5</span><span class="p">){</span><span class="w"> 
+  </span><span class="c1"># some "countries" have virtually no observations, so don't even try to forecast them...</span><span class="w">
+  </span><span class="k">if</span><span class="p">(</span><span class="nf">length</span><span class="p">(</span><span class="n">rows_include</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">5</span><span class="p">){</span><span class="w"> 
     
     </span><span class="n">country_vars</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">country_vars</span><span class="p">[</span><span class="n">rows_include</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="w">
   
@@ -508,8 +508,8 @@ emerging and advanced economies, in percentage points"</span><span class="p">,</
   </span><span class="nf">return</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span><span class="w">
 </span><span class="p">}</span><span class="w">
 
-</span><span class="c1"># test cases.  Is designed to work even with countries with some NA values,
-# even though when doing it for real I decided to drop them.
+</span><span class="c1"># test cases.  Is designed to work even with countries with some NA values,</span><span class="w">
+</span><span class="c1"># even though when doing it for real I decided to drop them.</span><span class="w">
 </span><span class="n">forecast_gdp_pop</span><span class="p">(</span><span class="s2">"Australia"</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">100</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">gather</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">year</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">country</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">year</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
@@ -530,14 +530,14 @@ emerging and advanced economies, in percentage points"</span><span class="p">,</
   </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">scales</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"free_y"</span><span class="p">,</span><span class="w"> </span><span class="n">ncol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
   </span><span class="n">geom_line</span><span class="p">()</span><span class="w">
 
-</span><span class="c1"># vector of all the countries with complete data:
+</span><span class="c1"># vector of all the countries with complete data:</span><span class="w">
 </span><span class="n">all_countries</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">filter</span><span class="p">(</span><span class="n">country_coverage</span><span class="p">,</span><span class="w"> </span><span class="n">prop_complete</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="o">$</span><span class="n">country</span><span class="w">
 
-</span><span class="c1"># do the actual forecasts:
+</span><span class="c1"># do the actual forecasts:</span><span class="w">
 </span><span class="n">all_forecasts</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lapply</span><span class="p">(</span><span class="n">all_countries</span><span class="p">,</span><span class="w"> </span><span class="n">forecast_gdp_pop</span><span class="p">)</span><span class="w">
 </span><span class="n">all_forecasts_df</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">do.call</span><span class="p">(</span><span class="s2">"rbind"</span><span class="p">,</span><span class="w"> </span><span class="n">all_forecasts</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># draw graphic:
+</span><span class="c1"># draw graphic:</span><span class="w">
 </span><span class="n">all_forecasts_df</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">group_by</span><span class="p">(</span><span class="n">year</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">summarise</span><span class="p">(</span><span class="n">Unweighted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Gini</span><span class="p">(</span><span class="n">gdp_pp</span><span class="p">),</span><span class="w">

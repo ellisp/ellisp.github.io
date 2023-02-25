@@ -18,7 +18,7 @@
             <meta property="og:image" content="http://freerangestats.info/img/0176-weird2.png" />
          
 		 
-			<meta property="og:url" content="http://freerangestats.info/blog/2020/04/06/crazy-fox-y-axis.html" />
+			<meta property="og:url" content="http://localhost:4000/blog/2020/04/06/crazy-fox-y-axis.html" />
 		 
          <meta property="og:author" content= "https://www.facebook.com/peterstats" />
          <meta property="og:type" content="article" />
@@ -113,7 +113,7 @@
                   <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
 				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
                   <li><a href="/blog/surveys.html">all posts on surveys</a></li> 
-				  <li><a href = /blog/2022/10/13/pacific-map>most recent post</a></li>
+				  <li><a href = /blog/2023/02/25/ilr>most recent post</a></li>
 				</ul>
             </li>
               <li><a href="/blog/showcase.html">showcase</a></li>
@@ -168,13 +168,13 @@
 
 <p>I actually find this image sad, more so the more I look at it. Like many people I first found it amusing, then I just thought “how did they even <i>do</i> that?” I really don’t know, but most likely seems to be that in effect it was made (or heavily edited) by hand in graphic design software. Then I just felt sorry for whomever created it - out of their depth, under time pressure, or whatever their problems are.</p>
 
-<p>Of course, a flip version of that question, “how would you do this if you <i>wanted</i> to?”, is an interesting one. I took it on and decided it’s worth writing up as an illustration of the elegant power of the <code class="highlighter-rouge">scales</code> package (by Hadley Wickham and Dana Seidel), one of the important complements of <code class="highlighter-rouge">ggplot2</code>.</p>
+<p>Of course, a flip version of that question, “how would you do this if you <i>wanted</i> to?”, is an interesting one. I took it on and decided it’s worth writing up as an illustration of the elegant power of the <code class="language-plaintext highlighter-rouge">scales</code> package (by Hadley Wickham and Dana Seidel), one of the important complements of <code class="language-plaintext highlighter-rouge">ggplot2</code>.</p>
 
 <p>First, let’s draw a conventional version of the chart with the usual approach to axis scales:</p>
 
 <object type="image/svg+xml" data="/img/0176-normal.svg" width="100%"><img src="/img/0176-normal.png" width="100%" /></object>
 
-<p>This was created with the code below, most of which is about theming the chart to resemble the original look and feel. We’ll be able to use this plot, stored as <code class="highlighter-rouge">p</code>, later.</p>
+<p>This was created with the code below, most of which is about theming the chart to resemble the original look and feel. We’ll be able to use this plot, stored as <code class="language-plaintext highlighter-rouge">p</code>, later.</p>
 
 <figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
@@ -210,14 +210,14 @@
 
 </span><span class="n">p</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">labs</span><span class="p">(</span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Standard scaling (or non-scaling) of vertical axis"</span><span class="p">)</span></code></pre></figure>
 
-<p>In order to transform the vertical axis to the same, twisting and turning transformation implicitly used in Fox News’ version, we’ll create a new “transformation” object with the <code class="highlighter-rouge">scales</code> function <code class="highlighter-rouge">trans_new</code>. Each transformation in the <code class="highlighter-rouge">scales</code> paradigm goes two ways:</p>
+<p>In order to transform the vertical axis to the same, twisting and turning transformation implicitly used in Fox News’ version, we’ll create a new “transformation” object with the <code class="language-plaintext highlighter-rouge">scales</code> function <code class="language-plaintext highlighter-rouge">trans_new</code>. Each transformation in the <code class="language-plaintext highlighter-rouge">scales</code> paradigm goes two ways:</p>
 
 <ul>
-  <li>convert the the original value of y to a transformed version representing the position on the page (in this case, we need to convert any value of y from 30 to 90 to <code class="highlighter-rouge">y / 30</code> so it will align with positions 1 to 3, between 90 and 100 to a number between 3 and 4 so <code class="highlighter-rouge">3 + (y - 90) / 10</code>, and so on). We’ll use a bunch of simple linear transformations to do this.</li>
-  <li>convert the transformed values back to the originals. This is necessary for the labelling of the axis - this is why the label for 10,000 in <code class="highlighter-rouge">scale_y_log10()</code> is “10,000” or “1e4”, not “4”. So we need to tell our plotting functions that “3” on the transformed scale means 90 on the original, “5” means 130, and so on.</li>
+  <li>convert the the original value of y to a transformed version representing the position on the page (in this case, we need to convert any value of y from 30 to 90 to <code class="language-plaintext highlighter-rouge">y / 30</code> so it will align with positions 1 to 3, between 90 and 100 to a number between 3 and 4 so <code class="language-plaintext highlighter-rouge">3 + (y - 90) / 10</code>, and so on). We’ll use a bunch of simple linear transformations to do this.</li>
+  <li>convert the transformed values back to the originals. This is necessary for the labelling of the axis - this is why the label for 10,000 in <code class="language-plaintext highlighter-rouge">scale_y_log10()</code> is “10,000” or “1e4”, not “4”. So we need to tell our plotting functions that “3” on the transformed scale means 90 on the original, “5” means 130, and so on.</li>
 </ul>
 
-<p>Here’s the function <code class="highlighter-rouge">crazyfox_trans()</code> which stores both the original transform and its inverse:</p>
+<p>Here’s the function <code class="language-plaintext highlighter-rouge">crazyfox_trans()</code> which stores both the original transform and its inverse:</p>
 
 <figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">crazyfox_trans</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(){</span><span class="w">
   </span><span class="n">scales</span><span class="o">::</span><span class="n">trans_new</span><span class="p">(</span><span class="s2">"crazyfox"</span><span class="p">,</span><span class="w">
@@ -246,7 +246,7 @@
   </span><span class="p">)</span><span class="w">
 </span><span class="p">}</span></code></pre></figure>
 
-<p>… and here’s the result when we add this scale to our original plot, using the <code class="highlighter-rouge">trans =</code> argument of <code class="highlighter-rouge">scale_y_continuous</code>.</p>
+<p>… and here’s the result when we add this scale to our original plot, using the <code class="language-plaintext highlighter-rouge">trans =</code> argument of <code class="language-plaintext highlighter-rouge">scale_y_continuous</code>.</p>
 
 <figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">p</span><span class="w"> </span><span class="o">+</span><span class="w"> 
   </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="n">trans</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">crazyfox_trans</span><span class="p">())</span><span class="w"> </span><span class="o">+</span><span class="w"> 
@@ -265,9 +265,9 @@
 
 <object type="image/svg+xml" data="/img/0176-weird2.svg" width="100%"><img src="/img/0176-weird2.png" width="100%" /></object>
 
-<p>There we go. This noteworthy chart, re-created reproducibly with the correct transformations needed to make that scale appropriate. The benefit of this approach is that I now have the <code class="highlighter-rouge">crazyfox_trans()</code> function available for future use, if I need this particular weird stop-start stepwise transformation for future data.</p>
+<p>There we go. This noteworthy chart, re-created reproducibly with the correct transformations needed to make that scale appropriate. The benefit of this approach is that I now have the <code class="language-plaintext highlighter-rouge">crazyfox_trans()</code> function available for future use, if I need this particular weird stop-start stepwise transformation for future data.</p>
 
-<p>The more serious point here is the elegance of the transform / inverse structure of <code class="highlighter-rouge">scales</code>’ transformations. It’s something we take for granted (for example, in getting those labels right for a logarithmic scale) and will often seem basic, but as seen here gives enormous flexibility for creating new transformations easily and efficiently.</p>
+<p>The more serious point here is the elegance of the transform / inverse structure of <code class="language-plaintext highlighter-rouge">scales</code>’ transformations. It’s something we take for granted (for example, in getting those labels right for a logarithmic scale) and will often seem basic, but as seen here gives enormous flexibility for creating new transformations easily and efficiently.</p>
 
 
 

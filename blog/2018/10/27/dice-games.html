@@ -18,7 +18,7 @@
             <meta property="og:image" content="http://freerangestats.info/img/0137-game2-results.png" />
          
 		 
-			<meta property="og:url" content="http://freerangestats.info/blog/2018/10/27/dice-games.html" />
+			<meta property="og:url" content="http://localhost:4000/blog/2018/10/27/dice-games.html" />
 		 
          <meta property="og:author" content= "https://www.facebook.com/peterstats" />
          <meta property="og:type" content="article" />
@@ -113,7 +113,7 @@
                   <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
 				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
                   <li><a href="/blog/surveys.html">all posts on surveys</a></li> 
-				  <li><a href = /blog/2022/10/13/pacific-map>most recent post</a></li>
+				  <li><a href = /blog/2023/02/25/ilr>most recent post</a></li>
 				</ul>
             </li>
               <li><a href="/blog/showcase.html">showcase</a></li>
@@ -172,7 +172,7 @@
 
 <p>Computing the probability of A winning is a classic exercise in probability pedagogy with an elegant derivation. At the beginning of the game, A obviously has a 1/6 probability of winning straight away, and a 5/6 probability of being disappointed for now and giving the dice to B. At that point, B has 1/6 probability of winning straight away, and a 5/6 probability of having to give the dice back to A… So if p is the probability of winning given you are holding the dice, simply solve:</p>
 
-<script type="math/tex; mode=display">p = \frac{1}{6}1+\frac{5}{6}(1-p)</script>
+\[p = \frac{1}{6}1+\frac{5}{6}(1-p)\]
 
 <p>And some highschool algebra gives the answer as $$p = \frac{6}{11}$$.</p>
 
@@ -228,15 +228,15 @@
 <p>This situation is still simple enough to model analytically, but not (for me) in my head, so we’re getting towards territory where a simulation wins out.  Actually, I did work this one out analytically to make sure I got the simulation right, so let’s think that through first. We can calculate the probability of the current holder of the dice winning, from the second roll onwards,. This is the same 
 method as for the simpler game but with a 1/3 chance of winning on this role rather than 1/6.</p>
 
-<script type="math/tex; mode=display">p_b = \frac{1}{3}1+\frac{2}{3}(1-p_b)</script>
+\[p_b = \frac{1}{3}1+\frac{2}{3}(1-p_b)\]
 
 <p>The same maths as before gives us a 0.6 probability of winning if you hold the dice, from the second roll onwards. Then we go back to the situation at roll one for Player A and we have:</p>
 
-<script type="math/tex; mode=display">p_a = \frac{1}{6}1 + \frac{5}{6}(1-p_b)</script>
+\[p_a = \frac{1}{6}1 + \frac{5}{6}(1-p_b)\]
 
 <p>which yields exactly 0.5 as Player A’s chance at the beginning of the game.</p>
 
-<p>This game is markedly more complicated to simulate than the first one. I tried to use the same approach of generating a big vector of dice roles, then using the <code class="highlighter-rouge">tidyverse</code> and extensive use of <code class="highlighter-rouge">lag()</code> to implement the game logic, but it was simply too awkward.  The complications were issues such as when the dice roll is the same 3 or 4 rolls in a row, identifying in a data_frame with dice roll as a column exactly which rows marked a win and which ones needed to start the game again. I thought I’d cracked it several times only to discover bugs in rare situations (eg 5 identical non-six numbers in a row). That’s not good, for such a simple game. So I ended up with a completely different and conceptually simpler approach, closer to how humans play the game, of writing a function to play a round of the game.  Some people (not me) would regard this as less R-idiomatic because it doesn’t vectorize the whole thing, but it’s much more generalizable to more complex games which is where I’ll be heading in future posts.</p>
+<p>This game is markedly more complicated to simulate than the first one. I tried to use the same approach of generating a big vector of dice roles, then using the <code class="language-plaintext highlighter-rouge">tidyverse</code> and extensive use of <code class="language-plaintext highlighter-rouge">lag()</code> to implement the game logic, but it was simply too awkward.  The complications were issues such as when the dice roll is the same 3 or 4 rolls in a row, identifying in a data_frame with dice roll as a column exactly which rows marked a win and which ones needed to start the game again. I thought I’d cracked it several times only to discover bugs in rare situations (eg 5 identical non-six numbers in a row). That’s not good, for such a simple game. So I ended up with a completely different and conceptually simpler approach, closer to how humans play the game, of writing a function to play a round of the game.  Some people (not me) would regard this as less R-idiomatic because it doesn’t vectorize the whole thing, but it’s much more generalizable to more complex games which is where I’ll be heading in future posts.</p>
 
 <p><em>(Trust me, this is going somewhere - by the end of this series I have R successfully playing a 1970s text based computer game with the help of machine learning.)</em></p>
 
@@ -244,11 +244,11 @@ method as for the simpler game but with a 1/3 chance of winning on this role rat
 
 <p><img src="/img/0137-game2-results.svg" width="100%" /></p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="cd">#' Roll a dice and return the game 2 results for one round
-#' 
-#' @param last_roll the previous roll of the dice. If NA, this means we are at the beginning of the game
-#' @return a list with two elements: whether it was a win based on the rule of 6, or matching the last roll; 
-#' and what the latest roll of the dice is
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="cd">#' Roll a dice and return the game 2 results for one round</span><span class="w">
+</span><span class="cd">#' </span><span class="w">
+</span><span class="cd">#' @param last_roll the previous roll of the dice. If NA, this means we are at the beginning of the game</span><span class="w">
+</span><span class="cd">#' @return a list with two elements: whether it was a win based on the rule of 6, or matching the last roll; </span><span class="w">
+</span><span class="cd">#' and what the latest roll of the dice is</span><span class="w">
 </span><span class="n">diceroll</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">last_roll</span><span class="p">){</span><span class="w">
   </span><span class="n">this_roll</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sample</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">6</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
   
@@ -259,9 +259,9 @@ method as for the simpler game but with a 1/3 chance of winning on this role rat
   </span><span class="p">)</span><span class="w">
 </span><span class="p">}</span><span class="w">
 
-</span><span class="cd">#' Main cycle for playing "Game 2"
-#' 
-#' @return the number of rolls it took to win the game
+</span><span class="cd">#' Main cycle for playing "Game 2"</span><span class="w">
+</span><span class="cd">#' </span><span class="w">
+</span><span class="cd">#' @return the number of rolls it took to win the game</span><span class="w">
 </span><span class="n">dicegame</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(){</span><span class="w">
   </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">0</span><span class="w">
   </span><span class="n">rolls</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="kc">NA</span><span class="w">

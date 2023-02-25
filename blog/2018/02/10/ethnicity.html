@@ -18,7 +18,7 @@
             <meta property="og:image" content="http://ellisp.github.io/img/0117-ethnicity-screenshot.png" />
          
 		 
-			<meta property="og:url" content="http://freerangestats.info/blog/2018/02/10/ethnicity.html" />
+			<meta property="og:url" content="http://localhost:4000/blog/2018/02/10/ethnicity.html" />
 		 
          <meta property="og:author" content= "https://www.facebook.com/peterstats" />
          <meta property="og:type" content="article" />
@@ -113,7 +113,7 @@
                   <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
 				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
                   <li><a href="/blog/surveys.html">all posts on surveys</a></li> 
-				  <li><a href = /blog/2022/10/13/pacific-map>most recent post</a></li>
+				  <li><a href = /blog/2023/02/25/ilr>most recent post</a></li>
 				</ul>
             </li>
               <li><a href="/blog/showcase.html">showcase</a></li>
@@ -184,7 +184,7 @@
 
 <p>There’s also a <a href="/img/0117-ethnicity-large.html">larger version</a> available for using a full desktop sized screen.  Probably neither of them will look great on a mobile device; due to the way I’ve set up my website I’m avoiding using knitr directly to generate webpages, and this is one instance where it makes it a bit fiddlier to include a nice object like this graph; so they are just showing in iframes.  There is actually a method to <a href="https://stackoverflow.com/questions/34439928/embedding-an-r-htmlwidget-into-existing-webpage">properly embed an htmlwidget into an existing webpage</a>, but it’s a bit of a fiddle</p>
 
-<p>Here’s the R code that drew this.  It’s straightforward, other than perhaps a couple of tricks used to identify all the “edges” connecting categories with their sub-categories.  Of the various options out there for creating JavaScript network diagrams from R, I find <code class="highlighter-rouge">visNetwork</code> the most intuitive to use and easiest to customise.</p>
+<p>Here’s the R code that drew this.  It’s straightforward, other than perhaps a couple of tricks used to identify all the “edges” connecting categories with their sub-categories.  Of the various options out there for creating JavaScript network diagrams from R, I find <code class="language-plaintext highlighter-rouge">visNetwork</code> the most intuitive to use and easiest to customise.</p>
 
 <figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">openxlsx</span><span class="p">)</span><span class="w">
@@ -199,10 +199,10 @@
 </span><span class="n">nodes</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">read.xlsx</span><span class="p">(</span><span class="s2">"ethnic05.xlsx"</span><span class="p">)</span><span class="w">
 </span><span class="nf">names</span><span class="p">(</span><span class="n">nodes</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"id"</span><span class="p">,</span><span class="w"> </span><span class="s2">"label"</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># clean up:
+</span><span class="c1"># clean up:</span><span class="w">
 </span><span class="n">unlink</span><span class="p">(</span><span class="s2">"ethnic05.xlsx"</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># edges ie connection from one node to another
+</span><span class="c1"># edges ie connection from one node to another</span><span class="w">
 </span><span class="n">edges</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">expand.grid</span><span class="p">(</span><span class="n">nodes</span><span class="o">$</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">nodes</span><span class="o">$</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">stringsAsFactors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">rename</span><span class="p">(</span><span class="n">from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Var1</span><span class="p">,</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Var2</span><span class="p">)</span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">f_length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">str_length</span><span class="p">(</span><span class="n">from</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -210,18 +210,18 @@
   </span><span class="n">filter</span><span class="p">(</span><span class="n">str_sub</span><span class="p">(</span><span class="n">to</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">f_length</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">from</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">select</span><span class="p">(</span><span class="n">from</span><span class="p">,</span><span class="w"> </span><span class="n">to</span><span class="p">)</span><span class="w"> 
 
-</span><span class="c1"># extra columns in the nodes data frame for the visualisation
+</span><span class="c1"># extra columns in the nodes data frame for the visualisation</span><span class="w">
 </span><span class="n">nodes</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">nodes</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="w">
-    </span><span class="c1"># `title` is for tooltips:
-</span><span class="w">    </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> 
-    </span><span class="c1"># `group` is used for colour, so we use it to indicate the level of the classification:
-</span><span class="w">    </span><span class="n">group</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">str_length</span><span class="p">(</span><span class="n">id</span><span class="p">))</span><span class="w">
+    </span><span class="c1"># `title` is for tooltips:</span><span class="w">
+    </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> 
+    </span><span class="c1"># `group` is used for colour, so we use it to indicate the level of the classification:</span><span class="w">
+    </span><span class="n">group</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">str_length</span><span class="p">(</span><span class="n">id</span><span class="p">))</span><span class="w">
 
-</span><span class="c1"># a nice, ordered colour palette:	
+</span><span class="c1"># a nice, ordered colour palette:	</span><span class="w">
 </span><span class="n">pal</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">brewer.pal</span><span class="p">(</span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="s2">"YlOrRd"</span><span class="p">)[</span><span class="m">4</span><span class="o">:</span><span class="m">1</span><span class="p">]</span><span class="w">
 
-</span><span class="c1"># draw diagram and save as a web page:
+</span><span class="c1"># draw diagram and save as a web page:</span><span class="w">
 </span><span class="n">visNetwork</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span><span class="w"> </span><span class="n">edges</span><span class="p">,</span><span class="w"> </span><span class="n">width</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"1700px"</span><span class="p">,</span><span class="w"> </span><span class="n">height</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"900px"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">visPhysics</span><span class="p">(</span><span class="n">stabilization</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">timestep</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">.3</span><span class="p">,</span><span class="w">
              </span><span class="n">barnesHut</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="n">centralGravity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.6</span><span class="p">,</span><span class="w">

@@ -18,7 +18,7 @@
             <meta property="og:image" content="http://ellisp.github.io/img/0073-decomp.png" />
          
 		 
-			<meta property="og:url" content="http://freerangestats.info/blog/2016/12/18/air-quality-india.html" />
+			<meta property="og:url" content="http://localhost:4000/blog/2016/12/18/air-quality-india.html" />
 		 
          <meta property="og:author" content= "https://www.facebook.com/peterstats" />
          <meta property="og:type" content="article" />
@@ -113,7 +113,7 @@
                   <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
 				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
                   <li><a href="/blog/surveys.html">all posts on surveys</a></li> 
-				  <li><a href = /blog/2022/10/13/pacific-map>most recent post</a></li>
+				  <li><a href = /blog/2023/02/25/ilr>most recent post</a></li>
 				</ul>
             </li>
               <li><a href="/blog/showcase.html">showcase</a></li>
@@ -168,37 +168,37 @@
 <p><img src="/img/0073-decomp.png" alt="decomp" /></p>
 
 <h2 id="open-air-quality-data">Open Air Quality Data</h2>
-<p>But first thing was to get some data.  I didn’t have access to the original data but was aware of other sources, with shorter time spans, but hopefully still enough for my purposes.  My first call was the <a href="https://openaq.org/#/locations?page=3&amp;countries=AU&amp;_k=iz4lwf">openaq Air Quality Data</a> site and in particular the excellent <code class="highlighter-rouge">ropenaq</code> R package which speaks to the openaq API and makes it easy to access their data.  This looked very promising, but the data available are for far too short a period for me.  Here is the six months or so of data which is all that is available for Ahmedabad.</p>
+<p>But first thing was to get some data.  I didn’t have access to the original data but was aware of other sources, with shorter time spans, but hopefully still enough for my purposes.  My first call was the <a href="https://openaq.org/#/locations?page=3&amp;countries=AU&amp;_k=iz4lwf">openaq Air Quality Data</a> site and in particular the excellent <code class="language-plaintext highlighter-rouge">ropenaq</code> R package which speaks to the openaq API and makes it easy to access their data.  This looked very promising, but the data available are for far too short a period for me.  Here is the six months or so of data which is all that is available for Ahmedabad.</p>
 
 <p><img src="/img/0073-openaq.svg" alt="openaq" /></p>
 
 <p>For the record, here’s the R code that downloaded that data (nearly 23,000 observations - many observations per day) and drew the graph, and also set up the session for everything else done in the rest of this post</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># Might need to uncomment out and run these next two lines if not already installed:
-# devtools::install_github("Ather-Energy/ggTimeSeries")
-# devtools::install_github("masalmon/usaqmindia")
-</span><span class="w">
-</span><span class="c1"># load up functionality
-</span><span class="n">library</span><span class="p">(</span><span class="n">ropenaq</span><span class="p">)</span><span class="w"> </span><span class="c1"># sourced from OpenAQ, see https://github.com/ropensci/ropenaq
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># Might need to uncomment out and run these next two lines if not already installed:</span><span class="w">
+</span><span class="c1"># devtools::install_github("Ather-Energy/ggTimeSeries")</span><span class="w">
+</span><span class="c1"># devtools::install_github("masalmon/usaqmindia")</span><span class="w">
+
+</span><span class="c1"># load up functionality</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">ropenaq</span><span class="p">)</span><span class="w"> </span><span class="c1"># sourced from OpenAQ, see https://github.com/ropensci/ropenaq</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">ggplot2</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
-</span><span class="n">library</span><span class="p">(</span><span class="n">usaqmindia</span><span class="p">)</span><span class="w"> </span><span class="c1"># sourced from US Air Quality Monitoring, see https://github.com/masalmon/usaqmindia
+</span><span class="n">library</span><span class="p">(</span><span class="n">usaqmindia</span><span class="p">)</span><span class="w"> </span><span class="c1"># sourced from US Air Quality Monitoring, see https://github.com/masalmon/usaqmindia</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">forecastHybrid</span><span class="p">)</span><span class="w">
-</span><span class="n">library</span><span class="p">(</span><span class="n">seasonal</span><span class="p">)</span><span class="w">   </span><span class="c1"># for Diwali dates
+</span><span class="n">library</span><span class="p">(</span><span class="n">seasonal</span><span class="p">)</span><span class="w">   </span><span class="c1"># for Diwali dates</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">ggseas</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">ggmap</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">lubridate</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">RColorBrewer</span><span class="p">)</span><span class="w">
 
-</span><span class="n">data</span><span class="p">(</span><span class="n">holiday</span><span class="p">)</span><span class="w"> </span><span class="c1"># will be using this for "diwali"
-</span><span class="w">
-</span><span class="c1">#============openaq experiment================
-# based on the example on the package page on GitHub
+</span><span class="n">data</span><span class="p">(</span><span class="n">holiday</span><span class="p">)</span><span class="w"> </span><span class="c1"># will be using this for "diwali"</span><span class="w">
+
+</span><span class="c1">#============openaq experiment================</span><span class="w">
+</span><span class="c1"># based on the example on the package page on GitHub</span><span class="w">
 </span><span class="n">how_many</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">attr</span><span class="p">(</span><span class="n">aq_measurements</span><span class="p">(</span><span class="n">city</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Ahmedabad"</span><span class="p">),</span><span class="w"> </span><span class="s2">"meta"</span><span class="p">)</span><span class="w">
-</span><span class="n">n</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">how_many</span><span class="o">$</span><span class="n">found</span><span class="w"> </span><span class="c1"># unfortunately only goes back to mid 2015
+</span><span class="n">n</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">how_many</span><span class="o">$</span><span class="n">found</span><span class="w"> </span><span class="c1"># unfortunately only goes back to mid 2015</span><span class="w">
 </span><span class="n">results_ls</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">list</span><span class="p">()</span><span class="w">
-</span><span class="c1"># Limit is 1000 observations at once, so we bring them all in 1000 at a time:
+</span><span class="c1"># Limit is 1000 observations at once, so we bring them all in 1000 at a time:</span><span class="w">
 </span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="nf">ceiling</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">1000</span><span class="p">)){</span><span class="w">
    </span><span class="n">results_ls</span><span class="p">[[</span><span class="n">i</span><span class="p">]]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">aq_measurements</span><span class="p">(</span><span class="n">country</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"IN"</span><span class="p">,</span><span class="w"> </span><span class="n">city</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Ahmedabad"</span><span class="p">,</span><span class="w"> 
                                       </span><span class="n">date_from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"2010-01-01"</span><span class="p">,</span><span class="w"> 
@@ -206,11 +206,11 @@
    </span><span class="n">cat</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w">
 </span><span class="p">}</span><span class="w">
 
-</span><span class="c1"># convert into a data frame:
+</span><span class="c1"># convert into a data frame:</span><span class="w">
 </span><span class="n">results_df</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">do.call</span><span class="p">(</span><span class="s2">"rbind"</span><span class="p">,</span><span class="w"> </span><span class="n">results_ls</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
    </span><span class="n">arrange</span><span class="p">(</span><span class="n">dateLocal</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># draw exploratory graph
+</span><span class="c1"># draw exploratory graph</span><span class="w">
 </span><span class="n">results_df</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
    </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dateLocal</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w"> 
    </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">parameter</span><span class="p">,</span><span class="w"> </span><span class="n">ncol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">scales</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"free_y"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
@@ -221,15 +221,15 @@
 
 <h2 id="us-embassy-and-consulate-india-air-quality-monitoring">US Embassy and Consulate India Air Quality Monitoring</h2>
 
-<p>Luckily, the <a href="https://github.com/ropensci/ropenaq">GitHub page for the <code class="highlighter-rouge">ropenaq</code> R package</a> referenced a second R package, <a href="https://github.com/masalmon/usaqmindia"><code class="highlighter-rouge">usaqmindia</code></a>.  This package has tidied and bundled up various source CSV and PDF files <a href="https://in.usembassy.gov/embassy-consulates/new-delhi/air-quality-data/">published by the US State Department</a> on particulate matter concentrations in five Indian cities.  The R package might not be completely current, but it looks pretty good.  The particulate matter data are “commonly referred to as PM 2.5 because they are less than or equal to 2.5 microns in diameter”.</p>
+<p>Luckily, the <a href="https://github.com/ropensci/ropenaq">GitHub page for the <code class="language-plaintext highlighter-rouge">ropenaq</code> R package</a> referenced a second R package, <a href="https://github.com/masalmon/usaqmindia"><code class="language-plaintext highlighter-rouge">usaqmindia</code></a>.  This package has tidied and bundled up various source CSV and PDF files <a href="https://in.usembassy.gov/embassy-consulates/new-delhi/air-quality-data/">published by the US State Department</a> on particulate matter concentrations in five Indian cities.  The R package might not be completely current, but it looks pretty good.  The particulate matter data are “commonly referred to as PM 2.5 because they are less than or equal to 2.5 microns in diameter”.</p>
 
 <p>If your Indian geography is as rusty as mine you may appreciate this map of the five cities in question:</p>
 
 <p><img src="/img/0073-map.svg" alt="map" /></p>
 
-<p>… which was made with this code using the <code class="highlighter-rouge">ggmap</code> R package (yes, I looked up those latitude and longitudes and copied and pasted them by hand - there are better ways of doing this in general, but for just five cities this was simplest):</p>
+<p>… which was made with this code using the <code class="language-plaintext highlighter-rouge">ggmap</code> R package (yes, I looked up those latitude and longitudes and copied and pasted them by hand - there are better ways of doing this in general, but for just five cities this was simplest):</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#=========map of india========
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#=========map of india========</span><span class="w">
 </span><span class="n">cities</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data_frame</span><span class="p">(</span><span class="w">
    </span><span class="n">city</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Chennai"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Delhi"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Hyderabad"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Kolkata"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Mumbai"</span><span class="p">),</span><span class="w">
    </span><span class="n">lat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">13.067439</span><span class="p">,</span><span class="w"> </span><span class="m">28.644800</span><span class="p">,</span><span class="w"> </span><span class="m">17.387140</span><span class="p">,</span><span class="w"> </span><span class="m">22.572645</span><span class="p">,</span><span class="w"> </span><span class="m">19.0759837</span><span class="p">),</span><span class="w">
@@ -248,7 +248,7 @@
 
 <p>… which was created with this:</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#=========US Air Quality Monitoring===========
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#=========US Air Quality Monitoring===========</span><span class="w">
 </span><span class="n">data</span><span class="p">(</span><span class="s2">"pm25_india"</span><span class="p">)</span><span class="w">
 
 </span><span class="n">pm25_india</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -269,7 +269,7 @@
 
 <p>This is getting me somewhere.  The patterns in Kolkata and Mumbai are looking plausibly regular now.  This daily aggregation was made on the fly with this code:</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># daily aggregation
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># daily aggregation</span><span class="w">
 </span><span class="n">pm25_india</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
    </span><span class="n">mutate</span><span class="p">(</span><span class="n">day</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">as.Date</span><span class="p">(</span><span class="n">datetime</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
    </span><span class="n">group_by</span><span class="p">(</span><span class="n">day</span><span class="p">,</span><span class="w"> </span><span class="n">city</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -288,13 +288,13 @@
 
 <p><img src="/img/0073-monthplot.svg" alt="monthplots" /></p>
 
-<p>We can decompose the monthly series into the trend, seasonal and random elements using the <code class="highlighter-rouge">ggseas</code> package to get a simultaneous view of scale and seasonality.  The GitHub page of the <code class="highlighter-rouge">usaqmindia</code> R package draws attention to the importance of the Hindu <a href="https://en.wikipedia.org/wiki/Diwali">Diwali ‘festival of lights’</a> - which involves fireworks, burning effigies, lamps, and general celebrations - for the particulate matter concentrations, so I’m interested in annotating graphics with those months. This gives us the graphic I started the post with:</p>
+<p>We can decompose the monthly series into the trend, seasonal and random elements using the <code class="language-plaintext highlighter-rouge">ggseas</code> package to get a simultaneous view of scale and seasonality.  The GitHub page of the <code class="language-plaintext highlighter-rouge">usaqmindia</code> R package draws attention to the importance of the Hindu <a href="https://en.wikipedia.org/wiki/Diwali">Diwali ‘festival of lights’</a> - which involves fireworks, burning effigies, lamps, and general celebrations - for the particulate matter concentrations, so I’m interested in annotating graphics with those months. This gives us the graphic I started the post with:</p>
 
 <p><img src="/img/0073-decomp.svg" alt="decomp" /></p>
 
 <p>Here’s the code that did the above aggregation and analysis.</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># monthly aggregation graphic:
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># monthly aggregation graphic:</span><span class="w">
 </span><span class="n">pm25_india</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
    </span><span class="n">mutate</span><span class="p">(</span><span class="n">mon</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">substring</span><span class="p">(</span><span class="n">datetime</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">7</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
    </span><span class="n">group_by</span><span class="p">(</span><span class="n">mon</span><span class="p">,</span><span class="w"> </span><span class="n">city</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -311,7 +311,7 @@
         </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Trimmed mean monthly PM2.5 concentration"</span><span class="p">,</span><span class="w">
         </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Data: U.S. Embassy and Consulates in India"</span><span class="p">)</span><span class="w">
 		
-</span><span class="c1"># Create time series objects
+</span><span class="c1"># Create time series objects</span><span class="w">
 </span><span class="n">pm25_monthly_df</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">pm25_india</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
    </span><span class="n">mutate</span><span class="p">(</span><span class="n">mon</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">substring</span><span class="p">(</span><span class="n">datetime</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">7</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
    </span><span class="n">group_by</span><span class="p">(</span><span class="n">mon</span><span class="p">,</span><span class="w"> </span><span class="n">city</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -324,7 +324,7 @@
    </span><span class="n">map</span><span class="p">(</span><span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">){</span><span class="n">ts</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">2013</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">),</span><span class="w"> </span><span class="n">frequency</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">12</span><span class="p">)})</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
    </span><span class="n">do.call</span><span class="p">(</span><span class="n">cbind</span><span class="p">,</span><span class="w"> </span><span class="n">.</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># Month-plots
+</span><span class="c1"># Month-plots</span><span class="w">
 </span><span class="n">par</span><span class="p">(</span><span class="n">mfrow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">),</span><span class="w"> </span><span class="n">font.main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
 </span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">5</span><span class="p">){</span><span class="w">
    </span><span class="n">monthplot</span><span class="p">(</span><span class="n">pm25_monthly_ts</span><span class="p">[</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">],</span><span class="w"> </span><span class="n">bty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"l"</span><span class="p">,</span><span class="w">
@@ -333,27 +333,27 @@
    </span><span class="n">grid</span><span class="p">()</span><span class="w">
 </span><span class="p">}</span><span class="w">
 
-</span><span class="c1">#-------------Decomposition graphics----------------------   
-# named palette assigning a colour to each city
+</span><span class="c1">#-------------Decomposition graphics----------------------   </span><span class="w">
+</span><span class="c1"># named palette assigning a colour to each city</span><span class="w">
 </span><span class="n">palette</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">brewer.pal</span><span class="p">(</span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="s2">"Set1"</span><span class="p">)</span><span class="w">
 </span><span class="nf">names</span><span class="p">(</span><span class="n">palette</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Delhi"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Kolkata"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Mumbai"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Hyderabad"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Chennai"</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># Note that Diwali was in November 2013, October 2014, November 2015 in the relevant years
+</span><span class="c1"># Note that Diwali was in November 2013, October 2014, November 2015 in the relevant years</span><span class="w">
 </span><span class="n">diwali</span><span class="p">[</span><span class="m">114</span><span class="o">:</span><span class="m">116</span><span class="p">]</span><span class="w">
 
 
-</span><span class="c1"># Decomposition graphic:
+</span><span class="c1"># Decomposition graphic:</span><span class="w">
 </span><span class="n">pm25_monthly_ts</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
    </span><span class="n">as.data.frame</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
    </span><span class="n">mutate</span><span class="p">(</span><span class="n">time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">time</span><span class="p">(</span><span class="n">pm25_monthly_ts</span><span class="p">),</span><span class="w">
           </span><span class="n">month</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">time</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nf">floor</span><span class="p">(</span><span class="n">time</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
    </span><span class="n">gather</span><span class="p">(</span><span class="n">city</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">time</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">month</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> 
-   </span><span class="c1"># imputation: if value is missing, give it mean for that month and city:
-</span><span class="w">   </span><span class="n">group_by</span><span class="p">(</span><span class="n">city</span><span class="p">,</span><span class="w"> </span><span class="n">month</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="c1"># imputation: if value is missing, give it mean for that month and city:</span><span class="w">
+   </span><span class="n">group_by</span><span class="p">(</span><span class="n">city</span><span class="p">,</span><span class="w"> </span><span class="n">month</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
    </span><span class="n">mutate</span><span class="p">(</span><span class="n">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="nf">is.na</span><span class="p">(</span><span class="n">value</span><span class="p">),</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">na.rm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">),</span><span class="w"> </span><span class="n">value</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
    </span><span class="n">ungroup</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-   </span><span class="c1"># order city levels for drawing legend (there are better ways for doing this programmatically):
-</span><span class="w">   </span><span class="n">mutate</span><span class="p">(</span><span class="n">city</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">factor</span><span class="p">(</span><span class="n">city</span><span class="p">,</span><span class="w"> </span><span class="n">levels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Delhi"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Kolkata"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Mumbai"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Hyderabad"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Chennai"</span><span class="p">)))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+   </span><span class="c1"># order city levels for drawing legend (there are better ways for doing this programmatically):</span><span class="w">
+   </span><span class="n">mutate</span><span class="p">(</span><span class="n">city</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">factor</span><span class="p">(</span><span class="n">city</span><span class="p">,</span><span class="w"> </span><span class="n">levels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Delhi"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Kolkata"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Mumbai"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Hyderabad"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Chennai"</span><span class="p">)))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
    </span><span class="n">ggsdc</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">time</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">city</span><span class="p">),</span><span class="w"> </span><span class="n">s.window</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">7</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
    </span><span class="n">geom_line</span><span class="p">(</span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
    </span><span class="n">theme</span><span class="p">(</span><span class="n">legend.position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"right"</span><span class="p">)</span><span class="o">+</span><span class="w">
@@ -379,12 +379,12 @@
 </span><span class="n">acf</span><span class="p">(</span><span class="n">delhi</span><span class="p">)</span><span class="w">
 </span><span class="n">pacf</span><span class="p">(</span><span class="n">delhi</span><span class="p">)</span></code></pre></figure>
 
-<p>For analysis I was a little worried about second order stationarity, in particular whether the variance of monthly observations is higher when the mean observations are higher.  I also had in mind the possibility of using a model for forecasting.  While not shown in this already-too-long post, forecasting based on the original data hand a tendency for the lower range of the prediction interval to be negative, which isn’t possible and suggested the need for a transformation.  All these problems can be fixed by a <a href="https://en.wikipedia.org/wiki/Power_transform">Box-Cox power transform</a>.  The <code class="highlighter-rouge">BoxCox.lambda</code> function used below uses Guerrero’s 1993 method for choosing a value of <script type="math/tex">\lambda</script> that minimises the coefficient of variation of the time series.  With an estimated value of 0.21 for Delhi’s data (somewhere between a logarithm value of 0 and a square-root-like value of 0.5) this is well in the range of rule of thumb transformation commonly used for this sort of time series.</p>
+<p>For analysis I was a little worried about second order stationarity, in particular whether the variance of monthly observations is higher when the mean observations are higher.  I also had in mind the possibility of using a model for forecasting.  While not shown in this already-too-long post, forecasting based on the original data hand a tendency for the lower range of the prediction interval to be negative, which isn’t possible and suggested the need for a transformation.  All these problems can be fixed by a <a href="https://en.wikipedia.org/wiki/Power_transform">Box-Cox power transform</a>.  The <code class="language-plaintext highlighter-rouge">BoxCox.lambda</code> function used below uses Guerrero’s 1993 method for choosing a value of \(\lambda\) that minimises the coefficient of variation of the time series.  With an estimated value of 0.21 for Delhi’s data (somewhere between a logarithm value of 0 and a square-root-like value of 0.5) this is well in the range of rule of thumb transformation commonly used for this sort of time series.</p>
 
-<p>I use <script type="math/tex">\lambda = 0.21</script> for fitting an ARIMA model with a dummy variable for whether Diwali occurred in the month:</p>
+<p>I use \(\lambda = 0.21\) for fitting an ARIMA model with a dummy variable for whether Diwali occurred in the month:</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">BoxCox.lambda</span><span class="p">(</span><span class="n">delhi</span><span class="p">)</span><span class="w"> </span><span class="c1"># about 0.21.  Note that if we don't use this in forecasting there would be a tendency to forecast &lt; 0
-</span><span class="w">
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">BoxCox.lambda</span><span class="p">(</span><span class="n">delhi</span><span class="p">)</span><span class="w"> </span><span class="c1"># about 0.21.  Note that if we don't use this in forecasting there would be a tendency to forecast &lt; 0</span><span class="w">
+
 </span><span class="n">diwalix</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">window</span><span class="p">(</span><span class="n">genhol</span><span class="p">(</span><span class="n">diwali</span><span class="p">),</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">start</span><span class="p">(</span><span class="n">delhi</span><span class="p">),</span><span class="w"> </span><span class="n">end</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">end</span><span class="p">(</span><span class="n">delhi</span><span class="p">))</span><span class="w">
 
 </span><span class="n">mod0</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">auto.arima</span><span class="p">(</span><span class="n">delhi</span><span class="p">,</span><span class="w"> </span><span class="n">xreg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">diwalix</span><span class="p">,</span><span class="w"> </span><span class="n">lambda</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.21</span><span class="p">)</span><span class="w">
@@ -404,7 +404,7 @@
 </span><span class="n">sigma</span><span class="o">^</span><span class="m">2</span><span class="w"> </span><span class="n">estimated</span><span class="w"> </span><span class="n">as</span><span class="w"> </span><span class="m">0.1691</span><span class="o">:</span><span class="w">  </span><span class="n">log</span><span class="w"> </span><span class="n">likelihood</span><span class="o">=</span><span class="m">-20.41</span><span class="w">
 </span><span class="n">AIC</span><span class="o">=</span><span class="m">50.83</span><span class="w">   </span><span class="n">AICc</span><span class="o">=</span><span class="m">53.14</span><span class="w">   </span><span class="n">BIC</span><span class="o">=</span><span class="m">58.16</span></code></pre></figure>
 
-<p>A 95% confidence interval <code class="highlighter-rouge">confint(mod0)</code> for the Diwali impact is between -0.12 and +1.04 on the transformed scale.  This range includes zero so this analysis isn’t sufficient by itself to conclude it has an impact.  However, the power of this test would be pretty low (one of the prices paid for by the aggregation to the monthly level) and my intuitive Bayesian inside would be happy to say it is more likely than not that there is some impact of Diwali on particulate matter in the atmosphere in Delhi.</p>
+<p>A 95% confidence interval <code class="language-plaintext highlighter-rouge">confint(mod0)</code> for the Diwali impact is between -0.12 and +1.04 on the transformed scale.  This range includes zero so this analysis isn’t sufficient by itself to conclude it has an impact.  However, the power of this test would be pretty low (one of the prices paid for by the aggregation to the monthly level) and my intuitive Bayesian inside would be happy to say it is more likely than not that there is some impact of Diwali on particulate matter in the atmosphere in Delhi.</p>
 
 
 		

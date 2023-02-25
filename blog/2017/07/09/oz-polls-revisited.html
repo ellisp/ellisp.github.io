@@ -18,7 +18,7 @@
             <meta property="og:image" content="http://ellisp.github.io/img/0102a-all-polls-inflator-2.png" />
          
 		 
-			<meta property="og:url" content="http://freerangestats.info/blog/2017/07/09/oz-polls-revisited.html" />
+			<meta property="og:url" content="http://localhost:4000/blog/2017/07/09/oz-polls-revisited.html" />
 		 
          <meta property="og:author" content= "https://www.facebook.com/peterstats" />
          <meta property="og:type" content="article" />
@@ -113,7 +113,7 @@
                   <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
 				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
                   <li><a href="/blog/surveys.html">all posts on surveys</a></li> 
-				  <li><a href = /blog/2022/10/13/pacific-map>most recent post</a></li>
+				  <li><a href = /blog/2023/02/25/ilr>most recent post</a></li>
 				</ul>
             </li>
               <li><a href="/blog/showcase.html">showcase</a></li>
@@ -177,7 +177,7 @@
 
 <h2 id="vectorise-probability-statements-in-stan-wherever-possible">Vectorise probability statements in Stan wherever possible</h2>
 
-<p>The big eye-opener for me, at this stage early in my experience with Stan, was the huge performance boost from fitting a vector of random variables in a single statement rather than one at a time with a <code class="highlighter-rouge">for</code> loop.  As most of my programming is in R, this should come naturally to me, but I’d absorbed the message that because Stan programs are compiled in C++, loops aren’t slow in Stan the way they are in R.  It turns out this is correct, but a helpful footnote on page 123 of the helpful <a href="https://github.com/stan-dev/stan/releases/download/v2.16.0/stan-reference-2.16.0.pdf">user documentation</a> explains further:</p>
+<p>The big eye-opener for me, at this stage early in my experience with Stan, was the huge performance boost from fitting a vector of random variables in a single statement rather than one at a time with a <code class="language-plaintext highlighter-rouge">for</code> loop.  As most of my programming is in R, this should come naturally to me, but I’d absorbed the message that because Stan programs are compiled in C++, loops aren’t slow in Stan the way they are in R.  It turns out this is correct, but a helpful footnote on page 123 of the helpful <a href="https://github.com/stan-dev/stan/releases/download/v2.16.0/stan-reference-2.16.0.pdf">user documentation</a> explains further:</p>
 
 <blockquote>
   <p>Unlike in Python and R, which are interpreted, Stan is translated to C++ and compiled, so loops and
@@ -189,26 +189,26 @@ and reused.</p>
 
 <p>In my first version I had Stan code that looked like</p>
 
-<figure class="highlight"><pre><code class="language-stan" data-lang="stan">  for (i in 2:n_days) 
-      mu[i] ~ normal(mu[i - 1], 0.0025);</code></pre></figure>
+<figure class="highlight"><pre><code class="language-stan" data-lang="stan">  <span class="k">for</span> <span class="p">(</span><span class="nv">i</span> <span class="kr">in</span> <span class="mi">2</span><span class="o">:</span><span class="nv">n_days</span><span class="p">)</span> 
+      <span class="nv">mu</span><span class="p">[</span><span class="nv">i</span><span class="p">]</span> <span class="o">~</span> <span class="nb">normal</span><span class="p">(</span><span class="nv">mu</span><span class="p">[</span><span class="nv">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">],</span> <span class="mf">0.0025</span><span class="p">);</span></code></pre></figure>
 
 <p>Changing this to</p>
 
-<figure class="highlight"><pre><code class="language-stan" data-lang="stan">  mu[2:n_days] ~ normal(mu[1:(n_days - 1)], 0.0025);</code></pre></figure>
+<figure class="highlight"><pre><code class="language-stan" data-lang="stan">  <span class="nv">mu</span><span class="p">[</span><span class="mi">2</span><span class="o">:</span><span class="nv">n_days</span><span class="p">]</span> <span class="o">~</span> <span class="nb">normal</span><span class="p">(</span><span class="nv">mu</span><span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="p">(</span><span class="nv">n_days</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)],</span> <span class="mf">0.0025</span><span class="p">);</span></code></pre></figure>
 
-<p>and explicitly specifying <code class="highlighter-rouge">mu</code> as a vector in the parameter block sped up everything remarkably - for my simplest program (without any polling data and hence not a realistic exercise, but still), from 30 minutes to 4 minutes.  Similar gains came when I respecified the measurement error part of the model in vectorised terms, once I got to the models incorporating the polls.</p>
+<p>and explicitly specifying <code class="language-plaintext highlighter-rouge">mu</code> as a vector in the parameter block sped up everything remarkably - for my simplest program (without any polling data and hence not a realistic exercise, but still), from 30 minutes to 4 minutes.  Similar gains came when I respecified the measurement error part of the model in vectorised terms, once I got to the models incorporating the polls.</p>
 
 <h2 id="dont-give-a-parameter-two-priors">Don’t give a parameter two priors</h2>
 
-<p>In my original version, I’d forced the final (2007 election day) value of the latent voting intention <code class="highlighter-rouge">mu</code> to match the actual 2007 election result with this code (where <code class="highlighter-rouge">n_days</code> is the number of days from the 2004 election to the 2007 election and <code class="highlighter-rouge">mu_finish</code> is the 2007 election result):</p>
+<p>In my original version, I’d forced the final (2007 election day) value of the latent voting intention <code class="language-plaintext highlighter-rouge">mu</code> to match the actual 2007 election result with this code (where <code class="language-plaintext highlighter-rouge">n_days</code> is the number of days from the 2004 election to the 2007 election and <code class="language-plaintext highlighter-rouge">mu_finish</code> is the 2007 election result):</p>
 
-<figure class="highlight"><pre><code class="language-stan" data-lang="stan">mu[n_days] ~ normal(mu_finish, 0.0001);</code></pre></figure>
+<figure class="highlight"><pre><code class="language-stan" data-lang="stan"><span class="nv">mu</span><span class="p">[</span><span class="nv">n_days</span><span class="p">]</span> <span class="o">~</span> <span class="nb">normal</span><span class="p">(</span><span class="nv">mu_finish</span><span class="p">,</span> <span class="mf">0.0001</span><span class="p">);</span></code></pre></figure>
 
-<p>Dr Carpenter pointed out that this meant I declared the probability distribution of the final value of <code class="highlighter-rouge">mu</code> twice - once in the above, and once earlier when I’d specified it as equalling the latent voting intention the day before the election plus or minus a small random change.  In fact, I’d noticed this myself and had been surprised that it works (it does).  But it’s much clearer to change from specifying the distribution of <code class="highlighter-rouge">mu[n_days]</code> at this point, to specifying the distribution of the election result <code class="highlighter-rouge">mu_finish</code>:</p>
+<p>Dr Carpenter pointed out that this meant I declared the probability distribution of the final value of <code class="language-plaintext highlighter-rouge">mu</code> twice - once in the above, and once earlier when I’d specified it as equalling the latent voting intention the day before the election plus or minus a small random change.  In fact, I’d noticed this myself and had been surprised that it works (it does).  But it’s much clearer to change from specifying the distribution of <code class="language-plaintext highlighter-rouge">mu[n_days]</code> at this point, to specifying the distribution of the election result <code class="language-plaintext highlighter-rouge">mu_finish</code>:</p>
 
-<figure class="highlight"><pre><code class="language-stan" data-lang="stan">mu_finish ~ normal(mu[n_days], 0.0001);</code></pre></figure>
+<figure class="highlight"><pre><code class="language-stan" data-lang="stan"><span class="nv">mu_finish</span> <span class="o">~</span> <span class="nb">normal</span><span class="p">(</span><span class="nv">mu</span><span class="p">[</span><span class="nv">n_days</span><span class="p">],</span> <span class="mf">0.0001</span><span class="p">);</span></code></pre></figure>
 
-<p>This doesn’t seem to make any difference to performance or the results but it makes more sense.  I hadn’t done this originally because I was stuck thinking that the election result <code class="highlighter-rouge">mu_finish</code> was somehow particularly real and definitive, whereas latent voting intention <code class="highlighter-rouge">mu</code> was a random variable.  In fact, it makes perfect sense to think of (in this context) the election result as a random variable, very closely tied to the latent support for the ALP, but still imperfectly measured.  So moving it to the left of the <code class="highlighter-rouge">~</code> in the probability declaration statement above makes sense.</p>
+<p>This doesn’t seem to make any difference to performance or the results but it makes more sense.  I hadn’t done this originally because I was stuck thinking that the election result <code class="language-plaintext highlighter-rouge">mu_finish</code> was somehow particularly real and definitive, whereas latent voting intention <code class="language-plaintext highlighter-rouge">mu</code> was a random variable.  In fact, it makes perfect sense to think of (in this context) the election result as a random variable, very closely tied to the latent support for the ALP, but still imperfectly measured.  So moving it to the left of the <code class="language-plaintext highlighter-rouge">~</code> in the probability declaration statement above makes sense.</p>
 
 <h2 id="consider-longer-tailed-distributions">Consider longer-tailed distributions</h2>
 
@@ -244,11 +244,11 @@ and reused.</p>
 
 <p>A thing at the back of my mind as a potential weakness was that I was estimating variance for the measurement error of each poll based on its sample size and the poll’s own estimate of the proportion voting for labour ie</p>
 
-<script type="math/tex; mode=display">\sigma^2_\hat{\mu} = \frac{\hat{\mu}(1-\hat{\mu})}{n}</script>
+\[\sigma^2_\hat{\mu} = \frac{\hat{\mu}(1-\hat{\mu})}{n}\]
 
 <p>The <em>real</em> sampling variance of those estimates is of course:</p>
 
-<script type="math/tex; mode=display">\sigma^2_\hat{\mu} = \frac{\mu(1-\mu)}{n}</script>
+\[\sigma^2_\hat{\mu} = \frac{\mu(1-\mu)}{n}\]
 
 <p>…the difference being the use of the correct value of \(\mu\) rather than the estimate \(\hat{\mu}\).  In fact, using \(\hat{\mu}\) from an individual poll is precisely how people usually estimate standard error from a single poll because it is the best estimate available of \(\mu\).  But in my case, I have a good estimate of \(\mu\) for every single day - a better estimate than given by any single poll.  So it makes sense to use the proportion from my latent state model and re-estimate the standard errors as those expected proportions value change through the estimation process.</p>
 
@@ -265,29 +265,29 @@ and reused.</p>
 
 <p>In my original analysis I specified the state space parameter with</p>
 
-<figure class="highlight"><pre><code class="language-stan" data-lang="stan">parameters {
-  real&lt;lower=0, upper=1&gt; mu[n_days];  // underlying state of vote intention as a proportion
-}</code></pre></figure>
+<figure class="highlight"><pre><code class="language-stan" data-lang="stan"><span class="nn">parameters</span> <span class="p">{</span>
+  <span class="kt">real</span><span class="o">&lt;</span><span class="na">lower</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="na">upper</span><span class="o">=</span><span class="mi">1</span><span class="o">&gt;</span> <span class="nv">mu</span><span class="p">[</span><span class="nv">n_days</span><span class="p">];</span>  <span class="c1">// underlying state of vote intention as a proportion</span>
+<span class="p">}</span></code></pre></figure>
 
-<p>Dr Carpenter pointed out it wasn’t essential to have the <code class="highlighter-rouge">&lt;lower=0, upper=1&gt;</code> constraint and that this can cause problems if there is any probability mass at all near the boundaries.</p>
+<p>Dr Carpenter pointed out it wasn’t essential to have the <code class="language-plaintext highlighter-rouge">&lt;lower=0, upper=1&gt;</code> constraint and that this can cause problems if there is any probability mass at all near the boundaries.</p>
 
-<p>I tried removing this constraint; re-parameterising so the latent state I was modelling was the logarithm of the odds of ALP voting intention (and hence no need to be bound); with-and-without also reparameterising so the innovation is a random variable centered on zero and <code class="highlighter-rouge">mu</code> (other than its starting value) the cumulative sum of those innovations.  But I couldn’t get the fitting process to work satisfactorally in any combination of these changes.   The problem definitely lies with me but I’ll have to come back to it another time.</p>
+<p>I tried removing this constraint; re-parameterising so the latent state I was modelling was the logarithm of the odds of ALP voting intention (and hence no need to be bound); with-and-without also reparameterising so the innovation is a random variable centered on zero and <code class="language-plaintext highlighter-rouge">mu</code> (other than its starting value) the cumulative sum of those innovations.  But I couldn’t get the fitting process to work satisfactorally in any combination of these changes.   The problem definitely lies with me but I’ll have to come back to it another time.</p>
 
 <h2 id="final-model">Final model</h2>
 
 <p>Here’s the minimal version of the R code that does the data preparation, passes it to Stan to fit the model, and presents the results:</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">## Changes compared to previous version:
-# vectorize mu
-# vectorize the polls
-# double the variance of the polls to account for total survey error - because worried about http://www.slate.com/articles/news_and_politics/politics/2016/08/don_t_be_fooled_by_clinton_trump_polling_bounces.html
-# change the innovations to be based on student_t(4, mu, sigma) rather than normal(mu, sigma)
-</span><span class="w">
-</span><span class="c1">## Changes that were tried and either couldn't get to work or decided otherwise not to use:
-# calculate the poll standard errors from mu, not the poll
-# putting mu on a logit scale 
-# re-parameterise so an innovation "epsilon" with mean zero is the parameter and mu is a transformed paraeter
-</span><span class="w">
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">## Changes compared to previous version:</span><span class="w">
+</span><span class="c1"># vectorize mu</span><span class="w">
+</span><span class="c1"># vectorize the polls</span><span class="w">
+</span><span class="c1"># double the variance of the polls to account for total survey error - because worried about http://www.slate.com/articles/news_and_politics/politics/2016/08/don_t_be_fooled_by_clinton_trump_polling_bounces.html</span><span class="w">
+</span><span class="c1"># change the innovations to be based on student_t(4, mu, sigma) rather than normal(mu, sigma)</span><span class="w">
+
+</span><span class="c1">## Changes that were tried and either couldn't get to work or decided otherwise not to use:</span><span class="w">
+</span><span class="c1"># calculate the poll standard errors from mu, not the poll</span><span class="w">
+</span><span class="c1"># putting mu on a logit scale </span><span class="w">
+</span><span class="c1"># re-parameterise so an innovation "epsilon" with mean zero is the parameter and mu is a transformed paraeter</span><span class="w">
+
 </span><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">pscl</span><span class="p">)</span><span class="w">
@@ -296,20 +296,20 @@ and reused.</p>
 </span><span class="n">rstan_options</span><span class="p">(</span><span class="n">auto_write</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w">
 </span><span class="n">options</span><span class="p">(</span><span class="n">mc.cores</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">7</span><span class="p">)</span><span class="w">
 
-</span><span class="c1">#=========2004 election to 2007 election==============
+</span><span class="c1">#=========2004 election to 2007 election==============</span><span class="w">
 </span><span class="n">data</span><span class="p">(</span><span class="n">AustralianElectionPolling</span><span class="p">)</span><span class="w">
 </span><span class="n">data</span><span class="p">(</span><span class="n">AustralianElections</span><span class="p">)</span><span class="w">
 
 </span><span class="n">days_between_elections</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">as.integer</span><span class="p">(</span><span class="n">diff</span><span class="p">(</span><span class="n">as.Date</span><span class="p">(</span><span class="nf">c</span><span class="p">(</span><span class="s2">"2004-10-09"</span><span class="p">,</span><span class="w"> </span><span class="s2">"2007-11-24"</span><span class="p">))))</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">1</span><span class="w">
 
-</span><span class="cd">#' Function to plot time series extracted from a stan fit of latent state space model of 2007 Australian election
-#' Assumes parameter mu is the state space intent to vote ALP, on logit scale
+</span><span class="cd">#' Function to plot time series extracted from a stan fit of latent state space model of 2007 Australian election</span><span class="w">
+</span><span class="cd">#' Assumes parameter mu is the state space intent to vote ALP, on logit scale</span><span class="w">
 </span><span class="n">plot_results</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">stan_m</span><span class="p">){</span><span class="w">
    </span><span class="k">if</span><span class="p">(</span><span class="nf">class</span><span class="p">(</span><span class="n">stan_m</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">"stanfit"</span><span class="p">){</span><span class="w">
       </span><span class="n">stop</span><span class="p">(</span><span class="s2">"stan_m must be an object of class stanfit, with parameters mu representing latent vote at a point in time"</span><span class="p">)</span><span class="w">
    </span><span class="p">}</span><span class="w">
    </span><span class="n">ex</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.data.frame</span><span class="p">(</span><span class="n">rstan</span><span class="o">::</span><span class="n">extract</span><span class="p">(</span><span class="n">stan_m</span><span class="p">,</span><span class="w"> </span><span class="s2">"mu"</span><span class="p">))</span><span class="w">
-   </span><span class="nf">names</span><span class="p">(</span><span class="n">ex</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">d</span><span class="m">3</span><span class="o">$</span><span class="n">n_days</span><span class="w">
+   </span><span class="nf">names</span><span class="p">(</span><span class="n">ex</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">d3</span><span class="o">$</span><span class="n">n_days</span><span class="w">
    
    </span><span class="n">p</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ex</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
       </span><span class="n">gather</span><span class="p">(</span><span class="n">day</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -332,52 +332,52 @@ and reused.</p>
    </span><span class="nf">return</span><span class="p">(</span><span class="n">p</span><span class="p">)</span><span class="w">
 </span><span class="p">}</span><span class="w">
 
-</span><span class="c1">#-------------------all 5 polls--------------------
+</span><span class="c1">#-------------------all 5 polls--------------------</span><span class="w">
 </span><span class="n">all_polls</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">AustralianElectionPolling</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">MidDate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">startDate</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">endDate</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">startDate</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w">
-         </span><span class="n">MidDateNum</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.integer</span><span class="p">(</span><span class="n">MidDate</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">as.Date</span><span class="p">(</span><span class="s2">"2004-10-08"</span><span class="p">)),</span><span class="w">  </span><span class="c1"># ie number of days since first election
-</span><span class="w">         </span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ALP</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w">
+         </span><span class="n">MidDateNum</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.integer</span><span class="p">(</span><span class="n">MidDate</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">as.Date</span><span class="p">(</span><span class="s2">"2004-10-08"</span><span class="p">)),</span><span class="w">  </span><span class="c1"># ie number of days since first election</span><span class="w">
+         </span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ALP</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w">
          </span><span class="n">org</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_reorder</span><span class="p">(</span><span class="n">org</span><span class="p">,</span><span class="w"> </span><span class="n">ALP</span><span class="p">),</span><span class="w">
          </span><span class="n">se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sqrt</span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="m">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">p</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">sampleSize</span><span class="p">))</span><span class="w">
 
 
 </span><span class="n">poll_orgs</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">as.character</span><span class="p">(</span><span class="n">unique</span><span class="p">(</span><span class="n">all_polls</span><span class="o">$</span><span class="n">org</span><span class="p">))</span><span class="w">
 
-</span><span class="n">p</span><span class="m">1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">filter</span><span class="p">(</span><span class="n">all_polls</span><span class="p">,</span><span class="w"> </span><span class="n">org</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">poll_orgs</span><span class="p">[[</span><span class="m">1</span><span class="p">]])</span><span class="w">
-</span><span class="n">p</span><span class="m">2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">filter</span><span class="p">(</span><span class="n">all_polls</span><span class="p">,</span><span class="w"> </span><span class="n">org</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">poll_orgs</span><span class="p">[[</span><span class="m">2</span><span class="p">]])</span><span class="w">
-</span><span class="n">p</span><span class="m">3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">filter</span><span class="p">(</span><span class="n">all_polls</span><span class="p">,</span><span class="w"> </span><span class="n">org</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">poll_orgs</span><span class="p">[[</span><span class="m">3</span><span class="p">]])</span><span class="w">
-</span><span class="n">p</span><span class="m">4</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">filter</span><span class="p">(</span><span class="n">all_polls</span><span class="p">,</span><span class="w"> </span><span class="n">org</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">poll_orgs</span><span class="p">[[</span><span class="m">4</span><span class="p">]])</span><span class="w">
-</span><span class="n">p</span><span class="m">5</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">filter</span><span class="p">(</span><span class="n">all_polls</span><span class="p">,</span><span class="w"> </span><span class="n">org</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">poll_orgs</span><span class="p">[[</span><span class="m">5</span><span class="p">]])</span><span class="w">
+</span><span class="n">p1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">filter</span><span class="p">(</span><span class="n">all_polls</span><span class="p">,</span><span class="w"> </span><span class="n">org</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">poll_orgs</span><span class="p">[[</span><span class="m">1</span><span class="p">]])</span><span class="w">
+</span><span class="n">p2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">filter</span><span class="p">(</span><span class="n">all_polls</span><span class="p">,</span><span class="w"> </span><span class="n">org</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">poll_orgs</span><span class="p">[[</span><span class="m">2</span><span class="p">]])</span><span class="w">
+</span><span class="n">p3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">filter</span><span class="p">(</span><span class="n">all_polls</span><span class="p">,</span><span class="w"> </span><span class="n">org</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">poll_orgs</span><span class="p">[[</span><span class="m">3</span><span class="p">]])</span><span class="w">
+</span><span class="n">p4</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">filter</span><span class="p">(</span><span class="n">all_polls</span><span class="p">,</span><span class="w"> </span><span class="n">org</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">poll_orgs</span><span class="p">[[</span><span class="m">4</span><span class="p">]])</span><span class="w">
+</span><span class="n">p5</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">filter</span><span class="p">(</span><span class="n">all_polls</span><span class="p">,</span><span class="w"> </span><span class="n">org</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">poll_orgs</span><span class="p">[[</span><span class="m">5</span><span class="p">]])</span><span class="w">
 
 
-</span><span class="n">d</span><span class="m">3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="w">
+</span><span class="n">d3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="w">
   </span><span class="n">mu_start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.3764</span><span class="p">,</span><span class="w">
   </span><span class="n">mu_finish</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.4338</span><span class="p">,</span><span class="w">
   </span><span class="n">n_days</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">days_between_elections</span><span class="p">,</span><span class="w">
   </span><span class="n">inflator</span><span class="w"> </span><span class="o">=</span><span class="nf">sqrt</span><span class="p">(</span><span class="m">2</span><span class="p">),</span><span class="w">
-  </span><span class="n">y</span><span class="m">1</span><span class="err">_</span><span class="n">values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">1</span><span class="o">$</span><span class="n">p</span><span class="p">,</span><span class="w">
-  </span><span class="n">y</span><span class="m">1</span><span class="err">_</span><span class="n">days</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">1</span><span class="o">$</span><span class="n">MidDateNum</span><span class="p">,</span><span class="w">
-  </span><span class="n">y</span><span class="m">1</span><span class="err">_</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">p</span><span class="m">1</span><span class="p">),</span><span class="w">
-  </span><span class="n">y</span><span class="m">1</span><span class="err">_</span><span class="n">se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">1</span><span class="o">$</span><span class="n">se</span><span class="p">,</span><span class="w">
-  </span><span class="n">y</span><span class="m">2</span><span class="err">_</span><span class="n">values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">2</span><span class="o">$</span><span class="n">p</span><span class="p">,</span><span class="w">
-  </span><span class="n">y</span><span class="m">2</span><span class="err">_</span><span class="n">days</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">2</span><span class="o">$</span><span class="n">MidDateNum</span><span class="p">,</span><span class="w">
-  </span><span class="n">y</span><span class="m">2</span><span class="err">_</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">p</span><span class="m">2</span><span class="p">),</span><span class="w">
-  </span><span class="n">y</span><span class="m">2</span><span class="err">_</span><span class="n">se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">2</span><span class="o">$</span><span class="n">se</span><span class="p">,</span><span class="w">
-  </span><span class="n">y</span><span class="m">3</span><span class="err">_</span><span class="n">values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">3</span><span class="o">$</span><span class="n">p</span><span class="p">,</span><span class="w">
-  </span><span class="n">y</span><span class="m">3</span><span class="err">_</span><span class="n">days</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">3</span><span class="o">$</span><span class="n">MidDateNum</span><span class="p">,</span><span class="w">
-  </span><span class="n">y</span><span class="m">3</span><span class="err">_</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">p</span><span class="m">3</span><span class="p">),</span><span class="w">
-  </span><span class="n">y</span><span class="m">3</span><span class="err">_</span><span class="n">se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">3</span><span class="o">$</span><span class="n">se</span><span class="p">,</span><span class="w">
-  </span><span class="n">y</span><span class="m">4</span><span class="err">_</span><span class="n">values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">4</span><span class="o">$</span><span class="n">p</span><span class="p">,</span><span class="w">
-  </span><span class="n">y</span><span class="m">4</span><span class="err">_</span><span class="n">days</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">4</span><span class="o">$</span><span class="n">MidDateNum</span><span class="p">,</span><span class="w">
-  </span><span class="n">y</span><span class="m">4</span><span class="err">_</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">p</span><span class="m">4</span><span class="p">),</span><span class="w">
-  </span><span class="n">y</span><span class="m">4</span><span class="err">_</span><span class="n">se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">4</span><span class="o">$</span><span class="n">se</span><span class="p">,</span><span class="w">
-  </span><span class="n">y</span><span class="m">5</span><span class="err">_</span><span class="n">values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">5</span><span class="o">$</span><span class="n">p</span><span class="p">,</span><span class="w">
-  </span><span class="n">y</span><span class="m">5</span><span class="err">_</span><span class="n">days</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">5</span><span class="o">$</span><span class="n">MidDateNum</span><span class="p">,</span><span class="w">
-  </span><span class="n">y</span><span class="m">5</span><span class="err">_</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">p</span><span class="m">5</span><span class="p">),</span><span class="w">
-  </span><span class="n">y</span><span class="m">5</span><span class="err">_</span><span class="n">se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="m">5</span><span class="o">$</span><span class="n">se</span><span class="w">
+  </span><span class="n">y1_values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p1</span><span class="o">$</span><span class="n">p</span><span class="p">,</span><span class="w">
+  </span><span class="n">y1_days</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p1</span><span class="o">$</span><span class="n">MidDateNum</span><span class="p">,</span><span class="w">
+  </span><span class="n">y1_n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">p1</span><span class="p">),</span><span class="w">
+  </span><span class="n">y1_se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p1</span><span class="o">$</span><span class="n">se</span><span class="p">,</span><span class="w">
+  </span><span class="n">y2_values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p2</span><span class="o">$</span><span class="n">p</span><span class="p">,</span><span class="w">
+  </span><span class="n">y2_days</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p2</span><span class="o">$</span><span class="n">MidDateNum</span><span class="p">,</span><span class="w">
+  </span><span class="n">y2_n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">p2</span><span class="p">),</span><span class="w">
+  </span><span class="n">y2_se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p2</span><span class="o">$</span><span class="n">se</span><span class="p">,</span><span class="w">
+  </span><span class="n">y3_values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p3</span><span class="o">$</span><span class="n">p</span><span class="p">,</span><span class="w">
+  </span><span class="n">y3_days</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p3</span><span class="o">$</span><span class="n">MidDateNum</span><span class="p">,</span><span class="w">
+  </span><span class="n">y3_n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">p3</span><span class="p">),</span><span class="w">
+  </span><span class="n">y3_se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p3</span><span class="o">$</span><span class="n">se</span><span class="p">,</span><span class="w">
+  </span><span class="n">y4_values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p4</span><span class="o">$</span><span class="n">p</span><span class="p">,</span><span class="w">
+  </span><span class="n">y4_days</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p4</span><span class="o">$</span><span class="n">MidDateNum</span><span class="p">,</span><span class="w">
+  </span><span class="n">y4_n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">p4</span><span class="p">),</span><span class="w">
+  </span><span class="n">y4_se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p4</span><span class="o">$</span><span class="n">se</span><span class="p">,</span><span class="w">
+  </span><span class="n">y5_values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p5</span><span class="o">$</span><span class="n">p</span><span class="p">,</span><span class="w">
+  </span><span class="n">y5_days</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p5</span><span class="o">$</span><span class="n">MidDateNum</span><span class="p">,</span><span class="w">
+  </span><span class="n">y5_n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">p5</span><span class="p">),</span><span class="w">
+  </span><span class="n">y5_se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p5</span><span class="o">$</span><span class="n">se</span><span class="w">
 </span><span class="p">)</span><span class="w">
 
-</span><span class="n">stan_mod3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">stan</span><span class="p">(</span><span class="n">file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'oz-polls-3a.stan'</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">d</span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="n">chains</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="p">,</span><span class="w"> 
+</span><span class="n">stan_mod3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">stan</span><span class="p">(</span><span class="n">file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'oz-polls-3a.stan'</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">d3</span><span class="p">,</span><span class="w"> </span><span class="n">chains</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="p">,</span><span class="w"> 
 				</span><span class="n">control</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="n">max_treedepth</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">15</span><span class="p">),</span><span class="w">
 				</span><span class="n">iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4000</span><span class="p">)</span><span class="w">
 
@@ -389,68 +389,68 @@ and reused.</p>
            </span><span class="s2">"Daily innovations with a Student's t distribution with 4 degrees of freedom; 
 total survey variance inflated 2x usual sampling error."</span><span class="p">)</span></code></pre></figure>
 
-<p>And here’s the final Stan model, to be saved on <code class="highlighter-rouge">oz-polls-3a.stan</code> in the same directory as R is working from:</p>
+<p>And here’s the final Stan model, to be saved on <code class="language-plaintext highlighter-rouge">oz-polls-3a.stan</code> in the same directory as R is working from:</p>
 
-<figure class="highlight"><pre><code class="language-stan" data-lang="stan">// oz-polls-3a.stan
+<figure class="highlight"><pre><code class="language-stan" data-lang="stan"><span class="c1">// oz-polls-3a.stan</span>
 
-data {
-  int&lt;lower=1&gt; n_days;            // number of days
-  real mu_start;                  // value at starting election, on [0,1] scale
-  real mu_finish;                 // value at final election, on [0,1] scale
-  real inflator;                  // amount by which to inflate the standard error of polls
+<span class="nn">data</span> <span class="p">{</span>
+  <span class="kt">int</span><span class="o">&lt;</span><span class="na">lower</span><span class="o">=</span><span class="mi">1</span><span class="o">&gt;</span> <span class="nv">n_days</span><span class="p">;</span>            <span class="c1">// number of days</span>
+  <span class="kt">real</span> <span class="nv">mu_start</span><span class="p">;</span>                  <span class="c1">// value at starting election, on [0,1] scale</span>
+  <span class="kt">real</span> <span class="nv">mu_finish</span><span class="p">;</span>                 <span class="c1">// value at final election, on [0,1] scale</span>
+  <span class="kt">real</span> <span class="nv">inflator</span><span class="p">;</span>                  <span class="c1">// amount by which to inflate the standard error of polls</span>
   
-  // information on five polls from different houses
-  int y1_n;                     // number of polls by house 1
-  int y2_n;
-  int y3_n;
-  int y4_n;
-  int y5_n;
-  vector[y1_n] y1_values;       // actual values in polls, in 0-1 scale
-  vector[y2_n] y2_values;       
-  vector[y3_n] y3_values;       
-  vector[y4_n] y4_values;       
-  vector[y5_n] y5_values;       
-  int y1_days[y1_n];          // the number of days since starting election each poll was taken
-  int y2_days[y2_n]; 
-  int y3_days[y3_n]; 
-  int y4_days[y4_n]; 
-  int y5_days[y5_n]; 
-  vector[y1_n] y1_se;             // the sample errors of the polls
-  vector[y2_n] y2_se;           
-  vector[y3_n] y3_se;           
-  vector[y4_n] y4_se;           
-  vector[y5_n] y5_se;           
-}
-parameters {
-  vector&lt;lower=0,upper=1&gt;[n_days] mu;         // 
-  real d[5];                      // polling effects
-  real&lt;lower=0&gt; sigma;            // sd of innovations
-}
+  <span class="c1">// information on five polls from different houses</span>
+  <span class="kt">int</span> <span class="nv">y1_n</span><span class="p">;</span>                     <span class="c1">// number of polls by house 1</span>
+  <span class="kt">int</span> <span class="nv">y2_n</span><span class="p">;</span>
+  <span class="kt">int</span> <span class="nv">y3_n</span><span class="p">;</span>
+  <span class="kt">int</span> <span class="nv">y4_n</span><span class="p">;</span>
+  <span class="kt">int</span> <span class="nv">y5_n</span><span class="p">;</span>
+  <span class="kt">vector</span><span class="p">[</span><span class="nv">y1_n</span><span class="p">]</span> <span class="nv">y1_values</span><span class="p">;</span>       <span class="c1">// actual values in polls, in 0-1 scale</span>
+  <span class="kt">vector</span><span class="p">[</span><span class="nv">y2_n</span><span class="p">]</span> <span class="nv">y2_values</span><span class="p">;</span>       
+  <span class="kt">vector</span><span class="p">[</span><span class="nv">y3_n</span><span class="p">]</span> <span class="nv">y3_values</span><span class="p">;</span>       
+  <span class="kt">vector</span><span class="p">[</span><span class="nv">y4_n</span><span class="p">]</span> <span class="nv">y4_values</span><span class="p">;</span>       
+  <span class="kt">vector</span><span class="p">[</span><span class="nv">y5_n</span><span class="p">]</span> <span class="nv">y5_values</span><span class="p">;</span>       
+  <span class="kt">int</span> <span class="nv">y1_days</span><span class="p">[</span><span class="nv">y1_n</span><span class="p">];</span>          <span class="c1">// the number of days since starting election each poll was taken</span>
+  <span class="kt">int</span> <span class="nv">y2_days</span><span class="p">[</span><span class="nv">y2_n</span><span class="p">];</span> 
+  <span class="kt">int</span> <span class="nv">y3_days</span><span class="p">[</span><span class="nv">y3_n</span><span class="p">];</span> 
+  <span class="kt">int</span> <span class="nv">y4_days</span><span class="p">[</span><span class="nv">y4_n</span><span class="p">];</span> 
+  <span class="kt">int</span> <span class="nv">y5_days</span><span class="p">[</span><span class="nv">y5_n</span><span class="p">];</span> 
+  <span class="kt">vector</span><span class="p">[</span><span class="nv">y1_n</span><span class="p">]</span> <span class="nv">y1_se</span><span class="p">;</span>             <span class="c1">// the sample errors of the polls</span>
+  <span class="kt">vector</span><span class="p">[</span><span class="nv">y2_n</span><span class="p">]</span> <span class="nv">y2_se</span><span class="p">;</span>           
+  <span class="kt">vector</span><span class="p">[</span><span class="nv">y3_n</span><span class="p">]</span> <span class="nv">y3_se</span><span class="p">;</span>           
+  <span class="kt">vector</span><span class="p">[</span><span class="nv">y4_n</span><span class="p">]</span> <span class="nv">y4_se</span><span class="p">;</span>           
+  <span class="kt">vector</span><span class="p">[</span><span class="nv">y5_n</span><span class="p">]</span> <span class="nv">y5_se</span><span class="p">;</span>           
+<span class="p">}</span>
+<span class="nn">parameters</span> <span class="p">{</span>
+  <span class="kt">vector</span><span class="o">&lt;</span><span class="na">lower</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="na">upper</span><span class="o">=</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">[</span><span class="nv">n_days</span><span class="p">]</span> <span class="nv">mu</span><span class="p">;</span>         <span class="c1">// </span>
+  <span class="kt">real</span> <span class="nv">d</span><span class="p">[</span><span class="mi">5</span><span class="p">];</span>                      <span class="c1">// polling effects</span>
+  <span class="kt">real</span><span class="o">&lt;</span><span class="na">lower</span><span class="o">=</span><span class="mi">0</span><span class="o">&gt;</span> <span class="nv">sigma</span><span class="p">;</span>            <span class="c1">// sd of innovations</span>
+<span class="p">}</span>
 
 
-model {
-  // priors 
-  sigma ~ normal(0.001, 0.001);     // prior for innovation sd.  
-  mu[1] ~ beta(2, 2);               // starting state space
-  d ~ normal(0, 0.05); // ie a fairly loose prior for house effects (on scale of [0,1])
+<span class="nn">model</span> <span class="p">{</span>
+  <span class="c1">// priors </span>
+  <span class="nv">sigma</span> <span class="o">~</span> <span class="nb">normal</span><span class="p">(</span><span class="mf">0.001</span><span class="p">,</span> <span class="mf">0.001</span><span class="p">);</span>     <span class="c1">// prior for innovation sd.  </span>
+  <span class="nv">mu</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">~</span> <span class="nb">beta</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">);</span>               <span class="c1">// starting state space</span>
+  <span class="nv">d</span> <span class="o">~</span> <span class="nb">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">);</span> <span class="c1">// ie a fairly loose prior for house effects (on scale of [0,1])</span>
   
   
-  // state model
-  mu[2:n_days] ~ student_t(4, mu[1:(n_days - 1)], sigma);
+  <span class="c1">// state model</span>
+  <span class="nv">mu</span><span class="p">[</span><span class="mi">2</span><span class="o">:</span><span class="nv">n_days</span><span class="p">]</span> <span class="o">~</span> <span class="nb">student_t</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="nv">mu</span><span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="p">(</span><span class="nv">n_days</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)],</span> <span class="nv">sigma</span><span class="p">);</span>
 
-  // measurement model
-  // 1. Election results
-  mu_start ~ normal(mu[1], 0.0001);
-  mu_finish ~ normal(mu[n_days], 0.0001);
+  <span class="c1">// measurement model</span>
+  <span class="c1">// 1. Election results</span>
+  <span class="nv">mu_start</span> <span class="o">~</span> <span class="nb">normal</span><span class="p">(</span><span class="nv">mu</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mf">0.0001</span><span class="p">);</span>
+  <span class="nv">mu_finish</span> <span class="o">~</span> <span class="nb">normal</span><span class="p">(</span><span class="nv">mu</span><span class="p">[</span><span class="nv">n_days</span><span class="p">],</span> <span class="mf">0.0001</span><span class="p">);</span>
   
-  // 2. Polls
-  y1_values ~ normal(mu[y1_days] + d[1], y1_se * inflator);
-  y2_values ~ normal(mu[y2_days] + d[2], y2_se * inflator);
-  y3_values ~ normal(mu[y3_days] + d[3], y3_se * inflator);
-  y4_values ~ normal(mu[y4_days] + d[4], y4_se * inflator);
-  y5_values ~ normal(mu[y5_days] + d[5], y5_se * inflator);
+  <span class="c1">// 2. Polls</span>
+  <span class="nv">y1_values</span> <span class="o">~</span> <span class="nb">normal</span><span class="p">(</span><span class="nv">mu</span><span class="p">[</span><span class="nv">y1_days</span><span class="p">]</span> <span class="o">+</span> <span class="nv">d</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="nv">y1_se</span> <span class="o">*</span> <span class="nv">inflator</span><span class="p">);</span>
+  <span class="nv">y2_values</span> <span class="o">~</span> <span class="nb">normal</span><span class="p">(</span><span class="nv">mu</span><span class="p">[</span><span class="nv">y2_days</span><span class="p">]</span> <span class="o">+</span> <span class="nv">d</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="nv">y2_se</span> <span class="o">*</span> <span class="nv">inflator</span><span class="p">);</span>
+  <span class="nv">y3_values</span> <span class="o">~</span> <span class="nb">normal</span><span class="p">(</span><span class="nv">mu</span><span class="p">[</span><span class="nv">y3_days</span><span class="p">]</span> <span class="o">+</span> <span class="nv">d</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="nv">y3_se</span> <span class="o">*</span> <span class="nv">inflator</span><span class="p">);</span>
+  <span class="nv">y4_values</span> <span class="o">~</span> <span class="nb">normal</span><span class="p">(</span><span class="nv">mu</span><span class="p">[</span><span class="nv">y4_days</span><span class="p">]</span> <span class="o">+</span> <span class="nv">d</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="nv">y4_se</span> <span class="o">*</span> <span class="nv">inflator</span><span class="p">);</span>
+  <span class="nv">y5_values</span> <span class="o">~</span> <span class="nb">normal</span><span class="p">(</span><span class="nv">mu</span><span class="p">[</span><span class="nv">y5_days</span><span class="p">]</span> <span class="o">+</span> <span class="nv">d</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span> <span class="nv">y5_se</span> <span class="o">*</span> <span class="nv">inflator</span><span class="p">);</span>
 
-}</code></pre></figure>
+<span class="p">}</span></code></pre></figure>
 
 
 

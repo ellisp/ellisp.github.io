@@ -18,7 +18,7 @@
             <meta property="og:image" content="http://freerangestats.info/img/0199-er-diagram.png" />
          
 		 
-			<meta property="og:url" content="http://freerangestats.info/blog/2021/02/14/stock-database.html" />
+			<meta property="og:url" content="http://localhost:4000/blog/2021/02/14/stock-database.html" />
 		 
          <meta property="og:author" content= "https://www.facebook.com/peterstats" />
          <meta property="og:type" content="article" />
@@ -113,7 +113,7 @@
                   <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
 				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
                   <li><a href="/blog/surveys.html">all posts on surveys</a></li> 
-				  <li><a href = /blog/2022/10/13/pacific-map>most recent post</a></li>
+				  <li><a href = /blog/2023/02/25/ilr>most recent post</a></li>
 				</ul>
             </li>
               <li><a href="/blog/showcase.html">showcase</a></li>
@@ -164,7 +164,7 @@
 
 <p>So, there’s been a  recent flurry of attention to the stock market. It prompted <a href="/blog/2021/02/05/stock-visualizations">last week’s post</a>. But it also reminded me to bubble up to higher in my priority list a project to create a database of daily security prices and short positions from open data sources.</p>
 
-<p>Yahoo Finance is an excellent data source and the <code class="highlighter-rouge">quantmod</code> R package provides a very convenient way of accessing it, but fundamentally its API is oriented around looking up a single security and examining its price and volume trends. This is fine for many purposes, but for analysis <em>across</em> securities one wants to start with a generic question like “which stocks have had the highest growth rate in price or volume”. This requires a data set of all available security prices, rather than looking them up one at a time.</p>
+<p>Yahoo Finance is an excellent data source and the <code class="language-plaintext highlighter-rouge">quantmod</code> R package provides a very convenient way of accessing it, but fundamentally its API is oriented around looking up a single security and examining its price and volume trends. This is fine for many purposes, but for analysis <em>across</em> securities one wants to start with a generic question like “which stocks have had the highest growth rate in price or volume”. This requires a data set of all available security prices, rather than looking them up one at a time.</p>
 
 <p>It is in fact possible to create the dataset I want for these purposes from scratch from original sources in a few hours, but as I’m thinking of using this multiple times I want to persist it somehow to avoid duplicate work and hitting the original data sources more than needed. Caveat - I think this is allowed with the data sources I’m working with but it’s frustratingly difficult to find out for sure. If I’m wrong, let me know and I’ll pull down this post.</p>
 
@@ -181,7 +181,7 @@
   <li>one for the facts, with separate columns for the nine facts (open price, volume, etc) listed in the previous paragraph.</li>
 </ul>
 
-<p>I think this is indeed probably the correct structure for a Kimball-style dimensionally modelled analytical datamart. However, it proved unpleasant to write the extract-transform-load for my two data sources into that wide fact table. It would have involved a lot of <code class="highlighter-rouge">UPDATE</code> operations to add data from one source to columns for rows that are partly populated by the other). SQLite in particular does not really support <code class="highlighter-rouge">UPDATE</code> in combination with a <code class="highlighter-rouge">JOIN</code> and getting around this would have been awkward. So to simplify things I normalised the data one step further and made my fact table more “long and thin”. This meant adding a variable dimension so that when extra data comes in from another source I am just adding new rows to the data for a subset of variables rather than filling in empty columns for existing rows.</p>
+<p>I think this is indeed probably the correct structure for a Kimball-style dimensionally modelled analytical datamart. However, it proved unpleasant to write the extract-transform-load for my two data sources into that wide fact table. It would have involved a lot of <code class="language-plaintext highlighter-rouge">UPDATE</code> operations to add data from one source to columns for rows that are partly populated by the other). SQLite in particular does not really support <code class="language-plaintext highlighter-rouge">UPDATE</code> in combination with a <code class="language-plaintext highlighter-rouge">JOIN</code> and getting around this would have been awkward. So to simplify things I normalised the data one step further and made my fact table more “long and thin”. This meant adding a variable dimension so that when extra data comes in from another source I am just adding new rows to the data for a subset of variables rather than filling in empty columns for existing rows.</p>
 
 <p>Here’s how the data model looks:</p>
 
@@ -189,7 +189,7 @@
 
 <p>I used the excellent (and free) <a href="short_positions_prop">DBeaver universal database tool</a> to make that diagram, and to develop any non-trivial SQL code used in this blog.</p>
 
-<p>And this is the SQL that creates it. I’ve used <code class="highlighter-rouge">GO</code> (in the style of Microsoft T-SQL) to separate each command, not because SQLite understands it (it doesn’t) but because I have R functions that do, which I’ll be using in a minute.</p>
+<p>And this is the SQL that creates it. I’ve used <code class="language-plaintext highlighter-rouge">GO</code> (in the style of Microsoft T-SQL) to separate each command, not because SQLite understands it (it doesn’t) but because I have R functions that do, which I’ll be using in a minute.</p>
 
 <p><em>Post continues below SQL code</em></p>
 
@@ -203,29 +203,29 @@
 
 <span class="c1">-- Define the various tables:</span>
 <span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">d_products</span> <span class="p">(</span>
-  <span class="n">product_id</span> <span class="n">INTEGER</span> <span class="k">PRIMARY</span> <span class="k">KEY</span><span class="p">,</span>
-  <span class="n">ticker_yahoo</span> <span class="n">VARCHAR</span><span class="p">(</span><span class="mi">16</span><span class="p">)</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">UNIQUE</span><span class="p">,</span>
-  <span class="n">ticker_origin</span> <span class="n">VARCHAR</span><span class="p">(</span><span class="mi">16</span><span class="p">),</span>
-  <span class="n">exchange_origin</span> <span class="n">VARCHAR</span><span class="p">(</span><span class="mi">16</span><span class="p">),</span>
-  <span class="n">latest_full_description</span> <span class="n">VARCHAR</span><span class="p">(</span><span class="mi">255</span><span class="p">),</span>
-  <span class="n">latest_full_description_tc</span> <span class="n">VARCHAR</span><span class="p">(</span><span class="mi">255</span><span class="p">),</span>
-  <span class="n">industry_group</span> <span class="n">VARCHAR</span><span class="p">(</span><span class="mi">255</span><span class="p">),</span>
-  <span class="n">latest_observed</span> <span class="n">DATE</span>
+  <span class="n">product_id</span> <span class="nb">INTEGER</span> <span class="k">PRIMARY</span> <span class="k">KEY</span><span class="p">,</span>
+  <span class="n">ticker_yahoo</span> <span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">16</span><span class="p">)</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">UNIQUE</span><span class="p">,</span>
+  <span class="n">ticker_origin</span> <span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">16</span><span class="p">),</span>
+  <span class="n">exchange_origin</span> <span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">16</span><span class="p">),</span>
+  <span class="n">latest_full_description</span> <span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">255</span><span class="p">),</span>
+  <span class="n">latest_full_description_tc</span> <span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">255</span><span class="p">),</span>
+  <span class="n">industry_group</span> <span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">255</span><span class="p">),</span>
+  <span class="n">latest_observed</span> <span class="nb">DATE</span>
   
 <span class="p">)</span>
 <span class="k">GO</span>
 
 <span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">d_variables</span> <span class="p">(</span>
-  <span class="n">variable_id</span> <span class="n">INTEGER</span> <span class="k">PRIMARY</span> <span class="k">KEY</span><span class="p">,</span>
-  <span class="k">variable</span> <span class="n">VARCHAR</span><span class="p">(</span><span class="mi">60</span><span class="p">)</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">UNIQUE</span>
+  <span class="n">variable_id</span> <span class="nb">INTEGER</span> <span class="k">PRIMARY</span> <span class="k">KEY</span><span class="p">,</span>
+  <span class="k">variable</span> <span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">60</span><span class="p">)</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">UNIQUE</span>
 <span class="p">)</span>
 <span class="k">GO</span>
 
 <span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">f_prices_and_volumes</span> <span class="p">(</span>
-  <span class="n">product_id</span> <span class="n">INTEGER</span><span class="p">,</span>
-  <span class="n">observation_date</span> <span class="n">DATE</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
-  <span class="n">variable_id</span> <span class="n">INTEGER</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
-  <span class="n">value</span> <span class="n">FLOAT</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+  <span class="n">product_id</span> <span class="nb">INTEGER</span><span class="p">,</span>
+  <span class="n">observation_date</span> <span class="nb">DATE</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+  <span class="n">variable_id</span> <span class="nb">INTEGER</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+  <span class="n">value</span> <span class="nb">FLOAT</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
   
   <span class="k">FOREIGN</span> <span class="k">KEY</span> <span class="p">(</span><span class="n">product_id</span><span class="p">)</span> <span class="k">REFERENCES</span> <span class="n">d_products</span> <span class="p">(</span><span class="n">product_id</span><span class="p">),</span>
   <span class="k">FOREIGN</span> <span class="k">KEY</span> <span class="p">(</span><span class="n">variable_id</span><span class="p">)</span> <span class="k">REFERENCES</span> <span class="n">d_variables</span> <span class="p">(</span><span class="n">variable_id</span><span class="p">)</span>
@@ -250,14 +250,14 @@
 
 <h2 id="populating-with-data">Populating with data</h2>
 
-<p>I used R for accessing the origin data from the web and sending SQL commands to set up the database. Here’s the first chunk of code that creates the empty database, runs the SQL above to set up tables, and makes an initial dump of ASX listed companies into the <code class="highlighter-rouge">d_products</code> table. I adapted some of this and subsequent code from <a href="https://www.michaelplazzer.com/import-asx-data-r/">this blog post</a> by Michael Plazzer. I’m not sure how definitive is that list of ASX listed companies referred to in the below code.</p>
+<p>I used R for accessing the origin data from the web and sending SQL commands to set up the database. Here’s the first chunk of code that creates the empty database, runs the SQL above to set up tables, and makes an initial dump of ASX listed companies into the <code class="language-plaintext highlighter-rouge">d_products</code> table. I adapted some of this and subsequent code from <a href="https://www.michaelplazzer.com/import-asx-data-r/">this blog post</a> by Michael Plazzer. I’m not sure how definitive is that list of ASX listed companies referred to in the below code.</p>
 
 <p><em>Post continues below R code</em></p>
 
 <figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">glue</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">lubridate</span><span class="p">)</span><span class="w">
-</span><span class="n">library</span><span class="p">(</span><span class="n">frs</span><span class="p">)</span><span class="w"> </span><span class="c1"># for download_if_fresh and execute_sql. Available from GitHub.
+</span><span class="n">library</span><span class="p">(</span><span class="n">frs</span><span class="p">)</span><span class="w"> </span><span class="c1"># for download_if_fresh and execute_sql. Available from GitHub.</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">janitor</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">ggrepel</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">kableExtra</span><span class="p">)</span><span class="w">
@@ -266,23 +266,23 @@
 </span><span class="n">library</span><span class="p">(</span><span class="n">DBI</span><span class="p">)</span><span class="w">
 </span><span class="n">library</span><span class="p">(</span><span class="n">tools</span><span class="p">)</span><span class="w">
 
-</span><span class="c1">#=============database setup============================
-</span><span class="w">
+</span><span class="c1">#=============database setup============================</span><span class="w">
 
-</span><span class="c1">#-----------Define database------------------
+
+</span><span class="c1">#-----------Define database------------------</span><span class="w">
 </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="s2">"stocks.sqlite"</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="n">list.files</span><span class="p">()){</span><span class="w">
-  </span><span class="c1"># if this is the very first run we need to create the empty database and its tables
-</span><span class="w">  </span><span class="n">con</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dbConnect</span><span class="p">(</span><span class="n">RSQLite</span><span class="o">::</span><span class="n">SQLite</span><span class="p">(),</span><span class="w"> </span><span class="s2">"stocks.sqlite"</span><span class="p">)</span><span class="w">
+  </span><span class="c1"># if this is the very first run we need to create the empty database and its tables</span><span class="w">
+  </span><span class="n">con</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dbConnect</span><span class="p">(</span><span class="n">RSQLite</span><span class="o">::</span><span class="n">SQLite</span><span class="p">(),</span><span class="w"> </span><span class="s2">"stocks.sqlite"</span><span class="p">)</span><span class="w">
   
-  </span><span class="c1"># run the SQL script that defines the table - needs to be saved in seaprate file:
-</span><span class="w">  </span><span class="n">execute_sql</span><span class="p">(</span><span class="n">con</span><span class="p">,</span><span class="w"> </span><span class="s2">"0199-stocks-db-setup.sql"</span><span class="p">,</span><span class="w"> </span><span class="n">log_table</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">NULL</span><span class="p">)</span><span class="w">
+  </span><span class="c1"># run the SQL script that defines the table - needs to be saved in seaprate file:</span><span class="w">
+  </span><span class="n">execute_sql</span><span class="p">(</span><span class="n">con</span><span class="p">,</span><span class="w"> </span><span class="s2">"0199-stocks-db-setup.sql"</span><span class="p">,</span><span class="w"> </span><span class="n">log_table</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">NULL</span><span class="p">)</span><span class="w">
   
 </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">
   </span><span class="n">con</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dbConnect</span><span class="p">(</span><span class="n">RSQLite</span><span class="o">::</span><span class="n">SQLite</span><span class="p">(),</span><span class="w"> </span><span class="s2">"stocks.sqlite"</span><span class="p">)</span><span class="w">
 </span><span class="p">}</span><span class="w">
 
-</span><span class="c1">#------------set up product dimension-----------
-</span><span class="w">
+</span><span class="c1">#------------set up product dimension-----------</span><span class="w">
+
 </span><span class="n">asx_cos</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">read.csv</span><span class="p">(</span><span class="s2">"http://www.asx.com.au/asx/research/ASXListedCompanies.csv"</span><span class="p">,</span><span class="n">skip</span><span class="o">=</span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">mutate</span><span class="p">(</span><span class="n">ticker_yahoo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">paste0</span><span class="p">(</span><span class="n">ASX.code</span><span class="p">,</span><span class="w"> </span><span class="s2">".AX"</span><span class="p">),</span><span class="w">
          </span><span class="n">exchange_origin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"ASX"</span><span class="p">,</span><span class="w">
@@ -304,18 +304,18 @@
 
 <p>The short positions data from the ASIC website includes many products that aren’t in the list of listed companies on the ASX site. In general, I want to be able to update my list of products/securities. Getting data from Yahoo Finance, where I specify a security ticker code and then get the data, won’t let me do this (unless I tried codes at random). Because of all this, in my initial bulk upload I do the ASIC data first, hoping (without really checking how it happens, which of course I would for a more formal use) that this will surface new (or old) securities that aren’t in the spreadsheet I downloaded from the ASX.</p>
 
-<p>The code below is in two chunks. It downloads all the CSVs of short positions data from ASIC, taking care not to re-download data it already has. Each CSV represents one day of three facts on each product. Then (somewhat more complex), it reads all the CSVs one at a time (if it hasn’t already processed this particular CSV); identifies missing products/securities which it then adds to the <code class="highlighter-rouge">d_products</code> table; then populates the fact table with the facts for all the products it’s found in this particular CSV, having matched them to the <code class="highlighter-rouge">product_id</code> field in the <code class="highlighter-rouge">d_products</code> table.</p>
+<p>The code below is in two chunks. It downloads all the CSVs of short positions data from ASIC, taking care not to re-download data it already has. Each CSV represents one day of three facts on each product. Then (somewhat more complex), it reads all the CSVs one at a time (if it hasn’t already processed this particular CSV); identifies missing products/securities which it then adds to the <code class="language-plaintext highlighter-rouge">d_products</code> table; then populates the fact table with the facts for all the products it’s found in this particular CSV, having matched them to the <code class="language-plaintext highlighter-rouge">product_id</code> field in the <code class="language-plaintext highlighter-rouge">d_products</code> table.</p>
 
-<p>Other than the three-card shuffle with adding new products to <code class="highlighter-rouge">d_products</code> as it goes, and some annoying complications with different formats and encoding of the CSV files on the ASIC page (see comments in the code), this is fairly straightforward data-wrangling stuff for R.</p>
+<p>Other than the three-card shuffle with adding new products to <code class="language-plaintext highlighter-rouge">d_products</code> as it goes, and some annoying complications with different formats and encoding of the CSV files on the ASIC page (see comments in the code), this is fairly straightforward data-wrangling stuff for R.</p>
 
 <p>This took three or four hours each for the two bits of functionality (bulk download and bulk import) to run.</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#===============Get the short positions data=============
-</span><span class="w">
-</span><span class="c1">#----------Download-------------
-# From:
-# https://asic.gov.au/regulatory-resources/markets/short-selling/short-position-reports-table/
-</span><span class="w">
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#===============Get the short positions data=============</span><span class="w">
+
+</span><span class="c1">#----------Download-------------</span><span class="w">
+</span><span class="c1"># From:</span><span class="w">
+</span><span class="c1"># https://asic.gov.au/regulatory-resources/markets/short-selling/short-position-reports-table/</span><span class="w">
+
 </span><span class="n">all_dates</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">seq</span><span class="p">(</span><span class="n">from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">as.Date</span><span class="p">(</span><span class="s2">"2010-06-16"</span><span class="p">),</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Sys.Date</span><span class="p">(),</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
 </span><span class="n">dir.create</span><span class="p">(</span><span class="s2">"asic-shorts"</span><span class="p">,</span><span class="w"> </span><span class="n">showWarnings</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w">
 
@@ -323,8 +323,8 @@
 </span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">i</span><span class="o">:</span><span class="nf">length</span><span class="p">(</span><span class="n">all_dates</span><span class="p">)){</span><span class="w">
   </span><span class="n">the_date</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">all_dates</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w">
   
-  </span><span class="c1"># Don't bother trying to download on weekends:
-</span><span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="n">wday</span><span class="p">(</span><span class="n">the_date</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Sat"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Sun"</span><span class="p">)){</span><span class="w">
+  </span><span class="c1"># Don't bother trying to download on weekends:</span><span class="w">
+  </span><span class="k">if</span><span class="p">(</span><span class="n">wday</span><span class="p">(</span><span class="n">the_date</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"Sat"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Sun"</span><span class="p">)){</span><span class="w">
     </span><span class="k">next</span><span class="p">()</span><span class="w">
     </span><span class="p">}</span><span class="w">
   
@@ -335,14 +335,14 @@
   
   </span><span class="n">url</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">glue</span><span class="p">(</span><span class="s2">"https://asic.gov.au/Reports/Daily/{y}/{m}/{fn}"</span><span class="p">)</span><span class="w">
   
-  </span><span class="c1"># Only exists for trading days. Rather than bother to work out exactly the trading days,
-</span><span class="w">  </span><span class="c1"># we will just skip over any 404 error
-</span><span class="w">  </span><span class="n">try</span><span class="p">(</span><span class="n">download_if_fresh</span><span class="p">(</span><span class="n">url</span><span class="p">,</span><span class="w"> </span><span class="n">glue</span><span class="p">(</span><span class="s2">"asic-shorts/{fn}"</span><span class="p">)))</span><span class="w">
+  </span><span class="c1"># Only exists for trading days. Rather than bother to work out exactly the trading days,</span><span class="w">
+  </span><span class="c1"># we will just skip over any 404 error</span><span class="w">
+  </span><span class="n">try</span><span class="p">(</span><span class="n">download_if_fresh</span><span class="p">(</span><span class="n">url</span><span class="p">,</span><span class="w"> </span><span class="n">glue</span><span class="p">(</span><span class="s2">"asic-shorts/{fn}"</span><span class="p">)))</span><span class="w">
 </span><span class="p">}</span><span class="w">
 
 
-</span><span class="c1">#----------------------Import---------------------------
-</span><span class="w">
+</span><span class="c1">#----------------------Import---------------------------</span><span class="w">
+
 </span><span class="n">all_products</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dbGetQuery</span><span class="p">(</span><span class="n">con</span><span class="p">,</span><span class="w"> </span><span class="s2">"SELECT product_id, ticker_yahoo 
                                  FROM d_products 
                                  WHERE exchange_origin = 'ASX'"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -359,31 +359,31 @@
 
 </span><span class="n">all_csvs</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">list.files</span><span class="p">(</span><span class="s2">"asic-shorts"</span><span class="p">,</span><span class="w"> </span><span class="n">pattern</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"DailyAggShortPos"</span><span class="p">,</span><span class="w"> </span><span class="n">full.names</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w">
 
-</span><span class="c1"># we are going to do this backwards so product names are the latest ones
+</span><span class="c1"># we are going to do this backwards so product names are the latest ones</span><span class="w">
 </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="nf">length</span><span class="p">(</span><span class="n">all_csvs</span><span class="p">)</span><span class="w">
 </span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">i</span><span class="o">:</span><span class="m">1</span><span class="p">){</span><span class="w">
   
   </span><span class="n">the_csv</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">all_csvs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w">
   </span><span class="n">the_date</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">as.Date</span><span class="p">(</span><span class="n">str_extract</span><span class="p">(</span><span class="n">the_csv</span><span class="p">,</span><span class="w"> </span><span class="s2">"[0-9]+"</span><span class="p">),</span><span class="w"> </span><span class="n">format</span><span class="o">=</span><span class="w"> </span><span class="s2">"%Y%m%d"</span><span class="p">)</span><span class="w">
   
-  </span><span class="c1"># if we've already got short positions observations in the data for this date,
-</span><span class="w">  </span><span class="c1"># then break out of the loop and go to the next iteration
-</span><span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="nf">as.character</span><span class="p">(</span><span class="n">the_date</span><span class="p">)</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="n">already_done_dates</span><span class="p">){</span><span class="k">next</span><span class="p">()}</span><span class="w">
+  </span><span class="c1"># if we've already got short positions observations in the data for this date,</span><span class="w">
+  </span><span class="c1"># then break out of the loop and go to the next iteration</span><span class="w">
+  </span><span class="k">if</span><span class="p">(</span><span class="nf">as.character</span><span class="p">(</span><span class="n">the_date</span><span class="p">)</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="n">already_done_dates</span><span class="p">){</span><span class="k">next</span><span class="p">()}</span><span class="w">
   
-  </span><span class="c1"># The first 1400 files are actually tab-delimited and UTF-16, the
-</span><span class="w">  </span><span class="c1"># rest are genuine comma separated files and more standard encoding.
-</span><span class="w">  </span><span class="c1"># Couldn't get read_csv to work with the various encoding here.
-</span><span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="m">1400</span><span class="p">){</span><span class="w">
-    </span><span class="n">d</span><span class="m">1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">read.csv</span><span class="p">(</span><span class="n">the_csv</span><span class="p">,</span><span class="w"> </span><span class="n">fileEncoding</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"UTF-16"</span><span class="p">,</span><span class="w"> </span><span class="n">sep</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"\t"</span><span class="p">)</span><span class="w"> 
+  </span><span class="c1"># The first 1400 files are actually tab-delimited and UTF-16, the</span><span class="w">
+  </span><span class="c1"># rest are genuine comma separated files and more standard encoding.</span><span class="w">
+  </span><span class="c1"># Couldn't get read_csv to work with the various encoding here.</span><span class="w">
+  </span><span class="k">if</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="m">1400</span><span class="p">){</span><span class="w">
+    </span><span class="n">d1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">read.csv</span><span class="p">(</span><span class="n">the_csv</span><span class="p">,</span><span class="w"> </span><span class="n">fileEncoding</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"UTF-16"</span><span class="p">,</span><span class="w"> </span><span class="n">sep</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"\t"</span><span class="p">)</span><span class="w"> 
   </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">
-    </span><span class="n">d</span><span class="m">1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">read.csv</span><span class="p">(</span><span class="n">the_csv</span><span class="p">)</span><span class="w"> 
-    </span><span class="c1"># sometimes this still doesn't work and we go back to the other method:
-</span><span class="w">    </span><span class="k">if</span><span class="p">(</span><span class="n">nrow</span><span class="p">(</span><span class="n">d</span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">10</span><span class="p">){</span><span class="w">
-      </span><span class="n">d</span><span class="m">1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">read.csv</span><span class="p">(</span><span class="n">the_csv</span><span class="p">,</span><span class="w"> </span><span class="n">fileEncoding</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"UTF-16"</span><span class="p">,</span><span class="w"> </span><span class="n">sep</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"\t"</span><span class="p">)</span><span class="w"> 
+    </span><span class="n">d1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">read.csv</span><span class="p">(</span><span class="n">the_csv</span><span class="p">)</span><span class="w"> 
+    </span><span class="c1"># sometimes this still doesn't work and we go back to the other method:</span><span class="w">
+    </span><span class="k">if</span><span class="p">(</span><span class="n">nrow</span><span class="p">(</span><span class="n">d1</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">10</span><span class="p">){</span><span class="w">
+      </span><span class="n">d1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">read.csv</span><span class="p">(</span><span class="n">the_csv</span><span class="p">,</span><span class="w"> </span><span class="n">fileEncoding</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"UTF-16"</span><span class="p">,</span><span class="w"> </span><span class="n">sep</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"\t"</span><span class="p">)</span><span class="w"> 
     </span><span class="p">}</span><span class="w">
   </span><span class="p">}</span><span class="w">
   
-  </span><span class="n">d</span><span class="m">2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">d</span><span class="m">1</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">d2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">d1</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
     </span><span class="n">clean_names</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
     </span><span class="n">as_tibble</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
     </span><span class="n">mutate</span><span class="p">(</span><span class="n">observation_date</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_date</span><span class="p">,</span><span class="w">
@@ -399,15 +399,15 @@
       </span><span class="n">product</span><span class="p">,</span><span class="w">
       </span><span class="n">product_code</span><span class="w">
     </span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-    </span><span class="c1"># convert from percentage to proportion:
-</span><span class="w">    </span><span class="n">mutate</span><span class="p">(</span><span class="n">short_positions_prop</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">short_positions_prop</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">100</span><span class="p">)</span><span class="w">
+    </span><span class="c1"># convert from percentage to proportion:</span><span class="w">
+    </span><span class="n">mutate</span><span class="p">(</span><span class="n">short_positions_prop</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">short_positions_prop</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">100</span><span class="p">)</span><span class="w">
   
-  </span><span class="n">non_match</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="nf">is.na</span><span class="p">(</span><span class="n">d</span><span class="m">2</span><span class="o">$</span><span class="n">product_id</span><span class="p">))</span><span class="w">
+  </span><span class="n">non_match</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="nf">is.na</span><span class="p">(</span><span class="n">d2</span><span class="o">$</span><span class="n">product_id</span><span class="p">))</span><span class="w">
   </span><span class="k">if</span><span class="p">(</span><span class="n">non_match</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0</span><span class="p">){</span><span class="w">
     </span><span class="n">message</span><span class="p">(</span><span class="n">glue</span><span class="p">(</span><span class="s2">"Found {non_match} products in the short data not yet in the database"</span><span class="p">))</span><span class="w">
-    </span><span class="n">print</span><span class="p">(</span><span class="n">select</span><span class="p">(</span><span class="n">filter</span><span class="p">(</span><span class="n">d</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="nf">is.na</span><span class="p">(</span><span class="n">product_id</span><span class="p">)),</span><span class="w"> </span><span class="n">ticker_yahoo</span><span class="p">,</span><span class="w"> </span><span class="n">product</span><span class="p">,</span><span class="w"> </span><span class="n">observation_date</span><span class="p">))</span><span class="w">
+    </span><span class="n">print</span><span class="p">(</span><span class="n">select</span><span class="p">(</span><span class="n">filter</span><span class="p">(</span><span class="n">d2</span><span class="p">,</span><span class="w"> </span><span class="nf">is.na</span><span class="p">(</span><span class="n">product_id</span><span class="p">)),</span><span class="w"> </span><span class="n">ticker_yahoo</span><span class="p">,</span><span class="w"> </span><span class="n">product</span><span class="p">,</span><span class="w"> </span><span class="n">observation_date</span><span class="p">))</span><span class="w">
     
-    </span><span class="n">new_products</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">d</span><span class="m">2</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">new_products</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">d2</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
       </span><span class="n">filter</span><span class="p">(</span><span class="nf">is.na</span><span class="p">(</span><span class="n">product_id</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
       </span><span class="n">mutate</span><span class="p">(</span><span class="n">exchange_origin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'ASX'</span><span class="p">,</span><span class="w">
              </span><span class="n">latest_full_description_tc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tools</span><span class="o">::</span><span class="n">toTitleCase</span><span class="p">(</span><span class="n">tolower</span><span class="p">(</span><span class="n">product</span><span class="p">)),</span><span class="w">
@@ -430,7 +430,7 @@
       </span><span class="n">as_tibble</span><span class="p">()</span><span class="w">
   </span><span class="p">}</span><span class="w">
   
-  </span><span class="n">upload_data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">d</span><span class="m">2</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> 
+  </span><span class="n">upload_data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">d2</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> 
     </span><span class="n">select</span><span class="p">(</span><span class="n">observation_date</span><span class="o">:</span><span class="n">ticker_yahoo</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
     </span><span class="n">left_join</span><span class="p">(</span><span class="n">all_products</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"ticker_yahoo"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
     </span><span class="n">select</span><span class="p">(</span><span class="o">-</span><span class="n">ticker_yahoo</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
@@ -440,36 +440,36 @@
          </span><span class="n">observation_date</span><span class="p">,</span><span class="w">
          </span><span class="n">variable_id</span><span class="p">,</span><span class="w">
          </span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
-    </span><span class="c1"># a small number of occasions the short_positions_prop is NA or Inf because
-</span><span class="w">    </span><span class="c1"># the totla product in issue is 0 even though there are some short positions.
-</span><span class="w">    </span><span class="c1"># we will just filter these out
-</span><span class="w">    </span><span class="n">filter</span><span class="p">(</span><span class="o">!</span><span class="nf">is.na</span><span class="p">(</span><span class="n">value</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="c1"># a small number of occasions the short_positions_prop is NA or Inf because</span><span class="w">
+    </span><span class="c1"># the totla product in issue is 0 even though there are some short positions.</span><span class="w">
+    </span><span class="c1"># we will just filter these out</span><span class="w">
+    </span><span class="n">filter</span><span class="p">(</span><span class="o">!</span><span class="nf">is.na</span><span class="p">(</span><span class="n">value</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
     </span><span class="n">mutate</span><span class="p">(</span><span class="n">observation_date</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.character</span><span class="p">(</span><span class="n">observation_date</span><span class="p">))</span><span class="w">
   
   </span><span class="n">dbWriteTable</span><span class="p">(</span><span class="n">con</span><span class="p">,</span><span class="w"> </span><span class="s2">"f_prices_and_volumes"</span><span class="p">,</span><span class="w"> </span><span class="n">upload_data</span><span class="p">,</span><span class="w"> </span><span class="n">append</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w">
   
-  </span><span class="c1"># progress counter so we know it isn't just stuck
-</span><span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">%%</span><span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">0</span><span class="p">){</span><span class="n">cat</span><span class="p">(</span><span class="n">i</span><span class="p">)}</span><span class="w">
+  </span><span class="c1"># progress counter so we know it isn't just stuck</span><span class="w">
+  </span><span class="k">if</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">%%</span><span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">0</span><span class="p">){</span><span class="n">cat</span><span class="p">(</span><span class="n">i</span><span class="p">)}</span><span class="w">
 </span><span class="p">}</span></code></pre></figure>
 
 <h2 id="loading-the-price-and-volumes-data">Loading the price and volumes data</h2>
 
-<p>Next step is to get some data from Yahoo Finance on price and volumes. Overall, this is more straightforward. The <code class="highlighter-rouge">quantmod</code> R package describes the functionality I’m about to use as “essentially a simple wrapper to the underlying Yahoo! finance site’s historical data download”.</p>
+<p>Next step is to get some data from Yahoo Finance on price and volumes. Overall, this is more straightforward. The <code class="language-plaintext highlighter-rouge">quantmod</code> R package describes the functionality I’m about to use as “essentially a simple wrapper to the underlying Yahoo! finance site’s historical data download”.</p>
 
-<p>I’ve tried in the code below to make this updateable, so in future I can run the same code without downloading all the historical data again. But I haven’t fully tested this; it’s more a working prototype than production-ready code (and I wouldn’t use SQLite for production in this case). But here’s code that works, at least for now. It gets all the Australian security ticker names in the format used by Yahoo (finishing with <code class="highlighter-rouge">.AX</code> for the ASX) and their matching <code class="highlighter-rouge">product_id</code> values for my database; finds the latest data data is available in the database; downloads anything additional to that; normalises it into long format and uploads it to the fact table in the database.</p>
+<p>I’ve tried in the code below to make this updateable, so in future I can run the same code without downloading all the historical data again. But I haven’t fully tested this; it’s more a working prototype than production-ready code (and I wouldn’t use SQLite for production in this case). But here’s code that works, at least for now. It gets all the Australian security ticker names in the format used by Yahoo (finishing with <code class="language-plaintext highlighter-rouge">.AX</code> for the ASX) and their matching <code class="language-plaintext highlighter-rouge">product_id</code> values for my database; finds the latest data data is available in the database; downloads anything additional to that; normalises it into long format and uploads it to the fact table in the database.</p>
 
 <p>This took a couple of hours to run (I didn’t time it precisely).</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#================stock price and volume information===========
-</span><span class="w">
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#================stock price and volume information===========</span><span class="w">
+
 </span><span class="n">all_stocks</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dbGetQuery</span><span class="p">(</span><span class="n">con</span><span class="p">,</span><span class="w"> </span><span class="s2">"SELECT product_id, ticker_yahoo 
                                FROM d_products 
                                ORDER BY product_id"</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="n">as_tibble</span><span class="p">()</span><span class="w">
 
 </span><span class="n">i</span><span class="o">=</span><span class="m">1</span><span class="w">
 </span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">i</span><span class="o">:</span><span class="n">nrow</span><span class="p">(</span><span class="n">all_stocks</span><span class="p">)){</span><span class="w">
-  </span><span class="c1"># display a counter ever 20 iterations so we know we're making progress:
-</span><span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">%%</span><span class="w"> </span><span class="m">20</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">0</span><span class="p">){</span><span class="w">
+  </span><span class="c1"># display a counter ever 20 iterations so we know we're making progress:</span><span class="w">
+  </span><span class="k">if</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">%%</span><span class="w"> </span><span class="m">20</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">0</span><span class="p">){</span><span class="w">
     </span><span class="n">cat</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="s2">" "</span><span class="p">)</span><span class="w">
   </span><span class="p">}</span><span class="w">
   </span><span class="n">ax_ticker</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">all_stocks</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">ticker_yahoo</span><span class="w">
@@ -518,13 +518,13 @@
 
 <h2 id="updating-the-product-dimension-with-some-summary-data">Updating the product dimension with some summary data</h2>
 
-<p>The final steps in the extract-transform-load process are some convenience additions to the database. First, I update the <code class="highlighter-rouge">d_products</code> table which has a <code class="highlighter-rouge">latest_observed</code> column in it with the most recent observation for each product:</p>
+<p>The final steps in the extract-transform-load process are some convenience additions to the database. First, I update the <code class="language-plaintext highlighter-rouge">d_products</code> table which has a <code class="language-plaintext highlighter-rouge">latest_observed</code> column in it with the most recent observation for each product:</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#===============Update the observation dates in the dimension table============
-# This is much more complicated with SQLite than in SQL Server because of the
-# apparent inability of SQLite to elegantly update a table via a join with
-# another table. There may be a better way than the below but I couldn't find it:
-</span><span class="w">
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#===============Update the observation dates in the dimension table============</span><span class="w">
+</span><span class="c1"># This is much more complicated with SQLite than in SQL Server because of the</span><span class="w">
+</span><span class="c1"># apparent inability of SQLite to elegantly update a table via a join with</span><span class="w">
+</span><span class="c1"># another table. There may be a better way than the below but I couldn't find it:</span><span class="w">
+
 </span><span class="n">sql1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> 
   </span><span class="s2">"CREATE TABLE tmp AS
   SELECT product_id, max(observation_date) as the_date
@@ -546,14 +546,14 @@
 
 <p>Finally, I want to create a wider version of the data, closer to my original idea of a fact table with one row per product-date combination, and nine fact columns (for open price, volume, short position, etc). In another database I would use an indexed or materialized view for this sort of thing, but SQLite doesn’t support that. I tried making a view (basically a stored query) but its performance was too slow. So I created a whole new table that will need to be created from scratch after each update of the data. This isn’t as disastrous as it sounds - an indexed view does something similar in terms of disk space, and it only takes a minute or so to run this. And it is a convenient table to have.</p>
 
-<p>So here’s the final step in this whole data upload and update process, creating that wide table from scratch. Note the clunky (to R or Python users who are used to things like <code class="highlighter-rouge">spread()</code> or <code class="highlighter-rouge">pivot_wider()</code>) way that SQL pivots a table wide, with that use of the <code class="highlighter-rouge">SUM(CASE WHEN ...)</code> pattern. It looks horrible, but it works (so long as you know in advance all the column names you are trying to make in the wider version):</p>
+<p>So here’s the final step in this whole data upload and update process, creating that wide table from scratch. Note the clunky (to R or Python users who are used to things like <code class="language-plaintext highlighter-rouge">spread()</code> or <code class="language-plaintext highlighter-rouge">pivot_wider()</code>) way that SQL pivots a table wide, with that use of the <code class="language-plaintext highlighter-rouge">SUM(CASE WHEN ...)</code> pattern. It looks horrible, but it works (so long as you know in advance all the column names you are trying to make in the wider version):</p>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#============Create a denormalised (wide) version of the main fact table=======
-# In another database system this would be a materialized view or indexed view or similar,
-# but we don't have that in SQLite so it is a straight out table. Note that this roughly
-# doubles the size of the database on disk; and duplication means we need to remember
-# to re-create this table whenevedr the original fact table updates.
-</span><span class="w">
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#============Create a denormalised (wide) version of the main fact table=======</span><span class="w">
+</span><span class="c1"># In another database system this would be a materialized view or indexed view or similar,</span><span class="w">
+</span><span class="c1"># but we don't have that in SQLite so it is a straight out table. Note that this roughly</span><span class="w">
+</span><span class="c1"># doubles the size of the database on disk; and duplication means we need to remember</span><span class="w">
+</span><span class="c1"># to re-create this table whenevedr the original fact table updates.</span><span class="w">
+
 </span><span class="n">sql1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"DROP TABLE IF EXISTS f_prices_and_volumes_w"</span><span class="w">
 
 </span><span class="n">sql2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"
@@ -580,7 +580,7 @@ INNER JOIN d_products AS c
 GROUP BY observation_date, ticker_yahoo, ticker_origin, latest_full_description"</span><span class="w">
 
 </span><span class="n">dbSendStatement</span><span class="p">(</span><span class="n">con</span><span class="p">,</span><span class="w"> </span><span class="n">sql1</span><span class="p">)</span><span class="w">
-</span><span class="n">dbSendStatement</span><span class="p">(</span><span class="n">con</span><span class="p">,</span><span class="w"> </span><span class="n">sql2</span><span class="p">)</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="n">takes</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">minute</span><span class="w"> </span><span class="n">or</span><span class="w"> </span><span class="n">so</span></code></pre></figure>
+</span><span class="n">dbSendStatement</span><span class="p">(</span><span class="n">con</span><span class="p">,</span><span class="w"> </span><span class="n">sql2</span><span class="p">)</span><span class="w"> </span><span class="c1"># takes a minute or so</span></code></pre></figure>
 
 <h2 id="exploratory-analysis">Exploratory analysis</h2>
 
@@ -657,7 +657,7 @@ GROUP BY observation_date, ticker_yahoo, ticker_origin, latest_full_description"
 
 <p>That all looks as expected. In total we have about 9 million observations. There are many securities with short positions reported to ASIC that I couldn’t find prices and volumes for in Yahoo Finance, which is interesting and worth looking into, but not astonishing.</p>
 
-<p>That table was created with this SQL (and a bit of R sugar around using <code class="highlighter-rouge">knitr</code> and <code class="highlighter-rouge">kableExtra</code>, not shown):</p>
+<p>That table was created with this SQL (and a bit of R sugar around using <code class="language-plaintext highlighter-rouge">knitr</code> and <code class="language-plaintext highlighter-rouge">kableExtra</code>, not shown):</p>
 
 <figure class="highlight"><pre><code class="language-sql" data-lang="sql"><span class="k">SELECT</span> 
 	<span class="k">variable</span><span class="p">,</span>
@@ -679,11 +679,11 @@ GROUP BY observation_date, ticker_yahoo, ticker_origin, latest_full_description"
 <ul>
   <li>an SQL query (and R code to send it to the databse) that grabs the data we need, averaged by year for each product, from the wide table defined above</li>
   <li>a little function purely to change the upper/lower case status of product names for the chart</li>
-  <li><code class="highlighter-rouge">ggplot2</code> code to draw the chart.</li>
+  <li><code class="language-plaintext highlighter-rouge">ggplot2</code> code to draw the chart.</li>
 </ul>
 
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#---------Recent growth-----------
-</span><span class="w">
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#---------Recent growth-----------</span><span class="w">
+
 </span><span class="n">sql</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"
 WITH annual_vals AS
 	(SELECT
@@ -712,13 +712,13 @@ HAVING SUM(CASE WHEN year = 2020 THEN avg_adjusted END) &gt; 0"</span><span clas
   </span><span class="n">filter</span><span class="p">(</span><span class="n">vol_val_2021</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">1e6</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
   </span><span class="n">arrange</span><span class="p">(</span><span class="n">adj_2021</span><span class="p">)</span><span class="w"> 
 
-</span><span class="cd">#' Convert upper case security names to title case
-#' 
-#' @param x a character vector
-#' @param rm_ltd whether or not to strip "Limited" and "Ltd" from titles as unwanted clutter
-#' @details A convenience function for labelling securities on a chart, which
-#'   converts to title case, keeps ETF (Exchange Trade Fund) in capitals, and
-#'   can remove 'Limited' altogether
+</span><span class="cd">#' Convert upper case security names to title case</span><span class="w">
+</span><span class="cd">#' </span><span class="w">
+</span><span class="cd">#' @param x a character vector</span><span class="w">
+</span><span class="cd">#' @param rm_ltd whether or not to strip "Limited" and "Ltd" from titles as unwanted clutter</span><span class="w">
+</span><span class="cd">#' @details A convenience function for labelling securities on a chart, which</span><span class="w">
+</span><span class="cd">#'   converts to title case, keeps ETF (Exchange Trade Fund) in capitals, and</span><span class="w">
+</span><span class="cd">#'   can remove 'Limited' altogether</span><span class="w">
 </span><span class="n">better_case</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">rm_ltd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">){</span><span class="w">
   </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">toTitleCase</span><span class="p">(</span><span class="n">tolower</span><span class="p">(</span><span class="n">x</span><span class="p">))</span><span class="w">
   </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">gsub</span><span class="p">(</span><span class="s2">"Etf "</span><span class="p">,</span><span class="w"> </span><span class="s2">"ETF "</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w">
