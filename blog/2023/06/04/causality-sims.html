@@ -1,0 +1,565 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Simulating confounders, colliders and mediators</title>
+      	
+         
+         
+            <meta name ="description" content ="I do some simulations to reproduce a great figure by Wysocki et al; and show different data where the causal relationship between x and y is in the presence of a third variable that is either a confounder, collider or mediator.">
+            <meta property="og:description" content ="I do some simulations to reproduce a great figure by Wysocki et al; and show different data where the causal relationship between x and y is in the presence of a third variable that is either a confounder, collider or mediator.">
+         
+         <meta property="og:site_name" content="free range statistics" />
+         <meta property="og:title" content="Simulating confounders, colliders and mediators" />
+         
+            <meta property="og:image" content="http://freerangestats.info/img/0247--results-with-dags.png" />
+         
+		 
+			<meta property="og:url" content="http://freerangestats.info/blog/2023/06/04/causality-sims.html" />
+		 
+         <meta property="og:author" content= "https://www.facebook.com/peterstats" />
+         <meta property="og:type" content="article" />
+      
+
+<link href='https://fonts.googleapis.com/css?family=Sarala' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Prosto+One' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Ubuntu+Mono' rel='stylesheet'>
+	  
+          <link href="/css/bootstrap.min.css" rel ="stylesheet" type="text/css">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet" type="text/css">
+            <link href="/css/custom.css" rel ="stylesheet" type="text/css">     
+		<link href="/css/syntax.css" rel ="stylesheet" type="text/css">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="free range statistics by Peter Ellis"
+      href="/feed.xml">
+
+	  
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+  <script>
+  (function() {
+    var cx = '015640467633673901770:pk3v2c95baw';
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+  })();
+</script>
+
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">free range statistics</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/about">about</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">all posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">ordered by date</a></li>
+				  <li><a href="/blog/most-popular.html">ordered by popularity</a></li>
+                  <li><a href="/blog/index_by_tag.html">grouped by subject matter</a></li>
+                  <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
+				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
+                  <li><a href="/blog/surveys.html">all posts on surveys</a></li> 
+				  <li><a href = /blog/2023/06/04/causality-sims>most recent post</a></li>
+				</ul>
+            </li>
+              <li><a href="/blog/showcase.html">showcase</a></li>
+              <li><a href="/presentations/index.html">presentations</a></li>
+			  <li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">forecasts<span class="caret"></span></a>
+                <ul class="dropdown-menu">
+				  <li><a href = "/covid-tracking/index.html">Covid-19 in Australia</a></li>
+                  <li><a href = "/elections/nz-2020/index.html">NZ election 2020</a></li>
+                  <li><a href = "/elections/oz-2019/index.html">Australia federal election 2019</a></li>
+				  <li><a href = "/elections/nz-2017/combined.html">NZ election 2017</a></li>
+                  <li><a href="/blog/voting.html">all blog posts on voting behaviour</a></li>
+                </ul>				
+			  </li>
+			  
+			  
+			  
+		    </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			<div class="jumbotron">
+  <div class="container">
+	<center><h1>Simulating confounders, colliders and mediators</h1></center>
+  </div>
+</div>
+
+
+
+	<div class = "post-summary">
+	<h2>At a glance:</h2>
+	   <p>I do some simulations to reproduce a great figure by Wysocki et al; and show different data where the causal relationship between x and y is in the presence of a third variable that is either a confounder, collider or mediator.</p>
+	   <p class="meta">04 Jun 2023</p>
+	   <hr></hr>
+	</div>
+
+
+<div class="col-md-7">
+
+	<div class="post">
+		
+	  <h2 id="motivation-and-key-points">Motivation and key points</h2>
+
+<p>So <a href="https://twitter.com/cremieuxrecueil/status/1662882966857547777">this tweet</a> came across my feed. It refers to <a href="https://journals.sagepub.com/doi/10.1177/25152459221095823">this article, <em>Statistical Control Requires Causal Justification</em></a> by Wysocki, Lawson and Rhemtulla, published in June last year (2022) in <em>Advances in Methods and Practices in Psychological Science</em>.  I was struck by the clarity of Figure 4 from that paper. It is such a great tool for at once explaining the difference between a confounder, collider and mediator and showing how they have different impacts on a regression; and hence lead to different decisions about whether to include the confounder, collider or mediator variable in the model. What I’m showing here isn’t the original, but my own version of it, which I’ll eventually come to describing how I did it later in this post:</p>
+
+<object type="image/svg+xml" data="/img/0247-results-with-dags.svg" width="90%"><img src="/img/0247-results-with-dags.png" width="90%" /></object>
+
+<p>Here is the original caption for Figure 4 from Wysocki et al:</p>
+
+<blockquote>
+  <p>“Partial and simple regression coefficients under three causal structures. In each graph, the x-axis depicts the population value of the direct effect that connects the control variable and the predictor (a), and the y-axis depicts the value of the regression coefficient of Y on X. The direct effect of X on Y and the value of the direct effect connecting Y and C are held constant across the results. Solid lines represent the partial (yellow line) and simple (green line) regression coefficients. The dashed line represents the total X → Y causal effect.”</p>
+</blockquote>
+
+<p>The idea is that in all three cases we are interested in the degree to which X causes Y. A third variable C is also present and is correlated with both X and Y. Should we ‘control’ for it, ie include it as another variable on the right hand side of a regression? The answer is, it depends on whether C is a confounder, collider or mediator - and there will be no way to tell from your data which it is. So some kind of reasoning based on prior knowledge and theorising is required, or making (and documenting) some explicit assumptions. Some sciencing is required before you do the actual model specification and fitting.</p>
+
+<p>The basic interpretation of these terms is as follows. For illustrative purposes I am going to use examples from a hypothetical situation where we want to understand the impact of education on income; that is, X is education and Y is income:</p>
+
+<ul>
+  <li>C is a <em>confounder</em> if it impacts on both X and Y. For example, gender is known to lead to different education outcomes, and it also leads to differences in income in various complicated ways. Another example might be innate ability, if such a thing exists and could be measured. You want to control for confounders, because if you don’t include them in the regression, some of the coefficient in front of X is going to be picking up causal impacts that are really down to the confounder. In the chart on the right of the figure we see that the green ‘simple coefficient’ - the coefficient we’d estimate for X in a simple regression of Y ~ X - gets the wrong result. The correct value of the impact of X on Y is 0.15, and to get this you need the yellow ‘partial coefficient’ ie the coefficient for X you get when you control for C, in a regression of Y ~ X + C. How far out the simple coefficient is depends on the size of a, the causal effect of C on X; if a is zero then both methods get you the same answer</li>
+  <li>C is a <em>collider</em> is when both X and Y impact on C, but it itself does not impact on either of them. I find it harder to think of pure examples of these, but in my case I’m going to use hobbies as one. The hobbies you’ve got definitely depend on what you were exposed to in your education; and whether you can afford them financially and timewise will depend on your income (in complicated ways). True, hobbies will also potentially impact on your income but I’m hoping (for purposes of illustration) in ways that are less important than the Y -&gt; C part of the diagram here. You <em>don’t</em> want to control for colliders in a regression (see how the green ‘simple coefficient’ line correctly estimates the true causality of X -&gt; Y, whereas the yellow ‘partial coefficient’ line doesn’t). The intuition for this is that because C doesn’t really impact on Y, when you include it in the regression some of the true impact of X on Y is falsely attributed to C just because of its correlation with both the important variables. (Side note - I’m not thrilled with the example of ‘hobbies’ here, but it serves the point. I also considered ‘suburb you live in’ and ‘sports team you support’, none of which are pefect either.)</li>
+  <li>C is a <em>mediator</em> is when X causes C and C causes Y. A good example in our case could be occupation; your education has a big impact on your occupation, which in turn has a big impact on your income. You don’t want to control for a mediator if you are interested in the full effect of X on Y! Because a huge part of how X impacts on Y is precisely through the mediation of C, in our case choice of and access to occupation, given a certain level of education. If you ‘control’ for occupation you will be greatly underestimating the importance of education.</li>
+</ul>
+
+<p>Incidentally this last point is behind one of the great perpetual culture war debates, whether to control for occupation and experience when estimating the gender pay gap. Much of the gender pay gap goes away when we do so, so does this mean there is no problem here? No, because occupation and experience are mediator variables which are precisely the means by which gender leads to a pay gap. By controlling for them you are missing out on the actual mechanism of precisely in what you are interested.</p>
+
+<p>However there is a time when you might be interested in controlling for occupation and experience in a regression of pay gap on gender. This is when you are seeking to measure the direct impact, and only the direct impact, of gender in pay decisions - most likely in the context of gender discrimination at the final stage of remuneration determination. In this case, occupation and experience are no longer mediators, they are if anything confounders, because X is no longer “gender” but “gender discrimination in the current workplace making a pay decision” (for which we use actual, observed gender as a proxy). Now C impacts on Y and might impact on X. So if you want to estimate that final “equal pay for equal work” step of the chain then yes it is legitimate to control for occupation and experience. Just don’t mix this up with the total impact of gender on the pay gap, which <em>is</em> mediated through occupation and experience.</p>
+
+<h2 id="simulating-data">Simulating data</h2>
+
+<p>So I wanted to simulate this data fitting these three types of relationships, and re-create the original Figure 4 from Wysocki et al’s paper. I think this is pretty simple, so long as I am happy with getting the substance right and not matching exact details. First, I made three functions, one each for the situation where the nuisance variable is a confounder, collider or mediator.</p>
+
+<p>In the code below I call the nuisance variable (which is C in the original diagrams) z to avoid creating a conflict with the <code class="language-plaintext highlighter-rouge">C()</code> or <code class="language-plaintext highlighter-rouge">c()</code> functions in R (this would be completely workable, but goes against highly ingrained habits on my part to not use frequently-used base R functions as names for other objects). Each of the three functions starts the data generation with the one variable that is exogenous to the system - isn’t causally impacted on by either of the other two. Then it uses that variable to generate the variable that is impacted on by the first variable, and then finally creates the final variable. Each variable has a standard (ie mean = 0, variance = 1) Gaussian randomness built in, and the relationship between variables has simple linear coefficients but no intercept terms. For example, in the confounder example, Y = b1.X + b2.C + noise.</p>
+
+<p><em>Post continues after R code</em></p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># attempt to recreate Figure 4 from</span><span class="w">
+</span><span class="c1"># https://journals.sagepub.com/doi/10.1177/25152459221095823</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">ggdag</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">patchwork</span><span class="p">)</span><span class="w">
+</span><span class="c1">#----------------simulating data-------------</span><span class="w">
+
+</span><span class="c1"># In the below I call a variable `z` that in the diagrams is called `C`</span><span class="w">
+
+</span><span class="cd">#' Simulate a 3 variable situation where a nuisance variable is a confounder</span><span class="w">
+</span><span class="cd">#' </span><span class="w">
+</span><span class="cd">#' @param zx coefficient for impact of z on x</span><span class="w">
+</span><span class="cd">#' @param xy coefficient for impact of x on y</span><span class="w">
+</span><span class="cd">#' @param zy coefficient for impact of z on y</span><span class="w">
+</span><span class="cd">#' @param n sample size</span><span class="w">
+</span><span class="cd">#' @param seed random seed set for reproducibility</span><span class="w">
+</span><span class="cd">#' @returns a tibble of three variables x, y and z. x causes y </span><span class="w">
+</span><span class="cd">#' and z is a confounder ie it impacts on both x and y</span><span class="w">
+</span><span class="n">sim_confounder</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">zx</span><span class="p">,</span><span class="w"> </span><span class="n">xy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.15</span><span class="p">,</span><span class="w"> </span><span class="n">zy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1000</span><span class="p">,</span><span class="w"> </span><span class="n">seed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">123</span><span class="p">){</span><span class="w">
+  </span><span class="n">set.seed</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span><span class="w">
+  </span><span class="n">z</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">rnorm</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="w">
+  </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">zx</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">z</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">rnorm</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="w">
+  </span><span class="n">y</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">xy</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">zy</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">z</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">rnorm</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="w">
+  </span><span class="nf">return</span><span class="p">(</span><span class="n">tibble</span><span class="o">::</span><span class="n">tibble</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">z</span><span class="p">))</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+
+</span><span class="cd">#' Simulate a 3 variable situation where a nuisance variable is a collider</span><span class="w">
+</span><span class="cd">#' </span><span class="w">
+</span><span class="cd">#' @param xz coefficient for impact of x on z</span><span class="w">
+</span><span class="cd">#' @param xy coefficient for impact of x on y</span><span class="w">
+</span><span class="cd">#' @param yz coefficient for impact of y on z</span><span class="w">
+</span><span class="cd">#' @param n sample size</span><span class="w">
+</span><span class="cd">#' @param seed random seed set for reproducibility</span><span class="w">
+</span><span class="cd">#' @returns a tibble of three variables x, y and z. x causes y </span><span class="w">
+</span><span class="cd">#' and z is a collider ie it is impacted on by both x and y</span><span class="w">
+</span><span class="n">sim_collider</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">xz</span><span class="p">,</span><span class="w"> </span><span class="n">xy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.15</span><span class="p">,</span><span class="w"> </span><span class="n">yz</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1000</span><span class="p">,</span><span class="w"> </span><span class="n">seed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">123</span><span class="p">){</span><span class="w">
+  </span><span class="n">set.seed</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span><span class="w">
+  </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">rnorm</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="w">
+  </span><span class="n">y</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">xy</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">rnorm</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="w">
+  </span><span class="n">z</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">xz</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">yz</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">rnorm</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="w">
+  </span><span class="nf">return</span><span class="p">(</span><span class="n">tibble</span><span class="o">::</span><span class="n">tibble</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">z</span><span class="p">))</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="cd">#' Simulate a 3 variable situation where a nuisance variable is a mediator</span><span class="w">
+</span><span class="cd">#' </span><span class="w">
+</span><span class="cd">#' @param xz coefficient for impact of x on z</span><span class="w">
+</span><span class="cd">#' @param xy coefficient for impact of x on y</span><span class="w">
+</span><span class="cd">#' @param zy coefficient for impact of z on y</span><span class="w">
+</span><span class="cd">#' @param n sample size</span><span class="w">
+</span><span class="cd">#' @param seed random seed set for reproducibility</span><span class="w">
+</span><span class="cd">#' @returns a tibble of three variables x, y and z. x causes y </span><span class="w">
+</span><span class="cd">#' and z is a mediator ie x impacts on z and z impacts on y, so some of the </span><span class="w">
+</span><span class="cd">#' impact of x on y comes via z</span><span class="w">
+</span><span class="n">sim_mediator</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">xz</span><span class="p">,</span><span class="w"> </span><span class="n">xy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.15</span><span class="p">,</span><span class="w"> </span><span class="n">zy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1000</span><span class="p">,</span><span class="w"> </span><span class="n">seed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">123</span><span class="p">){</span><span class="w">
+  </span><span class="n">set.seed</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span><span class="w">
+  </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">rnorm</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="w">
+  </span><span class="n">z</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">xz</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">rnorm</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="w">
+  </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xy</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">zy</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">z</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">rnorm</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="w">
+  </span><span class="nf">return</span><span class="p">(</span><span class="n">tibble</span><span class="o">::</span><span class="n">tibble</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">z</span><span class="p">))</span><span class="w">
+</span><span class="p">}</span></code></pre></figure>
+
+<p>The idea with these functions is that they work with multiple values of “a” (as per the original terminology of the diagrams). But for illustrative purposes we can use these functions to generate data where a=0.3 (a reasonably material relationship) and see how the correlations come out. This helps make it obvious that you can’t tell from the data alone (at least with this sort of snapshot, observational data) which way the causality is going:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; # Correlations of example different datasets:
+&gt; round(cor(sim_confounder(0.3, n = 10000)), 2)
+     x    y    z
+x 1.00 0.26 0.29
+y 0.26 1.00 0.49
+z 0.29 0.49 1.00
+&gt; round(cor(sim_collider(0.3, n = 10000)), 2)
+     x    y    z
+x 1.00 0.15 0.34
+y 0.15 1.00 0.47
+z 0.34 0.47 1.00
+&gt; round(cor(sim_mediator(0.3, n = 10000)), 2)
+     x    y    z 
+x 1.00 0.28 0.29
+y 0.28 1.00 0.49
+z 0.29 0.49 1.00
+</code></pre></div></div>
+
+<p>Basically the correlations tell us nothing about the direction of causality.</p>
+
+<p>So my next step is to generate the data for many different values of a, for each of the three relationship types. There are plenty of ways to do this efficiently, here is mine. For those curious, <code class="language-plaintext highlighter-rouge">res</code> standards for “results”, in my object names. Naming things is hard!</p>
+
+<p>At the end of the code below I have an object <code class="language-plaintext highlighter-rouge">res</code> which has values of <code class="language-plaintext highlighter-rouge">a</code> and estimates of the simple coefficient and partial coefficient in front of X (in the regression of Y on X) for that relationship type, as well as the true causal impact of X on Y.</p>
+
+<p><em>Post continues after R code</em></p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#-----------generate data and fit regressions, for various values of a</span><span class="w">
+
+</span><span class="n">the_a</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">seq</span><span class="p">(</span><span class="n">from</span><span class="o">=</span><span class="w"> </span><span class="m">-0.7</span><span class="p">,</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.7</span><span class="p">,</span><span class="w"> </span><span class="n">length.out</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10</span><span class="p">)</span><span class="w">
+</span><span class="n">the_n</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">10000</span><span class="w">
+
+</span><span class="n">res_conf</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lapply</span><span class="p">(</span><span class="n">the_a</span><span class="p">,</span><span class="w"> </span><span class="n">sim_confounder</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_n</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">bind_rows</span><span class="p">()</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="n">the_a</span><span class="p">,</span><span class="w"> </span><span class="n">each</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_n</span><span class="p">),</span><span class="w">
+         </span><span class="n">var</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Confounder"</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">var</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">summarise</span><span class="p">(</span><span class="n">`Simple coefficient`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coef</span><span class="p">(</span><span class="n">lm</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">x</span><span class="p">))[[</span><span class="s1">'x'</span><span class="p">]],</span><span class="w">
+            </span><span class="n">`Partial coefficient`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coef</span><span class="p">(</span><span class="n">lm</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">z</span><span class="p">))[[</span><span class="s1">'x'</span><span class="p">]],</span><span class="w">
+            </span><span class="n">`Causal effect`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.15</span><span class="p">)</span><span class="w">
+
+</span><span class="n">res_coll</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lapply</span><span class="p">(</span><span class="n">the_a</span><span class="p">,</span><span class="w"> </span><span class="n">sim_collider</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_n</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">bind_rows</span><span class="p">()</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="n">the_a</span><span class="p">,</span><span class="w"> </span><span class="n">each</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_n</span><span class="p">),</span><span class="w">
+         </span><span class="n">var</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Collider"</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">var</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">summarise</span><span class="p">(</span><span class="n">`Simple coefficient`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coef</span><span class="p">(</span><span class="n">lm</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">x</span><span class="p">))[[</span><span class="s1">'x'</span><span class="p">]],</span><span class="w">
+            </span><span class="n">`Partial coefficient`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coef</span><span class="p">(</span><span class="n">lm</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">z</span><span class="p">))[[</span><span class="s1">'x'</span><span class="p">]],</span><span class="w">
+            </span><span class="n">`Causal effect`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.15</span><span class="p">)</span><span class="w">
+
+</span><span class="n">res_medi</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lapply</span><span class="p">(</span><span class="n">the_a</span><span class="p">,</span><span class="w"> </span><span class="n">sim_mediator</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_n</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">bind_rows</span><span class="p">()</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="n">the_a</span><span class="p">,</span><span class="w"> </span><span class="n">each</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_n</span><span class="p">),</span><span class="w">
+         </span><span class="n">var</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Mediator"</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">var</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">summarise</span><span class="p">(</span><span class="n">`Simple coefficient`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coef</span><span class="p">(</span><span class="n">lm</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">x</span><span class="p">))[[</span><span class="s1">'x'</span><span class="p">]],</span><span class="w">
+            </span><span class="n">`Partial coefficient`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coef</span><span class="p">(</span><span class="n">lm</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">z</span><span class="p">))[[</span><span class="s1">'x'</span><span class="p">]],</span><span class="w">
+            </span><span class="n">`Causal effect`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">`Simple coefficient`</span><span class="p">)</span><span class="w">
+
+</span><span class="n">res</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">bind_rows</span><span class="p">(</span><span class="n">res_conf</span><span class="p">,</span><span class="w"> </span><span class="n">res_coll</span><span class="p">,</span><span class="w"> </span><span class="n">res_medi</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">ungroup</span><span class="p">()</span></code></pre></figure>
+
+<h2 id="drawing-a-plot-of-regression-estimates">Drawing a plot of regression estimates</h2>
+
+<p>It only remains to draw and polish the chart, which is basic ggplot2 stuff. Probably the only noteworthy trick in the below is a slight improvement on the original diagram where I move the Y axis and its labels to the right of the chart, to avoid clutter near where I am going to place the DAGs in the end figure.</p>
+
+<p><em>Post continues after R code</em></p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#------------------draw plot-------------------</span><span class="w">
+</span><span class="n">the_font</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"Calibri"</span><span class="w">
+</span><span class="n">tg</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">guide_legend</span><span class="p">(</span><span class="n">direction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"vertical"</span><span class="p">,</span><span class="w"> </span><span class="n">keywidth</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">unit</span><span class="p">(</span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="s2">"cm"</span><span class="p">))</span><span class="w">
+</span><span class="n">p</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">res</span><span class="w"> </span><span class="o">|&gt;</span><span class="n">x</span><span class="w">
+  </span><span class="n">gather</span><span class="p">(</span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">coefficient</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">var</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_relevel</span><span class="p">(</span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="s2">"Causal effect"</span><span class="p">,</span><span class="w"> </span><span class="n">after</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">Inf</span><span class="p">),</span><span class="w">
+         </span><span class="n">var</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_relevel</span><span class="p">(</span><span class="n">var</span><span class="p">,</span><span class="w"> </span><span class="s2">"Confounder"</span><span class="p">))</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_recode</span><span class="p">(</span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="s2">"Causal effect (X causing Y)"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Causal effect"</span><span class="p">))</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coefficient</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">linetype</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">method</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">var</span><span class="p">,</span><span class="w"> </span><span class="n">ncol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_line</span><span class="p">(</span><span class="n">linewidth</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1.5</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_x_continuous</span><span class="p">(</span><span class="n">breaks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">seq</span><span class="p">(</span><span class="n">from</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">-0.7</span><span class="p">,</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.7</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.2</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_y_continuous</span><span class="p">(</span><span class="n">position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"right"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_linetype_manual</span><span class="p">(</span><span class="n">values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="m">2</span><span class="p">),</span><span class="w"> </span><span class="n">guide</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tg</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_colour_manual</span><span class="p">(</span><span class="n">values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"yellow"</span><span class="p">,</span><span class="w"> </span><span class="s2">"lightgreen"</span><span class="p">,</span><span class="w"> </span><span class="s2">"black"</span><span class="p">),</span><span class="w"> </span><span class="n">guide</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tg</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">linetype</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">expression</span><span class="p">(</span><span class="s2">"Coefficient "</span><span class="o">~</span><span class="n">beta</span><span class="p">),</span><span class="w">
+       </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Reproducing (inexactly) a figure by Wysocki, Lawson and Rhemtulla in \n'Statistical Control Requires Causal Justification'. http://freerangestats.info"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">theme_light</span><span class="p">(</span><span class="n">base_family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">main_font</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+  </span><span class="n">theme</span><span class="p">(</span><span class="n">plot.caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_text</span><span class="p">(</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey50"</span><span class="p">),</span><span class="w">
+        </span><span class="n">strip.text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_text</span><span class="p">(</span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rel</span><span class="p">(</span><span class="m">1</span><span class="p">),</span><span class="w"> </span><span class="n">face</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"bold"</span><span class="p">),</span><span class="w">
+        </span><span class="n">legend.position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"top"</span><span class="p">)</span></code></pre></figure>
+
+<h2 id="drawing-directed-acyclic-graphs-dags">Drawing Directed Acyclic Graphs (DAGs)</h2>
+
+<p>Next comes drawing the DAGs themselves. I’m not happy with how I’ve done this, but it works… The tricky part was getting labels in the edges connecting each node. This is possible (as indeed I do in the code below) but it involved using trial and error to work out which labels went with each connecting edge. I don’t like this at all! There must be a way to do this “properly” with mapping an aesthetic to some variable but I couldn’t work it out.</p>
+
+<p>DAGs as drawn with ggdag seem to have a random orientation, so setting the seed below each time just before drawing a DAG is critical for having them all in the same orientation, with X and Y both at the bottom of the image.</p>
+
+<p><em>Post continues after R code</em></p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#------------------draw DAGs---------------</span><span class="w">
+</span><span class="n">arrow_col</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"grey70"</span><span class="w">
+</span><span class="n">set.seed</span><span class="p">(</span><span class="m">123</span><span class="p">)</span><span class="w">
+</span><span class="n">d1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dagify</span><span class="p">(</span><span class="w">
+  </span><span class="n">Y</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">X</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">C</span><span class="p">,</span><span class="w">
+  </span><span class="n">X</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">C</span><span class="w">
+</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">xend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xend</span><span class="p">,</span><span class="w"> </span><span class="n">yend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">yend</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_dag_edges_fan</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"a"</span><span class="p">,</span><span class="w"> </span><span class="m">0.5</span><span class="p">,</span><span class="w"> </span><span class="m">0.15</span><span class="p">,</span><span class="w"> </span><span class="kc">NA</span><span class="p">)),</span><span class="w">
+                     </span><span class="n">edge_colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">arrow_col</span><span class="p">,</span><span class="w">
+                     </span><span class="n">label_colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"black"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_dag_text</span><span class="p">(</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"black"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">theme_dag</span><span class="p">()</span><span class="w"> 
+
+</span><span class="n">set.seed</span><span class="p">(</span><span class="m">123</span><span class="p">)</span><span class="w">
+</span><span class="n">d2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dagify</span><span class="p">(</span><span class="w">
+  </span><span class="n">C</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">X</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Y</span><span class="p">,</span><span class="w">
+  </span><span class="n">Y</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">X</span><span class="w">
+</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">xend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xend</span><span class="p">,</span><span class="w"> </span><span class="n">yend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">yend</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_dag_edges_fan</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="kc">NA</span><span class="p">,</span><span class="w"> </span><span class="s2">"a"</span><span class="p">,</span><span class="w"> </span><span class="m">0.15</span><span class="p">,</span><span class="w"> </span><span class="m">0.5</span><span class="p">)),</span><span class="w">
+                     </span><span class="n">edge_colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">arrow_col</span><span class="p">,</span><span class="w">
+                     </span><span class="n">label_colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"black"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_dag_text</span><span class="p">(</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"black"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">theme_dag</span><span class="p">()</span><span class="w">
+
+
+</span><span class="n">set.seed</span><span class="p">(</span><span class="m">123</span><span class="p">)</span><span class="w">
+</span><span class="n">d3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dagify</span><span class="p">(</span><span class="w">
+  </span><span class="n">C</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">X</span><span class="p">,</span><span class="w">
+  </span><span class="n">Y</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">X</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">C</span><span class="w">
+</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">xend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xend</span><span class="p">,</span><span class="w"> </span><span class="n">yend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">yend</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="c1">#geom_dag_point() +</span><span class="w">
+  </span><span class="n">geom_dag_edges_fan</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">0.5</span><span class="p">,</span><span class="w"> </span><span class="s2">"a"</span><span class="p">,</span><span class="w"> </span><span class="m">0.15</span><span class="p">,</span><span class="w"> </span><span class="kc">NA</span><span class="p">)),</span><span class="w">
+                     </span><span class="n">edge_colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">arrow_col</span><span class="p">,</span><span class="w">
+                     </span><span class="n">label_colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"black"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_dag_text</span><span class="p">(</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"black"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">theme_dag</span><span class="p">()</span></code></pre></figure>
+
+<p>So that code defines the three DAGs in the objects <code class="language-plaintext highlighter-rouge">d1</code>, <code class="language-plaintext highlighter-rouge">d2</code>, <code class="language-plaintext highlighter-rouge">d3</code> but doesn’t draw them.</p>
+
+<h2 id="pulling-the-combined-figure-together">Pulling the combined figure together</h2>
+
+<p>The final step is to use the magic of <code class="language-plaintext highlighter-rouge">patchwork</code> package by Thomas Pedersen to lay out the diagrams on the actual page. The design argument to <code class="language-plaintext highlighter-rouge">plot_layout()</code> lets you take total control of how multiple <code class="language-plaintext highlighter-rouge">ggplot2</code> objects (in our case, <code class="language-plaintext highlighter-rouge">p</code>, <code class="language-plaintext highlighter-rouge">d1</code>, <code class="language-plaintext highlighter-rouge">d2</code> and <code class="language-plaintext highlighter-rouge">d3</code>) are layed out in a figure, so I make use of that here.</p>
+
+<p><em>Post continues after R code</em></p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">design</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="w">
+  </span><span class="n">area</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">2</span><span class="p">),</span><span class="w">
+  </span><span class="n">area</span><span class="p">(</span><span class="m">3</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">4</span><span class="p">,</span><span class="m">2</span><span class="p">),</span><span class="w">
+  </span><span class="n">area</span><span class="p">(</span><span class="m">5</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">6</span><span class="p">,</span><span class="m">2</span><span class="p">),</span><span class="w">
+  </span><span class="n">area</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="m">3</span><span class="p">,</span><span class="m">6</span><span class="p">,</span><span class="m">5</span><span class="p">)</span><span class="w">
+</span><span class="p">)</span><span class="w">
+
+
+</span><span class="n">print</span><span class="p">(</span><span class="n">d1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">d2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">d3</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+         </span><span class="n">plot_layout</span><span class="p">(</span><span class="n">design</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">design</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+         </span><span class="n">plot_annotation</span><span class="p">(</span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Statistical control requires causal justification"</span><span class="p">,</span><span class="w">
+                        </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Only when the variable is a confounder is it correct to 'control' for it in a regression."</span><span class="p">,</span><span class="w">
+                        </span><span class="n">theme</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">theme</span><span class="p">(</span><span class="n">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_text</span><span class="p">(</span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_font</span><span class="p">)))</span><span class="w">
+   </span><span class="p">)</span></code></pre></figure>
+
+<h2 id="comparison">Comparison</h2>
+
+<p>So as a reminder, here’s a repeat of the final image:</p>
+
+<object type="image/svg+xml" data="/img/0247-results-with-dags.svg" width="90%"><img src="/img/0247-results-with-dags.png" width="90%" /></object>
+
+<p>… and here’s the original version from Wysocki et al:</p>
+
+<p><img src="/img/0247-original-diagram-shrunk.png" alt="Figure 4 from Wysocki et al" /></p>
+
+<p>There’s an obvious difference! My “simple coefficient” for X in the presence of a confounder has a gentle S curve whereas their’s is a straight line; and their “partial coefficient” for X in the presence of a collider has a gentle S curve whereas mine is in a straight line. Why? I don’t know! Obviously it is to do with our different simulated data. Mine is generated as some simple linear relationships; their’s is described as:</p>
+
+<blockquote>
+  <p>“We used path tracing (i.e., Wright’s rules; Alwin &amp; Hauser, 1975; see Appendix A for an example) to obtain a population correlation matrix for each causal structure and calculated regression coefficients from each population correlation matrix using the formula β=Σ−1xxΣxy, in which Σxx is the p×p
+ correlation matrix of predictors and Σxy is a p×1 vector that contains correlations between each predictor and the outcome”</p>
+</blockquote>
+
+<p>That’s clearly a bit different from what I did. I’m not going to delve into exactly why that makes the results a bit different. The difference doesn’t change the substantive point about how you can go wrong with the wrong choice of partial or simple coefficient (corresponding to whether you “control” for the nuisance variable or not).</p>
+
+<p>That’s all folks. Remember not to include collider and mediator variables in your controls in a regression, at least when you are interested in causal explanations (predictions being something else again)!</p>
+
+
+		
+	</div>
+</div>
+
+<div class="col-md-1"></div>
+<div class="col-md-4">
+	<div class="side-banner">
+	
+
+
+	<div>
+	   
+	    
+			
+			<p>&larr; Previous post</p>
+			<p><a rel="prev" href="/blog/2023/05/28/covid-vaccinations">Covid-19 vaccination rates in the Pacific</a></p>
+		
+		
+		
+		
+		
+		
+	</div>
+	
+	 
+
+   <div class = "side-footer">
+			
+			<hr></hr>
+			<p><gcse:search></gcse:search></p>
+			<hr></hr>
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.</p>
+			<hr></hr>
+			
+			<p>My day job is Director of the <a href='https://sdd.spc.int/'>Statistics for Development Division</a> at the Pacific Community, the principal scientific and technical organisation in the Pacific region, proudly supporting development since 1947. We are an international development organisation owned and governed by our 27 country and territory members. This blog is not part of my role there and contains my personal views only.</p>
+		
+		    <hr></hr>
+			
+       <div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="false" data-share="false"></div>
+			
+			<hr></hr>
+			<p>I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+			<hr></hr>
+
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title"><i>free range statistics</i></span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			<hr></hr>
+			
+
+
+    </div>
+
+
+
+  
+   
+
+
+
+
+		  
+		  
+
+
+
+	   
+	<div id="disqus_thread"></div>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function() {
+				var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+				dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+				(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+			})();
+		</script>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function () {
+				var s = document.createElement('script'); s.async = true;
+				s.type = 'text/javascript';
+				s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+				(document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+			}());
+		</script>
+
+	<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+	</div>	
+</div>    
+   
+   
+
+			
+			</div><!-- /.container -->
+         
+   <!-- Default Statcounter code for Free Range Statistics
+http://Http://freerangestats.info -->
+<script type="text/javascript">
+var sc_project=11673245; 
+var sc_invisible=1; 
+var sc_security="5b7111a4"; 
+</script>
+<script type="text/javascript"
+src="https://www.statcounter.com/counter/counter.js" async></script>
+<noscript><div class="statcounter"><a title="Web Analytics"
+href="http://statcounter.com/" target="_blank"><img class="statcounter"
+src="//c.statcounter.com/11673245/0/5b7111a4/1/" alt="Web
+Analytics"></a></div></noscript>
+<!-- End of Statcounter Code -->
+
+</body>   
+</html>
