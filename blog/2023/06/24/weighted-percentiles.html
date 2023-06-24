@@ -1,0 +1,712 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Weighted versus unweighted percentiles</title>
+      	
+         
+         
+            <meta name ="description" content ="When working with complex survey data where the weights are related to a continuous variable of interest, using a weighted rather than unweighted percentile rank will lead to different results towards the middle of the distribution; but the two measures will be highly correlated with eachother. Also, R reportedly calculates weighted percentile ranks much much faster than Stata.">
+            <meta property="og:description" content ="When working with complex survey data where the weights are related to a continuous variable of interest, using a weighted rather than unweighted percentile rank will lead to different results towards the middle of the distribution; but the two measures will be highly correlated with eachother. Also, R reportedly calculates weighted percentile ranks much much faster than Stata.">
+         
+         <meta property="og:site_name" content="free range statistics" />
+         <meta property="og:title" content="Weighted versus unweighted percentiles" />
+         
+            <meta property="og:image" content="http://freerangestats.info/img/0250-scatter2.png" />
+         
+		 
+			<meta property="og:url" content="http://freerangestats.info/blog/2023/06/24/weighted-percentiles.html" />
+		 
+         <meta property="og:author" content= "https://www.facebook.com/peterstats" />
+         <meta property="og:type" content="article" />
+      
+
+<link href='https://fonts.googleapis.com/css?family=Sarala' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Prosto+One' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Ubuntu+Mono' rel='stylesheet'>
+	  
+          <link href="/css/bootstrap.min.css" rel ="stylesheet" type="text/css">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet" type="text/css">
+            <link href="/css/custom.css" rel ="stylesheet" type="text/css">     
+		<link href="/css/syntax.css" rel ="stylesheet" type="text/css">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="free range statistics by Peter Ellis"
+      href="/feed.xml">
+
+	  
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+  <script>
+  (function() {
+    var cx = '015640467633673901770:pk3v2c95baw';
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+  })();
+</script>
+
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">free range statistics</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/about">about</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">all posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">ordered by date</a></li>
+				  <li><a href="/blog/most-popular.html">ordered by popularity</a></li>
+                  <li><a href="/blog/index_by_tag.html">grouped by subject matter</a></li>
+                  <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
+				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
+                  <li><a href="/blog/surveys.html">all posts on surveys</a></li> 
+				  <li><a href = /blog/2023/06/24/weighted-percentiles>most recent post</a></li>
+				</ul>
+            </li>
+              <li><a href="/blog/showcase.html">showcase</a></li>
+              <li><a href="/presentations/index.html">presentations</a></li>
+			  <li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">forecasts<span class="caret"></span></a>
+                <ul class="dropdown-menu">
+				  <li><a href = "/covid-tracking/index.html">Covid-19 in Australia</a></li>
+                  <li><a href = "/elections/nz-2020/index.html">NZ election 2020</a></li>
+                  <li><a href = "/elections/oz-2019/index.html">Australia federal election 2019</a></li>
+				  <li><a href = "/elections/nz-2017/combined.html">NZ election 2017</a></li>
+                  <li><a href="/blog/voting.html">all blog posts on voting behaviour</a></li>
+                </ul>				
+			  </li>
+			  
+			  
+			  
+		    </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			<div class="jumbotron">
+  <div class="container">
+	<center><h1>Weighted versus unweighted percentiles</h1></center>
+  </div>
+</div>
+
+
+
+	<div class = "post-summary">
+	<h2>At a glance:</h2>
+	   <p>When working with complex survey data where the weights are related to a continuous variable of interest, using a weighted rather than unweighted percentile rank will lead to different results towards the middle of the distribution; but the two measures will be highly correlated with eachother. Also, R reportedly calculates weighted percentile ranks much much faster than Stata.</p>
+	   <p class="meta">24 Jun 2023</p>
+	   <hr></hr>
+	</div>
+
+
+<div class="col-md-7">
+
+	<div class="post">
+		
+	  <p>This interesting paper came out recently: <a href="https://www.demographic-research.org/volumes/vol48/26/">A test of the predictive validity of relative versus absolute income for self-reported health and well-being in the United States</a>, by David Brady, Michaela Curran and Richard Carpiano. It uses a large sample of longitudinal data to exploit between-individual and within-individual (across time) variation in absolute and relative income to explore which one is more associated with well-being. Seems that in the USA, relative income is more important.</p>
+
+<p>“Relative income” here is defined as your position (percentile rank) in the national distribution of incomes in a particular year. The average relative income should be 50 by definition. I noticed that the mean percentile reported in table A.1 was 57, not 50, which led to this <a href="https://twitter.com/ellis2013nz/status/1671996132757757953">slightly confusing (for me, anyway) exchange on Twitter</a>. It sparked my interest in a broader question - what is the relationship between weighted and unweighted percentile rank when using survey data?</p>
+
+<h2 id="weighted-percentile-rank">Weighted percentile rank</h2>
+
+<p>I was surprised to find (well actually, I had discovered this before, so really should say to be “reminded”) that there doesn’t seem to be a weighted version of dplyr’s <code class="language-plaintext highlighter-rouge">percent_rank()</code> function in dplyr or other R packages. There are several packages with functions that will estimate quantiles from weighted data, but if you want to then turn the original vector of continuous variables into percentiles you need to take those quantiles and <code class="language-plaintext highlighter-rouge">cut</code> the original variable using them as breaks.</p>
+
+<p>I started by making my own convenience function to do this. To calculate the breaks, I am using the <code class="language-plaintext highlighter-rouge">wtd.quantile</code> function from Mark Hancock’s <code class="language-plaintext highlighter-rouge">reldist</code> package, which was notably faster than its competition (more on this later).</p>
+
+<p><em>Post continues after R code</em></p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">DescTools</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">microbenchmark</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">modi</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">reldist</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">sampling</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">glue</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">kableExtra</span><span class="p">)</span><span class="w">
+
+</span><span class="cd">#' Weighted percent rank</span><span class="w">
+</span><span class="cd">#' </span><span class="w">
+</span><span class="cd">#' @param x a vector</span><span class="w">
+</span><span class="cd">#' @param weights weights eg survey or frequency weights</span><span class="w">
+</span><span class="cd">#' @param q quantiles to compute as the basis for cutting x, </span><span class="w">
+</span><span class="cd">#'   passed through to reldist::wtd.quantile </span><span class="w">
+</span><span class="cd">#' @details</span><span class="w">
+</span><span class="cd">#' This is a bit of a hack, a homemande version of dplyr::percent_rank</span><span class="w">
+</span><span class="cd">#' I haven't thought through things like NAs, ties, etc</span><span class="w">
+</span><span class="cd">#' @importFrom reldist wtd.quantile</span><span class="w">
+</span><span class="cd">#' @export</span><span class="w">
+</span><span class="n">wt_percent_rank</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> 
+                            </span><span class="n">weights</span><span class="p">,</span><span class="w"> 
+                            </span><span class="n">q</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="m">0</span><span class="o">:</span><span class="m">1000</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">1000</span><span class="p">){</span><span class="w">
+  </span><span class="c1"># fastest method to calculate breaks</span><span class="w">
+  </span><span class="n">breaks</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">reldist</span><span class="o">::</span><span class="n">wtd.quantile</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">weight</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">weights</span><span class="p">,</span><span class="w"> </span><span class="n">q</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">q</span><span class="p">)</span><span class="w">
+  </span><span class="c1"># problem sometimes with ties in the breaks. This forces a way through:</span><span class="w">
+  </span><span class="n">breaks</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">unique</span><span class="p">(</span><span class="n">breaks</span><span class="p">)</span><span class="w">
+  </span><span class="n">breaks</span><span class="p">[</span><span class="m">1</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="o">-</span><span class="kc">Inf</span><span class="w">
+  </span><span class="c1"># cut the data where the quantile breaks are:</span><span class="w">
+  </span><span class="n">y</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">cut</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">breaks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">breaks</span><span class="p">,</span><span class="w"> </span><span class="n">labels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w"> </span><span class="c1"># labels = FALSE for speed</span><span class="w">
+  
+  </span><span class="c1"># convert this into a number from 0 to 1</span><span class="w">
+  </span><span class="n">y</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">1</span><span class="w">
+  </span><span class="n">y</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">max</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="w">
+  </span><span class="nf">return</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="c1"># for unweighted data, wt_percent_rank should give identical</span><span class="w">
+</span><span class="c1"># results to percent_rank</span><span class="w">
+</span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">rnorm</span><span class="p">(</span><span class="m">1000</span><span class="p">)</span><span class="w">
+</span><span class="n">tibble</span><span class="p">(</span><span class="n">homemade</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">wt_percent_rank</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">weights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">x</span><span class="p">))),</span><span class="w">
+      </span><span class="n">dplyr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent_rank</span><span class="p">(</span><span class="n">x</span><span class="p">))</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">difference</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">homemade</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">dplyr</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">arrange</span><span class="p">(</span><span class="n">desc</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">difference</span><span class="p">)))</span></code></pre></figure>
+
+<p>That little test of whether I get the same result as <code class="language-plaintext highlighter-rouge">dplyr::percent_rank()</code> with unweighted data turns out ok:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  homemade dplyr difference
+      &lt;dbl&gt; &lt;dbl&gt;      &lt;dbl&gt;
+ 1    0.189 0.189          0
+ 2    0.557 0.557          0
+ 3    0.869 0.869          0
+ 4    0.944 0.944          0
+ 5    0.704 0.704          0
+ 6    0.448 0.448          0
+ 7    0.411 0.411          0
+ 8    0.121 0.121          0
+ 9    0.584 0.584          0
+10    0.307 0.307          0
+# ℹ 990 more rows
+</code></pre></div></div>
+
+<h2 id="simulating-a-population-and-drawing-a-sample">Simulating a population and drawing a sample</h2>
+
+<p>So to actually explore the difference between weighted and unweighted percentiles, I wanted to simulate a complex survey with unequal probabilities of observations being in the sample, and a skewed variable (income a good example) that was also related, directly or indirectly, to the probability of an observation being in the sample. I did this by creating a educatin variable with 7 different levels, and said</p>
+<ul>
+  <li>the higher the education the higher the mean income</li>
+  <li>the higher the education, the lower the chance of being sampled (or, which is effectively the same for my purpose, the lower the chance of completing a response to the survey)</li>
+</ul>
+
+<p>Once I have drawn the sample I am going to use standard post-stratification methods to calculate weights that mean the points in the sample between them represent the original population fully.</p>
+
+<p>Whether or not this sampling or non-response effect is realistic doesn’t matter much. Obviously in reality things will be much more complicated. I just wanted something where survey weights were going to vary in a known way (that could be inferred from the data) that correlates with the variable of interest.</p>
+
+<p>Actual income is simulated as coming from a log-normal distribution.</p>
+
+<p><em>Post continues after R code</em></p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#----------------define population-----------------</span><span class="w">
+</span><span class="n">n</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">1e4</span><span class="w">
+</span><span class="n">N</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">1e7</span><span class="w">
+</span><span class="n">set.seed</span><span class="p">(</span><span class="m">123</span><span class="p">)</span><span class="w">
+</span><span class="n">population</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tibble</span><span class="p">(</span><span class="n">educ</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sample</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">7</span><span class="p">,</span><span class="w"> </span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="n">replace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">))</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">income</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">exp</span><span class="p">(</span><span class="n">rnorm</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="m">9</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">educ</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">)),</span><span class="w">
+         </span><span class="n">prob_sample</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="m">10</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">educ</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">N</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># marginal totals we will use later for weighting</span><span class="w">
+</span><span class="n">marginal_total</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">population</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">count</span><span class="p">(</span><span class="n">educ</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Freq"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># check the income is indeed higher for people in higher education groups:</span><span class="w">
+</span><span class="n">population</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">educ</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">summarise</span><span class="p">(</span><span class="n">mean</span><span class="p">(</span><span class="n">income</span><span class="p">))</span></code></pre></figure>
+
+<p>This is what the mean income looks like for my different education levels:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>   educ `mean(income)`
+  &lt;int&gt;          &lt;dbl&gt;
+1     1         16307.
+2     2         19982.
+3     3         24369.
+4     4         29761.
+5     5         36302.
+6     6         44355.
+7     7         54212.
+</code></pre></div></div>
+<p>OK, now I need to draw a sample. I originally did this with <code class="language-plaintext highlighter-rouge">dplyr::slice_sample()</code> but found it slow. The <code class="language-plaintext highlighter-rouge">strata()</code> function in Yves Tillé and Alina Matei’s <code class="language-plaintext highlighter-rouge">sampling</code> package is about twice as fast (benchmarking later in this post) so I used that instead. The code below draws that sample, does the post-stratification weighting (by simply joining the sample to the marginal totals data frame calculated earlier and creating weights forced to add up to those marginal totals) and then calculates the percentile ranks (both weighted and unweighted).</p>
+
+<p>BTW, the reason I was particularly attuned to speed in this overall exercise is that David Brady had commented that Stata was very slow in calculating the weighted percentile ranks. But apart from drawing the sample, everything I was doing in R turned out to be very fast; even calculating percentile ranks on 200,000 observations grouped by year (so similar to the actual data in the original paper) only takes a few seconds.</p>
+
+<p><em>Post continues after R code</em></p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#---------------draw a sample------------------------</span><span class="w">
+</span><span class="c1"># Sampling, with unequal probabilities</span><span class="w">
+</span><span class="c1"># the slow part here is actually the sampling with unequal probabilities. Not</span><span class="w">
+</span><span class="c1"># sure why so slow. See benchmarking later for why we use this strata()</span><span class="w">
+</span><span class="c1"># function.</span><span class="w">
+</span><span class="n">sample_rows</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sampling</span><span class="o">::</span><span class="n">strata</span><span class="p">(</span><span class="n">population</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> 
+                     </span><span class="n">pik</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">population</span><span class="o">$</span><span class="n">prob_sample</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"systematic"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">sample</span><span class="w"> </span><span class="o">&lt;-</span><span class="w">  </span><span class="n">population</span><span class="p">[</span><span class="n">sample_rows</span><span class="o">$</span><span class="n">ID_unit</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="c1"># join with marginal totals and calculate weights necessary</span><span class="w">
+  </span><span class="c1"># so weights add up to the marginal totals</span><span class="w">
+  </span><span class="n">left_join</span><span class="p">(</span><span class="n">marginal_total</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"educ"</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">educ</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">wt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Freq</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">n</span><span class="p">())</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">ungroup</span><span class="p">()</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="c1"># calculate unweighted and weighted percentile ranks</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">uw_perc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">percent_rank</span><span class="p">(</span><span class="n">income</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w">
+         </span><span class="n">w_perc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">wt_percent_rank</span><span class="p">(</span><span class="n">income</span><span class="p">,</span><span class="w"> </span><span class="n">weights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">wt</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w">
+         </span><span class="n">difference</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">w_perc</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">uw_perc</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># check that the weights add up to the population number</span><span class="w">
+</span><span class="n">stopifnot</span><span class="p">(</span><span class="nf">sum</span><span class="p">(</span><span class="n">sample</span><span class="o">$</span><span class="n">wt</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">N</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># visual check that the sum of weights in each category</span><span class="w">
+</span><span class="c1"># of educ matches the population totals (they do):</span><span class="w">
+</span><span class="n">count</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span><span class="w"> </span><span class="n">educ</span><span class="p">,</span><span class="w"> </span><span class="n">wt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">wt</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Sum of weights"</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">left_join</span><span class="p">(</span><span class="n">marginal_total</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"educ"</span><span class="p">)</span></code></pre></figure>
+
+<h2 id="comparing-the-weighted-and-unweighted-percentiles">Comparing the weighted and unweighted percentiles</h2>
+
+<p>OK, time to do the actual comparisons. Here’s a scatter plot of the weighted and unweighted percentiles. Note the very very high correlation - 0.999! - but also the visually clear slight curvature:</p>
+
+<object type="image/svg+xml" data="/img/0250-scatter1.svg" width="90%"><img src="/img/0250-scatter1.png" width="90%" /></object>
+
+<p>That curvature is more obvious if we plot the difference between the two estimates:</p>
+
+<object type="image/svg+xml" data="/img/0250-scatter2.svg" width="90%"><img src="/img/0250-scatter2.png" width="90%" /></object>
+
+<p>Why do we get this pattern? It’s simple enough if you consider three people - at the bottom, the top and the middle of the sample’s income distribution. For the person at the bottom, whether we are weighting the observations or not, we know that this person has the lowest observed income. They’re in the bottom percentile either way, and the weights of all the people above them simply don’t matter. This applies in reverse for the person at the top. So the weighted and unweighted percentiles are identical in these extremes.</p>
+
+<p>For the person in the middle however it does matter. We look at the unweighted sample and say “right, you’re bang in the middle, you’re the 50th percentile”. But then we look at the weights and say “hold on, the half of the sample that has incomes below you has relatively low weights (because, in my simulation, people with lower education were more likely to be in the survey so get lower weights to compensate). So while it looks like you’ve got higher income than 50% of people, that 50% of the sample actually only represents 45% of the population.” So we get a material difference between weighted and unweighted percentile estimates in the middle, but not at the ends, of the distribution.</p>
+
+<p>There’s nothing inherent that says the weighted percentiles in the middle will always be lower than unweighted as in my simulation - that’s only the case because the lower income people on average had lower weights. With other sampling designs or non-response rates, this could be reversed. But however the weights work out, there will be more discrepancy between the weighted and unweighted percentiles in the middle of the distribution than the ends.</p>
+
+<p>Here’s the simple code for drawing those plots.</p>
+
+<p><em>Post continues after R code</em></p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#-----------visual comparisons-------------</span><span class="w">
+
+</span><span class="n">the_title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">str_wrap</span><span class="p">(</span><span class="s2">"Comparison between weighted and unweighted percentiles 
+                        in a simulated right-skewed variable from a complex 
+                        survey."</span><span class="p">,</span><span class="w"> </span><span class="m">80</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># it *looks* like the unweighted and weighted percentils are indistinguishable:</span><span class="w">
+</span><span class="n">p1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ggplot</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">uw_perc</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">w_perc</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_point</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_abline</span><span class="p">(</span><span class="n">slope</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">intercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_title</span><span class="p">,</span><span class="w">
+  </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">str_squish</span><span class="p">(</span><span class="n">glue</span><span class="p">(</span><span class="s2">"Correlation = 
+                       {round(cor(sample$uw_perc, sample$w_perc), 3)}.
+                       Blue line shows equality."</span><span class="p">)),</span><span class="w">
+  </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Unweighted percentile"</span><span class="p">,</span><span class="w">
+  </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Weighted percentile"</span><span class="p">)</span><span class="w">
+</span><span class="c1"># Note  this line is slightly curved.</span><span class="w">
+</span><span class="n">print</span><span class="p">(</span><span class="n">p1</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># at the higher incomes and lower incomes there is no difference -</span><span class="w">
+</span><span class="c1"># we know you are the richest or the poorest. But for people in the</span><span class="w">
+</span><span class="c1"># middle it makes a real difference:</span><span class="w">
+</span><span class="n">p2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ggplot</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">uw_perc</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">difference</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_point</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="w"> </span><span class="m">0.11</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Unweighted percentile"</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Weighted minus\nunweighted percentile"</span><span class="p">,</span><span class="w">
+       </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_title</span><span class="p">)</span><span class="w">
+</span><span class="n">print</span><span class="p">(</span><span class="n">p2</span><span class="p">)</span></code></pre></figure>
+
+<p>A couple of other interesting observations. The unweighted mean of the unweighted percentile is 50; and so is the weighted mean of the weighted percentile. But the unweighted mean of the weighted percentile is low - about 47 - and the weighted mean of the unweighted percentile is high - about 53. This all makes sense based on the above reasoning.</p>
+
+<p>I now believe the reason the mean percentile in the original paper is about 57 is for a similar reason to what we see here. The percentiles were probably calculated on an unweighted basis (as David said, the correlation was 0.99 so for linear modelling purposes it makes very little difference, and because they were using Stata it is much faster for them to use the unweighted one); so the average shown in Table A.1 is a weighted average of the unweighted percentile. I haven’t checked this in David’s code, I don’t think it matters very much at all, but I’m pleased I’ve at least found what I think is a plausible line of reasoning on this.</p>
+
+<p>Here are some summary stats on the sample:</p>
+
+<table class="table" style="margin-left: auto; margin-right: auto;">
+ <thead>
+  <tr>
+   <th style="text-align:right;"> educ </th>
+   <th style="text-align:right;"> mean(wt) </th>
+   <th style="text-align:right;"> mean(income) </th>
+   <th style="text-align:right;"> mean(uw_perc) </th>
+   <th style="text-align:right;"> mean(w_perc) </th>
+   <th style="text-align:right;"> n() </th>
+   <th style="text-align:right;"> sum(wt) </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr>
+   <td style="text-align:right;"> 1 </td>
+   <td style="text-align:right;"> 690.4403 </td>
+   <td style="text-align:right;"> 16980.99 </td>
+   <td style="text-align:right;"> 37.66090 </td>
+   <td style="text-align:right;"> 34.70156 </td>
+   <td style="text-align:right;"> 2067 </td>
+   <td style="text-align:right;"> 1427140 </td>
+  </tr>
+  <tr>
+   <td style="text-align:right;"> 2 </td>
+   <td style="text-align:right;"> 762.0085 </td>
+   <td style="text-align:right;"> 21147.84 </td>
+   <td style="text-align:right;"> 42.89254 </td>
+   <td style="text-align:right;"> 39.78324 </td>
+   <td style="text-align:right;"> 1873 </td>
+   <td style="text-align:right;"> 1427242 </td>
+  </tr>
+  <tr>
+   <td style="text-align:right;"> 3 </td>
+   <td style="text-align:right;"> 842.4838 </td>
+   <td style="text-align:right;"> 25146.92 </td>
+   <td style="text-align:right;"> 48.18424 </td>
+   <td style="text-align:right;"> 45.01756 </td>
+   <td style="text-align:right;"> 1697 </td>
+   <td style="text-align:right;"> 1429695 </td>
+  </tr>
+  <tr>
+   <td style="text-align:right;"> 4 </td>
+   <td style="text-align:right;"> 989.3329 </td>
+   <td style="text-align:right;"> 31281.51 </td>
+   <td style="text-align:right;"> 54.45006 </td>
+   <td style="text-align:right;"> 51.25665 </td>
+   <td style="text-align:right;"> 1445 </td>
+   <td style="text-align:right;"> 1429586 </td>
+  </tr>
+  <tr>
+   <td style="text-align:right;"> 5 </td>
+   <td style="text-align:right;"> 1175.7494 </td>
+   <td style="text-align:right;"> 35873.40 </td>
+   <td style="text-align:right;"> 58.81986 </td>
+   <td style="text-align:right;"> 55.67827 </td>
+   <td style="text-align:right;"> 1217 </td>
+   <td style="text-align:right;"> 1430887 </td>
+  </tr>
+  <tr>
+   <td style="text-align:right;"> 6 </td>
+   <td style="text-align:right;"> 1500.4732 </td>
+   <td style="text-align:right;"> 42648.17 </td>
+   <td style="text-align:right;"> 62.77626 </td>
+   <td style="text-align:right;"> 59.67482 </td>
+   <td style="text-align:right;"> 951 </td>
+   <td style="text-align:right;"> 1426950 </td>
+  </tr>
+  <tr>
+   <td style="text-align:right;"> 7 </td>
+   <td style="text-align:right;"> 1904.6667 </td>
+   <td style="text-align:right;"> 50135.01 </td>
+   <td style="text-align:right;"> 66.77896 </td>
+   <td style="text-align:right;"> 63.82556 </td>
+   <td style="text-align:right;"> 750 </td>
+   <td style="text-align:right;"> 1428500 </td>
+  </tr>
+</tbody>
+</table>
+
+<p>And the code to make those summary stats and compare the different means of the different percentiles.</p>
+
+<p><em>Post continues after R code</em></p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># check that the average weights are higher for the higher</span><span class="w">
+</span><span class="c1"># education groups, as we wanted it to be</span><span class="w">
+</span><span class="n">sample</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">group_by</span><span class="p">(</span><span class="n">educ</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">summarise</span><span class="p">(</span><span class="n">mean</span><span class="p">(</span><span class="n">wt</span><span class="p">),</span><span class="w">
+            </span><span class="n">mean</span><span class="p">(</span><span class="n">income</span><span class="p">),</span><span class="w">
+            </span><span class="n">mean</span><span class="p">(</span><span class="n">uw_perc</span><span class="p">),</span><span class="w">
+            </span><span class="n">mean</span><span class="p">(</span><span class="n">w_perc</span><span class="p">),</span><span class="w">
+            </span><span class="n">n</span><span class="p">(),</span><span class="w">
+            </span><span class="nf">sum</span><span class="p">(</span><span class="n">wt</span><span class="p">))</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">kable</span><span class="p">()</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">kable_styling</span><span class="p">()</span><span class="w">
+
+</span><span class="c1"># unweighted mean of the unweighted percentile is 50:</span><span class="w">
+</span><span class="n">mean</span><span class="p">(</span><span class="n">sample</span><span class="o">$</span><span class="n">uw_perc</span><span class="p">)</span><span class="w">
+</span><span class="c1"># but unweighted mean of the weighted percentile isn't!</span><span class="w">
+</span><span class="n">mean</span><span class="p">(</span><span class="n">sample</span><span class="o">$</span><span class="n">w_perc</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># Weighted mean of the weighted percentile is 50:</span><span class="w">
+</span><span class="n">weighted.mean</span><span class="p">(</span><span class="n">sample</span><span class="o">$</span><span class="n">w_perc</span><span class="p">,</span><span class="w"> </span><span class="n">w</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sample</span><span class="o">$</span><span class="n">wt</span><span class="p">)</span><span class="w">
+</span><span class="c1"># but weighted mean of the unweighted percentile isn't!</span><span class="w">
+</span><span class="n">weighted.mean</span><span class="p">(</span><span class="n">sample</span><span class="o">$</span><span class="n">uw_perc</span><span class="p">,</span><span class="w"> </span><span class="n">w</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sample</span><span class="o">$</span><span class="n">wt</span><span class="p">)</span></code></pre></figure>
+
+<h2 id="some-speed-benchmarking">Some speed benchmarking</h2>
+
+<p>Finally, here are some speed tests that were behind some of the design choices above. As it turns out, none of it matters very much. As mentioned above, R can calculate the weighted percentiles for hundreds of thousands of observations grouped by year in only a couple of seconds, so I didn’t need to worry about that. But in case it matters, here’s my core conclusions from running the benchmarking below</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">reldist::wtd.quantile</code> is about twice as fast as <code class="language-plaintext highlighter-rouge">Desctools::Quantile</code> in calculating weighted quantiles and gives near-identical results.</li>
+  <li>setting <code class="language-plaintext highlighter-rouge">labels = FALSE</code> in a call to <code class="language-plaintext highlighter-rouge">cut()</code> makes the function about four times as fast</li>
+  <li><code class="language-plaintext highlighter-rouge">dplyr::slice_sample</code> takes about the same time to do a sample with unequal probability of selection as a home made function using <code class="language-plaintext highlighter-rouge">base::sample</code>, but <code class="language-plaintext highlighter-rouge">sampling:strata</code> function is about twice as fast.</li>
+  <li>my final homemade function <code class="language-plaintext highlighter-rouge">wt_percent_rank</code> for weighted percentile ranks is about four times slower than the unweighted <code class="language-plaintext highlighter-rouge">dplyr::percent_rank</code>, but is still plenty fast enough (&lt;5 seconds for 200,000 observations).</li>
+</ul>
+
+<p>Benchmarking code:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#===================speed tests==================</span><span class="w">
+
+</span><span class="c1"># Some tests done here behind some of the decisions of what is actually used in</span><span class="w">
+</span><span class="c1"># the script above.</span><span class="w">
+
+</span><span class="c1">#---------------calculating the breaks at various points in quantile---------</span><span class="w">
+</span><span class="n">set.seed</span><span class="p">(</span><span class="m">321</span><span class="p">)</span><span class="w">
+</span><span class="n">n</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">100000</span><span class="w">
+</span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">exp</span><span class="p">(</span><span class="n">rnorm</span><span class="p">(</span><span class="n">n</span><span class="p">))</span><span class="w">
+</span><span class="n">w</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">exp</span><span class="p">(</span><span class="n">rnorm</span><span class="p">(</span><span class="n">n</span><span class="p">))</span><span class="w"> 
+</span><span class="n">p</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">0</span><span class="o">:</span><span class="m">1000</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">1000</span><span class="w"> </span><span class="c1"># percentiles to use in benchmarking qunatile functions</span><span class="w">
+
+
+</span><span class="c1"># note modi::weighted.quantile(x, w = w, prob = 0.5) only works with a scalar value of prob</span><span class="w">
+</span><span class="n">microbenchmark</span><span class="p">(</span><span class="w">
+  </span><span class="n">unweighted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">quantile</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">probs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">),</span><span class="w">
+  </span><span class="n">Desctools</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DescTools</span><span class="o">::</span><span class="n">Quantile</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">weights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">w</span><span class="p">,</span><span class="w"> </span><span class="n">probs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">),</span><span class="w">
+  </span><span class="n">reldist</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reldist</span><span class="o">::</span><span class="n">wtd.quantile</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">q</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">weight</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">w</span><span class="p">)</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><span class="c1"># reldist is notably faster than DescTools in fact it is nearly as fast as</span><span class="w">
+</span><span class="c1"># the unweighted base r calculation</span><span class="w">
+
+</span><span class="c1"># the results are a tiny bit different but usually not:</span><span class="w">
+</span><span class="n">tibble</span><span class="p">(</span><span class="w">
+  </span><span class="n">dt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DescTools</span><span class="o">::</span><span class="n">Quantile</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">weights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">w</span><span class="p">,</span><span class="w"> </span><span class="n">probs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">),</span><span class="w">
+  </span><span class="n">rd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reldist</span><span class="o">::</span><span class="n">wtd.quantile</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">q</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">weight</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">w</span><span class="p">)</span><span class="w">
+</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">diff</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rd</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">dt</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">arrange</span><span class="p">(</span><span class="n">desc</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">diff</span><span class="p">)))</span><span class="w">
+
+</span><span class="c1">#-------------------actually assigning the percentiles to the original data-----------</span><span class="w">
+</span><span class="n">breaks</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">wtd.quantile</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">q</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">weight</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">w</span><span class="p">)</span><span class="w">
+
+</span><span class="n">microbenchmark</span><span class="p">(</span><span class="w">
+  </span><span class="n">cut</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">breaks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">breaks</span><span class="p">),</span><span class="w">
+  </span><span class="n">cut</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">breaks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">breaks</span><span class="p">,</span><span class="w"> </span><span class="n">labels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><span class="c1"># much faster (about 4x) with labels = FALSE</span><span class="w">
+
+
+</span><span class="c1">#-------------------sampling with unequal probabilities---------</span><span class="w">
+</span><span class="c1"># sampling a bunch of rows at random with unequal probabilities using</span><span class="w">
+</span><span class="c1"># slice_sample is surprisinglyu slow. Is there a better way?</span><span class="w">
+</span><span class="c1"># try my home made sampler, and also one from the sampling package</span><span class="w">
+
+</span><span class="n">eg_d</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tibble</span><span class="p">(</span><span class="w">
+  </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> 
+  </span><span class="n">w</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">w</span><span class="w">
+</span><span class="p">)</span><span class="w">
+
+</span><span class="n">my_sampler</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">d</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">weight_by</span><span class="p">){</span><span class="w">
+  </span><span class="n">id</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">nrow</span><span class="p">(</span><span class="n">d</span><span class="p">)</span><span class="w">
+  </span><span class="n">rows</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sample</span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">prob</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">weight_by</span><span class="p">)</span><span class="w">
+  </span><span class="nf">return</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="n">rows</span><span class="p">,</span><span class="w"> </span><span class="p">])</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+
+</span><span class="n">this_n</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">1000</span><span class="w">
+</span><span class="n">microbenchmark</span><span class="p">(</span><span class="w">
+  </span><span class="n">unweighted</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="n">slice_sample</span><span class="p">(</span><span class="n">eg_d</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this_n</span><span class="p">),</span><span class="w">
+  </span><span class="n">`weighted dplyr`</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="n">slice_sample</span><span class="p">(</span><span class="n">eg_d</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this_n</span><span class="p">,</span><span class="w"> </span><span class="n">weight_by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">w</span><span class="p">),</span><span class="w">
+  </span><span class="n">`weighted homemade`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">my_sampler</span><span class="p">(</span><span class="n">eg_d</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this_n</span><span class="p">,</span><span class="w"> </span><span class="n">weight_by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">eg_d</span><span class="o">$</span><span class="n">w</span><span class="p">),</span><span class="w">
+  </span><span class="n">`sampling package`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">eg_d</span><span class="p">[</span><span class="n">strata</span><span class="p">(</span><span class="n">eg_d</span><span class="p">,</span><span class="w"> 
+                          </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">this_n</span><span class="p">,</span><span class="w"> 
+                          </span><span class="n">pik</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">eg_d</span><span class="o">$</span><span class="n">w</span><span class="p">,</span><span class="w"> 
+                          </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"systematic"</span><span class="p">)</span><span class="o">$</span><span class="n">ID_unit</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><span class="c1"># times for weighted dplyr and home made funcionts are very similar </span><span class="w">
+</span><span class="c1"># for this_n of 100, 1000, 10000</span><span class="w">
+</span><span class="c1"># the sampling::strata() function is about twice as fast</span><span class="w">
+</span><span class="c1"># unweighted sampling is much much faster</span><span class="w">
+
+</span><span class="c1">#---------comparing speed of unweighted and weighted percentile calculation------</span><span class="w">
+</span><span class="n">microbenchmark</span><span class="p">(</span><span class="w">
+  </span><span class="n">wt_percent_rank</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">weights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">w</span><span class="p">,</span><span class="w"> </span><span class="n">probs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">),</span><span class="w">
+  </span><span class="n">percent_rank</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><span class="c1"># Note that the weighted version is 3-4 times slower even after</span><span class="w">
+</span><span class="c1"># not using labels for cut and using the quickest quantile</span><span class="w">
+</span><span class="c1"># calculation we have.</span><span class="w">
+
+
+</span><span class="c1">#----------percentile rank for large sample-----------</span><span class="w">
+</span><span class="c1"># simulate similar size data to that which is in</span><span class="w">
+</span><span class="c1"># https://www.demographic-research.org/volumes/vol48/26/48-26.pdf</span><span class="w">
+</span><span class="n">psid_eg</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tibble</span><span class="p">(</span><span class="w">
+  </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">exp</span><span class="p">(</span><span class="n">rnorm</span><span class="p">(</span><span class="m">200000</span><span class="p">,</span><span class="w"> </span><span class="m">8</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">)),</span><span class="w">
+  </span><span class="n">w</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">exp</span><span class="p">(</span><span class="n">rnorm</span><span class="p">(</span><span class="m">200000</span><span class="p">)),</span><span class="w">
+  </span><span class="n">year</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sample</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">200000</span><span class="p">,</span><span class="w"> </span><span class="n">replace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">))</span><span class="w">
+</span><span class="p">)</span><span class="w">
+
+</span><span class="n">system.time</span><span class="p">({</span><span class="w">
+  </span><span class="n">psid_eg</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">group_by</span><span class="p">(</span><span class="n">year</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">mutate</span><span class="p">(</span><span class="n">wpr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">wt_percent_rank</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">weights</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">w</span><span class="p">))</span><span class="w">
+</span><span class="p">})</span><span class="w">
+</span><span class="c1"># &lt; 5 seconds</span></code></pre></figure>
+
+<p>That’s all, cheerio.</p>
+
+
+		
+	</div>
+</div>
+
+<div class="col-md-1"></div>
+<div class="col-md-4">
+	<div class="side-banner">
+	
+
+
+	<div>
+	   
+	    
+			
+			<p>&larr; Previous post</p>
+			<p><a rel="prev" href="/blog/2023/06/17/pacific-map-in-package">Simpler drawing of Pacific choropleth maps</a></p>
+		
+		
+		
+		
+		
+		
+	</div>
+	
+	 
+
+   <div class = "side-footer">
+			
+			<hr></hr>
+			<p><gcse:search></gcse:search></p>
+			<hr></hr>
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.</p>
+			<hr></hr>
+			
+			<p>My day job is Director of the <a href='https://sdd.spc.int/'>Statistics for Development Division</a> at the Pacific Community, the principal scientific and technical organisation in the Pacific region, proudly supporting development since 1947. We are an international development organisation owned and governed by our 27 country and territory members. This blog is not part of my role there and contains my personal views only.</p>
+		
+		    <hr></hr>
+			
+       <div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="false" data-share="false"></div>
+			
+			<hr></hr>
+			<p>I'm pleased to be aggregated at <a href="http://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+			<hr></hr>
+
+			
+			<p>			
+            <span xmlns:dct="http://purl.org/dc/terms/" property="dct:title"><i>free range statistics</i></span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			<hr></hr>
+			
+
+
+    </div>
+
+
+
+  
+   
+
+
+
+
+		  
+		  
+
+
+
+	   
+	<div id="disqus_thread"></div>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function() {
+				var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+				dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+				(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+			})();
+		</script>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function () {
+				var s = document.createElement('script'); s.async = true;
+				s.type = 'text/javascript';
+				s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+				(document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+			}());
+		</script>
+
+	<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+	</div>	
+</div>    
+   
+   
+
+			
+			</div><!-- /.container -->
+         
+   <!-- Default Statcounter code for Free Range Statistics
+http://Http://freerangestats.info -->
+<script type="text/javascript">
+var sc_project=11673245; 
+var sc_invisible=1; 
+var sc_security="5b7111a4"; 
+</script>
+<script type="text/javascript"
+src="https://www.statcounter.com/counter/counter.js" async></script>
+<noscript><div class="statcounter"><a title="Web Analytics"
+href="http://statcounter.com/" target="_blank"><img class="statcounter"
+src="//c.statcounter.com/11673245/0/5b7111a4/1/" alt="Web
+Analytics"></a></div></noscript>
+<!-- End of Statcounter Code -->
+
+</body>   
+</html>
