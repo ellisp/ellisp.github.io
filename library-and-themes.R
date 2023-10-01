@@ -18,6 +18,8 @@ myfont <- "Roboto"
 main_font <- "Roboto"
 heading_font <- "Sarala"
 
+# uncomment the next line if you want everything in Calibri instead
+# main_font <- myfont <- heading_font <- "Calibri"
 
 my_theme <- theme_light(base_family = main_font) + 
              theme(legend.position = "bottom") +
