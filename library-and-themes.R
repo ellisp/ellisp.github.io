@@ -8,9 +8,9 @@ library(beepr)
 library(Cairo)
 library(ggrepel)
 library(svglite)
-library(frs)
 library(conflicted)
 
+library(frs) # remotes::install_github("ellisp/frs-r-package/pkg")
 conflict_prefer("filter", "dplyr")
 conflict_prefer("select", "dplyr")
 
