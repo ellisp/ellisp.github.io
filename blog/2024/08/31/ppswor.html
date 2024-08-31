@@ -1,0 +1,442 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Sampling without replacement with unequal probabilities</title>
+      	
+         
+         
+            <meta name ="description" content ="I play around with sampling from finite populations with unequal probabilities, where the R sample() function turns out not to work the way I had expected it to.">
+            <meta property="og:description" content ="I play around with sampling from finite populations with unequal probabilities, where the R sample() function turns out not to work the way I had expected it to.">
+         
+         <meta property="og:site_name" content="free range statistics" />
+         <meta property="og:title" content="Sampling without replacement with unequal probabilities" />
+         
+            <meta property="og:image" content="https:/freerangestats.info/img/0276-20-10-no-replace.png" />
+         
+		 
+			<meta property="og:url" content="https://freerangestats.info/blog/2024/08/31/ppswor.html" />
+		 
+         <meta property="og:author" content= "https://www.facebook.com/peterstats" />
+         <meta property="og:type" content="article" />
+      
+
+<link href='https://fonts.googleapis.com/css?family=Sarala' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Prosto+One' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Ubuntu+Mono' rel='stylesheet'>
+	  
+          <link href="/css/bootstrap.min.css" rel ="stylesheet" type="text/css">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet" type="text/css">
+            <link href="/css/custom.css" rel ="stylesheet" type="text/css">     
+		<link href="/css/syntax.css" rel ="stylesheet" type="text/css">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="free range statistics by Peter Ellis"
+      href="/feed.xml">
+
+	  
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+  <script>
+  (function() {
+    var cx = '015640467633673901770:pk3v2c95baw';
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+  })();
+</script>
+
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">free range statistics</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/about">about</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">all posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">ordered by date</a></li>
+				  <li><a href="/blog/most-popular.html">ordered by popularity</a></li>
+                  <li><a href="/blog/index_by_tag.html">grouped by subject matter</a></li>
+                  <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
+				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
+                  <li><a href="/blog/surveys.html">all posts on surveys</a></li> 
+				  <li><a href = /blog/2024/08/31/ppswor>most recent post</a></li>
+				</ul>
+            </li>
+              <li><a href="/blog/showcase.html">showcase</a></li>
+              <li><a href="/presentations/index.html">presentations</a></li>
+			  <li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">forecasts<span class="caret"></span></a>
+                <ul class="dropdown-menu">
+				  <li><a href = "/covid-tracking/index.html">Covid-19 in Australia</a></li>
+                  <li><a href = "/elections/nz-2020/index.html">NZ election 2020</a></li>
+                  <li><a href = "/elections/oz-2019/index.html">Australia federal election 2019</a></li>
+				  <li><a href = "/elections/nz-2017/combined.html">NZ election 2017</a></li>
+                  <li><a href="/blog/voting.html">all blog posts on voting behaviour</a></li>
+                </ul>				
+			  </li>
+			  
+			  
+			  
+		    </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			<div class="jumbotron">
+  <div class="container">
+	<center><h1>Sampling without replacement with unequal probabilities</h1></center>
+  </div>
+</div>
+
+
+
+	<div class = "post-summary">
+	<h2>At a glance:</h2>
+	   <p>I play around with sampling from finite populations with unequal probabilities, where the R sample() function turns out not to work the way I had expected it to.</p>
+	   <p class="meta">31 Aug 2024</p>
+	   <hr></hr>
+	</div>
+
+
+<div class="col-md-7">
+
+	<div class="post">
+		
+	  <h2 id="not-proportional-to-w">Not proportional to w</h2>
+
+<p>A week ago I was surprised to read on <a href="https://notstatschat.rbind.io/2024/08/26/another-way-to-not-sample-with-replacement/">Thomas Lumley’s Biased and Inefficient</a> blog that when using R’s <code class="language-plaintext highlighter-rouge">sample()</code> function without replacement and with unequal probabilities of individual units being sampled:</p>
+
+<blockquote>
+  <p>“What R currently has is sequential sampling: if you give it a set of priorities w it will sample an element with probability proportional to w from the population, remove it from the population, then sample with probability proportional to w from the remaining elements, and so on. This is useful, but a lot of people don’t realise that the probability of element i being sampled is not proportional to w_i”</p>
+</blockquote>
+
+<p>This surprised me profoundly - in the way that Bertrand Russell once wrote of surprise in some epistemological context of getting to the bottom of the stairs and finding there was one more stair to go than you unconsciously expected. That is, I hadn’t even been consciously aware of assuming that the probability of an element being sampled is proportional to the weight given to it, but if I <em>had</em> been asked if this was the case I would have given the wrong answer (‘yes’).</p>
+
+<p>Thomas had some examples in his blog relating to streams of data but I wanted to see for myself. So I wrote a function to simulate sampling from a small, finite population, with equal or unequal weights. So mostly, I sampled 10 units at a time from a population of 20; and gave them weights from about 0.005 to 0.095 ( a big range). The weights are forced to add up to 1 so they can be easily compared with that element’s proportion of the eventual sample of samples. And then I take some thousands of these samples of 10, and look at the proportion of the total collection that is each element.</p>
+
+<p>In the charts the follow, the brown diagonal line would be where the eventual proportion of element i being sampled is proportional to its weight. First, here is the main situation of concern - unequal weights, sampling without replacement, sample size is quite a big proportion of the population (10 out of 20):</p>
+
+<object type="image/svg+xml" data="/img/0276-20-10-no-replace.svg" width="100%"><img src="/img/0276-20-10-no-replace.png" width="100%" /></object>
+
+<p>OK! so we see the elements with low weights get sampled a bit more than naively expected, and the elements with high weights a bit less.</p>
+
+<p>Just to check I’m not dreaming, here’s the same simulation but this time we are sampling <em>with</em> replacement. Now, everything works as intuitively might be expected, the eventual proportion in our sample of samples is exactly matched to the original weights:</p>
+
+<object type="image/svg+xml" data="/img/0276-20-10-replace.svg" width="100%"><img src="/img/0276-20-10-replace.png" width="100%" /></object>
+
+<p>Here’s the code for that function and those two runs of it.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">glue</span><span class="p">)</span><span class="w">
+
+</span><span class="n">compare_ppswor</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">10</span><span class="p">,</span><span class="w">
+                           </span><span class="n">N</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">20</span><span class="p">,</span><span class="w">
+                           </span><span class="n">replace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w">
+                           </span><span class="n">reps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1e5</span><span class="p">,</span><span class="w">
+                           </span><span class="n">prob</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">N</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="n">N</span><span class="p">),</span><span class="w">
+                           </span><span class="n">FUN</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sample</span><span class="p">){</span><span class="w">
+
+  </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">paste0</span><span class="p">(</span><span class="s2">"unit"</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">N</span><span class="p">)</span><span class="w">
+  </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">factor</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">levels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w">
+  </span><span class="n">prob</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">prob</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">prob</span><span class="p">)</span><span class="w">
+  
+  
+  </span><span class="n">samples</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lapply</span><span class="p">(</span><span class="nf">rep</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">reps</span><span class="p">),</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">size</span><span class="p">){</span><span class="w">
+    </span><span class="n">FUN</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">size</span><span class="p">,</span><span class="w"> </span><span class="n">prob</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">prob</span><span class="p">,</span><span class="w"> </span><span class="n">replace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">replace</span><span class="p">)</span><span class="w">
+    </span><span class="p">})</span><span class="w">
+  
+  </span><span class="n">s</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">replace</span><span class="p">,</span><span class="w"> </span><span class="s1">'with replacement'</span><span class="p">,</span><span class="w"> </span><span class="s1">'without replacement'</span><span class="p">)</span><span class="w">
+  </span><span class="n">m</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ifelse</span><span class="p">(</span><span class="n">identical</span><span class="p">(</span><span class="n">FUN</span><span class="p">,</span><span class="w"> </span><span class="n">sample</span><span class="p">),</span><span class="w"> </span><span class="s2">"R's native `sample()` function."</span><span class="p">,</span><span class="w"> 
+                                      </span><span class="s2">"experimental function based on Brewer (1975)."</span><span class="p">)</span><span class="w">
+  
+  </span><span class="n">p</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tibble</span><span class="p">(</span><span class="w">
+    </span><span class="n">original</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">prob</span><span class="p">,</span><span class="w">
+    </span><span class="n">selected</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">table</span><span class="p">(</span><span class="n">unlist</span><span class="p">(</span><span class="n">samples</span><span class="p">)))</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="n">reps</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">n</span><span class="p">)</span><span class="w">
+  </span><span class="p">)</span><span class="w">  </span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">original</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">selected</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">geom_abline</span><span class="p">(</span><span class="n">slope</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="n">intercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"orange"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">geom_point</span><span class="p">(</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Original 'probability' or weight"</span><span class="p">,</span><span class="w">
+         </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Actual propoinion of selection"</span><span class="p">,</span><span class="w">
+         </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">glue</span><span class="p">(</span><span class="s2">"Population of {N}, sample size {n}, sampling {s}.\nUsing {m}"</span><span class="p">),</span><span class="w">
+         </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Use of `sample()` with unequal probabilities of sampling"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">coord_equal</span><span class="p">()</span><span class="w"> 
+  
+  </span><span class="nf">return</span><span class="p">(</span><span class="n">p</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">compare_ppswor</span><span class="p">()</span><span class="w">
+</span><span class="n">compare_ppswor</span><span class="p">(</span><span class="n">replace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span></code></pre></figure>
+
+<p>When the sample is a smaller proportion of a population, the no-replacement discrepancy is less, as seen in these examples with population sizes of 50 and 250.</p>
+<object type="image/svg+xml" data="/img/0276-50-10-no-replace.svg" width="100%"><img src="/img/0276-50-10-no-replace.png" width="100%" /></object>
+
+<object type="image/svg+xml" data="/img/0276-250-10-no-replace.svg" width="100%"><img src="/img/0276-250-10-no-replace.png" width="100%" /></object>
+
+<p>At the extreme, if the sample size is the same size as the population (20 each in the simulation below), then of course, all samples without replacement are identical to the population, so it is impossible for the end proportion to be anything other than 1/N each:</p>
+<object type="image/svg+xml" data="/img/0276-20-20-no-replace.svg" width="100%"><img src="/img/0276-20-20-no-replace.png" width="100%" /></object>
+
+<h2 id="brewers-1975-algorithm">Brewer’s 1975 algorithm</h2>
+<p>Thomas was writing because there are plans to change this behaviour of <code class="language-plaintext highlighter-rouge">sample()</code>, or at least add an option to change it, so instead the eventual proportion of samples containing an element will be proportional to the weight even when sampling with unequal probabilities and without replacement. The method that is going to be implemented in R (written in C of course before being hooked into R - it’s an inherently iterative thing that will only be efficient in compiled code) is based on a method published way back in 1975 by Ken Brewer.</p>
+
+<p>An aside - I had the privilege and pleasure to be taught sampling by Professor Brewer back in the 1990s at the Australian National Universitiy - at least it was a pleasure at the time (sheer entertainment value as well as the pleasure of witnessing someone who was a virtuoso in the subject matter, master of the theory of sampling), and I now belatedly realise what a privilege it was. I do think he struggled with us students though; one of my vivid memories of my whole education at ANU was of him in confusion when one of the less mathematically inclined asked him to explain what an equation taking up a fair proportion of the blackboard “means” - “Means? means? it means what it says!”</p>
+
+<p>I don’t have easy access to the 1975 paper but I found this very interesting <a href="https://stats.stackexchange.com/questions/110178/brewers-method-for-sampling-with-unequal-probabilities-with-n2">question relating to it on Cross-Validated</a>. From that discussion and reading the part of the SAS manual referred to, it sounds like SAS implements the algorithm only for when the sample in a given strata is 2, but Brewer had generalised his method to larger samples. The answer given by the ever-reliable StasK seems pretty clear on how this is done, so presuming he got it right I had a go at implementing this method into R, with code below in the form of two functions <code class="language-plaintext highlighter-rouge">P()</code> and <code class="language-plaintext highlighter-rouge">sample_unequal()</code>:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="cd">#' @param p probabilities of remaining units</span><span class="w">
+</span><span class="cd">#' @param n total sample size</span><span class="w">
+</span><span class="cd">#' @param k which sequence of the sample this is for the sampling of</span><span class="w">
+</span><span class="n">P</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">){</span><span class="w">
+  </span><span class="n">r</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">1</span><span class="w">
+  </span><span class="n">D</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">sum</span><span class="p">((</span><span class="n">p</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="m">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">p</span><span class="p">))</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="m">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">p</span><span class="p">))</span><span class="w">
+  </span><span class="n">new_p</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="m">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">p</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="n">D</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="m">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">p</span><span class="p">))</span><span class="w">
+  </span><span class="nf">return</span><span class="p">(</span><span class="n">new_p</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">sample_unequal</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">,</span><span class="w"> </span><span class="n">prob</span><span class="p">,</span><span class="w"> </span><span class="n">replace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">keep</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">){</span><span class="w">
+
+  </span><span class="k">if</span><span class="p">(</span><span class="n">size</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">x</span><span class="p">)){</span><span class="w">
+    </span><span class="n">stop</span><span class="p">(</span><span class="s2">"Sample size cannot be larger than the population of units"</span><span class="p">)</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+  
+  </span><span class="k">if</span><span class="p">(</span><span class="n">replace</span><span class="p">){</span><span class="w">
+    </span><span class="n">stop</span><span class="p">(</span><span class="s2">"Only sampling without replacement implemented at this point"</span><span class="p">)</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+  
+  </span><span class="k">if</span><span class="p">(</span><span class="n">size</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="p">(</span><span class="m">1</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">max</span><span class="p">(</span><span class="n">prob</span><span class="p">))){</span><span class="w">
+    </span><span class="n">stop</span><span class="p">(</span><span class="n">glue</span><span class="p">(</span><span class="s2">"Sample size ({size}) cannot be larger than 1 / max(prob) (which is {1 / max(prob)})"</span><span class="p">))</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+  
+  </span><span class="n">d</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tibble</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">prob</span><span class="p">)</span><span class="w">
+  
+  </span><span class="n">the_sample</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">x</span><span class="p">[</span><span class="kc">NULL</span><span class="p">]</span><span class="w">
+  </span><span class="n">remnants</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">x</span><span class="w">
+  </span><span class="n">remnant_p</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">prob</span><span class="w">
+  
+  </span><span class="k">for</span><span class="p">(</span><span class="n">k</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">size</span><span class="p">){</span><span class="w">
+    </span><span class="n">new_p</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">P</span><span class="p">(</span><span class="n">remnant_p</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">)</span><span class="w">
+    
+    </span><span class="k">if</span><span class="p">(</span><span class="n">keep</span><span class="p">){</span><span class="w">
+      </span><span class="n">d2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tibble</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">remnants</span><span class="p">,</span><span class="w"> </span><span class="n">prob</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">new_p</span><span class="p">)</span><span class="w">
+      </span><span class="nf">names</span><span class="p">(</span><span class="n">d2</span><span class="p">)[</span><span class="m">2</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">paste0</span><span class="p">(</span><span class="s2">"k"</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">)</span><span class="w">
+      </span><span class="n">d</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+        </span><span class="n">left_join</span><span class="p">(</span><span class="n">d2</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"x"</span><span class="p">)</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+    
+    </span><span class="k">if</span><span class="p">(</span><span class="nf">min</span><span class="p">(</span><span class="n">new_p</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">0</span><span class="p">){</span><span class="w">
+      </span><span class="n">warning</span><span class="p">(</span><span class="s2">"Some negative probabilities returned"</span><span class="p">)</span><span class="w">
+      </span><span class="n">new_p</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">pmax</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">new_p</span><span class="p">)</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+    
+    </span><span class="n">latest_sample</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sample</span><span class="p">(</span><span class="n">remnants</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">prob</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">new_p</span><span class="p">)</span><span class="w">
+    </span><span class="n">which_chosen</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">which</span><span class="p">(</span><span class="n">remnants</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">latest_sample</span><span class="p">)</span><span class="w">
+    </span><span class="n">remnants</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">remnants</span><span class="p">[</span><span class="o">-</span><span class="n">which_chosen</span><span class="p">]</span><span class="w">
+    </span><span class="n">remnant_p</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">remnant_p</span><span class="p">[</span><span class="o">-</span><span class="n">which_chosen</span><span class="p">]</span><span class="w">
+    </span><span class="n">the_sample</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">the_sample</span><span class="p">,</span><span class="w"> </span><span class="n">latest_sample</span><span class="p">)</span><span class="w">
+    
+      </span><span class="p">}</span><span class="w">
+  
+  </span><span class="k">if</span><span class="p">(</span><span class="n">keep</span><span class="p">){</span><span class="w">
+    </span><span class="nf">return</span><span class="p">(</span><span class="nf">list</span><span class="p">(</span><span class="n">the_sample</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_sample</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">d</span><span class="p">))</span><span class="w"> 
+  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nf">return</span><span class="p">(</span><span class="n">the_sample</span><span class="p">)</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">  </span></code></pre></figure>
+
+<p>I’m not guaranteeing I got it right - feedback is welcome.</p>
+
+<p>Of course, I designed this to be plugged into my function I made earlier for comparing eventual sample proportions to the weights given, so with <code class="language-plaintext highlighter-rouge">compare_ppswor(FUN = sample_unequal, reps = 10000)</code> I can get this comparison:</p>
+
+<object type="image/svg+xml" data="/img/0276-20-10-no-replace-brewer.svg" width="100%"><img src="/img/0276-20-10-no-replace-brewer.png" width="100%" /></object>
+
+<p>Interestingly, it’s still not exactly ‘right’ in the sense that the eventual proportions in the sample aren’t exactly those given in the form of weights. But it’s much better at doing this than the current <code class="language-plaintext highlighter-rouge">sample()</code> method is.</p>
+
+<p>And if we have a sample that is say 25% of the population instead of 50% with <code class="language-plaintext highlighter-rouge">compare_ppswor(n = 5, FUN = sample_unequal, reps = 10000)</code>, then we get results where the proportions and weights are pretty indistinguishable:</p>
+
+<object type="image/svg+xml" data="/img/0276-20-5-no-replace-brewer.svg" width="100%"><img src="/img/0276-20-5-no-replace-brewer.png" width="100%" /></object>
+
+<p>OK that’s all. I played around with this a bit more, particularly trying to understand the limitations on the algorithm which breaks down as the sample size gets bigger in relation to the population, but none of it was really interesting enough to write up. A full script with a bit more in it is available in the <a href="https://github.com/ellisp/blog-source/blob/master/_working/0276-sampling-unequal-p.R">source code for this blog</a>.</p>
+
+<p>I guess the meta-lesson is to watch out for things you’re assuming without noticing you are.</p>
+
+
+
+		
+	</div>
+</div>
+
+<div class="col-md-1"></div>
+<div class="col-md-4">
+	<div class="side-banner">
+	
+
+
+	<div>
+	   
+	    
+			
+			<p>&larr; Previous post</p>
+			<p><a rel="prev" href="/blog/2024/08/30/australian-economy">Ratios of indexed line charts</a></p>
+		
+		
+		
+		
+		
+		
+	</div>
+	
+	 
+
+   <div class = "side-footer">
+			
+			<hr></hr>
+			<p><gcse:search></gcse:search></p>
+			<hr></hr>
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.</p>
+			<hr></hr>
+			
+			<p>My day job is Director of the <a href='https://sdd.spc.int/'>Statistics for Development Division</a> at the Pacific Community, the principal scientific and technical organisation in the Pacific region, proudly supporting development since 1947. We are an international development organisation owned and governed by our 27 country and territory members. This blog is not part of my role there and contains my personal views only.</p>
+		
+		    <hr></hr>
+			
+       <div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="false" data-share="false"></div>
+			
+			<hr></hr>
+			<p>I'm pleased to be aggregated at <a href="https://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+			<hr></hr>
+
+			
+			<p>			
+            <span xmlns:dct="https://purl.org/dc/terms/" property="dct:title"><i>free range statistics</i></span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			<hr></hr>
+			
+
+
+    </div>
+
+
+
+  
+   
+
+
+
+
+		  
+		  
+
+
+
+	   
+	<div id="disqus_thread"></div>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function() {
+				var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+				dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+				(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+			})();
+		</script>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function () {
+				var s = document.createElement('script'); s.async = true;
+				s.type = 'text/javascript';
+				s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+				(document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+			}());
+		</script>
+
+	<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+	</div>	
+</div>    
+   
+   
+
+			
+			</div><!-- /.container -->
+         
+   <!-- Default Statcounter code for Free Range Statistics https://freerangestats.info -->
+<script type="text/javascript">
+var sc_project=11673245; 
+var sc_invisible=1; 
+var sc_security="5b7111a4"; 
+</script>
+<script type="text/javascript"
+src="https://www.statcounter.com/counter/counter.js" async></script>
+<noscript><div class="statcounter"><a title="Web Analytics"
+href="https://statcounter.com/" target="_blank"><img class="statcounter"
+src="//c.statcounter.com/11673245/0/5b7111a4/1/" alt="Web
+Analytics"></a></div></noscript>
+<!-- End of Statcounter Code -->
+
+</body>   
+</html>
