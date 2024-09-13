@@ -1,0 +1,674 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Stepwise selection of variables in regression is Evil.</title>
+      	
+         
+         
+            <meta name ="description" content ="Stepwise variable selection is bad and dangerous, and you shouldn't do it. It increases false positives. It drops variables that should be in the model. It gives biased estimates for regression coefficients. The problems are worse for smaller samples; higher correlation between the X variables; and models with weaker explanatory power for the y (i.e. lower R-squared).">
+            <meta property="og:description" content ="Stepwise variable selection is bad and dangerous, and you shouldn't do it. It increases false positives. It drops variables that should be in the model. It gives biased estimates for regression coefficients. The problems are worse for smaller samples; higher correlation between the X variables; and models with weaker explanatory power for the y (i.e. lower R-squared).">
+         
+         <meta property="og:site_name" content="free range statistics" />
+         <meta property="og:title" content="Stepwise selection of variables in regression is Evil." />
+         
+            <meta property="og:image" content="https:/freerangestats.info/img/0279-corr-sd-bias.png" />
+         
+		 
+			<meta property="og:url" content="https://freerangestats.info/blog/2024/09/14/stepwise.html" />
+		 
+         <meta property="og:author" content= "https://www.facebook.com/peterstats" />
+         <meta property="og:type" content="article" />
+      
+
+<link href='https://fonts.googleapis.com/css?family=Sarala' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Prosto+One' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Ubuntu+Mono' rel='stylesheet'>
+	  
+          <link href="/css/bootstrap.min.css" rel ="stylesheet" type="text/css">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet" type="text/css">
+            <link href="/css/custom.css" rel ="stylesheet" type="text/css">     
+		<link href="/css/syntax.css" rel ="stylesheet" type="text/css">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="free range statistics by Peter Ellis"
+      href="/feed.xml">
+
+	  
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+  <script>
+  (function() {
+    var cx = '015640467633673901770:pk3v2c95baw';
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+  })();
+</script>
+
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">free range statistics</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/about">about</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">all posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">ordered by date</a></li>
+				  <li><a href="/blog/most-popular.html">ordered by popularity</a></li>
+                  <li><a href="/blog/index_by_tag.html">grouped by subject matter</a></li>
+                  <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
+				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
+                  <li><a href="/blog/surveys.html">all posts on surveys</a></li> 
+				  <li><a href = /blog/2024/09/14/stepwise>most recent post</a></li>
+				</ul>
+            </li>
+              <li><a href="/blog/showcase.html">showcase</a></li>
+              <li><a href="/presentations/index.html">presentations</a></li>
+			  <li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">forecasts<span class="caret"></span></a>
+                <ul class="dropdown-menu">
+				  <li><a href = "/covid-tracking/index.html">Covid-19 in Australia</a></li>
+                  <li><a href = "/elections/nz-2020/index.html">NZ election 2020</a></li>
+                  <li><a href = "/elections/oz-2019/index.html">Australia federal election 2019</a></li>
+				  <li><a href = "/elections/nz-2017/combined.html">NZ election 2017</a></li>
+                  <li><a href="/blog/voting.html">all blog posts on voting behaviour</a></li>
+                </ul>				
+			  </li>
+			  
+			  
+			  
+		    </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			<div class="jumbotron">
+  <div class="container">
+	<center><h1>Stepwise selection of variables in regression is Evil.</h1></center>
+  </div>
+</div>
+
+
+
+	<div class = "post-summary">
+	<h2>At a glance:</h2>
+	   <p>Stepwise variable selection is bad and dangerous, and you shouldn't do it. It increases false positives. It drops variables that should be in the model. It gives biased estimates for regression coefficients. The problems are worse for smaller samples; higher correlation between the X variables; and models with weaker explanatory power for the y (i.e. lower R-squared).</p>
+	   <p class="meta">14 Sep 2024</p>
+	   <hr></hr>
+	</div>
+
+
+<div class="col-md-7">
+
+	<div class="post">
+		
+	  <p>I’ve recently noticed that stepwise regression is still fairly popular, despite being well and truly frowned upon by well-informed statisticians. By stepwise regression, I mean any modelling strategy that involves adding or subtracting variables from a regression model on the basis that they are “significant”, reduce the Akaike Information Criterion, or increase adjusted R-squared, or in fact any other data-driven statistics.</p>
+
+<p>This might be an automated variable procedure or it might be a matter of eyeballing the results of the first model you fit and saying (for example) “Let’s take literacy out, it’s p-value is not significant, and it will be a more parsimonious model once we do that.”.</p>
+
+<p>And then people produce and report t tests, F tests, and so on, as though the end model was the one they always intended to run.</p>
+
+<p>Let me clear about this. This is wrong. It’s not as disastrously wrong as, say, sorting the data separately one column at a time before you fit your model, but it’s still objectively bad. As my professor once told our class:</p>
+
+<blockquote>
+  <p>“If you choose the variables in your model based on the data and then run tests on them, you are Evil; and you will go to Hell.”</p>
+</blockquote>
+
+<p>Why is it wrong? Here are the seven reasons given by Frank Harrell in his must-read classic, <em>Regression Modeling Strategies</em>:</p>
+
+<ol>
+  <li>The R-squared or even adjusted R-squared values of the end model are biased high.</li>
+  <li>The F and Chi-square test statistics of the final model do not have the claimed distribution.</li>
+  <li>The standard errors of coefficient estimates are biased low and confidence intervals for effects and predictions are falsely narrow.</li>
+  <li>The p values are too small (there are severe multiple comparison problems in addition to problems 2. and 3.) and do not have the proper meaning, and it is difficult to correct for this.</li>
+  <li>The regression coefficients are biased high in absolute value and need shrinkage but this is rarely done.</li>
+  <li>Variable selection is made arbitrary by collinearity.</li>
+  <li>It allows us to not think about the problem.</li>
+</ol>
+
+<p>At the core of the problem is using statistical inference methods like p values, confidence intervals and ANOVA F tests that were designed and valid for a pre-specified model, but applying them instead to a model we have structured based on the data. The variables are selected partly based on chance, and we are giving ourselves a sneaky headstart in making a variable being significant.</p>
+
+<p>Basically, this is the sort of thing that leads to the reproducibility crisis in science.</p>
+
+<p>Some of the problems don’t matter as much if your goal for the model is just prediction, not interpretation of the model and its coefficients. But most of the time that I see the method used (including recent examples being distributed by so-called experts as part of their online teaching), the end model is indeed used for interpretation, and I have no doubt this is also the case with much published science. Further, even when the goal is only prediction, there are better methods like the Lasso, of dealing with a problem of a high number of variables.</p>
+
+<p>Let’s look at a couple of simulations to show how this is a problem.</p>
+
+<h2 id="increases-the-false-positive-rate-even-with-white-noise">Increases the false positive rate even with white noise</h2>
+
+<p>First, let’s take a case where we simulate data that is known to have no relation at all to the response variable. In the code below I simulate 1,000 observations with 100 explanatory X variables and 1 response variable y. All of these variables are unrelated to eachother and are just normally distributed with a mean of zero and standard deviation of 1.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">MASS</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">glue</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">foreach</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">doParallel</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#--------------------X not related to y--------------------</span><span class="w">
+
+</span><span class="n">set.seed</span><span class="p">(</span><span class="m">42</span><span class="p">)</span><span class="w">
+</span><span class="n">k</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">100</span><span class="w">
+</span><span class="n">n</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">1000</span><span class="w">
+</span><span class="n">Sigma</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">matrix</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">nrow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">ncol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">k</span><span class="p">)</span><span class="w">
+</span><span class="n">diag</span><span class="p">(</span><span class="n">Sigma</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">1</span><span class="w">
+
+</span><span class="n">noise</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">mvrnorm</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">mu</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">),</span><span class="w"> </span><span class="n">Sigma</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Sigma</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">as.data.frame</span><span class="p">()</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">as_tibble</span><span class="p">()</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rnorm</span><span class="p">(</span><span class="n">n</span><span class="p">))</span><span class="w">
+
+</span><span class="n">full_model</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lm</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">.</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">noise</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># we get 6 variables that look 'significant' - about what</span><span class="w">
+</span><span class="c1"># we'd expect, about 5% false positives:</span><span class="w">
+</span><span class="n">summary</span><span class="p">(</span><span class="n">full_model</span><span class="p">)</span><span class="o">$</span><span class="n">coefficients</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">as.data.frame</span><span class="p">()</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">`Pr(&gt;|t|)`</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">0.05</span><span class="p">)</span></code></pre></figure>
+
+<p>When I fit a regression model of y ~ X, I should expect about five of the columns to appear ‘significant’ by conventional p value of 0.05 or less - because that’s more or less the definition of that critical cut-off value. That is, we tolerate a 1 in 20 false positive rate. In this case we have six variables below the cut-off, about what we’d expect:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>       Estimate Std. Error   t value   Pr(&gt;|t|)
+V2  -0.06606672 0.03213918 -2.055644 0.04010514
+V38  0.06881778 0.03406473  2.020206 0.04365814
+V62  0.06263414 0.03137298  1.996436 0.04618768
+V91  0.06826250 0.03302463  2.067018 0.03901824
+V94 -0.07923079 0.03423568 -2.314275 0.02087724
+V96 -0.07962012 0.03290373 -2.419790 0.01572689
+</code></pre></div></div>
+
+<p>Now let’s use stepwise selection, “both” directions (so we can remove variables from the model or add them), using the Akaike Information Criterion to choose a ‘better’ model at each step. This is better than just using p values, and much better than using p values and a low cut-off like 0.05, so I’m giving the stepwise method a fair go here.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">stepped</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">step</span><span class="p">(</span><span class="n">full_model</span><span class="p">)</span><span class="w">
+
+</span><span class="n">summary</span><span class="p">(</span><span class="n">stepped</span><span class="p">)</span><span class="w"> </span><span class="o">$</span><span class="n">coefficients</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">as.data.frame</span><span class="p">()</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">filter</span><span class="p">(</span><span class="n">`Pr(&gt;|t|)`</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">0.05</span><span class="p">)</span></code></pre></figure>
+
+<p>That gets us these variables showing up as ‘significant’:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>       Estimate Std. Error   t value    Pr(&gt;|t|)
+V2  -0.06312445 0.03046917 -2.071748 0.038550346
+V4  -0.07353379 0.03222313 -2.282019 0.022702106
+V32 -0.06120508 0.03094750 -1.977707 0.048241917
+V38  0.06383031 0.03227612  1.977633 0.048250238
+V90  0.06288076 0.03094938  2.031729 0.042450732
+V91  0.07450724 0.03105172  2.399456 0.016605492
+V94 -0.06617689 0.03208892 -2.062297 0.039442821
+V96 -0.08052606 0.03073565 -2.619957 0.008930218
+</code></pre></div></div>
+
+<p>So the net impact of this fancy-looking automated procedure is to worsen our false positive rate from 6% to 8%.</p>
+
+<p>OK, that’s just one dataset. Let’s try it with a range of others, of different sample sizes, and to make things more interesting let’s let the X variables sometimes be correlated with eachother. The stepwise selection process can be a bit slow so I spread the 700 runs of the simulation below over seven parallel processes:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># set up parallel processing cluster</span><span class="w">
+</span><span class="n">cluster</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">makeCluster</span><span class="p">(</span><span class="m">7</span><span class="p">)</span><span class="w"> </span><span class="c1"># only any good if you have at least 7 processors :)</span><span class="w">
+</span><span class="n">registerDoParallel</span><span class="p">(</span><span class="n">cluster</span><span class="p">)</span><span class="w">
+
+</span><span class="n">clusterEvalQ</span><span class="p">(</span><span class="n">cluster</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w">
+  </span><span class="n">library</span><span class="p">(</span><span class="n">foreach</span><span class="p">)</span><span class="w">
+  </span><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
+  </span><span class="n">library</span><span class="p">(</span><span class="n">MASS</span><span class="p">)</span><span class="w">
+  </span><span class="n">library</span><span class="p">(</span><span class="n">glue</span><span class="p">)</span><span class="w">
+  </span><span class="n">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
+</span><span class="p">})</span><span class="w">
+
+</span><span class="n">noise_results</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">foreach</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">700</span><span class="p">,</span><span class="w"> </span><span class="n">.combine</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rbind</span><span class="p">)</span><span class="w"> </span><span class="o">%dopar%</span><span class="w"> </span><span class="p">{</span><span class="w">
+  </span><span class="n">set.seed</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w">
+  
+  </span><span class="n">k</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">100</span><span class="w">
+  </span><span class="n">n</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sample</span><span class="p">(</span><span class="nf">c</span><span class="p">(</span><span class="m">200</span><span class="p">,</span><span class="w"> </span><span class="m">400</span><span class="p">,</span><span class="w"> </span><span class="m">800</span><span class="p">,</span><span class="w"> </span><span class="m">1600</span><span class="p">),</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+  
+  </span><span class="n">r</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">runif</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">0.7</span><span class="p">)</span><span class="w">
+  </span><span class="n">Sigma</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">matrix</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="n">nrow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">ncol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">k</span><span class="p">)</span><span class="w">
+  </span><span class="n">diag</span><span class="p">(</span><span class="n">Sigma</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">1</span><span class="w">
+  
+  </span><span class="n">noise</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">mvrnorm</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">mu</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">),</span><span class="w"> </span><span class="n">Sigma</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Sigma</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">as.data.frame</span><span class="p">()</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">as_tibble</span><span class="p">()</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">mutate</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rnorm</span><span class="p">(</span><span class="n">n</span><span class="p">))</span><span class="w">
+  
+  </span><span class="n">full</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lm</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">.</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">noise</span><span class="p">)</span><span class="w">
+  </span><span class="n">stepped</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">stepAIC</span><span class="p">(</span><span class="n">full</span><span class="p">,</span><span class="w"> </span><span class="n">trace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w">
+  
+  </span><span class="c1"># count the false positives</span><span class="w">
+  </span><span class="n">false_pos1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">summary</span><span class="p">(</span><span class="n">full</span><span class="p">)</span><span class="o">$</span><span class="n">coefficients</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">as.data.frame</span><span class="p">()</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">filter</span><span class="p">(</span><span class="n">`Pr(&gt;|t|)`</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">0.05</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">nrow</span><span class="p">()</span><span class="w">
+  
+  </span><span class="n">false_pos2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">summary</span><span class="p">(</span><span class="n">stepped</span><span class="p">)</span><span class="o">$</span><span class="n">coefficients</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">as.data.frame</span><span class="p">()</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">filter</span><span class="p">(</span><span class="n">`Pr(&gt;|t|)`</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">0.05</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">nrow</span><span class="p">()</span><span class="w">
+  
+  </span><span class="n">tibble</span><span class="p">(</span><span class="n">seed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">full</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">false_pos1</span><span class="p">,</span><span class="w"> </span><span class="n">stepped</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">false_pos2</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">summary</span><span class="p">(</span><span class="n">noise_results</span><span class="p">)</span><span class="w">
+
+</span><span class="n">noise_results</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">rename</span><span class="p">(</span><span class="n">`All variables included`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">full</span><span class="p">,</span><span class="w">
+         </span><span class="n">`Stepwise selection of variables`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">stepped</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">n2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">glue</span><span class="p">(</span><span class="s2">"Sample size: {n}"</span><span class="p">),</span><span class="w">
+         </span><span class="n">n2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fct_reorder</span><span class="p">(</span><span class="n">n2</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">))</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">gather</span><span class="p">(</span><span class="n">method</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">seed</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">n2</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">method</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">facet_wrap</span><span class="p">(</span><span class="o">~</span><span class="n">n2</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_hline</span><span class="p">(</span><span class="n">yintercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_smooth</span><span class="p">(</span><span class="n">se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"gam"</span><span class="p">,</span><span class="w"> </span><span class="n">formula</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">s</span><span class="p">(</span><span class="n">x</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_point</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Number of false positives -\nvariables returned as 'significant'"</span><span class="p">,</span><span class="w">
+       </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Correlation of the X predictor variables"</span><span class="p">,</span><span class="w">
+       </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w">
+       </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"False positive rates when using stepwise variable selection"</span><span class="p">,</span><span class="w">
+       </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Models with 100 X explanatory variables that are in truth unrelated to Y; expecting 5 falsely 'significant' variables. 
+Small sample sizes make the false positive problem for stepwise selection of variables; multicollinearity in the X when no relation to the Y doesn't matter."</span><span class="p">)</span></code></pre></figure>
+
+<p>The average false positive rate of the full model is 5.1%; for the stepwise variable selection it is 9.5%. In the chart below we can see that sample size relative to the number of variables in X matters a lot here:</p>
+
+<object type="image/svg+xml" data="/img/0279-noisy.svg" width="100%"><img src="/img/0279-noisy.png" width="100%" /></object>
+
+<p>For example, the case with the sample size of only 200 observations gets a false positive rate above 15% from the stepwise method. But even with larger samples, we take a hit in false positives from the stepwise approach. The degree of multicollinearity in the X doesn’t seem to make much difference.</p>
+
+<p>It might seem unfair to have a model with 100 explanatory variables and only 200 observations, but out there on the internet (I’m not going to link) there are guides telling you it is ok to do this procedure even when you have more variables than observations. In fact I have a horrible fear that this practice might be common in some parts of science. You can imagine how doing <em>that</em> is basically a machine for generating false, non-reproducible findings.</p>
+
+<h2 id="even-the-correctly-retained-variables-coefficients-are-biased-big">Even the correctly-retained variables’ coefficients are biased big</h2>
+
+<p>The above simulation was pure noise so everything was a false positive. What does stepwise variable selection do in a more realistic case where some of the variables are correctly in the model and are related to y?</p>
+
+<p>To explore this I wrote a function (code a little way further down the blog) to simulate data with 15 X correlated variables and 1 y variable. The true model is:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>y = V1 + V2 + V3 + V4 + V5 + V6 + V7 + 0.1 (V8 + V9 + V10) + e
+</code></pre></div></div>
+
+<p>That is, the true regression coefficients for variables V1 to V7 are 1; for V8, V9 and V10 they are 0.1; for the the remaining 5 variables there is no structural relationship to y.</p>
+
+<p>When we simulate 50 data sets of this sort and use stepwise variable selection to regress y on X, here are the coefficients we get. Each point represents the coefficient for one variable from one of those runs.</p>
+
+<object type="image/svg+xml" data="/img/0279-main-sim.svg" width="100%"><img src="/img/0279-main-sim.png" width="100%" /></object>
+
+<p>The large dots on zero indicate the multiple runs in which that particular variable was not included in the final model. We see:</p>
+
+<ul>
+  <li>Many occasions, variables V11 to V15 were rightly excluded, but a smattering of occasions they do get included in the model.</li>
+  <li>A lot of false negatives - variables V1 to V10 that should be found in the model and aren’t</li>
+  <li>Worse, when one of variables V1 to V10 is correctly included in the final model, the coefficient estimated for it is <em>always</em> (in this dataset) larger than the true coefficient (which remember should be 1 or 0.1 - the correct values shown by the red crosses).</li>
+</ul>
+
+<p>For comparison, here is an equivalent chart for when we fit the full model to these data. There’s a lot of variation in the coefficient estimates, but at least they’re not biased (that is, on average they are correct, their expected value is the true value):</p>
+
+<object type="image/svg+xml" data="/img/0279-main-sim-full.svg" width="100%"><img src="/img/0279-main-sim-full.png" width="100%" /></object>
+
+<p>Here’s the code for the function simulating that data and drawing the plots:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#---------------------when X is related to y--------------</span><span class="w">
+
+</span><span class="cd">#' @param xcm correlations of the X variables with eachother, as a multiplier of</span><span class="w">
+</span><span class="cd">#'   their standard deviation (all X variables have the same variance / sd of 1)</span><span class="w">
+</span><span class="cd">#' @param ysdm standard deviation of the y variable, expressed as a multiplier of variance</span><span class="w">
+</span><span class="cd">#'   of the X</span><span class="w">
+</span><span class="cd">#' @param n sample size</span><span class="w">
+</span><span class="cd">#' @param k number of columns in X. Only currently works if this is 15 (because of the hard-coded true_coef)</span><span class="w">
+</span><span class="cd">#' @param runs number of simulations to run</span><span class="w">
+</span><span class="cd">#' @param seed random seed for reproducibility</span><span class="w">
+</span><span class="n">sim_steps</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">xcm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.4</span><span class="p">,</span><span class="w"> </span><span class="n">ysdm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">9</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">200</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">15</span><span class="p">,</span><span class="w"> </span><span class="n">runs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">50</span><span class="p">,</span><span class="w"> </span><span class="n">seed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">321</span><span class="p">){</span><span class="w">
+  
+  </span><span class="n">set.seed</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span><span class="w">
+  
+  </span><span class="n">results</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tibble</span><span class="p">()</span><span class="w">
+  
+  </span><span class="n">true_coef</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="nf">rep</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">7</span><span class="p">),</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="m">0.2</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">),</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">5</span><span class="p">))</span><span class="w">
+  
+  </span><span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">runs</span><span class="p">){</span><span class="w">
+    </span><span class="n">Sigma</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">matrix</span><span class="p">(</span><span class="n">xcm</span><span class="p">,</span><span class="w"> </span><span class="n">nrow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">ncol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">k</span><span class="p">)</span><span class="w">
+    </span><span class="n">diag</span><span class="p">(</span><span class="n">Sigma</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">1</span><span class="w">
+    
+    </span><span class="c1"># Sigma, not sigma squared</span><span class="w">
+    </span><span class="n">m</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">mvrnorm</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">mu</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">),</span><span class="w"> </span><span class="n">Sigma</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Sigma</span><span class="p">)</span><span class="w"> 
+    
+    </span><span class="n">d</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+      </span><span class="n">as.data.frame</span><span class="p">()</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+      </span><span class="n">mutate</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">%*%</span><span class="w"> </span><span class="n">true_coef</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">rnorm</span><span class="p">(</span><span class="n">n</span><span class="p">(),</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">ysdm</span><span class="p">))</span><span class="w">
+    
+    </span><span class="n">mod</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lm</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">.</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">d</span><span class="p">)</span><span class="w">
+    
+    </span><span class="n">step_mod</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">stepAIC</span><span class="p">(</span><span class="n">mod</span><span class="p">,</span><span class="w"> </span><span class="n">trace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w">
+    
+    </span><span class="n">cm</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">coef</span><span class="p">(</span><span class="n">mod</span><span class="p">)[</span><span class="m">-1</span><span class="p">]</span><span class="w">  
+    </span><span class="n">csm</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">coef</span><span class="p">(</span><span class="n">step_mod</span><span class="p">)[</span><span class="m">-1</span><span class="p">]</span><span class="w">
+    
+    </span><span class="n">results</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">rbind</span><span class="p">(</span><span class="n">results</span><span class="p">,</span><span class="w">
+                       </span><span class="n">tibble</span><span class="p">(</span><span class="w">
+                          </span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">names</span><span class="p">(</span><span class="n">csm</span><span class="p">),</span><span class="w">
+                          </span><span class="n">coefficient</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">csm</span><span class="p">,</span><span class="w">
+                          </span><span class="n">run</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w">
+                          </span><span class="n">model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Stepwise"</span><span class="w">
+                       </span><span class="p">),</span><span class="w">
+                       </span><span class="n">tibble</span><span class="p">(</span><span class="w">
+                         </span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">names</span><span class="p">(</span><span class="n">cm</span><span class="p">),</span><span class="w">
+                         </span><span class="n">coefficient</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cm</span><span class="p">,</span><span class="w">
+                         </span><span class="n">run</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w">
+                         </span><span class="n">model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Full model"</span><span class="w">
+                       </span><span class="p">)</span><span class="w">
+                     </span><span class="p">)</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+  
+  </span><span class="n">true_coef_df</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tibble</span><span class="p">(</span><span class="w">
+    </span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">factor</span><span class="p">(</span><span class="nf">names</span><span class="p">(</span><span class="n">d</span><span class="p">)[</span><span class="m">1</span><span class="o">:</span><span class="n">k</span><span class="p">],</span><span class="w"> </span><span class="n">levels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">names</span><span class="p">(</span><span class="n">d</span><span class="p">)[</span><span class="m">1</span><span class="o">:</span><span class="n">k</span><span class="p">]),</span><span class="w">
+    </span><span class="n">coefficient</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">true_coef</span><span class="w">
+  </span><span class="p">)</span><span class="w">
+  
+  </span><span class="n">results</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">results</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">complete</span><span class="p">(</span><span class="n">run</span><span class="p">,</span><span class="w"> </span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">model</span><span class="p">,</span><span class="w"> </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="n">coefficient</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">))</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">mutate</span><span class="p">(</span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">factor</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">levels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">true_coef_df</span><span class="o">$</span><span class="n">variable</span><span class="p">))</span><span class="w"> 
+  
+  </span><span class="n">biases_df</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">results</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">filter</span><span class="p">(</span><span class="n">coefficient</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">left_join</span><span class="p">(</span><span class="n">true_coef_df</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"variable"</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">group_by</span><span class="p">(</span><span class="n">model</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">summarise</span><span class="p">(</span><span class="n">bias</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="n">mean</span><span class="p">(</span><span class="n">coefficient.x</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">coefficient.y</span><span class="p">),</span><span class="w"> </span><span class="m">2</span><span class="p">))</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">mutate</span><span class="p">(</span><span class="n">r2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">summary</span><span class="p">(</span><span class="n">mod</span><span class="p">)</span><span class="o">$</span><span class="n">r.squared</span><span class="p">,</span><span class="w"> </span><span class="n">summary</span><span class="p">(</span><span class="n">step_mod</span><span class="p">)</span><span class="o">$</span><span class="n">r.squared</span><span class="p">),</span><span class="w">
+           </span><span class="n">xcm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xcm</span><span class="p">,</span><span class="w">
+           </span><span class="n">ysdm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ysdm</span><span class="p">,</span><span class="w">
+           </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">)</span><span class="w">
+  
+  </span><span class="n">biases</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">pull</span><span class="p">(</span><span class="n">biases_df</span><span class="p">,</span><span class="w"> </span><span class="n">bias</span><span class="p">)</span><span class="w">
+  </span><span class="nf">names</span><span class="p">(</span><span class="n">biases</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">pull</span><span class="p">(</span><span class="n">biases_df</span><span class="p">,</span><span class="w"> </span><span class="n">model</span><span class="p">)</span><span class="w">
+  
+  </span><span class="n">mclabel</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">case_when</span><span class="p">(</span><span class="w">
+    </span><span class="nf">abs</span><span class="p">(</span><span class="n">xcm</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">0.05</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="s2">"negligible"</span><span class="p">,</span><span class="w">
+    </span><span class="nf">abs</span><span class="p">(</span><span class="n">xcm</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">0.19</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="s2">"mild"</span><span class="p">,</span><span class="w">
+    </span><span class="nf">abs</span><span class="p">(</span><span class="n">xcm</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">0.39</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="s2">"medium"</span><span class="p">,</span><span class="w">
+    </span><span class="kc">TRUE</span><span class="w">            </span><span class="o">~</span><span class="w"> </span><span class="s2">"strong"</span><span class="w">
+  </span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">paste</span><span class="p">(</span><span class="s2">"multicollinearity"</span><span class="p">)</span><span class="w">
+  
+  </span><span class="n">p1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">results</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">filter</span><span class="p">(</span><span class="n">model</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"Stepwise"</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">count</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">coefficient</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coefficient</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">variable</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">geom_point</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">geom_point</span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">true_coef_df</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"red"</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="p">,</span><span class="w"> </span><span class="n">shape</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">12</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">scale_size_area</span><span class="p">(</span><span class="n">breaks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">4</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">10</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Coefficient value"</span><span class="p">,</span><span class="w">
+         </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Variable"</span><span class="p">,</span><span class="w">
+         </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Number of observations:\n(usually only one, except when coefficient dropped altogether)"</span><span class="p">,</span><span class="w">
+         </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Stepwise regression returns coefficient estimates biased away from zero"</span><span class="p">,</span><span class="w">
+         </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">glue</span><span class="p">(</span><span class="s2">"Black dots show coefficient estimates from one run of a stepwise (AIC-based) model fitting. Red squares show correct values.
+Coefficients of variables left in the model are on average {biases['Stepwise']} too large (compared to real value of 0, 0.1 or 1).
+Also, real explanatory variables are often dropped. Fake ones are often included."</span><span class="p">),</span><span class="w">
+         </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">glue</span><span class="p">(</span><span class="s2">"Simulated data with a model that explains about {percent(summary(step_mod)$r.squared)} of variation in response variable, with {mclabel}, by https://freerangestats.info"</span><span class="p">))</span><span class="w">
+  
+  
+  
+  </span><span class="n">p2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">results</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">filter</span><span class="p">(</span><span class="n">model</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">"Stepwise"</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">count</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">coefficient</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coefficient</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">variable</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">geom_point</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">geom_point</span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">true_coef_df</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"red"</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span><span class="p">,</span><span class="w"> </span><span class="n">shape</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">12</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Coefficient value"</span><span class="p">,</span><span class="w">
+         </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Variable"</span><span class="p">,</span><span class="w">
+         </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Using the full model returns unbiased coefficient estimates"</span><span class="p">,</span><span class="w">
+         </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">glue</span><span class="p">(</span><span class="s2">"Black dots show coefficient estimates from one run of a all-variables-in model fitting. Red squares show correct values.
+Coefficients of variables left in the model are on average {biases['Full model']} too large (compared to real value of 0, 0.1 or 1)."</span><span class="p">),</span><span class="w">
+         </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">glue</span><span class="p">(</span><span class="s2">"Simulated data with a model that explains about {percent(summary(mod)$r.squared)} of variation in response variable, with mild multicollinearity, by https://freerangestats.info"</span><span class="p">))</span><span class="w">
+  
+  </span><span class="nf">return</span><span class="p">(</span><span class="nf">list</span><span class="p">(</span><span class="w">
+    </span><span class="n">results</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">results</span><span class="p">,</span><span class="w">
+    </span><span class="n">p1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p1</span><span class="p">,</span><span class="w">
+    </span><span class="n">p2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p2</span><span class="p">,</span><span class="w">
+    </span><span class="n">biases_df</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">biases_df</span><span class="w">
+  </span><span class="p">))</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">my_sim</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sim_steps</span><span class="p">()</span><span class="w">
+</span><span class="n">my_sim</span><span class="o">$</span><span class="n">p1</span><span class="w"> </span><span class="c1"># plot results for stepwise selection</span><span class="w">
+</span><span class="n">my_sim</span><span class="o">$</span><span class="n">p2</span><span class="w"> </span><span class="c1"># plot results for full model</span></code></pre></figure>
+
+<p>Now, you can see that there are a few arbitrary aspects to that simulation - in particular the sample size, the variance of the y relative to the X, and the multicollinearity of the X. The idea of having it as a function is that you can play around with these and see the impacts; for example, if you make the variance of y smaller compared to that of the X, the model gets better at explaining the variance and the stepwise algorithm is less prone to getting things wrong. Rather than include a whole bunch of individual cases, I ran some more simulations covering a range of such values so we can see the relationship to those parameters of the average bias in the estimated regression coefficients remaining in the model.</p>
+
+<p>So here is the relationship of that bias to the R-squared of the model, at various levels of correlation between the X variables.</p>
+
+<object type="image/svg+xml" data="/img/0279-rsquared-bias.svg" width="100%"><img src="/img/0279-rsquared-bias.png" width="100%" /></object>
+
+<p>And here is the relationship of the bias to sample size, standard deviation of Y, and correlation between the X all in one chart:</p>
+
+<object type="image/svg+xml" data="/img/0279-corr-sd-bias.svg" width="100%"><img src="/img/0279-corr-sd-bias.png" width="100%" /></object>
+
+<p>Of the two visualisations I probably prefer that last one, the heat map. First, it dramatically shows (all that white) that the regression estimates from the true model aren’t biased at all. Secondly, it nicely shows that the bias in the estimates returned by stepwise regression are worse</p>
+<ul>
+  <li>for smaller samples</li>
+  <li>with higher correlation between the X variables</li>
+  <li>and with high variance of the y variable</li>
+</ul>
+
+<p>So, finally, here’s the code for those simulations:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1"># parameters to run this for:</span><span class="w">
+</span><span class="n">var_params</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">expand_grid</span><span class="p">(</span><span class="n">xcm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="o">:</span><span class="m">9</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="n">ysdm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">9</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">200</span><span class="p">,</span><span class="w"> </span><span class="m">2000</span><span class="p">))</span><span class="w">
+
+</span><span class="c1"># export onto the cluster some objects we need to use:</span><span class="w">
+</span><span class="n">clusterExport</span><span class="p">(</span><span class="n">cluster</span><span class="p">,</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"sim_steps"</span><span class="p">,</span><span class="w"> </span><span class="s2">"var_params"</span><span class="p">))</span><span class="w">
+
+</span><span class="c1"># run all the simulations</span><span class="w">
+</span><span class="n">many_params</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">foreach</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">nrow</span><span class="p">(</span><span class="n">var_params</span><span class="p">),</span><span class="w"> </span><span class="n">.combine</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rbind</span><span class="p">)</span><span class="w"> </span><span class="o">%dopar%</span><span class="w"> </span><span class="p">{</span><span class="w">
+  </span><span class="n">res</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">sim_steps</span><span class="p">(</span><span class="n">xcm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">var_params</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">xcm</span><span class="p">,</span><span class="w"> 
+                   </span><span class="n">ysdm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">var_params</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">ysdm</span><span class="p">,</span><span class="w">
+                   </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">var_params</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">n</span><span class="p">,</span><span class="w">
+                   </span><span class="n">runs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">200</span><span class="p">)</span><span class="w">
+  </span><span class="n">res</span><span class="o">$</span><span class="n">biases_df</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="c1"># linechart plot:</span><span class="w">
+</span><span class="n">many_params</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">glue</span><span class="p">(</span><span class="s2">"n = {n}"</span><span class="p">))</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">r2</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bias</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">model</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">facet_grid</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">as.ordered</span><span class="p">(</span><span class="n">xcm</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_smooth</span><span class="p">(</span><span class="n">se</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"loess"</span><span class="p">,</span><span class="w"> </span><span class="n">formula</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">span</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.8</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_point</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_x_continuous</span><span class="p">(</span><span class="n">breaks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">0.2</span><span class="p">,</span><span class="w"> </span><span class="m">0.8</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"R-squared (proportion of Y's variance explained by model)"</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Average bias of estimated variable coefficients"</span><span class="p">,</span><span class="w">
+       </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Bias in regression coefficients after stepwise selection of variables"</span><span class="p">,</span><span class="w">
+       </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Bias is worst with small samples, models with low R-squared, and correlation in the explanatory variables (shown from 0.1 to 0.9).
+Model with 15 explanatory 'X' variables. Correct values of coefficients are 0, 0.1 or 1;  so a bias of +1 is very serious."</span><span class="p">,</span><span class="w">
+</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Model fitting procedure"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># heatmap plot:</span><span class="w">
+</span><span class="n">many_params</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">glue</span><span class="p">(</span><span class="s2">"n = {n}"</span><span class="p">))</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xcm</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ysdm</span><span class="p">,</span><span class="w"> </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bias</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">facet_grid</span><span class="p">(</span><span class="n">model</span><span class="o">~</span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_tile</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_fill_gradientn</span><span class="p">(</span><span class="n">colours</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"white"</span><span class="p">,</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">,</span><span class="w"> </span><span class="s2">"darkred"</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Correlation between the X variables"</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Standard deviation of the Y variable"</span><span class="p">,</span><span class="w">
+       </span><span class="n">fill</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Average bias of estimated variable coefficients:"</span><span class="p">,</span><span class="w">
+       </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Bias in regression coefficients after stepwise selection of variables"</span><span class="p">,</span><span class="w">
+       </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Bias is worst with small samples, high variance response, and correlation in the explanatory variables.
+Model with 15 explanatory 'X' variables. Correct values of coefficients are 0, 0.1 or 1;  so a bias of +1 is very serious."</span><span class="p">)</span></code></pre></figure>
+
+<p>That’s all folks. Just don’t use stepwise selection of variables. Don’t use automated addition and deletion of variables, and don’t take them out yourself by hand “because it’s not significant”. Use theory-driven model selection if it’s explanation you’re after, Bayesian methods are going to be good too as a complement to that and forcing you to think about the problem; and for regression-based prediction use a lasso or elastic net regularization.</p>
+
+
+		
+	</div>
+</div>
+
+<div class="col-md-1"></div>
+<div class="col-md-4">
+	<div class="side-banner">
+	
+
+
+	<div>
+	   
+	    
+			
+			<p>&larr; Previous post</p>
+			<p><a rel="prev" href="/blog/2024/09/08/sex-gender">Gender and sexuality in Australian surveys and census</a></p>
+		
+		
+		
+		
+		
+		
+	</div>
+	
+	 
+
+   <div class = "side-footer">
+			
+			<hr></hr>
+			<p><gcse:search></gcse:search></p>
+			<hr></hr>
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.</p>
+			<hr></hr>
+			
+			<p>My day job is Director of the <a href='https://sdd.spc.int/'>Statistics for Development Division</a> at the Pacific Community, the principal scientific and technical organisation in the Pacific region, proudly supporting development since 1947. We are an international development organisation owned and governed by our 27 country and territory members. This blog is not part of my role there and contains my personal views only.</p>
+		
+		    <hr></hr>
+			
+       <div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="false" data-share="false"></div>
+			
+			<hr></hr>
+			<p>I'm pleased to be aggregated at <a href="https://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+			<hr></hr>
+
+			
+			<p>			
+            <span xmlns:dct="https://purl.org/dc/terms/" property="dct:title"><i>free range statistics</i></span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			<hr></hr>
+			
+
+
+    </div>
+
+
+
+  
+   
+
+
+
+
+		  
+		  
+
+
+
+	   
+	<div id="disqus_thread"></div>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function() {
+				var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+				dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+				(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+			})();
+		</script>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function () {
+				var s = document.createElement('script'); s.async = true;
+				s.type = 'text/javascript';
+				s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+				(document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+			}());
+		</script>
+
+	<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+	</div>	
+</div>    
+   
+   
+
+			
+			</div><!-- /.container -->
+         
+   <!-- Default Statcounter code for Free Range Statistics https://freerangestats.info -->
+<script type="text/javascript">
+var sc_project=11673245; 
+var sc_invisible=1; 
+var sc_security="5b7111a4"; 
+</script>
+<script type="text/javascript"
+src="https://www.statcounter.com/counter/counter.js" async></script>
+<noscript><div class="statcounter"><a title="Web Analytics"
+href="https://statcounter.com/" target="_blank"><img class="statcounter"
+src="//c.statcounter.com/11673245/0/5b7111a4/1/" alt="Web
+Analytics"></a></div></noscript>
+<!-- End of Statcounter Code -->
+
+</body>   
+</html>
