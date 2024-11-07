@@ -1,0 +1,520 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Regressions where the coefficients are a simplex.</title>
+      	
+         
+         
+            <meta name ="description" content ="I compare some different ways of forcing the coefficients in a regression to form a simplex, all greater than zero and adding up to exactly one. Two methods - quadratic programming, and explicit modelling of the coefficients from a Dirichlet distribution - give essentially identical results that match the data generating process well.">
+            <meta property="og:description" content ="I compare some different ways of forcing the coefficients in a regression to form a simplex, all greater than zero and adding up to exactly one. Two methods - quadratic programming, and explicit modelling of the coefficients from a Dirichlet distribution - give essentially identical results that match the data generating process well.">
+         
+         <meta property="og:site_name" content="free range statistics" />
+         <meta property="og:title" content="Regressions where the coefficients are a simplex." />
+         
+            <meta property="og:image" content="https:/freerangestats.info/img/0281b-pairs.png" />
+         
+		 
+			<meta property="og:url" content="https://freerangestats.info/blog/2024/11/06/simplex-regression-coefficients.html" />
+		 
+         <meta property="og:author" content= "https://www.facebook.com/peterstats" />
+         <meta property="og:type" content="article" />
+      
+
+<link href='https://fonts.googleapis.com/css?family=Sarala' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Prosto+One' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Ubuntu+Mono' rel='stylesheet'>
+	  
+          <link href="/css/bootstrap.min.css" rel ="stylesheet" type="text/css">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet" type="text/css">
+            <link href="/css/custom.css" rel ="stylesheet" type="text/css">     
+		<link href="/css/syntax.css" rel ="stylesheet" type="text/css">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="free range statistics by Peter Ellis"
+      href="/feed.xml">
+
+	  
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+  <script>
+  (function() {
+    var cx = '015640467633673901770:pk3v2c95baw';
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+  })();
+</script>
+
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">free range statistics</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/about">about</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">all posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">ordered by date</a></li>
+				  <li><a href="/blog/most-popular.html">ordered by popularity</a></li>
+                  <li><a href="/blog/index_by_tag.html">grouped by subject matter</a></li>
+                  <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
+				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
+                  <li><a href="/blog/surveys.html">all posts on surveys</a></li> 
+				  <li><a href = /blog/2024/11/06/simplex-regression-coefficients>most recent post</a></li>
+				</ul>
+            </li>
+              <li><a href="/blog/showcase.html">showcase</a></li>
+              <li><a href="/presentations/index.html">presentations</a></li>
+			  <li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">forecasts<span class="caret"></span></a>
+                <ul class="dropdown-menu">
+				  <li><a href = "/covid-tracking/index.html">Covid-19 in Australia</a></li>
+                  <li><a href = "/elections/nz-2020/index.html">NZ election 2020</a></li>
+                  <li><a href = "/elections/oz-2019/index.html">Australia federal election 2019</a></li>
+				  <li><a href = "/elections/nz-2017/combined.html">NZ election 2017</a></li>
+                  <li><a href="/blog/voting.html">all blog posts on voting behaviour</a></li>
+                </ul>				
+			  </li>
+			  
+			  
+			  
+		    </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			<div class="jumbotron">
+  <div class="container">
+	<center><h1>Regressions where the coefficients are a simplex.</h1></center>
+  </div>
+</div>
+
+
+
+	<div class = "post-summary">
+	<h2>At a glance:</h2>
+	   <p>I compare some different ways of forcing the coefficients in a regression to form a simplex, all greater than zero and adding up to exactly one. Two methods - quadratic programming, and explicit modelling of the coefficients from a Dirichlet distribution - give essentially identical results that match the data generating process well.</p>
+	   <p class="meta">06 Nov 2024</p>
+	   <hr></hr>
+	</div>
+
+
+<div class="col-md-7">
+
+	<div class="post">
+		
+	  <p>I have been thinking in my spare time a bit about synthetic control methods as an approach to evaluation, and am working on a blog post. But a side issue that popped up was sufficiently interesting to treat separately.</p>
+
+<p>Technically, it is a question of fitting a regression where the coefficients are constrained to be non-negative and add up to one; in other words, the coefficients are a <em>simplex</em>. The reason this comes up is in that in synthetic control methods, such a regression is used to determine the weights to use in constructing a weighted average of multiple units (countries, firms, people) that is as comparable as possible to the unit that received the intervention being evaluated.</p>
+
+<p>The argument for the weights adding up to one is to avoid extrapolating from the range of the real data. I don’t find this a convincing argument, but I’ll leave that for a later post if I get round to it. For now, I’m interested in the technical question of how to get such a set of non-zero weights adding up to one; or abstracting it away from the application, how to fit a regression where the coefficients are constrained to be a simplex.</p>
+
+<p>Naturally, there are multiple ways you might do this. There was <a href="https://stats.stackexchange.com/questions/21565/how-do-i-fit-a-constrained-regression-in-r-so-that-coefficients-total-1">a good question and answer on this on Cross-Validated</a> way back in 2012. Two of the four methods I’m going to go through below come pretty much straight from answers or comments there. The other two are my own invention (I’m not claiming to be the first, just that I haven’t seen others doing it this way).</p>
+
+<p>First, let’s get started by simulating some data. I’m going to make a matrix called <code class="language-plaintext highlighter-rouge">X</code> with five columns, all from different distributions. Then I create a vector of true coefficients that will relate the <code class="language-plaintext highlighter-rouge">y</code> I’m about to make to that <code class="language-plaintext highlighter-rouge">X</code>. To make the exercise interesting and life-like, the true coefficients are going to involve a negative number, and aren’t going to add to exactly 1. One of them is going to be zero.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">glmnet</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">MASS</span><span class="p">)</span><span class="w">   </span><span class="c1"># for eqscplot</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">pracma</span><span class="p">)</span><span class="w"> </span><span class="c1"># for lsqlincon</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">rstan</span><span class="p">)</span><span class="w">
+</span><span class="n">options</span><span class="p">(</span><span class="n">mc.cores</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">min</span><span class="p">(</span><span class="m">8</span><span class="p">,</span><span class="w"> </span><span class="n">parallel</span><span class="o">::</span><span class="n">detectCores</span><span class="p">())</span><span class="w">
+</span><span class="n">par</span><span class="p">(</span><span class="n">bty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"l"</span><span class="p">,</span><span class="w"> </span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Roboto"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">n</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="m">1000</span><span class="w">
+</span><span class="n">X</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">cbind</span><span class="p">(</span><span class="w">
+  </span><span class="n">x1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rnorm</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="m">10</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">),</span><span class="w">
+  </span><span class="n">x2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rnorm</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="m">7</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">),</span><span class="w">
+  </span><span class="n">x3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rnorm</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="m">15</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">),</span><span class="w">
+  </span><span class="n">x4</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">runif</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="m">5</span><span class="p">,</span><span class="w"> </span><span class="m">20</span><span class="p">),</span><span class="w">
+  </span><span class="n">x5</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rnorm</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="m">8</span><span class="p">,</span><span class="w"> </span><span class="m">1.5</span><span class="p">)</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><span class="c1"># note true data generating process coefficients add up</span><span class="w">
+</span><span class="c1"># to more than 1 and have a negative, to make it interesting</span><span class="w">
+</span><span class="n">true_coefs</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">0.2</span><span class="p">,</span><span class="w"> </span><span class="m">0.6</span><span class="p">,</span><span class="w"> </span><span class="m">-0.1</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">0.4</span><span class="p">)</span><span class="w">
+
+</span><span class="n">y</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">X</span><span class="w"> </span><span class="o">%*%</span><span class="w"> </span><span class="n">true_coefs</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">rnorm</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">)</span></code></pre></figure>
+
+<p>Now, I’m going to fit various regressions (with no intercept) to this data and extract the coefficients and compare them to the true data generating process. First let’s start with ordinary least squares with no constraints</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#-------------method 1 - unconstrained regression------</span><span class="w">
+</span><span class="c1"># This is the best way to recover the true DGP</span><span class="w">
+</span><span class="n">mod1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lm</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">X</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+</span><span class="n">coefs1</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">coef</span><span class="p">(</span><span class="n">mod1</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># plotting function we will use for each model</span><span class="w">
+</span><span class="n">f</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">newx</span><span class="p">,</span><span class="w"> </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">){</span><span class="w">
+  </span><span class="n">eqscplot</span><span class="p">(</span><span class="n">true_coefs</span><span class="p">,</span><span class="w"> </span><span class="n">newx</span><span class="p">,</span><span class="w"> </span><span class="n">bty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"l"</span><span class="p">,</span><span class="w"> 
+           </span><span class="n">xlab</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Coefficients from original data generating process"</span><span class="p">,</span><span class="w">
+           </span><span class="n">ylab</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Coefficients from model"</span><span class="p">,</span><span class="w">
+           </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">main</span><span class="p">)</span><span class="w"> 
+  </span><span class="n">abline</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey"</span><span class="p">)</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="n">f</span><span class="p">(</span><span class="n">coefs1</span><span class="p">,</span><span class="w"> </span><span class="s2">"OLS"</span><span class="p">)</span></code></pre></figure>
+
+<p>This approach is very good at getting close to the true data generating process, as we’d expect. But of course, like the true process, it has a negative coefficient for x3, and it sums to more than 1:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; round(coefs1, 2)
+  Xx1   Xx2   Xx3   Xx4   Xx5 
+ 0.20  0.61 -0.11 -0.02  0.45 
+&gt; sum(coefs1)
+[1] 1.122484
+</code></pre></div></div>
+
+<p>This is the plot we get, comparing the model’s coefficients to those from the real data generating process:</p>
+
+<object type="image/svg+xml" data="/img/0281b-mod1.svg" width="100%"><img src="/img/0281b-mod1.png" width="100%" /></object>
+
+<p>OK, all very good but it makes no effort (other than just hoping it works out) to constrain the coefficients to add up to one. So here’s my first real attempt at that, which is based on a suggestion that whuber made in the comments on the Cross-Validated post. He points out with some basic algebra that if you subtract one of the X columns from the others and from y, and then fit a regression with OLS to that transformed data, you get the correct coefficients on all the columns of X that you left in, and can calculate the remaining one by just subtracting them all from 1.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#-----------method 2 - transform-----------</span><span class="w">
+</span><span class="c1"># This way will get you coefficients that add up to 1,</span><span class="w">
+</span><span class="c1"># but might not be in (0, 1). This is suggested by whuber in </span><span class="w">
+</span><span class="c1"># his comment on Elvis' solution at:</span><span class="w">
+</span><span class="c1"># https://stats.stackexchange.com/questions/21565/how-do-i-fit-a-constrained-regression-in-r-so-that-coefficients-total-1</span><span class="w">
+</span><span class="n">X2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">X</span><span class="p">[,</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="m">4</span><span class="p">]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">X</span><span class="p">[,</span><span class="w"> </span><span class="m">5</span><span class="p">]</span><span class="w">
+</span><span class="n">y2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">X</span><span class="p">[,</span><span class="w"> </span><span class="m">5</span><span class="p">]</span><span class="w">
+
+</span><span class="n">mod2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lm</span><span class="p">(</span><span class="n">y2</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">X2</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+</span><span class="n">coefs2</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">coef</span><span class="p">(</span><span class="n">mod2</span><span class="p">),</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">coef</span><span class="p">(</span><span class="n">mod2</span><span class="p">)))</span><span class="w">
+</span><span class="n">f</span><span class="p">(</span><span class="n">coefs2</span><span class="p">,</span><span class="w"> </span><span class="s2">"Transformation"</span><span class="p">)</span><span class="w"> </span><span class="c1"># draw plot</span></code></pre></figure>
+
+<p>This time the coefficients add up exactly to one as required, but unfortunately there is still a negative in there</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; round(coefs2, 2)
+ X2x1  X2x2  X2x3  X2x4       
+ 0.24  0.40 -0.04  0.00  0.40 
+&gt; sum(coefs2)
+[1] 1
+</code></pre></div></div>
+<object type="image/svg+xml" data="/img/0281b-mod2.svg" width="100%"><img src="/img/0281b-mod2.png" width="100%" /></object>
+
+<p>This isn’t news - it was identified as a problem in the discussion on Cross-Validated, but with the simulated data used there it didn’t manifest. In fact, this is one reason why my simulated data is a bit dirtier, with original coefficients that don’t add to one and which have a genuine negative value among them.</p>
+
+<p>So much for model 2.</p>
+
+<p>Model 3 is one I invented myself and makes use of the fact that <code class="language-plaintext highlighter-rouge">glmnet</code> lets you not only regularise your coefficients (squash them towards zero, to help handle multicollinearity, overfitting, and related issues) it lets you specify upper and lower bounds for coefficients. So we could get our first fully compliant set of regression coefficients (non-negative, adding to one) by using the data transformation approach in model2 but fitting the model with <code class="language-plaintext highlighter-rouge">glmnet</code> instead. Like this:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#----------method 3 - transform, regularise and constrain-----------</span><span class="w">
+</span><span class="c1"># This method is guaranteed to get you coefficients that add up to 1,</span><span class="w">
+</span><span class="c1"># and they will also be in the (0, 1) range, plus they will be regularised</span><span class="w">
+
+</span><span class="c1"># alpha = 0 is ridge regression, but could use 1 for lasso (or anything in between)</span><span class="w">
+</span><span class="n">mod3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">cv.glmnet</span><span class="p">(</span><span class="n">X2</span><span class="p">,</span><span class="w"> </span><span class="n">y2</span><span class="p">,</span><span class="w"> </span><span class="n">intercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w">
+                  </span><span class="n">lower.limits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">upper.limits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># Coefficients from glmnet include the intercept even though we forced it to be zero</span><span class="w">
+</span><span class="c1"># which is why we need the [-1] in the below</span><span class="w">
+</span><span class="n">coefs3</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">as.vector</span><span class="p">(</span><span class="n">coef</span><span class="p">(</span><span class="n">mod3</span><span class="p">)[</span><span class="m">-1</span><span class="p">]),</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">coef</span><span class="p">(</span><span class="n">mod3</span><span class="p">)))</span><span class="w">
+</span><span class="n">f</span><span class="p">(</span><span class="n">coefs3</span><span class="p">,</span><span class="w"> </span><span class="s2">"Transform and ridge"</span><span class="p">)</span><span class="w"> </span><span class="c1"># draw plot</span></code></pre></figure>
+
+<p>The results are all non-negative, and add correctly to one:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; round(coefs3, 2)
+[1] 0.11 0.24 0.00 0.00 0.64
+&gt; sum(coefs3)
+[1] 1
+</code></pre></div></div>
+<p>They do differ markedly from the true coefficients:</p>
+<object type="image/svg+xml" data="/img/0281b-mod3.svg" width="100%"><img src="/img/0281b-mod3.png" width="100%" /></object>
+
+<p>We’ll come back to that.</p>
+
+<p>Next is what we might call the “proper” solution, which is to treat the problem as the classic case for <a href="https://en.wikipedia.org/wiki/Quadratic_programming">quadratic programming</a> that it is. Quadratic programming was developed exactly to deal with this situation - optimise a multivariate quadratic function (like, least squares in a regression) subject to linear constraints (like, coefficients must be non-negative and add up to one). Hans Borchers’  R package (“Practical Numerical Math Functions”) has an easy to understand interface to do this without having to invert your own matrices, so the only thing you need to do is to express the constraints in the right way. Here’s how we do this with our problem:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#---------------method 4 - quadratic programming-----------------</span><span class="w">
+</span><span class="c1"># This is based on dariober's solution, which itself is Elvis' solution</span><span class="w">
+</span><span class="c1"># but using the easier API from pracma::lsqlincon</span><span class="w">
+</span><span class="c1"># lsqlincon "solves linearly constrained linear least-squares problems"</span><span class="w">
+
+</span><span class="c1"># Equality constraint: We want the sum of the coefficients to be 1.</span><span class="w">
+</span><span class="c1"># I.e. Aeq x == beq  </span><span class="w">
+</span><span class="n">Aeq</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">matrix</span><span class="p">(</span><span class="nf">rep</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">ncol</span><span class="p">(</span><span class="n">X</span><span class="p">)),</span><span class="w"> </span><span class="n">nrow</span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w">
+</span><span class="n">beq</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># Lower and upper bounds of the parameters, i.e [0, 1]</span><span class="w">
+</span><span class="n">lb</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">ncol</span><span class="p">(</span><span class="n">X</span><span class="p">))</span><span class="w">
+</span><span class="n">ub</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">ncol</span><span class="p">(</span><span class="n">X</span><span class="p">))</span><span class="w">
+
+</span><span class="c1"># And solve:</span><span class="w">
+</span><span class="n">coefs4</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">lsqlincon</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">Aeq</span><span class="o">=</span><span class="w"> </span><span class="n">Aeq</span><span class="p">,</span><span class="w"> </span><span class="n">beq</span><span class="o">=</span><span class="w"> </span><span class="n">beq</span><span class="p">,</span><span class="w"> </span><span class="n">lb</span><span class="o">=</span><span class="w"> </span><span class="n">lb</span><span class="p">,</span><span class="w"> </span><span class="n">ub</span><span class="o">=</span><span class="w"> </span><span class="n">ub</span><span class="p">)</span><span class="w">
+
+</span><span class="n">f</span><span class="p">(</span><span class="n">coefs4</span><span class="p">,</span><span class="w"> </span><span class="s2">"Quadratic programming"</span><span class="p">)</span></code></pre></figure>
+
+<p>Just like the previous method, our result is all non-negative and sums to zero:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; round(coefs4, 2)
+[1] 0.17 0.44 0.00 0.00 0.38
+&gt; sum(coefs4)
+[1] 1
+</code></pre></div></div>
+<p>This time the coefficients look a bit closer to the original ones:</p>
+
+<object type="image/svg+xml" data="/img/0281b-mod4.svg" width="100%"><img src="/img/0281b-mod4.png" width="100%" /></object>
+
+<p>Finally, I the other method I invented was to go all-in Bayesian and simply specify in Stan that the coefficients have to be a simplex and that they have a <a href="https://en.wikipedia.org/wiki/Dirichlet_distribution">Dirichlet distribution</a>. This actually seems the most intuitive solution to me - what better way is there of making something a simplex than by just deeming it to have a Dirichlet distribution?</p>
+
+<p>So I wrote this program in Stan:</p>
+
+<figure class="highlight"><pre><code class="language-stan" data-lang="stan"><span class="c1">// Stan program for a regression where the coefficients are a simplex</span>
+<span class="c1">// Probable use case is when y is some kind of weighted average of the X</span>
+<span class="c1">// and you want to guarantee the weights add up to 1 (note - note sure I think</span>
+<span class="c1">// this is a good idea but it is out there)</span>
+<span class="c1">//</span>
+<span class="c1">// Peter Ellis November 2024</span>
+
+<span class="nn">data</span> <span class="p">{</span>
+  <span class="kt">int</span><span class="o">&lt;</span><span class="na">lower</span><span class="o">=</span><span class="mi">0</span><span class="o">&gt;</span> <span class="nv">n</span><span class="p">;</span>   <span class="c1">// number of data items must match number rows of X</span>
+  <span class="kt">int</span><span class="o">&lt;</span><span class="na">lower</span><span class="o">=</span><span class="mi">0</span><span class="o">&gt;</span> <span class="nv">k</span><span class="p">;</span>   <span class="c1">// number of predictors must match number columns of X</span>
+  <span class="kt">matrix</span><span class="p">[</span><span class="nv">n</span><span class="p">,</span> <span class="nv">k</span><span class="p">]</span> <span class="nv">X</span><span class="p">;</span>   <span class="c1">// predictor matrix. Might include intercept (column of 1s)</span>
+  <span class="kt">vector</span><span class="p">[</span><span class="nv">n</span><span class="p">]</span> <span class="nv">y</span><span class="p">;</span>      <span class="c1">// outcome vector</span>
+<span class="p">}</span>
+<span class="nn">parameters</span> <span class="p">{</span>
+  <span class="kt">simplex</span><span class="p">[</span><span class="nv">k</span><span class="p">]</span> <span class="nv">b</span><span class="p">;</span>       <span class="c1">// coefficients for predictors</span>
+  <span class="kt">real</span><span class="o">&lt;</span><span class="na">lower</span><span class="o">=</span><span class="mi">0</span><span class="o">&gt;</span> <span class="nv">sigma</span><span class="p">;</span>  <span class="c1">// error scale</span>
+  <span class="kt">real</span><span class="o">&lt;</span><span class="na">lower</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="na">upper</span> <span class="o">=</span> <span class="mi">1</span><span class="o">&gt;</span> <span class="nv">alpha</span><span class="p">;</span> <span class="c1">// parameter for dirichlet distribution</span>
+<span class="p">}</span>
+<span class="nn">model</span> <span class="p">{</span>
+  <span class="nv">alpha</span> <span class="o">~</span> <span class="nb">beta</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">);</span>
+  <span class="nv">b</span> <span class="o">~</span> <span class="nb">dirichlet</span><span class="p">(</span><span class="nb">rep_vector</span><span class="p">(</span><span class="nv">alpha</span><span class="p">,</span> <span class="nv">k</span><span class="p">));</span>
+  <span class="nv">y</span> <span class="o">~</span> <span class="nb">normal</span><span class="p">(</span><span class="nv">X</span> <span class="o">*</span> <span class="nv">b</span><span class="p">,</span> <span class="nv">sigma</span><span class="p">);</span>  <span class="c1">// likelihood</span>
+<span class="p">}</span></code></pre></figure>
+
+<p>… and called it from R with this:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#----------------method 5 - Bayesian model with a Dirichlet distribution------</span><span class="w">
+</span><span class="n">stan_data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="w">
+  </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nrow</span><span class="p">(</span><span class="n">X</span><span class="p">),</span><span class="w">
+  </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ncol</span><span class="p">(</span><span class="n">X</span><span class="p">),</span><span class="w">
+  </span><span class="n">X</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">X</span><span class="p">,</span><span class="w">
+  </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">as.vector</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="w">
+</span><span class="p">)</span><span class="w">
+  
+</span><span class="n">mod5</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">stan</span><span class="p">(</span><span class="s2">"0281b-dirichlet-coefs.stan"</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">stan_data</span><span class="p">)</span><span class="w">
+
+</span><span class="n">coefs5</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">apply</span><span class="p">(</span><span class="n">extract</span><span class="p">(</span><span class="n">mod5</span><span class="p">,</span><span class="w"> </span><span class="s2">"b"</span><span class="p">)</span><span class="o">$</span><span class="n">b</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">mean</span><span class="p">)</span></code></pre></figure>
+
+<p>This is now the third method for which our result is correctly all non-negative and sums to zero:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; round(coefs5, 2)
+[1] 0.17 0.45 0.00 0.00 0.38
+&gt; sum(coefs5)
+[1] 1
+</code></pre></div></div>
+<p>… and this is what it looks like, basically very similar to the quadratic programming solution:</p>
+
+<object type="image/svg+xml" data="/img/0281b-mod5.svg" width="100%"><img src="/img/0281b-mod5.png" width="100%" /></object>
+
+<p>OK, which method is best? We need some sort of benchmark to test them against, better than the original coefficients from the data generating process in complying with the fundamental restrictions. Given the ultimate purpose is to construct a weighted average, we want something that has similar proportions to the original coefficients. So, just wanting to be pragmatic about this, I created a “normalised” set of coefficients by removing the negative one and scaling the remainder to add up to one.</p>
+
+<p>This lets us define a success criteria - the winning method is the one that meets the constraints (ruling out models 1 and 2) and most closely matches those proportions. Here’s a nice pairs plot comparing everything at a glance:</p>
+
+<object type="image/svg+xml" data="/img/0281b-pairs.svg" width="100%"><img src="/img/0281b-pairs.png" width="100%" /></object>
+
+<p>What we see is that models 4 and 5 are clear, effectively equal, winners. Not only are they nearly identical, they also match the normalised true coefficients (correlations of 0.98 or above). Sadly, the glmnet method doesn’t perform very well at recovering the original proportions. Perhaps it would have done better if I’d let the columns of X be correlated with eachother rather than independent (dealing with multi-collinearity being elastic net regression’s home turf). Perhaps also it would get closer to the quadratic programming solution if I forced the amount of regularisation down to nearly zero. But with two good solutions already I’m not inclined right now to experiment further on that.</p>
+
+<p>The quadratic programming approach was easier to write and debug and quicker to run than the explicit modelling of the Dirichlet distribution in Stan, so pragmatically it becomes the winner; with the sole caveat being that question mark in the last paragraph about what happens if the columns of X are multi-collinear.</p>
+
+<p>Oh, let’s finish with the code to draw that pairs plot. For one reason or another, I used good old base R <code class="language-plaintext highlighter-rouge">pairs()</code> to do this, rather the <code class="language-plaintext highlighter-rouge">GGally</code> package I more normally use for scatterplot matrices. I like the easy control <code class="language-plaintext highlighter-rouge">pairs()</code> gives you over the upper and lower triangles of the scatterplot matrix, by just defining your own function on the fly. So for the old-timers, here’s that base R code:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#---------------comparisons------------</span><span class="w">
+</span><span class="n">norm_coefs</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">pmax</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="n">true_coefs</span><span class="p">)</span><span class="w"> </span><span class="c1"># remove negative values</span><span class="w">
+</span><span class="n">norm_coefs</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">norm_coefs</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">norm_coefs</span><span class="p">)</span><span class="w"> </span><span class="c1"># force to ad dup to one</span><span class="w">
+
+</span><span class="n">pairs</span><span class="p">(</span><span class="n">cbind</span><span class="p">(</span><span class="s1">'Actual data\ngenerating process'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">true_coefs</span><span class="p">,</span><span class="w"> 
+            </span><span class="s1">'Normalised to\nadd to one and &gt; 0'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">norm_coefs</span><span class="p">,</span><span class="w"> 
+            </span><span class="s2">"Ordinary least squares,\nwon't add to 1, not\nconstrained to (0,1)"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coefs1</span><span class="p">,</span><span class="w"> 
+            </span><span class="s1">'Transform and OLS, add to 1\nbut can be negative'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coefs2</span><span class="p">,</span><span class="w"> 
+            </span><span class="s1">'Transform and ridge regression,\nconstrain to within (0,1)'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coefs3</span><span class="p">,</span><span class="w"> 
+            </span><span class="s1">'Quadratic programming'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coefs4</span><span class="p">,</span><span class="w"> 
+            </span><span class="s1">'Dirichlet &amp; Stan'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coefs5</span><span class="p">),</span><span class="w"> 
+      </span><span class="n">lower.panel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">){</span><span class="w">
+        </span><span class="n">abline</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey"</span><span class="p">)</span><span class="w">
+        </span><span class="n">points</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">pch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">19</span><span class="p">)</span><span class="w">
+      </span><span class="p">},</span><span class="w"> 
+      </span><span class="n">upper.panel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">){</span><span class="w">
+        </span><span class="n">text</span><span class="p">(</span><span class="n">mean</span><span class="p">(</span><span class="nf">range</span><span class="p">(</span><span class="n">x</span><span class="p">)),</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="nf">range</span><span class="p">(</span><span class="n">y</span><span class="p">)),</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="n">cor</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">),</span><span class="w"> </span><span class="m">2</span><span class="p">),</span><span class="w"> 
+             </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">,</span><span class="w"> </span><span class="n">font</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w">
+        </span><span class="p">},</span><span class="w">
+       </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Comparison of different methods for creating a weighted average with weights adding up to one"</span><span class="p">)</span></code></pre></figure>
+
+
+
+		
+	</div>
+</div>
+
+<div class="col-md-1"></div>
+<div class="col-md-4">
+	<div class="side-banner">
+	
+
+
+	<div>
+	   
+	    
+			
+			<p>&larr; Previous post</p>
+			<p><a rel="prev" href="/blog/2024/09/28/ihaka-lecture">Git, peer review, tests and toil</a></p>
+		
+		
+		
+		
+		
+		
+	</div>
+	
+	 
+
+   <div class = "side-footer">
+			
+			<hr></hr>
+			<p><gcse:search></gcse:search></p>
+			<hr></hr>
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.</p>
+			<p>Find me on <a rel="me" href="https://mastodon.social/@peter_ellis">Mastodon</a>.</p>
+			<hr></hr>
+			
+			<p>My day job is Director of the <a href='https://sdd.spc.int/'>Statistics for Development Division</a> at the Pacific Community, the principal scientific and technical organisation in the Pacific region, proudly supporting development since 1947. We are an international development organisation owned and governed by our 27 country and territory members. This blog is not part of my role there and contains my personal views only.</p>
+		
+		    <hr></hr>
+			
+       <div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="false" data-share="false"></div>
+			
+			<hr></hr>
+			<p>I'm pleased to be aggregated at <a href="https://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+			<hr></hr>
+
+			
+			<p>			
+            <span xmlns:dct="https://purl.org/dc/terms/" property="dct:title"><i>free range statistics</i></span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			<hr></hr>
+			
+
+
+    </div>
+
+
+
+  
+   
+
+
+
+
+		  
+		  
+
+
+
+	   
+	<div id="disqus_thread"></div>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function() {
+				var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+				dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+				(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+			})();
+		</script>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function () {
+				var s = document.createElement('script'); s.async = true;
+				s.type = 'text/javascript';
+				s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+				(document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+			}());
+		</script>
+
+	<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+	</div>	
+</div>    
+   
+   
+
+			
+			</div><!-- /.container -->
+         
+   <!-- Default Statcounter code for Free Range Statistics https://freerangestats.info -->
+<script type="text/javascript">
+var sc_project=11673245; 
+var sc_invisible=1; 
+var sc_security="5b7111a4"; 
+</script>
+<script type="text/javascript"
+src="https://www.statcounter.com/counter/counter.js" async></script>
+<noscript><div class="statcounter"><a title="Web Analytics"
+href="https://statcounter.com/" target="_blank"><img class="statcounter"
+src="//c.statcounter.com/11673245/0/5b7111a4/1/" alt="Web
+Analytics"></a></div></noscript>
+<!-- End of Statcounter Code -->
+
+</body>   
+</html>
