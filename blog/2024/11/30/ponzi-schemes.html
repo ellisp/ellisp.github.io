@@ -1,0 +1,732 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Simulating Ponzi schemes</title>
+      	
+         
+         
+            <meta name ="description" content ="I write a function to simulate Ponzi schemes with various types of 'investor' growth, withdrawal rates, and extraction by the scammer / owner of the scheme.">
+            <meta property="og:description" content ="I write a function to simulate Ponzi schemes with various types of 'investor' growth, withdrawal rates, and extraction by the scammer / owner of the scheme.">
+         
+         <meta property="og:site_name" content="free range statistics" />
+         <meta property="og:title" content="Simulating Ponzi schemes" />
+         
+            <meta property="og:image" content="https:/freerangestats.info/img/0263-ponzi2.png" />
+         
+		 
+			<meta property="og:url" content="https://freerangestats.info/blog/2024/11/30/ponzi-schemes.html" />
+		 
+         <meta property="og:author" content= "https://www.facebook.com/peterstats" />
+         <meta property="og:type" content="article" />
+      
+
+<link href='https://fonts.googleapis.com/css?family=Sarala' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Prosto+One' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Ubuntu+Mono' rel='stylesheet'>
+	  
+          <link href="/css/bootstrap.min.css" rel ="stylesheet" type="text/css">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet" type="text/css">
+            <link href="/css/custom.css" rel ="stylesheet" type="text/css">     
+		<link href="/css/syntax.css" rel ="stylesheet" type="text/css">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="free range statistics by Peter Ellis"
+      href="/feed.xml">
+
+	  
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+  <script>
+  (function() {
+    var cx = '015640467633673901770:pk3v2c95baw';
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+  })();
+</script>
+
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">free range statistics</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/about">about</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">all posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">ordered by date</a></li>
+				  <li><a href="/blog/most-popular.html">ordered by popularity</a></li>
+                  <li><a href="/blog/index_by_tag.html">grouped by subject matter</a></li>
+                  <li><a href="/blog/nz.html">all posts with data about new zealand</a></li>
+				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
+                  <li><a href="/blog/surveys.html">all posts on surveys</a></li> 
+				  <li><a href = /blog/2024/11/30/ponzi-schemes>most recent post</a></li>
+				</ul>
+            </li>
+              <li><a href="/blog/showcase.html">showcase</a></li>
+              <li><a href="/presentations/index.html">presentations</a></li>
+			  <li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">forecasts<span class="caret"></span></a>
+                <ul class="dropdown-menu">
+				  <li><a href = "/covid-tracking/index.html">Covid-19 in Australia</a></li>
+                  <li><a href = "/elections/nz-2020/index.html">NZ election 2020</a></li>
+                  <li><a href = "/elections/oz-2019/index.html">Australia federal election 2019</a></li>
+				  <li><a href = "/elections/nz-2017/combined.html">NZ election 2017</a></li>
+                  <li><a href="/blog/voting.html">all blog posts on voting behaviour</a></li>
+                </ul>				
+			  </li>
+			  
+			  
+			  
+		    </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			<div class="jumbotron">
+  <div class="container">
+	<center><h1>Simulating Ponzi schemes</h1></center>
+  </div>
+</div>
+
+
+
+	<div class = "post-summary">
+	<h2>At a glance:</h2>
+	   <p>I write a function to simulate Ponzi schemes with various types of 'investor' growth, withdrawal rates, and extraction by the scammer / owner of the scheme.</p>
+	   <p class="meta">30 Nov 2024</p>
+	   <hr></hr>
+	</div>
+
+
+<div class="col-md-7">
+
+	<div class="post">
+		
+	  <p>I recently read John Cox’s 2018 book <a href="https://www.amazon.com/Fast-Money-Schemes-Deception-Framing/dp/0253025605">Fast Money Schemes: Hope and Deception in Papua New Guinea</a> and gave it a rare (for me) five star rating. It’s fascinating research into those involved in the <a href="https://en.wikipedia.org/wiki/U-Vistract">U-Vistract</a> pyramid scheme.</p>
+
+<p>At the time of writing U-Vistract had been bankrupt and exposed for years yet many of those who had ‘invested’ in it were still hoping to get their money back. Cox conducted in-depth interviews not just with victims but with some of those involved in running the scam. He successfully puts it all in a wider context, not just of Melanesian history with cults and cons but its place in global “prosperity theology” (good grief), international financial cons such as the “Nigerian Prince scam” (not a Ponzi scheme) and the biggest Ponzi scheme of all, Bernie Madoff’s multi-billion dollar rip-off of some of the more privileged, educated and well-connected people on the planet.</p>
+
+<p>U-Vistract (which still has its true believers, apparently) targeted not pre-modern villagers in the Papua New Guinea highlands but the growing middle class that lives in the formal economy and is connected to or part of the governing elites. Part of the appeal of Cox’s book is that it is “post-village ethnology”, looking at society as it is now, not just interested in some pre-contact tribal life.</p>
+
+<p>Anyway, it got me thinking about Ponzi schemes. U-Vistract’s mode of operation was to get people to invest 100 or so kina and promise a 100% return per month. In fact, part of U-Vistract’s propaganda appeal was a criticism of traditional banks for giving you only 5% per year or so of the full 100% that must exist somewhere. This got me thinking, how fast does a Ponzi scheme need to grow new investor/victims to sustain a promised rate of return of doubling their money <em>every month</em>? How long could such a scheme plausibly last?</p>
+
+<p>Of course, this depends not just on how many new investors come in, but other factors such as how often they seek to withdraw their money. In the U-Vistract world several early investors - often well known and apparently respectable - made early fortunes. Some subsequent investors sought more modestly just to withdraw 100 kina a month (still a stunning return on an initial investment of the same amount) or even to make a steady savings-like contribution of that amount, whereas others waited to see their on-paper fortune climb into the millions.</p>
+
+<p>To find out how it worked I wrote an R function that parameterises all this. Full details are to the end of the blog, but the key parameters are:</p>
+
+<ul>
+  <li>number of new investors that come in each month</li>
+  <li>mean and variance of the amount invested by each investor</li>
+  <li>a four-way set of proportions indicating what happens to investors each month:
+    <ul>
+      <li>seek to withdraw it all</li>
+      <li>seek to withdraw a smaller amount about the same as initial contribution</li>
+      <li>invest a further amount roughly equal to the initial contribution</li>
+      <li>leave it alone and just roll over the existing investment</li>
+    </ul>
+  </li>
+  <li>proportion of the real money in the scheme that is extracted each month by the scammers running it</li>
+</ul>
+
+<p>Caveat - I’m not a financial fraud expert and haven’t bothered to do even a minimal literature review in this space. I’m just toying around, and am probably reinventing some wheels, and possibly falling into beginner traps (assuming that there are others who <em>are</em> such experts).</p>
+
+<p>Here is a simulated Ponzi scheme with a plausible starting set of values for all of those</p>
+
+<object type="image/svg+xml" data="/img/0283-ponzi1.svg" width="100%"><img src="/img/0283-ponzi1.png" width="100%" /></object>
+
+<p>created with this code:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">set.seed</span><span class="p">(</span><span class="m">123</span><span class="p">)</span><span class="w">
+</span><span class="n">ponzi</span><span class="p">(</span><span class="n">invest_more_rate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.2</span><span class="p">,</span><span class="w">
+      </span><span class="n">withdraw_all_rate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.01</span><span class="p">,</span><span class="w">
+      </span><span class="n">cv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w"> </span><span class="n">keep_history</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">ponzi_plot</span><span class="p">()</span></code></pre></figure>
+
+<p>In this version, all investors put in $100 on average (but random log-normal distribution with standard deviation of 200) and we start with 10 such people. 20% of them decide they are on a particularly good thing, and put in another ~$100 per month; 10% (the default value, so not shown explicitly) try to withdraw just ~$100, 1% try to withdraw everything at the end of any given month and the remainder (so 69%) just roll over whatever they have.</p>
+
+<p>Not shown here is the default growth path in new investor/victims, which I set to be 10 new investors in the first month, then 20, 30, 40, 50 etc. Which looks like a lot of new people but is actually a declining growth rate each month; by month 10 or so this is down to about 20% growth per month in investors and declining further, noticeably less than the promised growth rate of 100% per month in paper money. So it’s got to end in tears quickly!</p>
+
+<p>In fact, we see the total paper value of the scheme gets up to about $1m after about 10 months and then the scheme collapses - one investor too many tries to cash in on their paper value and the scheme goes bankrupt. The total paper value got nearly up to $1m; the real amount invested was about $64k, and the scammers got away with only $1,524.</p>
+
+<p>That’s a little hard to read off the graphic with the log scales, so here’s the actual numbers I was quoting there:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; set.seed(123)
+&gt; ponzi(invest_more_rate = 0.2,
++             withdraw_all_rate = 0.01,
++             cv = 2, keep_history = TRUE) |&gt;
++   ponzi_plot(return_numbers = TRUE)
+                      [,1]
+total_invested   64302.256
+total_withdrawn 103190.149
+total_extracted   1524.389
+paper_value     888278.519
+months               9.000
+total_investors    450.000
+leverage            14.000
+</code></pre></div></div>
+<p>Note that I’ve ducked the ugly question of exactly what happens when bankruptcy happens. The “total withdrawn” is $103k but only $64k was ever put in. Someone tried to withdraw $39k more than was available. That would have been ugly (as indeed would have been the case when the other people who thought they had nearly $900k of value missed out).</p>
+
+<p>The actual amount extracted is pretty modest compared to the high paper value of the scheme just before disaster. But this was a very unstable scheme. Here’s an alternative where I let the number of new investors grow steadily at 50% per month, plus have a generous 50% of existing investors put more in; and reduce the proportion of those seeking to withdraw their whole fortune to just 0.1%.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">ponzi</span><span class="p">(</span><span class="n">number_investors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="m">10</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">1.5</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">100</span><span class="p">)),</span><span class="w">
+     </span><span class="n">invest_more_rate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">,</span><span class="w"> 
+     </span><span class="n">withdraw_all_rate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.001</span><span class="p">,</span><span class="w">
+     </span><span class="n">cv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w">
+     </span><span class="n">keep_history</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">ponzi_plot</span><span class="p">()</span></code></pre></figure>
+
+<object type="image/svg+xml" data="/img/0283-ponzi2.svg" width="100%"><img src="/img/0283-ponzi2.png" width="100%" /></object>
+
+<p>Now the scheme lasts a couple of years; the paper value got well into the billions; and the scammers were able to extract well over $1 million for themselves. Intuitively, the big difference here is that the number of new investor/victims was growing consistently at 50% per month. Nowhere near as much as the doubling that intuitively is needed if we are to keep the paper value of things doubling plausibly, but enough to keep things going for a couple of years.</p>
+
+<p>To explore more systematically the impact of these different parameters I ran a bunch of simulations with this code:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#--------------systematic exploration-----------</span><span class="w">
+
+</span><span class="n">set.seed</span><span class="p">(</span><span class="m">123</span><span class="p">)</span><span class="w">
+</span><span class="n">params</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">expand_grid</span><span class="p">(</span><span class="w">
+  </span><span class="n">investor_growth</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">1.2</span><span class="p">,</span><span class="w"> </span><span class="m">1.4</span><span class="p">,</span><span class="w"> </span><span class="m">1.6</span><span class="p">,</span><span class="w"> </span><span class="m">1.8</span><span class="p">),</span><span class="w">
+  </span><span class="n">cv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">0.5</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">),</span><span class="w">
+  </span><span class="n">invest_more_rate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="m">0.1</span><span class="p">,</span><span class="w"> </span><span class="m">0.2</span><span class="p">),</span><span class="w">
+  </span><span class="n">withdraw_all_rate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">0.001</span><span class="p">,</span><span class="w"> </span><span class="m">0.01</span><span class="p">,</span><span class="w"> </span><span class="m">0.05</span><span class="p">),</span><span class="w">
+  </span><span class="n">extraction_rate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">0.001</span><span class="p">,</span><span class="w"> </span><span class="m">0.01</span><span class="p">,</span><span class="w"> </span><span class="m">0.05</span><span class="p">)</span><span class="w">
+</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="c1"># give me three of each</span><span class="w">
+  </span><span class="n">slice</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="n">n</span><span class="p">(),</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">n</span><span class="p">(),</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">n</span><span class="p">())</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="c1"># bit of randomness in one of the most important parameters</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">investor_growth</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">investor_growth</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">runif</span><span class="p">(</span><span class="n">n</span><span class="p">(),</span><span class="w"> </span><span class="m">-0.1</span><span class="p">,</span><span class="w"> </span><span class="m">0.1</span><span class="p">))</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">n</span><span class="p">())</span><span class="w"> 
+
+</span><span class="c1"># set up parallel processing cluster</span><span class="w">
+</span><span class="n">cluster</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">makeCluster</span><span class="p">(</span><span class="m">7</span><span class="p">)</span><span class="w"> 
+</span><span class="n">registerDoParallel</span><span class="p">(</span><span class="n">cluster</span><span class="p">)</span><span class="w">
+
+</span><span class="n">clusterEvalQ</span><span class="p">(</span><span class="n">cluster</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w">
+  </span><span class="n">library</span><span class="p">(</span><span class="n">foreach</span><span class="p">)</span><span class="w">
+  </span><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
+</span><span class="p">})</span><span class="w">
+
+</span><span class="n">clusterExport</span><span class="p">(</span><span class="n">cluster</span><span class="p">,</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"params"</span><span class="p">,</span><span class="w"> </span><span class="s2">"ponzi"</span><span class="p">))</span><span class="w">
+
+</span><span class="n">results</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">foreach</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">nrow</span><span class="p">(</span><span class="n">params</span><span class="p">),</span><span class="w"> </span><span class="n">.combine</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rbind</span><span class="p">)</span><span class="w"> </span><span class="o">%dopar%</span><span class="w"> </span><span class="p">{</span><span class="w">
+  </span><span class="n">set.seed</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w">
+  
+  </span><span class="n">ni</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="m">10</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">params</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">investor_growth</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">2000</span><span class="p">))</span><span class="w">
+  
+  </span><span class="n">this_sim</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">ponzi</span><span class="p">(</span><span class="n">number_investors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ni</span><span class="p">,</span><span class="w">
+                  </span><span class="n">invest_more_rate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">params</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">invest_more_rate</span><span class="p">,</span><span class="w"> 
+                  </span><span class="n">withdraw_all_rate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">params</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">withdraw_all_rate</span><span class="p">,</span><span class="w">
+                  </span><span class="n">extraction_rate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">params</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">extraction_rate</span><span class="p">,</span><span class="w">
+                  </span><span class="n">cv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">params</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="p">]</span><span class="o">$</span><span class="n">cv</span><span class="p">,</span><span class="w">
+                  </span><span class="n">ceiling</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1e7</span><span class="p">,</span><span class="w">
+                  </span><span class="n">keep_history</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">filter</span><span class="p">(</span><span class="n">time_period</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nf">max</span><span class="p">(</span><span class="n">time_period</span><span class="p">))</span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">summarise</span><span class="p">(</span><span class="n">total_invested</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">invested</span><span class="p">),</span><span class="w">
+              </span><span class="n">total_withdrawn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">withdrawn</span><span class="p">),</span><span class="w">
+              </span><span class="n">total_extracted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">extracted</span><span class="p">),</span><span class="w">
+              </span><span class="n">paper_value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">value</span><span class="p">),</span><span class="w">
+              </span><span class="n">months</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">unique</span><span class="p">(</span><span class="n">time_period</span><span class="p">),</span><span class="w">
+              </span><span class="n">total_investors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">max</span><span class="p">(</span><span class="n">id</span><span class="p">),</span><span class="w">
+              </span><span class="n">leverage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="n">paper_value</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">total_invested</span><span class="p">),</span><span class="w">
+              </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w">
+  
+  </span><span class="nf">return</span><span class="p">(</span><span class="n">this_sim</span><span class="p">)</span><span class="w">
+  
+</span><span class="p">}</span></code></pre></figure>
+
+<p>This took half an hour or more to run (I didn’t time it). Most of the scenarios are quick to run, but those where the number of new investors increases by around 1.8 times per month (ie nearly doubling) can go for a long time. How long? Let’s see the impact of all those parameters on the time each scheme could run before it collapsed:</p>
+
+<object type="image/svg+xml" data="/img/0283-months.svg" width="100%"><img src="/img/0283-months.png" width="100%" /></object>
+
+<p>The interesting turning point in these charts comes when the number in new victim/investors hits the ceiling of 10 million people. Growth rates can’t conceiveably keep on forever like this. But what we see here is that, a few random cases aside, the best chance of prolonging a Ponzi scheme is to have one where the exit rate (ie the proportion of investors who try to pull all their paper value out of the scheme at once) is as low as possible. Which seems intuitive.</p>
+
+<p>We get a different angle when we focus not on how long the scheme continues, but on the total dollar value extracted by the scammers:</p>
+
+<object type="image/svg+xml" data="/img/0283-extract.svg" width="100%"><img src="/img/0283-extract.png" width="100%" /></object>
+
+<p>Again we see that things flattern out in those scams that hit the 10 million person ceiling (which by the way is absurdly too high to be realistic - I hope). But we can clearly see that the schemes that make the most money for the scammers are those with growth rates of 1.5 or higher, high extraction rates, and low withdrawal rates. Which is all intuitive.</p>
+
+<p>Those two charts were drawn with this code:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">results</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">left_join</span><span class="p">(</span><span class="n">params</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"i"</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">extraction_rate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">glue</span><span class="p">(</span><span class="s2">"Extrct: {extraction_rate}"</span><span class="p">),</span><span class="w">
+         </span><span class="n">withdraw_all_rate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">glue</span><span class="p">(</span><span class="s2">"Exit: {withdraw_all_rate}"</span><span class="p">))</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">investor_growth</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">months</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">as.ordered</span><span class="p">(</span><span class="n">cv</span><span class="p">)))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">facet_grid</span><span class="p">(</span><span class="n">extraction_rate</span><span class="o">~</span><span class="n">withdraw_all_rate</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_jitter</span><span class="p">()</span><span class="w">  </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Variation in investor amounts"</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Length of scam (in months)"</span><span class="p">,</span><span class="w">
+       </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Monthly growth in number of 'investors'\n(2 = doubling per month; capped at 10 million)"</span><span class="p">,</span><span class="w">
+       </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"A low 'exit rate' (by investors/victims) is key to prolonging a Ponzi scheme"</span><span class="p">,</span><span class="w">
+       </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"How long can a Ponzi scheme last?"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">p4</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">results</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">left_join</span><span class="p">(</span><span class="n">params</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"i"</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">mutate</span><span class="p">(</span><span class="n">extraction_rate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">glue</span><span class="p">(</span><span class="s2">"'Tax' scammed:\n{extraction_rate}"</span><span class="p">),</span><span class="w">
+         </span><span class="n">withdraw_all_rate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">glue</span><span class="p">(</span><span class="s2">"Exit: {withdraw_all_rate}"</span><span class="p">))</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">investor_growth</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">total_extracted</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">as.ordered</span><span class="p">(</span><span class="n">cv</span><span class="p">)))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">facet_grid</span><span class="p">(</span><span class="n">extraction_rate</span><span class="o">~</span><span class="n">withdraw_all_rate</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">geom_jitter</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">scale_y_log10</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dollar</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="n">labs</span><span class="p">(</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Variation in investor amounts"</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Total extracted by scammers"</span><span class="p">,</span><span class="w">
+       </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Monthly growth in number of 'investors'\n(2 = doubling per month; capped at 10 million)"</span><span class="p">,</span><span class="w">
+       </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Key success factor for getting rich from a Ponzi scheme is to quickly and consistently grow your 'investors' and extract as much 'tax' you can."</span><span class="p">,</span><span class="w">
+       </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"How much can the scammers extract from a Ponzi scheme?"</span><span class="p">)</span></code></pre></figure>
+
+<p>Now, I don’t know what set of parameters are realistic for different scams. In a different world, we could observe a bunch of these things - how long scams continue, the growth rate in victim/investors, what proportion of them withdraw their money or invest more, and so on, and create real-life calibrated models. In fact, it seems likely to me that someone has done this! I haven’t bothered to look, because my interest is basically whimsical and curiousity. And I’ve scratched that itch sufficiently to get an idea that maintaining a Ponzi scheme that promises to double investors’ money every month is going to be very, very hard to maintain for more than 10 months.</p>
+
+<h2 id="supporting-code">Supporting code</h2>
+
+<p>This section has the code defining functions used in the main part of the blog. You have to run these definitions before running the code above, if you are following along. Or you could just go to <a href="https://github.com/ellisp/blog-source/blob/master/_working/0283-ponzi.R">the source of the blog</a> to see it directly as run by me.</p>
+
+<p>I’ve put this stuff at the end of the blog because it’s quite long and I thought likely to put off people who wanted to just read about Ponzi schemes.</p>
+
+<h3 id="log-normal-distrbution">Log-normal distrbution</h3>
+
+<p>First there’s a little function to generate samples from a log normal distribution. Now of course there is a function in R to do this already, <code class="language-plaintext highlighter-rouge">rlognorm()</code>, but it is parameterised by the mean and standard deviation of the underlying normal distribution that you get by taking the logarithm of the distribution we actually observe. I wanted, for easy interpretability, to be able to specify the mean and standard deviation (or in the end I chose the coefficient of variation, which is just the standard deviation except, well, standardised so it is described relative to the mean). I was surprised to find there wasn’t already a function doing this; probably if I looked I harder I’d find one. But this is what I ended up with from rolling my own:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">foreach</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">doParallel</span><span class="p">)</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">glue</span><span class="p">)</span><span class="w">
+
+</span><span class="cd">#' Generate samples from a log normal distribvution given E(X) and coefficient</span><span class="w">
+</span><span class="cd">#' of variation</span><span class="w">
+</span><span class="cd">#'</span><span class="w">
+</span><span class="cd">#' @param n number of samples to generate</span><span class="w">
+</span><span class="cd">#' @param ex expected value of the distribution, on its observed (not log) scale</span><span class="w">
+</span><span class="cd">#' @param cv coefficient of variation (ie standard deviation as a proportion of</span><span class="w">
+</span><span class="cd">#'   the mean) of the distribution, on its observed (not log) scale</span><span class="w">
+</span><span class="cd">#' @details Only needed because rlnorm() has the parameters of the Normal</span><span class="w">
+</span><span class="cd">#'   distribution that log(X) follows and I wanted a version that used the</span><span class="w">
+</span><span class="cd">#'   actual mean of X and its coefficient of variation.</span><span class="w">
+</span><span class="cd">#' </span><span class="w">
+</span><span class="n">rlognormal</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">ex</span><span class="p">,</span><span class="w"> </span><span class="n">cv</span><span class="p">){</span><span class="w">
+  </span><span class="k">if</span><span class="p">(</span><span class="n">cv</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">0</span><span class="p">){</span><span class="w">
+    </span><span class="n">output</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">rep</span><span class="p">(</span><span class="n">ex</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">)</span><span class="w">
+  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">
+    
+    </span><span class="n">sdlog</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">sqrt</span><span class="p">(</span><span class="nf">log</span><span class="p">(</span><span class="n">cv</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">1</span><span class="p">))</span><span class="w"> 
+    
+    </span><span class="n">meanlog</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">log</span><span class="p">(</span><span class="n">ex</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="p">(</span><span class="n">sdlog</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="m">2</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">2</span><span class="w">
+    
+    
+    </span><span class="n">output</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">rlnorm</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">meanlog</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">meanlog</span><span class="p">,</span><span class="w"> </span><span class="n">sdlog</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sdlog</span><span class="p">)</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+  
+  </span><span class="nf">return</span><span class="p">(</span><span class="n">output</span><span class="p">)</span><span class="w">
+  
+</span><span class="p">}</span><span class="w">
+
+</span><span class="c1"># check that this function works</span><span class="w">
+
+</span><span class="c1"># If cv is zero, should just return a whole bunch of ex (i.e. 100):</span><span class="w">
+</span><span class="n">stopifnot</span><span class="p">(</span><span class="n">mean</span><span class="p">(</span><span class="n">rlognormal</span><span class="p">(</span><span class="m">1000</span><span class="p">,</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">))</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">100</span><span class="p">)</span><span class="w">
+</span><span class="n">stopifnot</span><span class="p">(</span><span class="n">sd</span><span class="p">(</span><span class="n">rlognormal</span><span class="p">(</span><span class="m">1000</span><span class="p">,</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w"> </span><span class="m">0</span><span class="p">))</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># If cv is not zero, check that the mean and coefficient of variation</span><span class="w">
+</span><span class="c1"># are as expectd:</span><span class="w">
+</span><span class="n">set.seed</span><span class="p">(</span><span class="m">321</span><span class="p">)</span><span class="w">
+</span><span class="n">stopifnot</span><span class="p">(</span><span class="nf">round</span><span class="p">(</span><span class="n">mean</span><span class="p">(</span><span class="n">rlognormal</span><span class="p">(</span><span class="m">100000</span><span class="p">,</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w"> </span><span class="m">0.5</span><span class="p">)))</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">100</span><span class="p">)</span><span class="w">
+</span><span class="n">stopifnot</span><span class="p">(</span><span class="nf">round</span><span class="p">(</span><span class="n">sd</span><span class="p">(</span><span class="n">rlognormal</span><span class="p">(</span><span class="m">100000</span><span class="p">,</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w"> </span><span class="m">0.5</span><span class="p">))</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">0.5</span><span class="p">)</span></code></pre></figure>
+
+<p>Those tests are all passed ok. Here are a couple of demo distributions:</p>
+
+<object type="image/svg+xml" data="/img/0283-log-normal.svg" width="100%"><img src="/img/0283-log-normal.png" width="100%" /></object>
+
+<p>produced with:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">par</span><span class="p">(</span><span class="n">bty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"l"</span><span class="p">,</span><span class="w"> </span><span class="n">mfrow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">2</span><span class="p">))</span><span class="w">
+</span><span class="n">plot</span><span class="p">(</span><span class="n">density</span><span class="p">(</span><span class="n">rlognormal</span><span class="p">(</span><span class="m">1000</span><span class="p">,</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w"> </span><span class="n">cv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.5</span><span class="p">)),</span><span class="w"> 
+     </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Log-normal distribution,\nmean 100 and cv 0.5"</span><span class="p">)</span><span class="w">
+</span><span class="n">plot</span><span class="p">(</span><span class="n">density</span><span class="p">(</span><span class="n">rlognormal</span><span class="p">(</span><span class="m">1000</span><span class="p">,</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w"> </span><span class="n">cv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">)),</span><span class="w"> 
+     </span><span class="n">main</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Log-normal distribution\nmean 100 and cv 2"</span><span class="p">)</span></code></pre></figure>
+
+<h3 id="ponzi-scheme">Ponzi scheme</h3>
+
+<p>Here’s the code for the main workhorse function simulating the Ponzi scheme</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="cd">#' Simulate ponzi scheme that doubles in paper value each time period</span><span class="w">
+</span><span class="cd">#'</span><span class="w">
+</span><span class="cd">#' @param number_investors vector of number of new investors joining the scheme</span><span class="w">
+</span><span class="cd">#'   each time period. If this is less than 2000 time periods long it will be</span><span class="w">
+</span><span class="cd">#'   filled out with repeats of the last element.</span><span class="w">
+</span><span class="cd">#' @param mu average investment of each investor when they first join or invest</span><span class="w">
+</span><span class="cd">#'   further</span><span class="w">
+</span><span class="cd">#' @param cv coefficient of variation of the amount that investors each invest</span><span class="w">
+</span><span class="cd">#' @param invest_more_rate the proportion of investors in each time period that</span><span class="w">
+</span><span class="cd">#'   invest additional funds</span><span class="w">
+</span><span class="cd">#' @param withdraw_small_rate the proportion of investors in each time period</span><span class="w">
+</span><span class="cd">#'   that withdraw a small amount equivalent to their original investment</span><span class="w">
+</span><span class="cd">#' @param withdraw_all_rate the proportion of investors in each time period that</span><span class="w">
+</span><span class="cd">#'   withdraw the entire paper value of their investment</span><span class="w">
+</span><span class="cd">#' @param roll_over_rate the proportion of investors who simply leave their</span><span class="w">
+</span><span class="cd">#'   investment as it is at the end of each investment, neither withdrawing or</span><span class="w">
+</span><span class="cd">#'   investing further</span><span class="w">
+</span><span class="cd">#' @param ceiling the maximum number of investors that can ever be involved in</span><span class="w">
+</span><span class="cd">#'   the scheme, including those that have already withdrawn all funds. If the</span><span class="w">
+</span><span class="cd">#'   cumulative sum of number_investors exceeds ceiling then no more investors</span><span class="w">
+</span><span class="cd">#'   are added ie \code{ceiling} overrides \code{number_investors}</span><span class="w">
+</span><span class="cd">#' @param extraction_rate The proportion of the total real value of the scheme</span><span class="w">
+</span><span class="cd">#'   that the owners extract for their own use, each time period</span><span class="w">
+</span><span class="cd">#' @param keep_history whether to return the state of the scheme at each</span><span class="w">
+</span><span class="cd">#'   time_period (if TRUE), or only the final state (if FALSe)</span><span class="w">
+</span><span class="cd">#' @param time_multiplier how much the investors are promised their investment</span><span class="w">
+</span><span class="cd">#'   increases by each time period; defaults to 2 ie doubling</span><span class="w">
+</span><span class="n">ponzi</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">number_investors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">100</span><span class="p">,</span><span class="w"> </span><span class="m">100</span><span class="o">:</span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="m">10</span><span class="p">,</span><span class="w"> 
+                  </span><span class="n">mu</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w"> 
+                  </span><span class="n">cv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w"> 
+                  </span><span class="n">invest_more_rate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.1</span><span class="p">,</span><span class="w">
+                  </span><span class="n">withdraw_small_rate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.1</span><span class="p">,</span><span class="w">
+                  </span><span class="n">withdraw_all_rate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.05</span><span class="p">,</span><span class="w">
+                  </span><span class="n">roll_over_rate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="m">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">invest_more_rate</span><span class="w"> </span><span class="o">-</span><span class="w"> 
+                                         </span><span class="n">withdraw_small_rate</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">withdraw_all_rate</span><span class="p">),</span><span class="w">
+                  </span><span class="n">ceiling</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1e7</span><span class="p">,</span><span class="w">
+                  </span><span class="n">extraction_rate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.01</span><span class="p">,</span><span class="w">
+                  </span><span class="n">keep_history</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w">
+                  </span><span class="n">time_multiplier</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="p">){</span><span class="w">
+  
+  </span><span class="c1">#---------checks on number of investors------------</span><span class="w">
+  </span><span class="k">if</span><span class="p">(</span><span class="nf">min</span><span class="p">(</span><span class="n">number_investors</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">0</span><span class="p">){</span><span class="w">
+    </span><span class="n">stop</span><span class="p">(</span><span class="s2">"number_investors should be a vector of numbers of 0 or greater"</span><span class="p">)</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+  
+  </span><span class="k">if</span><span class="p">(</span><span class="n">number_investors</span><span class="p">[</span><span class="m">1</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">1</span><span class="p">){</span><span class="w">
+    </span><span class="n">stop</span><span class="p">(</span><span class="s2">"First element of number_investors should be greater than 0"</span><span class="p">)</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+  
+  </span><span class="n">number_investors</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="n">number_investors</span><span class="p">)</span><span class="w">
+  
+  </span><span class="c1"># make sure we have enough for 2000 time periods</span><span class="w">
+  </span><span class="n">nni</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">number_investors</span><span class="p">)</span><span class="w"> 
+  </span><span class="k">if</span><span class="p">(</span><span class="n">nni</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">2000</span><span class="p">){</span><span class="w">
+    </span><span class="n">number_investors</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">number_investors</span><span class="p">,</span><span class="w"> 
+                          </span><span class="nf">rep</span><span class="p">(</span><span class="n">number_investors</span><span class="p">[</span><span class="nf">length</span><span class="p">(</span><span class="n">number_investors</span><span class="p">)]),</span><span class="w"> </span><span class="m">2000</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">nni</span><span class="p">)</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+  
+  </span><span class="c1">#--------------Other checks--------------</span><span class="w">
+  </span><span class="k">if</span><span class="p">(</span><span class="n">invest_more_rate</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">withdraw_small_rate</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">withdraw_all_rate</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">roll_over_rate</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="m">1</span><span class="p">){</span><span class="w">
+    </span><span class="n">stop</span><span class="p">(</span><span class="s2">"invest_more_rate, withdraw_small_rate, withdraw_all_rate and roll_over_rate should add to one"</span><span class="p">)</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+  
+  </span><span class="k">if</span><span class="p">(</span><span class="n">extraction_rate</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">extraction_rate</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">1</span><span class="p">){</span><span class="w">
+    </span><span class="n">stop</span><span class="p">(</span><span class="s2">"extraction_rate should be between zero and one"</span><span class="p">)</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+  
+  </span><span class="c1">#---------------------set up month 1------------------</span><span class="w">
+  </span><span class="n">number_new_investors</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">number_investors</span><span class="p">[</span><span class="m">1</span><span class="p">]</span><span class="w">
+  
+  </span><span class="n">status</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tibble</span><span class="p">(</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">number_new_investors</span><span class="p">,</span><span class="w">
+                   </span><span class="n">invested</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rlognormal</span><span class="p">(</span><span class="n">number_new_investors</span><span class="p">,</span><span class="w"> </span><span class="n">mu</span><span class="p">,</span><span class="w"> </span><span class="n">cv</span><span class="p">),</span><span class="w">
+                   </span><span class="n">value_tmp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">invested</span><span class="p">,</span><span class="w">
+                   </span><span class="n">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">invested</span><span class="p">,</span><span class="w">
+                   </span><span class="n">withdrawn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w">
+                   </span><span class="n">time_period</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w">
+                   </span><span class="n">extracted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w">
+  
+  </span><span class="n">cash_on_hand</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">with</span><span class="p">(</span><span class="n">status</span><span class="p">,</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">invested</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">withdrawn</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">extracted</span><span class="p">))</span><span class="w">
+  
+  </span><span class="c1">#---------------------months 2 and onwards---------------------</span><span class="w">
+  </span><span class="k">while</span><span class="p">(</span><span class="n">cash_on_hand</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="nf">max</span><span class="p">(</span><span class="n">status</span><span class="o">$</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">ceiling</span><span class="p">){</span><span class="w">
+    
+    </span><span class="c1"># we make a new state for our existing investors, which is going to later be</span><span class="w">
+    </span><span class="c1"># appended to the state so far:</span><span class="w">
+    </span><span class="n">update</span><span class="w"> </span><span class="o">&lt;-</span><span class="w">  </span><span class="n">status</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+      </span><span class="c1"># limit to the state from the last time_period:</span><span class="w">
+      </span><span class="n">filter</span><span class="p">(</span><span class="n">time_period</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nf">max</span><span class="p">(</span><span class="n">time_period</span><span class="p">))</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+      </span><span class="c1"># Double the 'value' of existing investments</span><span class="w">
+      </span><span class="n">mutate</span><span class="p">(</span><span class="n">value_tmp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value_tmp</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">time_multiplier</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+      </span><span class="c1"># Decide for each investor what they are going to do this time period:</span><span class="w">
+      </span><span class="n">mutate</span><span class="p">(</span><span class="n">action</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sample</span><span class="p">(</span><span class="nf">c</span><span class="p">(</span><span class="s2">"withdraw_all"</span><span class="p">,</span><span class="w"> </span><span class="s2">"withdraw_small"</span><span class="p">,</span><span class="w"> </span><span class="s2">"rollover"</span><span class="p">,</span><span class="w"> </span><span class="s2">"invest"</span><span class="p">),</span><span class="w">
+                             </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">(),</span><span class="w">
+                             </span><span class="n">replace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">,</span><span class="w">
+                             </span><span class="n">prob</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="n">withdraw_all_rate</span><span class="p">,</span><span class="w"> </span><span class="n">withdraw_small_rate</span><span class="p">,</span><span class="w"> 
+                                      </span><span class="n">roll_over_rate</span><span class="p">,</span><span class="w"> </span><span class="n">invest_more_rate</span><span class="p">)))</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+      </span><span class="c1"># An incremental amount which might be used for furhter investments or for withdrawals:</span><span class="w">
+      </span><span class="n">mutate</span><span class="p">(</span><span class="n">incr_tmp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rlognormal</span><span class="p">(</span><span class="n">n</span><span class="p">(),</span><span class="w"> </span><span class="n">mu</span><span class="p">,</span><span class="w"> </span><span class="n">cv</span><span class="p">))</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+      </span><span class="c1"># some people try to withdraw their paper value. This increases the amount</span><span class="w">
+      </span><span class="c1"># they have ever withdrawn:</span><span class="w">
+      </span><span class="n">mutate</span><span class="p">(</span><span class="n">withdrawn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">case_when</span><span class="p">(</span><span class="w">
+        </span><span class="n">action</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"withdraw_all"</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">withdrawn</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">value_tmp</span><span class="p">,</span><span class="w">
+        </span><span class="n">action</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"withdraw_small"</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">withdrawn</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">incr_tmp</span><span class="p">,</span><span class="w">
+        </span><span class="kc">TRUE</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">withdrawn</span><span class="w">
+      </span><span class="p">))</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+      </span><span class="c1"># ... and decreases their paper value by the same amount</span><span class="w">
+      </span><span class="n">mutate</span><span class="p">(</span><span class="n">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">case_when</span><span class="p">(</span><span class="w">
+        </span><span class="n">action</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"withdraw_all"</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w">
+        </span><span class="n">action</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"withdraw_small"</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">value_tmp</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">incr_tmp</span><span class="p">,</span><span class="w">
+        </span><span class="n">action</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"rollover"</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">value_tmp</span><span class="p">,</span><span class="w">
+        </span><span class="n">action</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"invest"</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">value_tmp</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">incr_tmp</span><span class="w">
+      </span><span class="p">))</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+      </span><span class="c1"># Some other people choose to invest more:</span><span class="w">
+      </span><span class="n">mutate</span><span class="p">(</span><span class="n">invested</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">case_when</span><span class="p">(</span><span class="w">
+        </span><span class="n">action</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"invest"</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">invested</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">incr_tmp</span><span class="p">,</span><span class="w">
+        </span><span class="kc">TRUE</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">invested</span><span class="w">
+      </span><span class="p">))</span><span class="w">  </span><span class="o">|&gt;</span><span class="w">
+      </span><span class="c1"># the people running the Ponzi scheme extract a percentage of the</span><span class="w">
+      </span><span class="c1"># real money available, calculated per investor (so fully withdrawn</span><span class="w">
+      </span><span class="c1"># investors not included):</span><span class="w">
+      </span><span class="n">mutate</span><span class="p">(</span><span class="n">extract_tmp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pmax</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">invested</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">withdrawn</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">extracted</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">extraction_rate</span><span class="p">),</span><span class="w">
+             </span><span class="n">extracted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">extracted</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">extract_tmp</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+      </span><span class="n">select</span><span class="p">(</span><span class="o">-</span><span class="n">action</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">incr_tmp</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">extract_tmp</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+      </span><span class="c1"># time period goes up one:</span><span class="w">
+      </span><span class="n">mutate</span><span class="p">(</span><span class="n">time_period</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">max</span><span class="p">(</span><span class="n">status</span><span class="o">$</span><span class="n">time_period</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">1</span><span class="p">))</span><span class="w">
+    
+    </span><span class="c1"># We are also going to get a number of new investors:</span><span class="w">
+    </span><span class="n">number_new_investors</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">number_investors</span><span class="p">[</span><span class="n">unique</span><span class="p">(</span><span class="n">update</span><span class="o">$</span><span class="n">time_period</span><span class="p">)]</span><span class="w">
+    </span><span class="k">if</span><span class="p">(</span><span class="n">number_new_investors</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">0</span><span class="p">){</span><span class="w">
+    
+      </span><span class="n">new_investors</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tibble</span><span class="p">(</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="o">:</span><span class="n">number_new_investors</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nf">max</span><span class="p">(</span><span class="n">status</span><span class="o">$</span><span class="n">id</span><span class="p">),</span><span class="w">
+                              </span><span class="n">invested</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rlognormal</span><span class="p">(</span><span class="n">number_new_investors</span><span class="p">,</span><span class="w"> </span><span class="n">mu</span><span class="p">,</span><span class="w"> </span><span class="n">cv</span><span class="p">),</span><span class="w">
+                              </span><span class="n">value_tmp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">invested</span><span class="p">,</span><span class="w">
+                              </span><span class="n">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">invested</span><span class="p">,</span><span class="w">
+                              </span><span class="n">withdrawn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span><span class="w">
+                              </span><span class="n">time_period</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">unique</span><span class="p">(</span><span class="n">update</span><span class="o">$</span><span class="n">time_period</span><span class="p">),</span><span class="w">
+                              </span><span class="n">extracted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w">
+    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">
+      </span><span class="n">new_investors</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tibble</span><span class="p">()</span><span class="w">
+    </span><span class="p">}</span><span class="w">  
+    
+    </span><span class="c1"># depending on whether the user wants all the history, we either append our</span><span class="w">
+    </span><span class="c1"># new update for the previous investors and our new investors to the old state,</span><span class="w">
+    </span><span class="c1"># or we just keep the latest update on previous investors plus our new investors:</span><span class="w">
+    </span><span class="k">if</span><span class="p">(</span><span class="n">keep_history</span><span class="p">){</span><span class="w">
+      </span><span class="n">status</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">rbind</span><span class="p">(</span><span class="n">status</span><span class="p">,</span><span class="w"> </span><span class="n">update</span><span class="p">,</span><span class="w"> </span><span class="n">new_investors</span><span class="p">)</span><span class="w">
+    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">
+      </span><span class="n">status</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">rbind</span><span class="p">(</span><span class="n">update</span><span class="p">,</span><span class="w"> </span><span class="n">new_investors</span><span class="p">)</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+    
+    </span><span class="c1"># We need to determine if the scheme has gone bust, by calculating its</span><span class="w">
+    </span><span class="c1"># actual cash available (the amount invested so far, minus the total</span><span class="w">
+    </span><span class="c1"># withdrawn and total extracted)</span><span class="w">
+    </span><span class="n">cash_on_hand</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+      </span><span class="n">filter</span><span class="p">(</span><span class="n">time_period</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nf">max</span><span class="p">(</span><span class="n">time_period</span><span class="p">))</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+      </span><span class="n">summarise</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">invested</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">withdrawn</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">extracted</span><span class="p">))</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+      </span><span class="n">pull</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w">
+    
+  </span><span class="p">}</span><span class="w">  
+  
+  </span><span class="nf">return</span><span class="p">(</span><span class="n">status</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span></code></pre></figure>
+
+<h3 id="ponzi-summary-table-and-plot">Ponzi summary table and plot</h3>
+
+<p>Finally, here’s a function that takes the output of a single Ponzi simulation and draws the chart showing extraction, paper value, and real value invested over time.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">ponzi_plot</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">status</span><span class="p">,</span><span class="w"> </span><span class="n">return_numbers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">){</span><span class="w">
+
+  </span><span class="n">numbers</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">status</span><span class="w">  </span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">dplyr</span><span class="o">::</span><span class="n">filter</span><span class="p">(</span><span class="n">time_period</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nf">max</span><span class="p">(</span><span class="n">time_period</span><span class="p">))</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">dplyr</span><span class="o">::</span><span class="n">summarise</span><span class="p">(</span><span class="n">total_invested</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">invested</span><span class="p">),</span><span class="w">
+              </span><span class="n">total_withdrawn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">withdrawn</span><span class="p">),</span><span class="w">
+              </span><span class="n">total_extracted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">extracted</span><span class="p">),</span><span class="w">
+              </span><span class="n">paper_value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">value</span><span class="p">),</span><span class="w">
+              </span><span class="n">months</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">unique</span><span class="p">(</span><span class="n">time_period</span><span class="p">),</span><span class="w">
+              </span><span class="n">total_investors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">max</span><span class="p">(</span><span class="n">id</span><span class="p">),</span><span class="w">
+              </span><span class="n">leverage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">round</span><span class="p">(</span><span class="n">paper_value</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">total_invested</span><span class="p">))</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">t</span><span class="p">()</span><span class="w">
+  
+  </span><span class="n">plot</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">status</span><span class="w">  </span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">dplyr</span><span class="o">::</span><span class="n">group_by</span><span class="p">(</span><span class="n">time_period</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">dplyr</span><span class="o">::</span><span class="n">summarise</span><span class="p">(</span><span class="n">`Paper value`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">value</span><span class="p">),</span><span class="w">
+              </span><span class="n">`Real value`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pmax</span><span class="p">(</span><span class="m">0</span><span class="p">,</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">invested</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">withdrawn</span><span class="p">)),</span><span class="w">
+              </span><span class="n">`Extracted by scammers`</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">extracted</span><span class="p">))</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">tidyr</span><span class="o">::</span><span class="n">gather</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">time_period</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+    </span><span class="n">ggplot2</span><span class="o">::</span><span class="n">ggplot</span><span class="p">(</span><span class="n">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">time_period</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">variable</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">ggplot2</span><span class="o">::</span><span class="n">geom_line</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">ggplot2</span><span class="o">::</span><span class="n">scale_y_log10</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dollar</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">labs</span><span class="p">(</span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Value"</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Number of months"</span><span class="p">)</span><span class="w">
+  
+  </span><span class="k">if</span><span class="p">(</span><span class="n">return_numbers</span><span class="p">){</span><span class="w">
+    </span><span class="nf">return</span><span class="p">(</span><span class="n">numbers</span><span class="p">)</span><span class="w">
+  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nf">return</span><span class="p">(</span><span class="n">plot</span><span class="p">)</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span></code></pre></figure>
+
+<p>That’s all folks. Take care out there, and if the rate of return on a proposed investment is too good to be true, it probably isn’t true.</p>
+
+
+
+		
+	</div>
+</div>
+
+<div class="col-md-1"></div>
+<div class="col-md-4">
+	<div class="side-banner">
+	
+
+
+	<div>
+	   
+	    
+			
+			<p>&larr; Previous post</p>
+			<p><a rel="prev" href="/blog/2024/11/16/design-effects">Design effects for stratified sub-populations</a></p>
+		
+		
+		
+		
+		
+		
+	</div>
+	
+	 
+
+   <div class = "side-footer">
+			
+			<hr></hr>
+			<p><gcse:search></gcse:search></p>
+			<hr></hr>
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.</p>
+			<p>Find me on <a rel="me" href="https://mastodon.social/@peter_ellis">Mastodon</a>.</p>
+			<hr></hr>
+			
+			<p>My day job is Director of the <a href='https://sdd.spc.int/'>Statistics for Development Division</a> at the Pacific Community, the principal scientific and technical organisation in the Pacific region, proudly supporting development since 1947. We are an international development organisation owned and governed by our 27 country and territory members. This blog is not part of my role there and contains my personal views only.</p>
+		
+		    <hr></hr>
+			
+       <div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="false" data-share="false"></div>
+			
+			<hr></hr>
+			<p>I'm pleased to be aggregated at <a href="https://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+			<hr></hr>
+
+			
+			<p>			
+            <span xmlns:dct="https://purl.org/dc/terms/" property="dct:title"><i>free range statistics</i></span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			<hr></hr>
+			
+
+
+    </div>
+
+
+
+  
+   
+
+
+
+
+		  
+		  
+
+
+
+	   
+	<div id="disqus_thread"></div>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function() {
+				var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+				dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+				(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+			})();
+		</script>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function () {
+				var s = document.createElement('script'); s.async = true;
+				s.type = 'text/javascript';
+				s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+				(document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+			}());
+		</script>
+
+	<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+	</div>	
+</div>    
+   
+   
+
+			
+			</div><!-- /.container -->
+         
+   <!-- Default Statcounter code for Free Range Statistics https://freerangestats.info -->
+<script type="text/javascript">
+var sc_project=11673245; 
+var sc_invisible=1; 
+var sc_security="5b7111a4"; 
+</script>
+<script type="text/javascript"
+src="https://www.statcounter.com/counter/counter.js" async></script>
+<noscript><div class="statcounter"><a title="Web Analytics"
+href="https://statcounter.com/" target="_blank"><img class="statcounter"
+src="//c.statcounter.com/11673245/0/5b7111a4/1/" alt="Web
+Analytics"></a></div></noscript>
+<!-- End of Statcounter Code -->
+
+</body>   
+</html>
