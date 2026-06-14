@@ -1,0 +1,652 @@
+      <!DOCTYPE html>
+	<html lang="en">
+		<head>
+      <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+			<title>Seasonal adjustment</title>
+      	
+         
+         
+            <meta name ="description" content ="Seasonal adjustment is easy but getting hold of data can be hard. In this case I wrangle Samoa's monthly visitor arrivals data from 2017 to present and then use the seas and fable R packages to seasonally adjust it and ask if there is an impact from Iran war fuel crisis (there isn't evidence of one yet).">
+            <meta property="og:description" content ="Seasonal adjustment is easy but getting hold of data can be hard. In this case I wrangle Samoa's monthly visitor arrivals data from 2017 to present and then use the seas and fable R packages to seasonally adjust it and ask if there is an impact from Iran war fuel crisis (there isn't evidence of one yet).">
+         
+         <meta property="og:site_name" content="free range statistics" />
+         <meta property="og:title" content="Seasonal adjustment" />
+         
+            <meta property="og:image" content="https:/freerangestats.info/img/0322-final-presentation.png" />
+         
+		 
+			<meta property="og:url" content="https://freerangestats.info/blog/2026/06/14/samoa-seasonal-adjustment.html" />
+		 
+         <meta property="og:author" content= "https://www.facebook.com/peterstats" />
+         <meta property="og:type" content="article" />
+      
+
+<link href='https://fonts.googleapis.com/css?family=Sarala' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Prosto+One' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=Ubuntu+Mono' rel='stylesheet'>
+	  
+          <link href="/css/bootstrap.min.css" rel ="stylesheet" type="text/css">
+          <link href="/css/bootstrap-theme.min.css" rel ="stylesheet" type="text/css">
+            <link href="/css/custom.css" rel ="stylesheet" type="text/css">     
+		<link href="/css/syntax.css" rel ="stylesheet" type="text/css">     			
+                 
+            
+   <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-65886313-1', 'auto');
+     ga('send', 'pageview');
+
+   </script>
+   
+   <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+
+   <style>
+    ul li { margin-bottom: 9px; }
+    ol li { margin-bottom: 9px; }
+   </style>
+   
+   <link rel="alternate" type="application/rss+xml" title="free range statistics by Peter Ellis"
+      href="/feed.xml">
+
+	  
+
+      
+		</head>
+      
+  <body role = "document">
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        
+		<div id="fb-root"></div>
+		<script>(function(d, s, id) {
+		  var js, fjs = d.getElementsByTagName(s)[0];
+		  if (d.getElementById(id)) return;
+		  js = d.createElement(s); js.id = id;
+		  js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.6";
+		  fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));</script>
+  
+  <script>
+  (function() {
+    var cx = '015640467633673901770:pk3v2c95baw';
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+  })();
+</script>
+
+  
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">free range statistics</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/about">about</a></li>
+            <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">all posts <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="/blog">ordered by date</a></li>
+	        <!--	  <li><a href="/blog/most-popular.html">ordered by popularity</a></li> -->
+                  <li><a href="/blog/index_by_tag.html">grouped by subject matter</a></li>
+                  <li><a href="/blog/pacific.html">all posts with data about Pacific island countries and territories</a></li>
+                  <li><a href="/blog/nz.html">all posts with data about New Zealand</a></li>
+				  <li><a href="/blog/voting.html">all posts on voting behaviour</a></li>
+                  <li><a href="/blog/surveys.html">all posts on surveys</a></li> 
+				  <li><a href = /blog/2026/06/14/samoa-seasonal-adjustment>most recent post</a></li>
+				</ul>
+            </li>
+              <li><a href="/blog/showcase.html">showcase</a></li>
+              <li><a href="/presentations/index.html">presentations</a></li>
+			  <li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">forecasts<span class="caret"></span></a>
+                <ul class="dropdown-menu">
+				  <li><a href = "/covid-tracking/index.html">Covid-19 in Australia</a></li>
+                  <li><a href = "/elections/nz-2020/index.html">NZ election 2020</a></li>
+                  <li><a href = "/elections/oz-2019/index.html">Australia federal election 2019</a></li>
+				  <li><a href = "/elections/nz-2017/combined.html">NZ election 2017</a></li>
+                  <li><a href="/blog/voting.html">all blog posts on voting behaviour</a></li>
+                </ul>				
+			  </li>
+			  
+			  
+			  
+		    </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+  
+  
+      
+			<div class="container">
+			
+			<div class="jumbotron">
+  <div class="container">
+	<center><h1>Seasonal adjustment</h1></center>
+  </div>
+</div>
+
+
+
+	<div class = "post-summary">
+	<h2>At a glance:</h2>
+	   <p>Seasonal adjustment is easy but getting hold of data can be hard. In this case I wrangle Samoa's monthly visitor arrivals data from 2017 to present and then use the seas and fable R packages to seasonally adjust it and ask if there is an impact from Iran war fuel crisis (there isn't evidence of one yet).</p>
+	   <p class="meta">14 Jun 2026</p>
+	   <hr></hr>
+	</div>
+
+
+<div class="col-md-7">
+
+	<div class="post">
+		
+	  <p>A reasonably straightforward post today. I wanted to look at monthly tourism numbers in Samoa. In fact I started to do this for Pacific islands in general, but the data wrangling challenges were sufficient that I only got as far as Samoa for now. There’s interest in these at the moment because they would be a relatively timely indicator of possible economic damage from the fuel crisis related to the Iran war. Visitor numbers, inflation, and merchandise trade are part of the very select number of monthly published economic statistics in this part of the world (for a select subset of countries).</p>
+
+<p>There’s two things happening in this post:</p>
+
+<ul>
+  <li>getting hold of the Samoa’s visitor arrivals numbers; and</li>
+  <li>seasonally adjusting them.</li>
+</ul>
+
+<p>The latter is more interesting to me than the former, but unfortunately the former took most of the time.</p>
+
+<h2 id="data-wrangling">Data wrangling</h2>
+
+<p>Here’s what the visitor numbers look like, once we’ve got them all into one data frame:</p>
+
+<object type="image/svg+xml" data="/img/0322-original.svg" width="100%"><img src="/img/0322-original.png" width="100%" /></object>
+
+<p>The Samoa Bureau of Statistics has a nice Excel workbook up to May 2023, but from that date onwards the data is only available as far as I can see in PDF reports. Luckily these are all available as links from <a href="https://www.sbs.gov.ws/migration/">a single page</a>, but there seems to be either a skill issue on my part or some kind of block on the website that stops any systematic download of them all, so I had to download all the PDFs by hand one at a time.</p>
+
+<p>Then Claude helped me write a parser to find the visitor arrivals number in each PDF. Actually, Claude wasn’t any good at actually finding the right number, but it did give me a pattern I could adapt, much as in the old days I would have used Stack Overflow. There are a lot of numbers in each PDF and we need the right one—visitor arrivals, not total arrivals (yes, that’s an em dash, but I write them all by hand). In this case it turns out that the trick is that the PDFs all include the sentence “Overall visitor numbers for the month under review stood at [number]”, and luckily there is no other use of the word “stood” in the document.</p>
+
+<p>The other fiddly thing was extracting the actual date each PDF referred to. Then everything needed to be tested. In the end, it would have been quicker to just manually type the 35 numbers I needed. But here’s the code that does all the data wrangling.</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="nf">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span><span class="w">
+</span><span class="nf">library</span><span class="p">(</span><span class="n">rvest</span><span class="p">)</span><span class="w">
+</span><span class="nf">library</span><span class="p">(</span><span class="n">httr2</span><span class="p">)</span><span class="w">
+</span><span class="nf">library</span><span class="p">(</span><span class="n">lubridate</span><span class="p">)</span><span class="w">
+</span><span class="nf">library</span><span class="p">(</span><span class="n">pdftools</span><span class="p">)</span><span class="w">   
+</span><span class="nf">library</span><span class="p">(</span><span class="n">readxl</span><span class="p">)</span><span class="w">
+</span><span class="nf">library</span><span class="p">(</span><span class="n">seasonal</span><span class="p">)</span><span class="w">
+</span><span class="nf">library</span><span class="p">(</span><span class="n">tsibble</span><span class="p">)</span><span class="w">
+</span><span class="nf">library</span><span class="p">(</span><span class="n">fable</span><span class="p">)</span><span class="w">
+</span><span class="nf">library</span><span class="p">(</span><span class="n">feasts</span><span class="p">)</span><span class="w">
+</span><span class="nf">library</span><span class="p">(</span><span class="n">ggtext</span><span class="p">)</span><span class="w">
+</span><span class="nf">library</span><span class="p">(</span><span class="n">scales</span><span class="p">)</span><span class="w">
+
+</span><span class="cd">#' Extract date from messy filenames</span><span class="w">
+</span><span class="n">extract_date</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">messy_date</span><span class="p">){</span><span class="w">
+  </span><span class="nf">tibble</span><span class="p">(</span><span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">messy_date</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="nf">mutate</span><span class="p">(</span><span class="w">
+    </span><span class="n">stem</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="n">tools</span><span class="o">::</span><span class="n">file_path_sans_ext</span><span class="p">(</span><span class="n">basename</span><span class="p">(</span><span class="n">path</span><span class="p">)),</span><span class="w">
+    </span><span class="c1"># Remove any leading word followed by _ or - (e.g. "Migration_")</span><span class="w">
+    </span><span class="n">stem</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="nf">str_remove</span><span class="p">(</span><span class="n">stem</span><span class="p">,</span><span class="w"> </span><span class="s2">"^([A-Za-z]+[_-])+(?=[A-Z])"</span><span class="p">),</span><span class="w">
+    </span><span class="n">month_str</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">str_extract</span><span class="p">(</span><span class="n">stem</span><span class="p">,</span><span class="w"> </span><span class="s2">"[A-Za-z]{3,}"</span><span class="p">),</span><span class="w">
+    </span><span class="c1"># Normalise non-standard abbreviations</span><span class="w">
+    </span><span class="n">month_str</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">str_replace</span><span class="p">(</span><span class="n">month_str</span><span class="p">,</span><span class="w"> </span><span class="s2">"^Sept$"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Sep"</span><span class="p">),</span><span class="w">
+    </span><span class="n">year_str</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="nf">str_extract</span><span class="p">(</span><span class="n">stem</span><span class="p">,</span><span class="w"> </span><span class="s2">"\\d{4}|\\d{2}"</span><span class="p">),</span><span class="w">
+    </span><span class="n">year</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="nf">if_else</span><span class="p">(</span><span class="n">nchar</span><span class="p">(</span><span class="n">year_str</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">2</span><span class="p">,</span><span class="w">
+                        </span><span class="nf">as.integer</span><span class="p">(</span><span class="n">paste0</span><span class="p">(</span><span class="s2">"20"</span><span class="p">,</span><span class="w"> </span><span class="n">year_str</span><span class="p">)),</span><span class="w">
+                        </span><span class="nf">as.integer</span><span class="p">(</span><span class="n">year_str</span><span class="p">)),</span><span class="w">
+    </span><span class="n">date</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="n">as.Date</span><span class="p">(</span><span class="n">paste</span><span class="p">(</span><span class="n">year</span><span class="p">,</span><span class="w"> </span><span class="n">month_str</span><span class="p">,</span><span class="w"> </span><span class="s2">"01"</span><span class="p">),</span><span class="w"> </span><span class="n">format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"%Y %B %d"</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+                  </span><span class="nf">coalesce</span><span class="p">(</span><span class="n">as.Date</span><span class="p">(</span><span class="n">paste</span><span class="p">(</span><span class="n">year</span><span class="p">,</span><span class="w"> </span><span class="n">month_str</span><span class="p">,</span><span class="w"> </span><span class="s2">"01"</span><span class="p">),</span><span class="w"> </span><span class="n">format</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"%Y %b %d"</span><span class="p">))</span><span class="w">
+  </span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="nf">pull</span><span class="p">(</span><span class="n">date</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">test</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"samoa_pdfs/April_25.pdf"</span><span class="p">,</span><span class="w"> </span><span class="s2">"samoa_pdfs/Feb_25.pdf"</span><span class="p">,</span><span class="w"> </span><span class="s2">"samoa_pdfs/Feb_26.pdf"</span><span class="p">,</span><span class="w"> 
+</span><span class="s2">"samoa_pdfs/Jan_26.pdf"</span><span class="p">,</span><span class="w"> </span><span class="s2">"samoa_pdfs/January_25.pdf"</span><span class="p">,</span><span class="w"> </span><span class="s2">"samoa_pdfs/July_25.pdf"</span><span class="p">,</span><span class="w"> 
+</span><span class="s2">"samoa_pdfs/June-25.pdf"</span><span class="p">,</span><span class="w"> </span><span class="s2">"samoa_pdfs/March_2025.pdf"</span><span class="p">,</span><span class="w"> </span><span class="s2">"samoa_pdfs/March_2026.pdf"</span><span class="p">,</span><span class="w"> 
+</span><span class="s2">"samoa_pdfs/May_25.pdf"</span><span class="p">,</span><span class="w"> </span><span class="s2">"samoa_pdfs/Migration_April-2026.pdf"</span><span class="p">,</span><span class="w">
+</span><span class="s2">"samoa_pdfs/Sept-24.pdf"</span><span class="p">,</span><span class="w"> </span><span class="s2">"samoa_pdfs/Migration_Rep_June_2023.pdf"</span><span class="p">)</span><span class="w">
+
+</span><span class="n">extract_date</span><span class="p">(</span><span class="n">test</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">#-------------------PDFs for recent data------------------</span><span class="w">
+</span><span class="c1"># For the more recent years no Excel tables are published, so need</span><span class="w">
+</span><span class="c1"># to use the PDFs and extract total from there</span><span class="w">
+</span><span class="c1"># These had to be downloaded by hand - nothing I tried was able to automate</span><span class="w">
+</span><span class="c1"># that. Download from https://www.sbs.gov.ws/migration/ and save</span><span class="w">
+</span><span class="c1"># in a subfolder /samoa_pdfs/.</span><span class="w">
+
+</span><span class="n">pdf_dir</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"samoa_pdfs"</span><span class="w">
+</span><span class="n">tbl</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">tibble</span><span class="p">(</span><span class="n">local_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">list.files</span><span class="p">(</span><span class="n">pdf_dir</span><span class="p">,</span><span class="w"> </span><span class="n">pattern</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">".pdf$"</span><span class="p">,</span><span class="w"> </span><span class="n">full.names</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">))</span><span class="w">
+
+</span><span class="n">parse_pdf_visitors</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+  </span><span class="n">txt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tryCatch</span><span class="p">(</span><span class="n">pdf_text</span><span class="p">(</span><span class="n">path</span><span class="p">),</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="n">message</span><span class="p">(</span><span class="s2">"  [WARN] pdftools could not read: "</span><span class="p">,</span><span class="w"> </span><span class="n">basename</span><span class="p">(</span><span class="n">path</span><span class="p">))</span><span class="w">
+    </span><span class="kc">NULL</span><span class="w">
+  </span><span class="p">})</span><span class="w">
+  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nf">is.null</span><span class="p">(</span><span class="n">txt</span><span class="p">))</span><span class="w"> </span><span class="nf">return</span><span class="p">(</span><span class="kc">NA_integer_</span><span class="p">)</span><span class="w">
+  </span><span class="n">full_text</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">paste</span><span class="p">(</span><span class="n">txt</span><span class="p">,</span><span class="w"> </span><span class="n">collapse</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"\n"</span><span class="p">)</span><span class="w">
+  </span><span class="n">patterns</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="w">
+    </span><span class="s2">"stood at [^0-9(]{0,10}\\(?([0-9,]+)\\)?"</span><span class="w">
+  </span><span class="p">)</span><span class="w">
+  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">pat</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">patterns</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="n">m</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">str_match</span><span class="p">(</span><span class="n">full_text</span><span class="p">,</span><span class="w"> </span><span class="n">pat</span><span class="p">)[,</span><span class="w"> </span><span class="m">2</span><span class="p">]</span><span class="w">
+    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="nf">is.na</span><span class="p">(</span><span class="n">m</span><span class="p">))</span><span class="w"> </span><span class="nf">return</span><span class="p">(</span><span class="nf">as.integer</span><span class="p">(</span><span class="nf">str_remove_all</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="s2">","</span><span class="p">)))</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+  </span><span class="n">message</span><span class="p">(</span><span class="s2">"  [WARN] Could not parse visitor count from: "</span><span class="p">,</span><span class="w"> </span><span class="n">basename</span><span class="p">(</span><span class="n">path</span><span class="p">))</span><span class="w">
+  </span><span class="kc">NA_integer_</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span><span class="n">found</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tbl</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> 
+  </span><span class="nf">filter</span><span class="p">(</span><span class="nf">file.exists</span><span class="p">(</span><span class="n">local_path</span><span class="p">))</span><span class="w">
+
+</span><span class="n">message</span><span class="p">(</span><span class="s2">"  Parsing "</span><span class="p">,</span><span class="w"> </span><span class="nf">nrow</span><span class="p">(</span><span class="n">found</span><span class="p">),</span><span class="w"> </span><span class="s2">" local PDFs..."</span><span class="p">)</span><span class="w">
+</span><span class="n">pdf_tbl</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">found</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="nf">mutate</span><span class="p">(</span><span class="n">visitors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">map_int</span><span class="p">(</span><span class="n">local_path</span><span class="p">,</span><span class="w"> </span><span class="err">\</span><span class="p">(</span><span class="n">p</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="n">message</span><span class="p">(</span><span class="s2">"  "</span><span class="p">,</span><span class="w"> </span><span class="n">basename</span><span class="p">(</span><span class="n">p</span><span class="p">))</span><span class="w">
+    </span><span class="n">parse_pdf_visitors</span><span class="p">(</span><span class="n">p</span><span class="p">)</span><span class="w">
+  </span><span class="p">}))</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="nf">filter</span><span class="p">(</span><span class="o">!</span><span class="nf">is.na</span><span class="p">(</span><span class="n">visitors</span><span class="p">))</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="nf">mutate</span><span class="p">(</span><span class="n">date</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">extract_date</span><span class="p">(</span><span class="n">local_path</span><span class="p">))</span><span class="w">
+
+</span><span class="c1">#-----------------Excel versions for older data------------</span><span class="w">
+</span><span class="c1"># For May 2023 and earlier we can get the data for multiple months</span><span class="w">
+</span><span class="c1"># at a time from Table 1 of the Excel tables. The May 2023 Excel</span><span class="w">
+</span><span class="c1"># file goes back to 2017 January (although the rows are hidden)</span><span class="w">
+
+</span><span class="n">fn</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="s2">"May_23.xlsx"</span><span class="w">
+</span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nf">file.exists</span><span class="p">(</span><span class="n">fn</span><span class="p">)){</span><span class="w">
+  </span><span class="nf">download.file</span><span class="p">(</span><span class="s2">"https://sbs.gov.ws/images/sbs-documents/social/Arrival/2023/May_23.xlsx"</span><span class="p">,</span><span class="w">
+                </span><span class="n">destfile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fn</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"wb"</span><span class="p">)</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span><span class="n">x</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">read_excel</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span><span class="w"> </span><span class="n">sheet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Table 1"</span><span class="p">,</span><span class="w"> 
+                 </span><span class="n">range</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"D48:D130"</span><span class="p">,</span><span class="w">
+                 </span><span class="n">col_names</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"visitors"</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> 
+  </span><span class="nf">drop_na</span><span class="p">()</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> 
+  </span><span class="nf">pull</span><span class="p">(</span><span class="n">visitors</span><span class="p">)</span><span class="w">
+
+</span><span class="n">historical</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">tibble</span><span class="p">(</span><span class="n">visitors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> 
+               </span><span class="n">date</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">seq</span><span class="p">(</span><span class="n">as.Date</span><span class="p">(</span><span class="s2">"2017-01-01"</span><span class="p">),</span><span class="w"> </span><span class="n">as.Date</span><span class="p">(</span><span class="s2">"2023-05-01"</span><span class="p">),</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"month"</span><span class="p">))</span><span class="w">
+
+</span><span class="c1">#-----------combine and test-----------------------</span><span class="w">
+</span><span class="n">samoa_visitors</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">pdf_tbl</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> 
+  </span><span class="nf">select</span><span class="p">(</span><span class="n">date</span><span class="p">,</span><span class="w"> </span><span class="n">visitors</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w">
+  </span><span class="nf">bind_rows</span><span class="p">(</span><span class="n">historical</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> 
+  </span><span class="nf">arrange</span><span class="p">(</span><span class="n">date</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> 
+  </span><span class="nf">mutate</span><span class="p">(</span><span class="n">date_month</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">yearmonth</span><span class="p">(</span><span class="n">date</span><span class="p">))</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> 
+  </span><span class="nf">as_tsibble</span><span class="p">(</span><span class="n">index</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">date_month</span><span class="p">)</span><span class="w">
+
+
+</span><span class="c1"># Test - some hand picked test cases, 4 from PDFs and 3 from the Excel</span><span class="w">
+</span><span class="n">samoa_test</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">tribble</span><span class="p">(</span><span class="o">~</span><span class="n">date</span><span class="p">,</span><span class="w"> </span><span class="o">~</span><span class="n">correct_visitors</span><span class="p">,</span><span class="w">
+                      </span><span class="s2">"2023-08-01"</span><span class="p">,</span><span class="w"> </span><span class="m">16471</span><span class="p">,</span><span class="w">
+                      </span><span class="s2">"2024-04-01"</span><span class="p">,</span><span class="w"> </span><span class="m">12644</span><span class="p">,</span><span class="w">
+                      </span><span class="s2">"2024-08-01"</span><span class="p">,</span><span class="w"> </span><span class="m">17248</span><span class="p">,</span><span class="w">
+                      </span><span class="s2">"2026-04-01"</span><span class="p">,</span><span class="w"> </span><span class="m">14188</span><span class="p">,</span><span class="w">
+                      </span><span class="s2">"2018-02-01"</span><span class="p">,</span><span class="w"> </span><span class="m">7413</span><span class="p">,</span><span class="w">
+                      </span><span class="s2">"2020-12-01"</span><span class="p">,</span><span class="w"> </span><span class="m">195</span><span class="p">,</span><span class="w">
+                      </span><span class="s2">"2022-06-01"</span><span class="p">,</span><span class="w"> </span><span class="m">866</span><span class="p">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> 
+  </span><span class="nf">mutate</span><span class="p">(</span><span class="n">date</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">as.Date</span><span class="p">(</span><span class="n">date</span><span class="p">))</span><span class="w">
+
+</span><span class="n">stopifnot</span><span class="p">(</span><span class="w">
+  </span><span class="n">samoa_test</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> 
+    </span><span class="nf">anti_join</span><span class="p">(</span><span class="n">samoa_visitors</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"date"</span><span class="p">,</span><span class="w"> </span><span class="s2">"correct_visitors"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"visitors"</span><span class="p">))</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> 
+    </span><span class="nf">nrow</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">0</span><span class="w">
+</span><span class="p">)</span></code></pre></figure>
+
+<p>And here’s the code that draws the basic time series chart I used earlier:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">the_caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Source: Samoa Bureau of Statistics"</span><span class="w">
+
+</span><span class="nf">ggplot</span><span class="p">(</span><span class="n">samoa_visitors</span><span class="p">,</span><span class="w"> </span><span class="nf">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">date</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">visitors</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="nf">geom_line</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="nf">scale_y_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">comma</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="nf">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Visitor arrivals"</span><span class="p">,</span><span class="w">
+       </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Visitor arrivals per month to Samoa"</span><span class="p">,</span><span class="w">
+       </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Unadjusted originals"</span><span class="p">,</span><span class="w">
+       </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">the_caption</span><span class="p">)</span></code></pre></figure>
+
+<h2 id="modelling-seasonal-decomposition">Modelling seasonal decomposition</h2>
+
+<p>Phew. Ok, on to the more fun part of actually modelling. I intend to use the X-13ARIMA-SEATS tool. X‑13ARIMA‑SEATS is a program developed and maintained by the <a href="https://www.census.gov/data/software/x13as.html">US Census Bureau</a> for seasonal adjustment and time‑series decomposition. It will automatically fit a SARIMA (seasonal autoregressive integrated moving average) time series model, has built in methods for identifying and dealing with outliers, by default adjusts for number of trading days and the moving Easter holiday, and allows the user to specify additional regression explanatory variables if you want. It’s the go-to across the world for seasonal adjustment of official statistics.</p>
+
+<p>X-13ARIMA-SEATS is available in R through the <code class="language-plaintext highlighter-rouge">seasonal</code> package (by Christoph Sax and Dirk Eddelbuettel). Downstream of that, the <code class="language-plaintext highlighter-rouge">feasts</code> and <code class="language-plaintext highlighter-rouge">fable</code> packages by (Mitchell O’Hara-Wild, Rob Hyndman and Earo Wangmake) make it easier to work with in a tabular, tidyverse approach.</p>
+
+<p>The Covid period is an obvious dominating factor in tourism anywhere in recent decades, and shows up in the first chart I showed above. I’m also interested in the period since the USA-Israel-Iran war began to see if there is an impact from that. There’s only two months of data (March and April 2026) since the war started, so an impact would have to be dramatic to show up, but it’s worth checking.</p>
+
+<p>X-13ARIMA-SEATS by default will fit forecasts when you ask it to model so you need to provide values of x regressor variables to cover not only the period of the data but a few periods out ahead. I’m doing this as simple time series vectors—I haven’t yet worked out the easy way to do this in the tabular world of <code class="language-plaintext highlighter-rouge">fable</code>. Luckily, it seems I can use these vectors later even in <code class="language-plaintext highlighter-rouge">fable</code>. In a moment I’ll use both <code class="language-plaintext highlighter-rouge">seasonal</code> directly and via <code class="language-plaintext highlighter-rouge">fable</code> to make sure I get the same results. In fact, updating my dated knowledge of time series modelling to use <code class="language-plaintext highlighter-rouge">fable</code> was one of my main motivations for this whole exercise.</p>
+
+<p>Here’s the code that makes the x regressors I’ll be using for the presence of the Covid pandemic and for the Iran war:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#----------------x regressor variables-----------------</span><span class="w">
+
+</span><span class="c1"># Covid time series indicator to use as a regressor</span><span class="w">
+</span><span class="n">covid_reg</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">ts</span><span class="p">(</span><span class="w">
+  </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">seq</span><span class="p">(</span><span class="n">as.Date</span><span class="p">(</span><span class="s2">"2017-01-01"</span><span class="p">),</span><span class="w"> </span><span class="n">as.Date</span><span class="p">(</span><span class="s2">"2029-04-01"</span><span class="p">),</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"month"</span><span class="p">)</span><span class="w"> </span><span class="o">%in%</span><span class="w">
+    </span><span class="n">seq</span><span class="p">(</span><span class="n">as.Date</span><span class="p">(</span><span class="s2">"2020-04-01"</span><span class="p">),</span><span class="w"> </span><span class="n">as.Date</span><span class="p">(</span><span class="s2">"2022-07-01"</span><span class="p">),</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"month"</span><span class="p">)),</span><span class="w">
+  </span><span class="n">start</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">2017</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">),</span><span class="w">
+  </span><span class="n">frequency</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">12</span><span class="w">
+</span><span class="p">)</span><span class="w">
+
+</span><span class="c1"># Iran war time series indicator</span><span class="w">
+</span><span class="n">war_reg</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">ts</span><span class="p">(</span><span class="w">
+  </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">seq</span><span class="p">(</span><span class="n">as.Date</span><span class="p">(</span><span class="s2">"2017-01-01"</span><span class="p">),</span><span class="w"> </span><span class="n">as.Date</span><span class="p">(</span><span class="s2">"2029-04-01"</span><span class="p">),</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"month"</span><span class="p">)</span><span class="w"> </span><span class="o">%in%</span><span class="w">
+    </span><span class="n">seq</span><span class="p">(</span><span class="n">as.Date</span><span class="p">(</span><span class="s2">"2026-03-01"</span><span class="p">),</span><span class="w"> </span><span class="n">as.Date</span><span class="p">(</span><span class="s2">"2026-07-01"</span><span class="p">),</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"month"</span><span class="p">)),</span><span class="w">
+  </span><span class="n">start</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">2017</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">),</span><span class="w">
+  </span><span class="n">frequency</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">12</span><span class="w">
+</span><span class="p">)</span></code></pre></figure>
+
+<h3 id="directly-with-seasonal">Directly with <code class="language-plaintext highlighter-rouge">seasonal</code></h3>
+
+<p>Ok, it’s modelling time. First, using just an old fashioned time series vector of Samoa’s visitor arrivals and the <code class="language-plaintext highlighter-rouge">seasonal</code> package directly, here’s fitting the X-13ARIMA-SEATS model with defaults using both the Covid and Iran war regressors:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">sa_ts</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">ts</span><span class="p">(</span><span class="n">samoa_visitors</span><span class="o">$</span><span class="n">visitors</span><span class="p">,</span><span class="w"> </span><span class="n">frequency</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">12</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="m">2017</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">))</span><span class="w">
+
+</span><span class="n">fit_ts_war</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="nf">seas</span><span class="p">(</span><span class="n">sa_ts</span><span class="p">,</span><span class="w"> </span><span class="n">xreg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">cbind</span><span class="p">(</span><span class="n">covid_reg</span><span class="p">,</span><span class="w"> </span><span class="n">war_reg</span><span class="p">))</span><span class="w">
+</span><span class="nf">summary</span><span class="p">(</span><span class="n">fit_ts_war</span><span class="p">)</span></code></pre></figure>
+
+<p>Super simple. That gets us this output:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Call:
+seas(x = sa_ts, xreg = cbind(covid_reg, war_reg))
+
+Coefficients:
+                  Estimate Std. Error z value Pr(&gt;|z|)    
+xreg1             -3.10069    0.14567 -21.286  &lt; 2e-16 ***
+xreg2             -0.15937    0.13098  -1.217    0.224    
+LS2020.Mar        -0.85036    0.14567  -5.838 5.29e-09 ***
+AO2020.Dec        -0.75529    0.12350  -6.115 9.63e-10 ***
+LS2021.May        -0.79012    0.13233  -5.971 2.36e-09 ***
+AO2021.Jul        -1.36973    0.12378 -11.066  &lt; 2e-16 ***
+LS2022.May         0.89068    0.13233   6.731 1.68e-11 ***
+LS2022.Aug        -1.07689    0.19608  -5.492 3.97e-08 ***
+AR-Nonseasonal-01 -0.59006    0.07041  -8.380  &lt; 2e-16 ***
+MA-Seasonal-12     0.99961    0.08044  12.427  &lt; 2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+SEATS adj.  ARIMA: (1 1 0)(0 1 1)  Obs.: 112  Transform: log
+AICc:  1608, BIC:  1634  QS (no seasonality in final):3.295  
+Box-Ljung (no autocorr.): 26.42   Shapiro (normality): 0.9721 *
+</code></pre></div></div>
+
+<p>Some key things to note here.</p>
+
+<p>The data was log-transformed, which is good—I would certainly have chosen to do this, or at least a square root transform, given the way visitor arrivals variance increases as its mean does, all around the world.</p>
+
+<p>The model eventually adopted is described as ARIMA (1 1 0)(0 1 1). This means the main series as a autoregression term on one lag, after one round of differencing; and the seasonal part has a moving average term on on lag, after one round of differencing. This is a very normal model for tourism numbers. it indicates a general trend/drive (the differencing in the main series), a tendency for the values in one month to be related one way or another to those in the month before (in this case with a negative correlation of -0.59) and a strong annual seasonality effect that changes slowly over time.</p>
+
+<p>The Covid dummy variable (<code class="language-plaintext highlighter-rouge">xreg1</code>) is strongly negatively significant. With a coefficient of -3.1 and the log transform of the response variable, this means that during the Covid period the actual arrivals were on average <code class="language-plaintext highlighter-rouge">exp(-3.1) = 0.045</code> (ie 4.5% or down 95.5%) of during the non-Covid periods.</p>
+
+<p>In contrast, we don’t have a statistically significant effect for the Iran war (<code class="language-plaintext highlighter-rouge">xreg2</code>). For subsequent analysis I will take out that x regressor as I don’t want it complicating the recent trend and seasonally adjusted figures.</p>
+
+<p>Six months’ data have been singled out as outliers and controlled for appropriately. These are all in the difficult-to-model Covid period of 2020 to 2022.</p>
+
+<p>One point to note is that we don’t have an Easter effect. I am 100% sure there is really an Easter effect in Samoa’s visitor arrivals, but 9 years of data isn’t enough to show it. Easter is sometimes in April and sometimes in March. But since 2017, it happens to have been in April every year apart from 2024. That’s just not enough variation to distinguish it from regular monthly seasonal impacts.</p>
+
+<p>To check my recollection that Easter is indeed checked for by default in X-13ARIMA-SEATS, I fit a model to the well known Box and Jenkins airline data:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; # Another examplefor comparison
++ m &lt;- seas(AirPassengers)
++ summary(m)
+
+Call:
+seas(x = AirPassengers)
+
+Coefficients:
+                    Estimate Std. Error z value Pr(&gt;|z|)    
+Weekday           -0.0029497  0.0005232  -5.638 1.72e-08 ***
+Easter[1]          0.0177674  0.0071580   2.482   0.0131 *  
+AO1951.May         0.1001558  0.0204387   4.900 9.57e-07 ***
+MA-Nonseasonal-01  0.1156204  0.0858588   1.347   0.1781    
+MA-Seasonal-12     0.4973600  0.0774677   6.420 1.36e-10 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+SEATS adj.  ARIMA: (0 1 1)(0 1 1)  Obs.: 144  Transform: log
+AICc: 947.3, BIC: 963.9  QS (no seasonality in final):    0  
+Box-Ljung (no autocorr.): 26.65   Shapiro (normality): 0.9908 
+</code></pre></div></div>
+
+<p>Here we see that the number of week days in a month and the moving Easter holiday are indeed in the final model, without me having to have asked for them to be checked. Easter has a positive impact on this air passengers series (1949 to 1960), and the number of week days in a month has a smaller negative impact.</p>
+
+<p>So after that Easter-checking digression, I refit the model for my Samoa visitor arrivals without the war regressor and get an essentially identical result:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; fit_ts &lt;- seas(sa_ts, xreg = covid_reg)
+&gt; summary(fit_ts)
+
+Call:
+seas(x = sa_ts, xreg = covid_reg)
+
+Coefficients:
+                  Estimate Std. Error z value Pr(&gt;|z|)    
+xreg              -3.10045    0.14690 -21.106  &lt; 2e-16 ***
+LS2020.Mar        -0.83292    0.14617  -5.698 1.21e-08 ***
+AO2020.Dec        -0.75463    0.12449  -6.062 1.35e-09 ***
+LS2021.May        -0.78975    0.13356  -5.913 3.36e-09 ***
+AO2021.Jul        -1.36737    0.12476 -10.960  &lt; 2e-16 ***
+LS2022.May         0.89113    0.13356   6.672 2.52e-11 ***
+LS2022.Aug        -1.07733    0.19782  -5.446 5.15e-08 ***
+AR-Nonseasonal-01 -0.58577    0.07071  -8.284  &lt; 2e-16 ***
+MA-Seasonal-12     0.99912    0.07827  12.765  &lt; 2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+SEATS adj.  ARIMA: (1 1 0)(0 1 1)  Obs.: 112  Transform: log
+AICc:  1607, BIC:  1631  QS (no seasonality in final):2.501  
+Box-Ljung (no autocorr.): 26.63   Shapiro (normality): 0.9706 *
+</code></pre></div></div>
+
+<h3 id="with-fable-and-feasts">With <code class="language-plaintext highlighter-rouge">fable</code> and <code class="language-plaintext highlighter-rouge">feasts</code></h3>
+
+<p><code class="language-plaintext highlighter-rouge">tsibble</code>, <code class="language-plaintext highlighter-rouge">fable</code> and <code class="language-plaintext highlighter-rouge">feasts</code> are a brilliant set of packages that let you work with time series in R in a more tabular and <code class="language-plaintext highlighter-rouge">tidyverse</code>-friendly way than the various older time series data structures let you. Most of my work with time series was before they were available, though, so I’m lacking confidence in how they work. Luckily it seems to be pretty straightforward.</p>
+
+<p>I’d already done the critical step earlier with <code class="language-plaintext highlighter-rouge">as_tsibble(index = date_month)</code>, specifying my main <code class="language-plaintext highlighter-rouge">samoa_visitors</code> tibble is actually a time series tibble. Now the modelling using that tsibble is pretty simple:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#----------fable version-------</span><span class="w">
+</span><span class="n">fit_fb</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">samoa_visitors</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> 
+  </span><span class="nf">model</span><span class="p">(</span><span class="n">X_13ARIMA_SEATS</span><span class="p">(</span><span class="w">
+    </span><span class="n">visitors</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="nf">xreg</span><span class="p">(</span><span class="n">covid_reg</span><span class="p">)</span><span class="w">
+  </span><span class="p">))</span><span class="w">
+
+</span><span class="nf">report</span><span class="p">(</span><span class="n">fit_fb</span><span class="p">)</span></code></pre></figure>
+
+<p>Note we use <code class="language-plaintext highlighter-rouge">report()</code> rather than <code class="language-plaintext highlighter-rouge">summary()</code> to get the end result. I’m not going to print it here because it is literally identical to what we got earier with <code class="language-plaintext highlighter-rouge">summary(fit_ts)</code>.</p>
+
+<p>The main appeal for me in using the <code class="language-plaintext highlighter-rouge">fable</code>/<code class="language-plaintext highlighter-rouge">feasts</code> approach is that it fits better with both my data wrangling workflow and my approach to <code class="language-plaintext highlighter-rouge">ggplot2</code> graphics. so here is a nice decomposition of hte original timeseries, produced with <code class="language-plaintext highlighter-rouge">autoplot(</code></p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">fit_fb</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> 
+  </span><span class="nf">components</span><span class="p">()</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> 
+  </span><span class="nf">autoplot</span><span class="p">()</span><span class="w"> </span></code></pre></figure>
+
+<object type="image/svg+xml" data="/img/0322-autoplot.svg" width="100%"><img src="/img/0322-autoplot.png" width="100%" /></object>
+
+<p>Note that in this decomposition, the original ‘visitors’ series and the trend are on the original scale, but the ‘seasonal’ and ‘irregular’ components are expressed as multipliers. So a seasonal value of 1.2 means in a given month the value is 20% higher as a result of the seasonality than otherwise.</p>
+
+<p>And here is my final, presentation version of the data:</p>
+
+<object type="image/svg+xml" data="/img/0322-final-presentation.svg" width="100%"><img src="/img/0322-final-presentation.png" width="100%" /></object>
+
+<p>Produced with this code:</p>
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">comp_data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">fit_fb</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> 
+  </span><span class="nf">components</span><span class="p">()</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> 
+  </span><span class="c1"># the 'trend' that comes straight from the decomposition does</span><span class="w">
+  </span><span class="c1"># not adjust ofr the Covid coefficient and looks pretty weird</span><span class="w">
+  </span><span class="c1"># so it is more intuitive to present it after adjustment for</span><span class="w">
+  </span><span class="c1"># Covid, which we need to calculate by multiplying (because of</span><span class="w">
+  </span><span class="c1"># the log transform that SEATS used autoamtically):</span><span class="w">
+  </span><span class="nf">mutate</span><span class="p">(</span><span class="n">covid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">as.numeric</span><span class="p">(</span><span class="n">covid_reg</span><span class="p">)[</span><span class="m">1</span><span class="o">:</span><span class="nf">nrow</span><span class="p">(</span><span class="n">samoa_visitors</span><span class="p">)],</span><span class="w">
+         </span><span class="n">trend_adj</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">trend</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nf">exp</span><span class="p">(</span><span class="n">covid</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nf">coef</span><span class="p">(</span><span class="n">fit_ts</span><span class="p">)[</span><span class="m">1</span><span class="p">]))</span><span class="w"> 
+
+</span><span class="n">comp_data</span><span class="o">|&gt;</span><span class="w"> 
+  </span><span class="nf">ggplot</span><span class="p">(</span><span class="nf">aes</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">date_month</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">season_adjust</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="nf">geom_line</span><span class="p">(</span><span class="n">linewidth</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1.3</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="nf">geom_line</span><span class="p">(</span><span class="nf">aes</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">trend_adj</span><span class="p">),</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"steelblue"</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0.9</span><span class="p">,</span><span class="w"> </span><span class="n">linewidth</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1.2</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+  </span><span class="nf">geom_point</span><span class="p">(</span><span class="nf">aes</span><span class="p">(</span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">visitors</span><span class="p">),</span><span class="w"> </span><span class="n">colour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"grey70"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="nf">scale_y_continuous</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">comma</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="nf">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w">
+       </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="s2">"Visitor arrivals"</span><span class="p">,</span><span class="w">
+       </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Visitor arrivals per month to Samoa"</span><span class="p">,</span><span class="w">
+       </span><span class="n">subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"&lt;span style='color:grey60'&gt;Original&lt;/span&gt;, seasonally adjusted &lt;span style='color:steelblue'&gt;and trend (adjusted for Covid period).&lt;/span&gt;"</span><span class="p">,</span><span class="w">
+       </span><span class="n">caption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Source: data from Samoa Bureau of Statistics. Seasonal adjustment by freerangestats.info."</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+  </span><span class="nf">theme</span><span class="p">(</span><span class="n">plot.subtitle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_markdown</span><span class="p">())</span></code></pre></figure>
+
+<p>After all that, what insight do we have? Well, not a lot really, other than the blindingly obvious trends of the devastation to the industry of Covid and the slow and noisy growth trend since then. We are at least well placed to make commentary on the impact of the fuel crisis on tourism, and can say that there isn’t any evident yet. If and when we do see the impact, we’ll be able to talk about in terms of trends and random variation, after having removed the seasonal element. So that’s useful.</p>
+
+<p>Well, that’s all. Perhaps I’ll get around in a later post to adding the other Pacific island countries with monthly tourism data—Fiji, Vanuatu, Cook Islands, French Polynesia being the key ones I’m aware of.</p>
+
+
+
+		
+	</div>
+</div>
+
+<div class="col-md-1"></div>
+<div class="col-md-4">
+	<div class="side-banner">
+	
+
+
+	<div>
+	   
+	    
+			
+			<p>&larr; Previous post</p>
+			<p><a rel="prev" href="/blog/2026/05/13/war-durations">Durations of wars</a></p>
+		
+		
+		
+		
+		
+		
+	</div>
+	
+	 
+
+   <div class = "side-footer">
+			
+			<hr></hr>
+			<p><gcse:search></gcse:search></p>
+			<hr></hr>
+
+			<p>My day job is Director of the <a href='https://sdd.spc.int/'>Statistics for Development Division</a> at the Pacific Community, the principal scientific and technical organisation in the Pacific region, proudly supporting development since 1947. We are an international development organisation owned and governed by our 27 country and territory members. This blog is not part of my role there and contains my personal views only.</p>
+		
+		    <hr></hr>
+			
+        	<p>Follow <a href = "/feed.xml">this blog with RSS</a>.</p>
+			<p>Find me on <a rel="me" href="https://bsky.app/profile/freerangestats.info">Bluesky</a> or <a rel="me" href="https://mastodon.social/@peter_ellis">Mastodon</a>.</p>
+			<hr></hr>
+			
+
+
+       <div class="fb-like" data-href="https://www.facebook.com/peterstats/" data-layout="standard" data-action="like" data-show-faces="false" data-share="false"></div>
+			
+			<hr></hr>
+			<p>I'm pleased to be aggregated at <a href="https://www.r-bloggers.com/">R-bloggers</a>, the one-stop shop for blog posts featuring R.</p>
+			
+			<p>I've never been an academic but have written a few small things and hence have a <a href='https://scholar.google.com/citations?view_op=list_works&hl=en&user=MEtLNDMAAAAJ'>Google Scholar profile</a></p>
+			
+			<p>I read a lot of books. In the unlikely event you want to see what I think about them or what I'm reading at the moment, <a href='https://www.goodreads.com/user/show/55517482-peter-ellis'>follow me on Goodreads</a>.</p>
+			<hr></hr>
+
+			
+			<p>			
+            <span xmlns:dct="https://purl.org/dc/terms/" property="dct:title"><i>free range statistics</i></span> by <a href = "/about/index.html">Peter Ellis</a> is licensed under a <a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+			</p>
+
+			<hr></hr>
+			
+			<h4>Bluesky feed:</h3>
+         <script src="https://cdn.jsdelivr.net/npm/bsky-embed/dist/bsky-embed.es.js" async></script>
+<bsky-embed  
+  username="freerangestats.info"  
+  limit="5"  
+>  
+</bsky-embed>
+
+    </div>
+
+
+
+  
+   
+
+
+
+
+		  
+		  
+
+
+
+	   
+	<div id="disqus_thread"></div>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function() {
+				var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+				dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+				(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+			})();
+		</script>
+
+		<script type="text/javascript">
+			/* * * CONFIGURATION VARIABLES * * */
+			var disqus_shortname = 'statsinthewild';
+			
+			/* * * DON'T EDIT BELOW THIS LINE * * */
+			(function () {
+				var s = document.createElement('script'); s.async = true;
+				s.type = 'text/javascript';
+				s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+				(document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+			}());
+		</script>
+
+	<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+	</div>	
+</div>    
+   
+   
+
+			
+			</div><!-- /.container -->
+         
+   <!-- Default Statcounter code for Free Range Statistics https://freerangestats.info -->
+<script type="text/javascript">
+var sc_project=11673245; 
+var sc_invisible=1; 
+var sc_security="5b7111a4"; 
+</script>
+<script type="text/javascript"
+src="https://www.statcounter.com/counter/counter.js" async></script>
+<noscript><div class="statcounter"><a title="Web Analytics"
+href="https://statcounter.com/" target="_blank"><img class="statcounter"
+src="//c.statcounter.com/11673245/0/5b7111a4/1/" alt="Web
+Analytics"></a></div></noscript>
+<!-- End of Statcounter Code -->
+
+</body>   
+</html>
