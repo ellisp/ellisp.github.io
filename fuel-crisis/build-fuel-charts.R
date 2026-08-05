@@ -5,7 +5,7 @@ setwd(here("_working"))
 war_rect <- annotate(
   "rect",
   xmin = as.Date("2026-02-28"),
-  xmax = Inf,
+  xmax = as.Date(Inf),
   ymin = -Inf,
   ymax = Inf,
   alpha = 0.5,
@@ -15,4 +15,4 @@ war_rect <- annotate(
 
 source("0325-cushing.R")
 source("0327-us-oil-inventories.R")
-
+source("0328-pacific-cpi.R")
