@@ -16,3 +16,9 @@ war_rect <- annotate(
 source("0325-cushing.R")
 source("0327-us-oil-inventories.R")
 source("0328-pacific-cpi.R")
+source("0329-nz-us-petrol.R")
+
+system2("jekyll", "build")
+
+# Then in terminal naviage to _site and use gitk to check if anything has
+# changed or just 'date accessed'.
