@@ -1,3 +1,6 @@
+# Weekly (or more frequent) build of the plots for the fuel crisis monitoring
+# page.
+
 setwd(here("_working"))
 
 
@@ -21,7 +24,10 @@ source("0329-nz-us-petrol.R")
 setwd(here())
 system2("jekyll", "build")
 
-# Then in terminal navigate to _site and use gitk to check if anything has
-# changed or just 'date accessed'.
+# check to see if anything has change
+setwd(here("_site"))
+system("git status")
+
+# Then in terminal navigate to _site and use gitk to check in more detail for changes.
 
 setwd(here("_working"))
