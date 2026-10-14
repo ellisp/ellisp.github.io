@@ -1,6 +1,7 @@
 # Weekly (or more frequent) build of the plots for the fuel crisis monitoring
 # page.
-
+setwd(here::here())
+source(".Rprofile")
 setwd(here("_working"))
 
 
